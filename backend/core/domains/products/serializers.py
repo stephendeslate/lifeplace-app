@@ -76,9 +76,9 @@ class ProductOptionSerializer(serializers.ModelSerializer):
     category_path = serializers.CharField(source='category.full_path', read_only=True)
     formatted_price = serializers.CharField(read_only=True)
     price_with_tax = serializers.DecimalField(max_digits=15, decimal_places=2, read_only=True)
-    # Event type fields for filtering
-    event_type_name = serializers.CharField(source='event_type.name', read_only=True, allow_null=True)
-    event_type_id = serializers.IntegerField(source='event_type.id', read_only=True, allow_null=True)
+    # Event types - ManyToMany field for filtering packages by event type
+    event_type_ids = serializers.SerializerMethodField()
+    event_type_names = serializers.SerializerMethodField()
     # Capacity fields
     minimum_guests = serializers.IntegerField(read_only=True, allow_null=True)
     maximum_guests = serializers.IntegerField(read_only=True, allow_null=True)
@@ -97,7 +97,7 @@ class ProductOptionSerializer(serializers.ModelSerializer):
             'type', 'type_display', 'is_active', 'is_featured', 'allow_multiple', 'requires_approval',
             'minimum_hours', 'maximum_hours', 'advance_booking_days', 'maximum_booking_days',
             'event_days', 'minimum_guests', 'maximum_guests',
-            'sku', 'sort_order', 'event_type', 'event_type_id', 'event_type_name',
+            'sku', 'sort_order', 'event_types', 'event_type_ids', 'event_type_names',
             'formatted_price', 'price_with_tax',
             'featured_image', 'gallery_images',
             'effective_featured_image', 'effective_gallery_images',
@@ -105,6 +105,14 @@ class ProductOptionSerializer(serializers.ModelSerializer):
             'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
+
+    def get_event_type_ids(self, obj):
+        """Return list of event type IDs this package is available for"""
+        return list(obj.event_types.values_list('id', flat=True))
+
+    def get_event_type_names(self, obj):
+        """Return list of event type names this package is available for"""
+        return list(obj.event_types.values_list('name', flat=True))
 
     def get_effective_featured_image(self, obj):
         """

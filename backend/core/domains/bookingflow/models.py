@@ -551,7 +551,14 @@ class PackageSelectionStepConfiguration(BaseModel):
     show_descriptions = models.BooleanField(default=True)
     show_images = models.BooleanField(default=True)
     enable_comparison = models.BooleanField(default=False)
-    
+
+    # Event type filtering
+    filter_by_event_type = models.BooleanField(
+        default=False,
+        help_text="When enabled, only show packages associated with the booking flow's event type. "
+                  "Packages with no event types are hidden when this is enabled."
+    )
+
     # Dynamic pricing
     enable_dynamic_pricing = models.BooleanField(default=False)
     pricing_factors = models.JSONField(

@@ -245,11 +245,14 @@ export interface PackageSelectionStepConfiguration {
   show_descriptions: boolean;
   show_images: boolean;
   enable_comparison: boolean;
-  
+
+  // Event type filtering
+  filter_by_event_type: boolean;
+
   // Dynamic pricing
   enable_dynamic_pricing: boolean;
   pricing_factors: Record<string, unknown>;
-  
+
   created_at: string;
   updated_at: string;
 }

@@ -367,9 +367,9 @@ class ProductOptionViewSet(viewsets.ModelViewSet):
             
             # Cache miss - get from database with optimization
             products = ProductOption.objects.filter(
-                id__in=product_ids, 
+                id__in=product_ids,
                 is_active=True
-            ).select_related('category', 'event_type')
+            ).select_related('category').prefetch_related('event_types')
             
             # Serialize and cache the result
             serializer = self.get_serializer(products, many=True)

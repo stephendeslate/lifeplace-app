@@ -17,7 +17,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/hooks/useAuth';
 import { useDashboard } from '@/hooks/useDashboard';
-import { useNotificationCounts } from '@/hooks/useNotificationsList';
+import { useActionCount } from '@/hooks/useActionCenter';
 import { getUserState } from '@/utils/userState';
 import { ManagementLayout, DiscoveryLayout } from '@/components/home';
 import { theme } from '@/theme';
@@ -25,7 +25,7 @@ import { theme } from '@/theme';
 export default function HomeScreen() {
   const { user } = useAuth();
   const { data: dashboardData, isLoading, refetch, isRefetching } = useDashboard();
-  const { unreadCount } = useNotificationCounts();
+  const { count: unreadCount } = useActionCount();
 
   // Determine user state and layout type
   const userState = useMemo(

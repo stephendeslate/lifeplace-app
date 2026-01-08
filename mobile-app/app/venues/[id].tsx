@@ -27,10 +27,7 @@ import {
   CaretLeft,
   MapPin,
   Users,
-  Clock,
   Moon,
-  CalendarCheck,
-  Check,
   SwimmingPool,
   Car,
   SpeakerHigh,
@@ -144,27 +141,6 @@ export default function VenueDetailScreen() {
 
   const toggleDescription = useCallback(() => {
     setIsDescriptionExpanded((prev) => !prev);
-  }, []);
-
-  // Format program duration range
-  const getProgramDurationDisplay = useCallback(() => {
-    if (!venue?.operating_rules) return null;
-    const { minimum_program_hours, maximum_program_hours } = venue.operating_rules;
-
-    const minHours = parseFloat(minimum_program_hours);
-    const maxHours = maximum_program_hours ? parseFloat(maximum_program_hours) : null;
-
-    if (maxHours && maxHours !== minHours) {
-      return `${minHours}-${maxHours} hours`;
-    }
-    return `${minHours} hours`;
-  }, [venue?.operating_rules]);
-
-  // Format price for early/late fees
-  const formatFee = useCallback((fee: string | null) => {
-    if (!fee) return null;
-    const amount = parseFloat(fee);
-    return formatPrice(amount);
   }, []);
 
   const handleStartBooking = () => {
@@ -312,83 +288,6 @@ export default function VenueDetailScreen() {
             </View>
           )}
 
-          {/* Operating Rules */}
-          {venue.operating_rules && (
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Timing</Text>
-              <View style={styles.rulesCard}>
-                {/* Check-in / Check-out Row */}
-                <View style={styles.timingRow}>
-                  <View style={styles.timingItem}>
-                    <Text style={styles.timingLabel}>Check-in</Text>
-                    <Text style={styles.timingValue}>
-                      {venue.operating_rules.default_check_in_time}
-                    </Text>
-                  </View>
-                  <View style={styles.timingDivider} />
-                  <View style={styles.timingItem}>
-                    <Text style={styles.timingLabel}>Check-out</Text>
-                    <Text style={styles.timingValue}>
-                      {venue.operating_rules.default_checkout_time}
-                      {venue.operating_rules.checkout_next_day && ' (+1)'}
-                    </Text>
-                  </View>
-                </View>
-
-                {/* Program Duration - only for non-overnight venues */}
-                {!venue.is_overnight && (
-                  <>
-                    <View style={styles.ruleDivider} />
-                    <View style={styles.ruleRow}>
-                      <CalendarCheck size={18} color={colors.neutral.darkGray} />
-                      <View style={styles.ruleContent}>
-                        <Text style={styles.ruleLabel}>Program Duration</Text>
-                        <Text style={styles.ruleValue}>
-                          {getProgramDurationDisplay()}
-                        </Text>
-                      </View>
-                    </View>
-                  </>
-                )}
-
-                {/* Early Check-in Option */}
-                {venue.operating_rules.early_checkin_allowed && (
-                  <>
-                    <View style={styles.ruleDivider} />
-                    <View style={styles.ruleRow}>
-                      <Check size={18} color={colors.secondary.forest} />
-                      <View style={styles.ruleContent}>
-                        <Text style={styles.ruleLabel}>Early check-in available</Text>
-                        {venue.operating_rules.early_checkin_fee_per_hour && (
-                          <Text style={styles.ruleValueSubtle}>
-                            +{formatFee(venue.operating_rules.early_checkin_fee_per_hour)}/hr
-                          </Text>
-                        )}
-                      </View>
-                    </View>
-                  </>
-                )}
-
-                {/* Late Checkout Option */}
-                {venue.operating_rules.late_checkout_allowed && (
-                  <>
-                    <View style={styles.ruleDivider} />
-                    <View style={styles.ruleRow}>
-                      <Check size={18} color={colors.secondary.forest} />
-                      <View style={styles.ruleContent}>
-                        <Text style={styles.ruleLabel}>Late checkout available</Text>
-                        {venue.operating_rules.late_checkout_fee_per_hour && (
-                          <Text style={styles.ruleValueSubtle}>
-                            +{formatFee(venue.operating_rules.late_checkout_fee_per_hour)}/hr
-                          </Text>
-                        )}
-                      </View>
-                    </View>
-                  </>
-                )}
-              </View>
-            </View>
-          )}
 
           {/* Pricing */}
           {pricing && (
@@ -608,60 +507,6 @@ const styles = StyleSheet.create({
     ...typeScale.labelMedium,
     color: colors.secondary.forest,
     marginTop: spacing.md,
-  },
-  // Rules card styles
-  rulesCard: {
-    backgroundColor: colors.neutral.white,
-    borderRadius: layout.borderRadius.lg,
-    padding: spacing.lg,
-    ...shadows.sm,
-  },
-  timingRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  timingItem: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  timingLabel: {
-    ...typeScale.bodySmall,
-    color: colors.neutral.gray,
-    marginBottom: spacing.xxs,
-  },
-  timingValue: {
-    ...typeScale.titleMedium,
-    color: colors.primary.black,
-  },
-  timingDivider: {
-    width: 1,
-    height: 40,
-    backgroundColor: colors.neutral.warmGray,
-  },
-  ruleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-  },
-  ruleContent: {
-    flex: 1,
-  },
-  ruleLabel: {
-    ...typeScale.bodySmall,
-    color: colors.neutral.gray,
-  },
-  ruleValue: {
-    ...typeScale.titleSmall,
-    color: colors.primary.black,
-  },
-  ruleValueSubtle: {
-    ...typeScale.labelSmall,
-    color: colors.neutral.gray,
-  },
-  ruleDivider: {
-    height: 1,
-    backgroundColor: colors.neutral.warmGray,
-    marginVertical: spacing.md,
   },
   // Pricing styles
   pricingCard: {

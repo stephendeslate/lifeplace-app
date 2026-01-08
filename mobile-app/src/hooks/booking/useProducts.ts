@@ -21,10 +21,10 @@ export const productKeys = {
   all: ['products'] as const,
   categories: () => [...productKeys.all, 'categories'] as const,
   products: () => [...productKeys.all, 'products'] as const,
-  packages: () => [...productKeys.all, 'packages'] as const,
+  packages: (eventTypeId?: number) => [...productKeys.all, 'packages', { eventTypeId }] as const,
   addons: () => [...productKeys.all, 'addons'] as const,
   packagesByCategory: (categoryId: number) =>
-    [...productKeys.packages(), { categoryId }] as const,
+    [...productKeys.all, 'packages', { categoryId }] as const,
   addonsByCategory: (categoryId: number) => [...productKeys.addons(), { categoryId }] as const,
   product: (productId: number) => [...productKeys.all, 'product', productId] as const,
   productsBatch: (productIds: number[]) =>
@@ -59,12 +59,21 @@ export function useProductOptions() {
 }
 
 /**
- * Fetch all packages.
+ * Fetch packages, optionally filtered by event type.
+ *
+ * @param eventTypeId - Optional event type ID to filter packages.
+ *                      If provided, only packages associated with this event type are returned.
+ *                      Packages with no event types are excluded when filtering.
+ * @param options - Additional options
+ * @param options.filterByEventType - Whether to apply event type filtering (default: true when eventTypeId provided)
  */
-export function usePackages() {
+export function usePackages(eventTypeId?: number, options?: { filterByEventType?: boolean }) {
+  const shouldFilter = options?.filterByEventType ?? (eventTypeId !== undefined);
+  const effectiveEventTypeId = shouldFilter ? eventTypeId : undefined;
+
   return useQuery({
-    queryKey: productKeys.packages(),
-    queryFn: () => ProductsAPI.getPackages(),
+    queryKey: productKeys.packages(effectiveEventTypeId),
+    queryFn: () => ProductsAPI.getPackages(effectiveEventTypeId),
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 }

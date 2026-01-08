@@ -329,7 +329,27 @@ export function PackageSelectionStep({
   const actionsRef = useRef(actions);
   actionsRef.current = actions;
 
-  const { data: packages, isLoading, error } = usePackages();
+  // Get configuration values
+  const {
+    selection_type = 'SINGLE',
+    min_selection = 1,
+    max_selection = 1,
+    show_pricing = true,
+    show_descriptions = true,
+    show_images = true,
+    filter_by_event_type = false,
+  } = configuration || {};
+
+  // Get event type ID from flow (event_type is the ID directly)
+  const eventTypeId = state.currentFlow?.event_type;
+
+  // Fetch packages - filter by event type if configuration enables it
+  // When filter_by_event_type is true, only packages associated with the current event type are shown
+  // Packages with no event types are hidden when filtering is enabled
+  const { data: packages, isLoading, error } = usePackages(
+    filter_by_event_type ? eventTypeId : undefined,
+    { filterByEventType: filter_by_event_type }
+  );
 
   const [selectedPackages, setSelectedPackages] = useState<SelectedPackage[]>(
     data.selected_packages || []
@@ -343,23 +363,11 @@ export function PackageSelectionStep({
       : {}
   );
 
-  const {
-    selection_type = 'SINGLE',
-    min_selection = 1,
-    max_selection = 1,
-    show_pricing = true,
-    show_descriptions = true,
-    show_images = true,
-  } = configuration || {};
-
   const isMultiSelect = selection_type === 'MULTIPLE' || max_selection > 1;
 
   // Get selected venue IDs from venue selection step
   const selectedVenueIds = state.stepData.venue_selection?.selected_venue_ids || [];
   const hasVenueSelection = selectedVenueIds.length > 0;
-
-  // Get event type ID from flow (event_type is the ID directly)
-  const eventTypeId = state.currentFlow?.event_type;
 
   // Fetch rentable venues with event-type-specific pricing
   const { data: allVenues } = useRentableVenues(eventTypeId);

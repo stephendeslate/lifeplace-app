@@ -150,8 +150,8 @@ class PackageSelectionStepConfigurationSerializer(serializers.ModelSerializer):
             'available_packages_details', 
             'selection_type',
             'min_selection', 'max_selection', 'show_pricing', 'show_descriptions',
-            'show_images', 'enable_comparison', 'enable_dynamic_pricing',
-            'pricing_factors', 'created_at', 'updated_at'
+            'show_images', 'enable_comparison', 'filter_by_event_type',
+            'enable_dynamic_pricing', 'pricing_factors', 'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'step', 'created_at', 'updated_at']
 

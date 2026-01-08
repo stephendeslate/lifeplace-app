@@ -146,7 +146,7 @@ class ProductService:
             event_type_id: Filter by event type (Wedding, Camps, Team Building, etc.)
             event_days: Filter by duration in days (1=Day Trip, 2=2D1N, 3=3D2N, 4=4D3N)
         """
-        queryset = ProductOption.objects.select_related('category', 'event_type').all()
+        queryset = ProductOption.objects.select_related('category').prefetch_related('event_types').all()
 
         # Apply filters if provided
         if search_query:
@@ -169,19 +169,22 @@ class ProductService:
             queryset = queryset.filter(is_featured=is_featured)
 
         if event_type_id is not None:
-            queryset = queryset.filter(event_type_id=event_type_id)
+            # Filter packages that have this event type in their event_types ManyToMany
+            # Packages with no event_types are excluded (hidden when filtering by event type)
+            queryset = queryset.filter(event_types__id=event_type_id)
 
         if event_days is not None:
             queryset = queryset.filter(event_days=event_days)
 
         # Order by category, then sort order, then name
-        return queryset.order_by('category__sort_order', 'sort_order', 'name')
+        # Use distinct() to avoid duplicates from ManyToMany join
+        return queryset.order_by('category__sort_order', 'sort_order', 'name').distinct()
     
     @staticmethod
     def get_product_by_id(product_id):
         """Get a product by ID"""
         try:
-            return ProductOption.objects.select_related('category', 'event_type').get(id=product_id)
+            return ProductOption.objects.select_related('category').prefetch_related('event_types').get(id=product_id)
         except ProductOption.DoesNotExist:
             raise ProductNotFound()
     
