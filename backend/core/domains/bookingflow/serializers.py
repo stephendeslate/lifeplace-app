@@ -626,11 +626,13 @@ class PublicBookingFlowSerializer(serializers.ModelSerializer):
     event_type_name = serializers.CharField(source='event_type.name', read_only=True)
     enabled_steps = BookingFlowStepSerializer(many=True, read_only=True)
     total_steps = serializers.SerializerMethodField()
+    # Include event_type ID for filtering packages/venues by event type
+    event_type = serializers.PrimaryKeyRelatedField(read_only=True)
 
     class Meta:
         model = BookingFlow
         fields = [
-            'id', 'name', 'description', 'event_type_name',
+            'id', 'name', 'description', 'event_type', 'event_type_name',
             'allow_guest_booking', 'require_account_creation',
             'enable_progress_saving', 'max_advance_booking_days',
             'min_advance_booking_days', 'enabled_steps', 'total_steps'
