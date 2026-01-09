@@ -1931,7 +1931,39 @@ class BookingSessionService:
                         logger.error(f"Error checking date availability: {e}")
                         # Don't block booking if availability check fails
                         pass
-                    
+
+            elif step.step_type == 'venue_selection':
+                # Venue selection validation - validate against min_venues and max_venues
+                selected_venue_ids = step_data.get('selected_venue_ids', [])
+
+                # Get configuration for venue constraints
+                try:
+                    venue_config = getattr(step, 'venue_selection_config', None)
+                except Exception:
+                    venue_config = None
+
+                if venue_config:
+                    min_venues = getattr(venue_config, 'min_venues', 1)
+                    max_venues = getattr(venue_config, 'max_venues', 10)
+
+                    if len(selected_venue_ids) < min_venues:
+                        errors['selected_venue_ids'] = [f"Please select at least {min_venues} venue{'s' if min_venues > 1 else ''}"]
+                    elif len(selected_venue_ids) > max_venues:
+                        errors['selected_venue_ids'] = [f"You can select up to {max_venues} venue{'s' if max_venues > 1 else ''}"]
+
+                    # Validate selected venues are in available venues (if configured)
+                    try:
+                        if venue_config.available_venues.exists():
+                            available_venue_ids = list(venue_config.available_venues.all().values_list('id', flat=True))
+                            invalid_venues = [v_id for v_id in selected_venue_ids if v_id not in available_venue_ids]
+                            if invalid_venues:
+                                errors['selected_venue_ids'] = errors.get('selected_venue_ids', [])
+                                errors['selected_venue_ids'].append(f"Venue(s) {invalid_venues} are not available for selection")
+                    except Exception as e:
+                        # Log but don't fail validation if venue lookup fails
+                        logger.warning(f"Could not validate available venues: {e}")
+                # If no configuration exists, skip validation (allow any selection)
+
             elif step.step_type == 'questionnaire':
                 # Questionnaire validation is handled at the field level
                 # The frontend sends data as field_<id>: value
@@ -1952,26 +1984,26 @@ class BookingSessionService:
                     for field in all_fields:
                         field_key = f'field_{field.id}'
                         field_value = step_data.get(field_key)
-                        
+
                         # Only validate if field is required and empty
                         if field.required and not field_value:
                             errors[field_key] = [f"{field.name} is required"]
-                                    
-                        elif step.step_type == 'package_selection':
-                            selected = step_data.get('selected_packages', [])
-                            if config.min_selection and len(selected) < config.min_selection:
-                                errors['selected_packages'] = [f"Select at least {config.min_selection} package(s)"]
-                            if config.max_selection and len(selected) > config.max_selection:
-                                errors['selected_packages'] = [f"Select at most {config.max_selection} package(s)"]
-                            
-                            # FIXED: Validate selected packages are in available packages (if configured)
-                            if config.available_packages.exists():  # Check if any packages are configured
-                                available_package_ids = list(config.available_packages.all().values_list('id', flat=True))
-                                for package in selected:
-                                    if 'product_id' in package and package['product_id'] not in available_package_ids:
-                                        errors['selected_packages'] = errors.get('selected_packages', [])
-                                        errors['selected_packages'].append(f"Package {package['product_id']} is not available for selection")
-                            
+
+            elif step.step_type == 'package_selection':
+                selected = step_data.get('selected_packages', [])
+                if config.min_selection and len(selected) < config.min_selection:
+                    errors['selected_packages'] = [f"Select at least {config.min_selection} package(s)"]
+                if config.max_selection and len(selected) > config.max_selection:
+                    errors['selected_packages'] = [f"Select at most {config.max_selection} package(s)"]
+
+                # Validate selected packages are in available packages (if configured)
+                if config.available_packages.exists():
+                    available_package_ids = list(config.available_packages.all().values_list('id', flat=True))
+                    for package in selected:
+                        if 'product_id' in package and package['product_id'] not in available_package_ids:
+                            errors['selected_packages'] = errors.get('selected_packages', [])
+                            errors['selected_packages'].append(f"Package {package['product_id']} is not available for selection")
+
             elif step.step_type == 'addon_selection':
                 selected = step_data.get('selected_addons', [])
                 if config.min_selection and len(selected) < config.min_selection:

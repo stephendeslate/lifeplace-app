@@ -7,6 +7,9 @@ import { z } from 'zod';
 import type {
   StepType,
   ContactInfoStepConfiguration,
+  VenueSelectionStepConfiguration,
+  PackageSelectionStepConfiguration,
+  AddonSelectionStepConfiguration,
   QuestionnaireField,
 } from '@/types/booking';
 
@@ -411,14 +414,71 @@ export function getStepSchema(stepType: StepType): z.ZodTypeAny {
 }
 
 /**
+ * Configuration types union for type checking
+ */
+type StepConfigurationUnion =
+  | VenueSelectionStepConfiguration
+  | PackageSelectionStepConfiguration
+  | AddonSelectionStepConfiguration
+  | ContactInfoStepConfiguration
+  | Record<string, unknown>;
+
+/**
  * Validate step data
+ * Uses configuration values for steps that have configurable constraints
  */
 export function validateStepData(
   stepType: StepType,
   data: unknown,
-  config?: unknown
+  config?: StepConfigurationUnion
 ): { success: boolean; data?: unknown; errors?: Record<string, string[]> } {
-  const schema = getStepSchema(stepType);
+  let schema: z.ZodTypeAny;
+
+  // Use configuration-aware schemas for steps with configurable constraints
+  switch (stepType) {
+    case 'venue_selection': {
+      const venueConfig = config as VenueSelectionStepConfiguration | undefined;
+      if (venueConfig && typeof venueConfig.min_venues === 'number' && typeof venueConfig.max_venues === 'number') {
+        schema = createVenueSelectionSchema(venueConfig.min_venues, venueConfig.max_venues);
+      } else {
+        // Configuration is required - return error if missing
+        return {
+          success: false,
+          errors: { _configuration: ['Venue selection step is not properly configured (missing min_venues/max_venues)'] },
+        };
+      }
+      break;
+    }
+    case 'package_selection': {
+      const pkgConfig = config as PackageSelectionStepConfiguration | undefined;
+      if (pkgConfig && typeof pkgConfig.min_selection === 'number' && typeof pkgConfig.max_selection === 'number') {
+        schema = createPackageSelectionSchema(pkgConfig.min_selection, pkgConfig.max_selection);
+      } else {
+        schema = packageSelectionSchema;
+      }
+      break;
+    }
+    case 'addon_selection': {
+      const addonConfig = config as AddonSelectionStepConfiguration | undefined;
+      if (addonConfig && typeof addonConfig.min_selection === 'number' && typeof addonConfig.max_selection === 'number') {
+        schema = createAddonSelectionSchema(addonConfig.min_selection, addonConfig.max_selection);
+      } else {
+        schema = addonSelectionSchema;
+      }
+      break;
+    }
+    case 'contact_info': {
+      const contactConfig = config as ContactInfoStepConfiguration | undefined;
+      if (contactConfig) {
+        schema = createContactInfoSchema(contactConfig);
+      } else {
+        schema = contactInfoSchema;
+      }
+      break;
+    }
+    default:
+      schema = getStepSchema(stepType);
+  }
 
   const result = schema.safeParse(data);
 
@@ -429,7 +489,7 @@ export function validateStepData(
   // Transform Zod errors to our format
   const errors: Record<string, string[]> = {};
   for (const issue of result.error.issues) {
-    const path = issue.path.join('.');
+    const path = issue.path.join('.') || 'selected_venue_ids';
     if (!errors[path]) errors[path] = [];
     errors[path].push(issue.message);
   }

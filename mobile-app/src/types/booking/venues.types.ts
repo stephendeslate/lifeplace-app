@@ -157,21 +157,32 @@ export interface VenueSelectionStepData {
 
 /**
  * Venue selection step configuration
+ * Matches backend VenueSelectionStepConfigurationSerializer
  */
 export interface VenueSelectionStepConfiguration {
+  id?: number;
+  step?: number;
   title?: string;
   description?: string;
+  // Available venues - backend sends as available_venues_details
   available_venues?: RentableVenue[];
   available_venues_details?: RentableVenueWithEventType[];
+  // Selection constraints (required - no fallbacks, business must configure)
   min_venues: number;
   max_venues: number;
+  // Display options
   show_pricing: boolean;
   show_included_hours: boolean;
   show_bundle_discount: boolean;
   bundle_discount_percent: number;
   bundle_discount_percentage?: number; // Alias for bundle_discount_percent
+  // Package recommendation settings (from backend)
   show_package_recommendations: boolean;
-  filter_by_event_type: boolean;
+  show_view_packages_option: boolean;
+  view_packages_button_text?: string;
+  // Timestamps
+  created_at?: string;
+  updated_at?: string;
 }
 
 /**
