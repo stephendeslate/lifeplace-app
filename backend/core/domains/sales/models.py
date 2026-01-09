@@ -278,16 +278,14 @@ class QuoteTemplate(BaseModel):
         
         # Add products from template
         for template_product in self.quotetemplateproduct_set.all():
-            # Get tax rate: use product's tax_rate with template/global fallback
+            # Get tax rate: if tax-inclusive use 0, otherwise use template/global default
             product = template_product.product
             if getattr(product, 'is_tax_inclusive', False):
                 tax_rate = Decimal('0')
-            elif product.tax_rate and Decimal(str(product.tax_rate)) > 0:
-                tax_rate = Decimal(str(product.tax_rate))
             elif self.default_tax_rate:
                 tax_rate = self.default_tax_rate.rate
             else:
-                # Fall back to global TaxRate (no hardcoded fallback)
+                # Fall back to global TaxRate
                 from core.domains.payments.models import TaxRate
                 default_tax = TaxRate.objects.filter(is_default=True).first()
                 tax_rate = default_tax.rate if default_tax else Decimal('0')

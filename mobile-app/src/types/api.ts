@@ -169,7 +169,6 @@ export interface ProductOption {
   pricing_model: PricingModel;
   base_price: number;
   currency: string;
-  tax_rate: number;
   is_tax_inclusive: boolean;
   formatted_price: string;
   price_with_tax: number;

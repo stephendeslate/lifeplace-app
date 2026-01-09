@@ -151,8 +151,6 @@ export interface PackagePublic {
   // Pricing behavior
   allow_multiple: boolean;
   requires_approval: boolean;
-  /** Tax rate percentage (e.g., 12.00 for 12% VAT) */
-  tax_rate: string;
   /** If true, base_price already includes tax (no additional VAT) */
   is_tax_inclusive: boolean;
   /** Venues included in this package (for packages only) */

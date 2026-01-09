@@ -2,24 +2,28 @@
  * StepRenderer
  *
  * Dynamic step component router that renders the appropriate step based on step_type.
+ *
+ * Note: Using direct imports instead of React.lazy() because Metro bundler
+ * doesn't fully support dynamic imports/code splitting in React Native.
+ * React.lazy() can cause "Could not load bundle" errors when navigating between steps.
  */
 
-import React, { lazy, Suspense, useMemo } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
+import React, { useMemo } from 'react';
+import { View, Text, StyleSheet } from 'react-native';
 import { colors, spacing, typeScale } from '@/theme';
 import type { BookingFlowStep, StepType } from '@/types/booking';
 
-// Step component imports (lazy loaded for better performance)
-const IntroductionStep = lazy(() => import('./steps/IntroductionStep'));
-const VenueSelectionStep = lazy(() => import('./steps/VenueSelectionStep'));
-const DateTimeStep = lazy(() => import('./steps/DateTimeStep'));
-const PackageSelectionStep = lazy(() => import('./steps/PackageSelectionStep'));
-const AddonSelectionStep = lazy(() => import('./steps/AddonSelectionStep'));
-const QuestionnaireStep = lazy(() => import('./steps/QuestionnaireStep'));
-const PricingSummaryStep = lazy(() => import('./steps/PricingSummaryStep'));
-const ContactInfoStep = lazy(() => import('./steps/ContactInfoStep'));
-const PaymentStep = lazy(() => import('./steps/PaymentStep'));
-const ConfirmationStep = lazy(() => import('./steps/ConfirmationStep'));
+// Step component imports (direct imports - Metro doesn't support lazy loading well)
+import IntroductionStep from './steps/IntroductionStep';
+import VenueSelectionStep from './steps/VenueSelectionStep';
+import DateTimeStep from './steps/DateTimeStep';
+import PackageSelectionStep from './steps/PackageSelectionStep';
+import AddonSelectionStep from './steps/AddonSelectionStep';
+import QuestionnaireStep from './steps/QuestionnaireStep';
+import PricingSummaryStep from './steps/PricingSummaryStep';
+import ContactInfoStep from './steps/ContactInfoStep';
+import PaymentStep from './steps/PaymentStep';
+import ConfirmationStep from './steps/ConfirmationStep';
 
 interface StepRendererProps {
   step: BookingFlowStep;
@@ -33,7 +37,7 @@ interface StepRendererProps {
 }
 
 // Step component mapping
-const STEP_COMPONENTS: Record<StepType, React.LazyExoticComponent<React.ComponentType<any>>> = {
+const STEP_COMPONENTS: Record<StepType, React.ComponentType<any>> = {
   introduction: IntroductionStep,
   venue_selection: VenueSelectionStep,
   date_time: DateTimeStep,
@@ -45,16 +49,6 @@ const STEP_COMPONENTS: Record<StepType, React.LazyExoticComponent<React.Componen
   payment_info: PaymentStep,
   confirmation: ConfirmationStep,
 };
-
-// Loading fallback component
-function StepLoadingFallback() {
-  return (
-    <View style={styles.loadingContainer}>
-      <ActivityIndicator size="large" color={colors.primary.black} />
-      <Text style={styles.loadingText}>Loading step...</Text>
-    </View>
-  );
-}
 
 // Error fallback component
 function StepErrorFallback({ stepType }: { stepType: string }) {
@@ -102,19 +96,17 @@ export function StepRenderer({
   const stepConfiguration = step.configuration_data || step.configuration || {};
 
   return (
-    <Suspense fallback={<StepLoadingFallback />}>
-      <StepComponent
-        step={step}
-        sessionId={sessionId}
-        data={currentStepData}
-        configuration={stepConfiguration}
-        onDataChange={handleDataChange}
-        onValidate={onValidate}
-        onComplete={onComplete}
-        isValidating={isValidating}
-        validationErrors={validationErrors}
-      />
-    </Suspense>
+    <StepComponent
+      step={step}
+      sessionId={sessionId}
+      data={currentStepData}
+      configuration={stepConfiguration}
+      onDataChange={handleDataChange}
+      onValidate={onValidate}
+      onComplete={onComplete}
+      isValidating={isValidating}
+      validationErrors={validationErrors}
+    />
   );
 }
 
@@ -132,17 +124,6 @@ export interface StepComponentProps<TData = Record<string, unknown>, TConfig = R
 }
 
 const styles = StyleSheet.create({
-  loadingContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: spacing.xxl,
-    gap: spacing.md,
-  },
-  loadingText: {
-    ...typeScale.bodyMedium,
-    color: colors.neutral.darkGray,
-  },
   errorContainer: {
     flex: 1,
     alignItems: 'center',

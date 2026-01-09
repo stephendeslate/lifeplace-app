@@ -4,7 +4,7 @@
  * Optional add-on selection with quantity controls.
  * Features:
  * - Venue additional hours management (sync from package step)
- * - Per-addon tax_rate and price_with_tax display
+ * - Tax-inclusive badge display for tax-inclusive items
  * - Validation indicator during validation
  *
  * Adapted from: frontend/client-portal/src/components/booking/steps/AddonSelectionStep.tsx
@@ -176,7 +176,7 @@ export function AddonSelectionStep({
         price: addon.base_price,
         quantity: newQty,
         // Include tax information for proper pricing calculation
-        tax_rate: typeof addon.tax_rate === 'string' ? parseFloat(addon.tax_rate) : addon.tax_rate,
+        is_tax_inclusive: addon.is_tax_inclusive ?? false,
         price_with_tax: addon.price_with_tax,
         category_id: addon.category_id ?? undefined,
       };
@@ -464,12 +464,11 @@ interface AddonCardProps {
 }
 
 function AddonCard({ addon, quantity, onQuantityChange, showTax = false }: AddonCardProps) {
-  const { name, description, thumbnail_url, base_price, tax_rate, price_with_tax } = addon;
+  const { name, description, thumbnail_url, base_price, is_tax_inclusive, price_with_tax } = addon;
   const isSelected = quantity > 0;
 
-  // Calculate tax display
-  const hasTax = showTax && tax_rate && parseFloat(String(tax_rate)) > 0;
-  const taxRateValue = typeof tax_rate === 'string' ? parseFloat(tax_rate) : (tax_rate || 0);
+  // Display tax indicator - show "Tax Incl." badge for tax-inclusive items
+  const showTaxInclusiveBadge = is_tax_inclusive;
   const priceWithTaxValue = price_with_tax ? parseFloat(price_with_tax) : null;
 
   return (
@@ -503,16 +502,16 @@ function AddonCard({ addon, quantity, onQuantityChange, showTax = false }: Addon
 
         <View style={styles.addonFooter}>
           <View style={styles.addonPriceContainer}>
-            <Text style={styles.addonPrice}>
-              {formatCurrency(parseFloat(base_price), { currency: 'PHP' })}
-            </Text>
-            {hasTax && (
-              <Text style={styles.addonTaxText}>
-                {priceWithTaxValue
-                  ? `${formatCurrency(priceWithTaxValue, { currency: 'PHP' })} incl. ${taxRateValue}% tax`
-                  : `+${taxRateValue}% tax`}
+            <View style={styles.addonPriceRow}>
+              <Text style={styles.addonPrice}>
+                {formatCurrency(parseFloat(base_price), { currency: 'PHP' })}
               </Text>
-            )}
+              {showTaxInclusiveBadge && (
+                <View style={styles.taxInclusiveBadge}>
+                  <Text style={styles.taxInclusiveBadgeText}>Tax Incl.</Text>
+                </View>
+              )}
+            </View>
           </View>
 
           {/* Quantity Controls */}
@@ -706,10 +705,30 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginTop: spacing.xs,
   },
+  addonPriceContainer: {
+    flex: 1,
+  },
+  addonPriceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
   addonPrice: {
     ...typeScale.titleSmall,
     color: colors.primary.black,
     fontWeight: '700',
+  },
+  taxInclusiveBadge: {
+    backgroundColor: colors.secondary.forestSubtle,
+    paddingVertical: 2,
+    paddingHorizontal: spacing.xs,
+    borderRadius: layout.borderRadius.xs,
+  },
+  taxInclusiveBadgeText: {
+    ...typeScale.labelSmall,
+    color: colors.secondary.forest,
+    fontWeight: '600',
+    fontSize: 9,
   },
   quantityControls: {
     flexDirection: 'row',
@@ -850,15 +869,6 @@ const styles = StyleSheet.create({
   excessRateText: {
     ...typeScale.labelSmall,
     color: colors.neutral.darkGray,
-  },
-  // Tax display styles
-  addonPriceContainer: {
-    flex: 1,
-  },
-  addonTaxText: {
-    ...typeScale.labelSmall,
-    color: colors.neutral.gray,
-    marginTop: spacing.xxs,
   },
   // Validation indicator
   validatingContainer: {

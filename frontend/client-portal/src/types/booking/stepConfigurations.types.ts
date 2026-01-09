@@ -220,7 +220,7 @@ export interface ProductOption {
   pricing_model_display: string;
   base_price: string;
   currency: string;
-  tax_rate: string;
+  is_tax_inclusive: boolean;
   type: 'PRODUCT' | 'PACKAGE';
   type_display: string;
   is_active: boolean;

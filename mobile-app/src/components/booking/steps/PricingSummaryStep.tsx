@@ -290,7 +290,7 @@ export function PricingSummaryStep({
             </View>
             <View style={styles.sectionHeaderRight}>
               <Text style={styles.sectionTotal}>
-                {pricing?.formattedSubtotal || formatCurrency(
+                {formatCurrency(
                   selectedPackages.reduce((sum, pkg) => sum + parseFloat(pkg.price) * pkg.quantity, 0),
                   { currency: 'PHP' }
                 )}
@@ -315,6 +315,11 @@ export function PricingSummaryStep({
                     {pkg.is_custom_bundle && (
                       <View style={styles.customBundleBadge}>
                         <Text style={styles.customBundleBadgeText}>Custom</Text>
+                      </View>
+                    )}
+                    {pkg.is_tax_inclusive && (
+                      <View style={styles.taxInclusiveBadge}>
+                        <Text style={styles.taxInclusiveBadgeText}>Tax Incl.</Text>
                       </View>
                     )}
                   </View>
@@ -806,6 +811,18 @@ const styles = StyleSheet.create({
     ...typeScale.labelSmall,
     color: colors.tertiary.teal,
     fontWeight: '600',
+  },
+  taxInclusiveBadge: {
+    backgroundColor: colors.accent.wood + '20',
+    paddingHorizontal: spacing.xs,
+    paddingVertical: 2,
+    borderRadius: layout.borderRadius.xs,
+  },
+  taxInclusiveBadgeText: {
+    ...typeScale.labelSmall,
+    color: colors.accent.wood,
+    fontWeight: '600',
+    fontSize: 10,
   },
   promoSection: {
     backgroundColor: colors.neutral.white,

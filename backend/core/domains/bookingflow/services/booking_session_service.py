@@ -1252,10 +1252,9 @@ class BookingSessionService:
         """
         Get appropriate tax rate for a product.
 
-        Priority:
-        1. If tax-inclusive, return 0 (tax already in price)
-        2. Use product's tax_rate if set and > 0
-        3. Fall back to global default TaxRate
+        Logic:
+        - If tax-inclusive, return 0 (tax already in price)
+        - Otherwise, use global default TaxRate
         """
         from core.domains.payments.models import TaxRate
 
@@ -1263,12 +1262,7 @@ class BookingSessionService:
         if getattr(product, 'is_tax_inclusive', False):
             return Decimal('0')
 
-        # Use product's tax_rate if set (priority over global)
-        product_tax_rate = getattr(product, 'tax_rate', None)
-        if product_tax_rate is not None and Decimal(str(product_tax_rate)) > 0:
-            return Decimal(str(product_tax_rate))
-
-        # Fall back to global TaxRate (no hardcoded fallback)
+        # Use global default TaxRate
         default_tax = TaxRate.objects.filter(is_default=True).first()
         return default_tax.rate if default_tax else Decimal('0')
 

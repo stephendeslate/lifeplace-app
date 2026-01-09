@@ -63,7 +63,7 @@ export interface SelectedPackage {
   description?: string;
   price: string;
   quantity: number;
-  tax_rate?: number;
+  is_tax_inclusive?: boolean;
   price_with_tax?: string;
   included_hours?: number | string; // Can be string "All day" for all-day access
   excess_hours?: number;
@@ -100,7 +100,7 @@ export interface SelectedAddon {
   description?: string;
   price: string;
   quantity: number;
-  tax_rate?: number;
+  is_tax_inclusive?: boolean;
   price_with_tax?: string;
   category_id?: number;
   category_name?: string;

@@ -24,7 +24,7 @@ describe('ProductCard', () => {
     description: 'Complete wedding package with all essentials',
     product_type: 'PACKAGE',
     base_price: '25000.00',
-    tax_rate: 12,
+    is_tax_inclusive: false,
     category: 1,
     category_name: 'Wedding Services',
     is_active: true,

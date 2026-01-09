@@ -46,7 +46,7 @@ const defaultFormData: ProductFormData = {
   pricing_model: 'FIXED',
   base_price: '',
   currency: 'PHP',
-  tax_rate: '12.00',
+  is_tax_inclusive: false,
   type: 'PRODUCT',
   is_active: true,
   is_featured: false,
@@ -86,7 +86,7 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
           pricing_model: editingProduct.pricing_model || 'FIXED',
           base_price: editingProduct.base_price || '',
           currency: editingProduct.currency || 'PHP',
-          tax_rate: editingProduct.tax_rate || '12.00',
+          is_tax_inclusive: editingProduct.is_tax_inclusive ?? false,
           type: editingProduct.type || 'PRODUCT',
           is_active: editingProduct.is_active ?? true,
           is_featured: editingProduct.is_featured ?? false,
@@ -193,7 +193,7 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
       pricing_model: formData.pricing_model,
       base_price: formData.base_price,
       currency: formData.currency,
-      tax_rate: formData.tax_rate,
+      is_tax_inclusive: formData.is_tax_inclusive,
       type: formData.type,
       is_active: formData.is_active,
       is_featured: formData.is_featured,
@@ -401,19 +401,22 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
                     />
                   </Box>
                   
-                  <Box flex={1}>
-                    <TextField
-                      fullWidth
-                      label="Tax Rate (%)"
-                      value={formData.tax_rate}
-                      onChange={handleInputChange('tax_rate')}
-                      type="number"
-                      InputProps={{
-                        endAdornment: <InputAdornment position="end">%</InputAdornment>,
-                      }}
+                  <Box flex={1} display="flex" alignItems="center">
+                    <FormControlLabel
+                      control={
+                        <Switch
+                          checked={formData.is_tax_inclusive}
+                          onChange={handleSwitchChange('is_tax_inclusive')}
+                        />
+                      }
+                      label="Tax Inclusive"
                     />
                   </Box>
                 </Box>
+                <Typography variant="caption" color="text.secondary">
+                  If enabled, the base price already includes tax and no additional tax will be applied.
+                  Tax rate is configured globally in Currency & Taxes settings.
+                </Typography>
               </Box>
 
               <Divider sx={{ my: 3 }} />

@@ -38,7 +38,6 @@ import { Skeleton, Button } from '@/components/common';
 import { colors, spacing, typeScale, layout, shadows } from '@/theme';
 import {
   formatPrice,
-  formatTaxRate,
   isPerPersonPricing,
   formatPerPersonRate,
   formatStartingTotal,
@@ -258,7 +257,7 @@ export default function PackageDetailScreen() {
                     <>
                       <View style={styles.priceDivider} />
                       <Text style={styles.vatNote}>
-                        {formatTaxRate(pkg.tax_rate)}% VAT is not included in the prices shown above
+                        VAT is not included in the prices shown above
                       </Text>
                     </>
                   )}

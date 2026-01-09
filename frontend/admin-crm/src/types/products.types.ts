@@ -45,7 +45,6 @@ export interface ProductOption {
   pricing_model_display: string;
   base_price: string;
   currency: string;
-  tax_rate: string;
   is_tax_inclusive: boolean;
   type: ProductType;
   type_display: string;
@@ -77,7 +76,7 @@ export interface CreateProductData {
   pricing_model?: PricingModel;
   base_price: string;
   currency?: string;
-  tax_rate?: string;
+  is_tax_inclusive?: boolean;
   type: ProductType;
   is_active?: boolean;
   is_featured?: boolean;
@@ -105,7 +104,7 @@ export interface ProductFormData {
   pricing_model: PricingModel;
   base_price: string;
   currency: string;
-  tax_rate: string;
+  is_tax_inclusive: boolean;
   type: ProductType;
   is_active: boolean;
   is_featured: boolean;
@@ -216,28 +215,6 @@ export interface ValidateDiscountData {
 }
 
 // Form data interfaces for components
-export interface ProductFormData {
-  name: string;
-  description: string;
-  category: string;
-  pricing_model: PricingModel;
-  base_price: string;
-  currency: string;
-  tax_rate: string;
-  type: ProductType;
-  is_active: boolean;
-  is_featured: boolean;
-  allow_multiple: boolean;
-  requires_approval: boolean;
-  minimum_hours: string;
-  maximum_hours: string;
-  advance_booking_days: string;
-  maximum_booking_days: string;
-  event_days: string;
-  sku: string;
-  sort_order: string;
-}
-
 export interface CategoryFormData {
   name: string;
   description: string;

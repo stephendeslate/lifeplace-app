@@ -146,7 +146,7 @@ export const AddonSelectionStep: React.FC<AddonSelectionStepProps> = ({
         price: addon.base_price,
         quantity: 1,
         // CRITICAL: Include tax information for proper pricing calculation
-        tax_rate: addon.tax_rate, // Individual tax rate from backend
+        is_tax_inclusive: addon.is_tax_inclusive, // Tax-inclusive flag from backend
         price_with_tax: addon.price_with_tax, // Pre-calculated price including tax
       };
 
