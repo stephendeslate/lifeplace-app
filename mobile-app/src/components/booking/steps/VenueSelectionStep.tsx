@@ -38,6 +38,9 @@ import type {
 } from '@/types/booking';
 import * as Haptics from 'expo-haptics';
 
+// Fallback image for venues without a featured image
+const fallbackVenueImage = require('../../../../assets/Fountain-min.png');
+
 type VenueSelectionStepProps = StepComponentProps<VenueSelectionStepData, VenueSelectionStepConfiguration> & {
   /** Whether step is currently being validated */
   isValidating?: boolean;
@@ -384,19 +387,13 @@ function VenueCard({
     >
       {/* Image */}
       <View style={styles.venueImageContainer}>
-        {featured_image ? (
-          <Image
-            source={{ uri: featured_image }}
-            style={styles.venueImage}
-            contentFit="cover"
-            transition={200}
-            cachePolicy="memory-disk"
-          />
-        ) : (
-          <View style={[styles.venueImage, styles.venueImagePlaceholder]}>
-            <MapPin size={32} color={colors.neutral.gray} />
-          </View>
-        )}
+        <Image
+          source={featured_image ? { uri: featured_image } : fallbackVenueImage}
+          style={styles.venueImage}
+          contentFit="cover"
+          transition={200}
+          cachePolicy="memory-disk"
+        />
 
         {is_featured && (
           <View style={styles.featuredBadge}>
@@ -662,10 +659,6 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 160,
     backgroundColor: colors.neutral.sand,
-  },
-  venueImagePlaceholder: {
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   featuredBadge: {
     position: 'absolute',
