@@ -724,12 +724,17 @@ class CustomPackageService:
         }
 
         # Find all pre-made packages (not custom) that include at least one selected venue
-        packages_with_venues = ProductOption.objects.filter(
+        packages_query = ProductOption.objects.filter(
             type='PACKAGE',
             is_active=True,
-            is_bookable=True,
             is_custom=False,  # Only pre-made packages
-        ).prefetch_related(
+        )
+
+        # Filter by event type if provided
+        if event_type_id:
+            packages_query = packages_query.filter(event_types__id=event_type_id)
+
+        packages_with_venues = packages_query.prefetch_related(
             'package_venues__venue'
         ).distinct()
 
@@ -765,12 +770,18 @@ class CustomPackageService:
             # Get package venue details
             package_venues = []
             bonus_venues = []
+            total_included_hours = 0
             for pv in package.package_venues.all():
+                # Use hours_contribution if set, otherwise fall back to access_duration_hours
+                included_hours = pv.hours_contribution or pv.access_duration_hours or 0
+                total_included_hours += included_hours
                 venue_info = {
                     'id': pv.venue.id,
                     'name': pv.venue.name,
+                    'included_hours': included_hours,
+                    'is_included': pv.venue.id in venue_set,  # Frontend expects 'is_included'
                     'is_primary': pv.is_primary,
-                    'is_included_in_selection': pv.venue.id in venue_set,
+                    'is_included_in_selection': pv.venue.id in venue_set,  # Keep for backwards compat
                 }
                 if pv.is_bonus:
                     bonus_venues.append(venue_info)
@@ -782,12 +793,20 @@ class CustomPackageService:
             savings = custom_final_price - package_price if custom_final_price > package_price else Decimal('0')
             savings_percent = (savings / custom_final_price * 100) if custom_final_price > 0 else Decimal('0')
 
+            # Calculate match score (0-100)
+            match_scores = {'exact': 100, 'superset': 80, 'subset': 60, 'partial': 40}
+            match_score = match_scores.get(match_type, 0)
+
             package_data = {
                 'id': package.id,
                 'name': package.name,
                 'description': package.description,
-                'base_price': str(package.base_price),
+                'price': str(package.base_price),  # Frontend expects 'price'
+                'base_price': str(package.base_price),  # Keep for backwards compat
+                'included_hours': total_included_hours,
                 'match_type': match_type,
+                'match_score': match_score,
+                'is_featured': getattr(package, 'is_featured', False),
                 'venues': package_venues,
                 'bonus_venues': bonus_venues,
                 'savings_vs_custom': str(savings),
@@ -811,7 +830,30 @@ class CustomPackageService:
         # Sort partial matches by savings (best value first)
         partial_matches.sort(key=lambda x: Decimal(x['savings_vs_custom']), reverse=True)
 
+        # Combine matches into a single list (exact matches first, then partial)
+        all_packages = exact_matches + partial_matches
+
+        # Determine recommendation
+        if exact_matches and any(p['is_better_value'] for p in exact_matches):
+            recommendation = 'use_package'
+            recommendation_reason = 'An exact match package offers better value than building custom.'
+        elif partial_matches and any(p['is_better_value'] for p in partial_matches):
+            recommendation = 'use_package'
+            recommendation_reason = 'A package with similar venues offers better value.'
+        elif exact_matches or partial_matches:
+            recommendation = 'either'
+            recommendation_reason = 'Both options are competitively priced.'
+        else:
+            recommendation = 'use_custom'
+            recommendation_reason = 'No matching packages found for your venue selection.'
+
         return {
+            # New format expected by mobile app
+            'packages': all_packages,
+            'custom_estimate': custom_package_estimate,
+            'recommendation': recommendation,
+            'recommendation_reason': recommendation_reason,
+            # Keep old format for backwards compatibility
             'exact_matches': exact_matches,
             'partial_matches': partial_matches,
             'custom_package_estimate': custom_package_estimate,

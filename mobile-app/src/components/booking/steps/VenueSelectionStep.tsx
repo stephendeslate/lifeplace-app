@@ -21,7 +21,8 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { Image } from 'expo-image';
-import { Check, MapPin, Users, Clock, Star, Info } from 'phosphor-react-native';
+import { Check, MapPin, Users, Clock, Star } from 'phosphor-react-native';
+import { useQuery } from '@tanstack/react-query';
 import { colors, spacing, typeScale, layout, shadows } from '@/theme';
 import { useRentableVenues } from '@/hooks/booking';
 import { useBookingContext } from '@/contexts/BookingContext';
@@ -33,6 +34,7 @@ import type {
   VenueSelectionStepConfiguration,
   RentableVenue,
   RentableVenueWithEventType,
+  MatchedPackage,
 } from '@/types/booking';
 import * as Haptics from 'expo-haptics';
 
@@ -49,8 +51,23 @@ export function VenueSelectionStep({
   validationErrors,
   isValidating = false,
 }: VenueSelectionStepProps) {
-  const { state } = useBookingContext();
-  const eventTypeId = state.selectedEventType?.id;
+  const { state, actions } = useBookingContext();
+  // Use currentFlow.event_type for consistency with PackageSelectionStep
+  const eventTypeId = state.currentFlow?.event_type;
+
+  // Find package selection step for "View packages" navigation
+  const packageSelectionStepIndex = useMemo(() => {
+    const steps = state.currentFlow?.enabled_steps || [];
+    return steps.findIndex(s => s.step_type === 'package_selection');
+  }, [state.currentFlow?.enabled_steps]);
+
+  // Handle navigation to package selection step
+  const handleViewPackages = useCallback(async () => {
+    if (packageSelectionStepIndex >= 0) {
+      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      await actions.goToStep(packageSelectionStepIndex);
+    }
+  }, [packageSelectionStepIndex, actions]);
 
   const { data: apiVenues, isLoading, error } = useRentableVenues(eventTypeId);
 
@@ -58,17 +75,40 @@ export function VenueSelectionStep({
     data.selected_venue_ids || []
   );
 
-  const {
-    min_venues = 1,
-    max_venues = 1,
-    show_bundle_discount = true,
-    bundle_discount_percentage = 10,
-    show_pricing = true,
-    show_included_hours = true,
-    title = 'Select Your Venue',
-    description,
-    available_venues_details,
-  } = configuration || {};
+  // Configuration is required - these are business-critical values that must be set
+  // If configuration is missing, show an error state instead of using silent fallbacks
+  const isConfigurationValid = configuration &&
+    typeof configuration.min_venues === 'number' &&
+    typeof configuration.max_venues === 'number';
+
+  // Extract configuration values - no fallbacks for required business fields
+  const min_venues = configuration?.min_venues;
+  const max_venues = configuration?.max_venues;
+  const show_bundle_discount = configuration?.show_bundle_discount ?? true;
+  const bundle_discount_percentage = configuration?.bundle_discount_percent ?? configuration?.bundle_discount_percentage ?? 10;
+  const show_pricing = configuration?.show_pricing ?? true;
+  const show_included_hours = configuration?.show_included_hours ?? true;
+  const title = configuration?.title || 'Select Your Venue';
+  const description = configuration?.description;
+  const available_venues_details = configuration?.available_venues_details;
+  const show_package_recommendations = configuration?.show_package_recommendations ?? true;
+  const show_view_packages_option = configuration?.show_view_packages_option ?? true;
+  const view_packages_button_text = configuration?.view_packages_button_text || 'Not sure? View our packages instead';
+
+  // Query for matching packages when venues are selected
+  const { data: matchingPackagesData, isLoading: isLoadingPackages } = useQuery({
+    queryKey: ['matchingPackages', selectedVenueIds, eventTypeId],
+    queryFn: () => VenuesAPI.findMatchingPackages({
+      venue_ids: selectedVenueIds,
+      event_type_id: eventTypeId,
+    }),
+    enabled: selectedVenueIds.length > 0 && show_package_recommendations === true,
+    staleTime: 30000, // Cache for 30 seconds
+    retry: false, // Don't retry on failure
+    throwOnError: false, // Don't throw errors to the crash reporter
+  });
+
+  const matchingPackages = matchingPackagesData?.packages || [];
 
   // Use configured venues if available, otherwise use API-fetched venues
   const venues = useMemo((): RentableVenueWithEventType[] => {
@@ -110,11 +150,27 @@ export function VenueSelectionStep({
   const isVenueSelected = (venueId: number) => selectedVenueIds.includes(venueId);
 
   const getValidationMessage = (): string | null => {
-    if (selectedVenueIds.length < min_venues) {
-      return `Please select at least ${min_venues} venue${min_venues > 1 ? 's' : ''}`;
+    if (!isConfigurationValid) return null;
+    if (selectedVenueIds.length < min_venues!) {
+      return `Please select at least ${min_venues} venue${min_venues! > 1 ? 's' : ''}`;
     }
     return null;
   };
+
+  // Configuration error - business must configure min/max venues
+  if (!isConfigurationValid) {
+    return (
+      <View style={styles.errorContainer}>
+        <Text style={styles.errorTitle}>Configuration Required</Text>
+        <Text style={styles.errorText}>
+          This booking step has not been properly configured. Please contact support.
+        </Text>
+        <Text style={styles.errorDetail}>
+          Missing: min_venues and max_venues configuration
+        </Text>
+      </View>
+    );
+  }
 
   // Only show loading if we don't have config-provided venues
   if (isLoading && !available_venues_details) {
@@ -164,6 +220,18 @@ export function VenueSelectionStep({
         </Text>
       </View>
 
+      {/* View Packages Option */}
+      {show_view_packages_option && packageSelectionStepIndex >= 0 && (
+        <TouchableOpacity
+          style={styles.viewPackagesButton}
+          onPress={handleViewPackages}
+          activeOpacity={0.7}
+        >
+          <Star size={18} color={colors.primary.black} />
+          <Text style={styles.viewPackagesText}>{view_packages_button_text}</Text>
+        </TouchableOpacity>
+      )}
+
       {/* Multi-venue discount banner */}
       {isMultiSelect && show_bundle_discount && selectedVenueIds.length > 1 && (
         <View style={styles.discountBanner}>
@@ -202,7 +270,7 @@ export function VenueSelectionStep({
       {selectedVenueIds.length > 0 && (
         <View style={styles.selectionSummary}>
           <View style={styles.selectionSummaryHeader}>
-            <Info size={18} color={colors.secondary.forest} />
+            <Check size={18} color={colors.secondary.forest} weight="bold" />
             <Text style={styles.selectionSummaryLabel}>Selected:</Text>
           </View>
           <Text style={styles.selectionSummaryText}>
@@ -211,6 +279,47 @@ export function VenueSelectionStep({
           <Text style={styles.selectionSummaryHint}>
             You'll choose your package in the next step.
           </Text>
+        </View>
+      )}
+
+      {/* Matching Package Recommendations */}
+      {show_package_recommendations && selectedVenueIds.length > 0 && matchingPackages.length > 0 && (
+        <View style={styles.recommendationsContainer}>
+          <Text style={styles.recommendationsTitle}>
+            Matching Packages Found
+          </Text>
+          <Text style={styles.recommendationsSubtitle}>
+            These pre-made packages include your selected venues
+          </Text>
+          {isLoadingPackages ? (
+            <ActivityIndicator size="small" color={colors.primary.black} style={{ marginVertical: spacing.md }} />
+          ) : (
+            matchingPackages.slice(0, 3).map((pkg: MatchedPackage) => (
+              <View key={pkg.id} style={styles.packageCard}>
+                <View style={styles.packageHeader}>
+                  <Text style={styles.packageName}>{pkg.name}</Text>
+                  <Text style={styles.packagePrice}>{formatCurrency(pkg.price)}</Text>
+                </View>
+                {pkg.description && (
+                  <Text style={styles.packageDescription} numberOfLines={2}>
+                    {pkg.description}
+                  </Text>
+                )}
+                <View style={styles.packageMeta}>
+                  <Text style={styles.packageMatchType}>
+                    {pkg.match_type === 'exact' ? 'Exact match' :
+                     pkg.match_type === 'superset' ? 'Includes extra venues' :
+                     'Partial match'}
+                  </Text>
+                  {pkg.savings_vs_custom && parseFloat(pkg.savings_vs_custom) > 0 && (
+                    <Text style={styles.packageSavings}>
+                      Save {formatCurrency(pkg.savings_vs_custom)}
+                    </Text>
+                  )}
+                </View>
+              </View>
+            ))
+          )}
         </View>
       )}
 
@@ -412,6 +521,13 @@ const styles = StyleSheet.create({
     color: colors.neutral.darkGray,
     textAlign: 'center',
   },
+  errorDetail: {
+    ...typeScale.labelSmall,
+    color: colors.semantic.error,
+    textAlign: 'center',
+    marginTop: spacing.sm,
+    fontFamily: 'monospace',
+  },
   header: {
     marginBottom: spacing.lg,
   },
@@ -423,6 +539,83 @@ const styles = StyleSheet.create({
   subtitle: {
     ...typeScale.bodyMedium,
     color: colors.neutral.darkGray,
+  },
+  viewPackagesButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    marginBottom: spacing.lg,
+    backgroundColor: colors.neutral.cream,
+    borderRadius: layout.borderRadius.md,
+    borderWidth: 1,
+    borderColor: colors.neutral.warmGray,
+    borderStyle: 'dashed',
+  } as const,
+  viewPackagesText: {
+    ...typeScale.labelMedium,
+    color: colors.primary.black,
+  },
+  // Package recommendations styles
+  recommendationsContainer: {
+    backgroundColor: colors.neutral.sand,
+    borderRadius: layout.borderRadius.lg,
+    padding: spacing.lg,
+    marginTop: spacing.lg,
+    marginBottom: spacing.md,
+  },
+  recommendationsTitle: {
+    ...typeScale.titleSmall,
+    color: colors.primary.black,
+    marginBottom: spacing.xs,
+  },
+  recommendationsSubtitle: {
+    ...typeScale.bodySmall,
+    color: colors.neutral.darkGray,
+    marginBottom: spacing.md,
+  },
+  packageCard: {
+    backgroundColor: colors.neutral.white,
+    borderRadius: layout.borderRadius.md,
+    padding: spacing.md,
+    marginBottom: spacing.sm,
+    ...shadows.sm,
+  },
+  packageHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.xs,
+  },
+  packageName: {
+    ...typeScale.labelLarge,
+    color: colors.primary.black,
+    flex: 1,
+  },
+  packagePrice: {
+    ...typeScale.titleSmall,
+    color: colors.secondary.forest,
+  },
+  packageDescription: {
+    ...typeScale.bodySmall,
+    color: colors.neutral.darkGray,
+    marginBottom: spacing.sm,
+  },
+  packageMeta: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  packageMatchType: {
+    ...typeScale.labelSmall,
+    color: colors.neutral.gray,
+  },
+  packageSavings: {
+    ...typeScale.labelSmall,
+    color: colors.secondary.forest,
+    fontWeight: '600',
   },
   discountBanner: {
     flexDirection: 'row',

@@ -337,7 +337,7 @@ export function PackageSelectionStep({
     show_pricing = true,
     show_descriptions = true,
     show_images = true,
-    filter_by_event_type = false,
+    filter_by_event_type = true, // Default to true - filter packages by event type
   } = configuration || {};
 
   // Get event type ID from flow (event_type is the ID directly)
