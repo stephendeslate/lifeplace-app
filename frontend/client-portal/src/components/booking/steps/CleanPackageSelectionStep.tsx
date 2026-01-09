@@ -688,6 +688,10 @@ const CleanPackageSelectionStep: React.FC<CleanPackageSelectionStepProps> = ({
     } as ProductOption;
   }, [customBundlePricing, selectedVenues, isMultiVenue]);
 
+  // Get filter_by_event_type from config (default to true for event-type-specific filtering)
+  const filterByEventType = config?.filter_by_event_type ?? true;
+  const effectiveEventTypeId = filterByEventType ? eventTypeId : undefined;
+
   useEffect(() => {
     const loadPackages = async () => {
       setIsLoading(true);
@@ -700,13 +704,13 @@ const CleanPackageSelectionStep: React.FC<CleanPackageSelectionStepProps> = ({
         }
         // Priority 2: Filter by configured categories
         else if (config?.available_categories?.length) {
-          const allPackages = await ProductsApi.getPackages();
+          const allPackages = await ProductsApi.getPackages(effectiveEventTypeId);
           const categoryIds = new Set(config.available_categories);
           packages = allPackages.filter(pkg => categoryIds.has(pkg.category));
         }
-        // Priority 3: No config - fetch all packages (backward compatibility)
+        // Priority 3: No config - fetch packages filtered by event type
         else {
-          packages = await ProductsApi.getPackages();
+          packages = await ProductsApi.getPackages(effectiveEventTypeId);
         }
 
         setAvailablePackages(Array.isArray(packages) ? packages : []);
@@ -719,7 +723,7 @@ const CleanPackageSelectionStep: React.FC<CleanPackageSelectionStepProps> = ({
     };
 
     loadPackages();
-  }, [config?.available_packages_details, config?.available_categories]);
+  }, [config?.available_packages_details, config?.available_categories, effectiveEventTypeId]);
 
   // Helper to build complete data with venue hours (same pattern as AddonSelectionStep)
   const buildCompleteData = useCallback((packages: SelectedPackage[]): PackageSelectionStepData => {

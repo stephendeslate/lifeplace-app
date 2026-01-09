@@ -65,6 +65,8 @@ export interface PackageSelectionStepConfiguration extends StepConfiguration {
   enable_comparison: boolean;
   enable_dynamic_pricing: boolean;
   pricing_factors: Record<string, string | number | boolean>;
+  /** When true, filter packages by the booking flow's event type. Default: true */
+  filter_by_event_type?: boolean;
 }
 
 export interface AddonSelectionStepConfiguration extends StepConfiguration {

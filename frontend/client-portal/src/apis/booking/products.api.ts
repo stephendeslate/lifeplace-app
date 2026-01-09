@@ -49,19 +49,27 @@ export class ProductsApi {
 
   /**
    * Get packages only (type = 'PACKAGE')
+   * @param eventTypeId - Optional event type ID to filter packages.
+   *                      If provided, only packages associated with this event type are returned.
+   *                      Packages with no event types are excluded when filtering.
    */
-  static async getPackages(): Promise<ProductOption[]> {
+  static async getPackages(eventTypeId?: number): Promise<ProductOption[]> {
+    const params: Record<string, unknown> = {
+      is_active: true,
+      type: 'PACKAGE'
+    };
+
+    // Add event_type_id filter if provided
+    if (eventTypeId !== undefined && eventTypeId !== null) {
+      params.event_type_id = eventTypeId;
+    }
+
     const response = await api.get<{
       count: number;
       next: string | null;
       previous: string | null;
       results: ProductOption[];
-    }>('/products/products/', {  // Fixed: changed from /options/ to /products/
-      params: { 
-        is_active: true,
-        type: 'PACKAGE'
-      }
-    });
+    }>('/products/products/', { params });
     // Handle paginated response structure
     return response.data.results || [];
   }
