@@ -24,8 +24,8 @@ class ProductCategoryAdmin(admin.ModelAdmin):
 
 @admin.register(ProductOption)
 class ProductOptionAdmin(admin.ModelAdmin):
-    list_display = ('name', 'category', 'type', 'pricing_model', 'formatted_price', 'is_active', 'is_featured')
-    list_filter = ('type', 'pricing_model', 'is_active', 'is_featured', 'category', 'requires_approval')
+    list_display = ('name', 'category', 'type', 'pricing_model', 'formatted_price', 'is_tax_inclusive', 'is_active', 'is_featured')
+    list_filter = ('type', 'pricing_model', 'is_active', 'is_featured', 'is_tax_inclusive', 'category', 'requires_approval')
     search_fields = ('name', 'description', 'sku')
     list_editable = ('is_active', 'is_featured')
     ordering = ('category__sort_order', 'sort_order', 'name')
@@ -35,7 +35,8 @@ class ProductOptionAdmin(admin.ModelAdmin):
             'fields': ('name', 'description', 'category', 'type')
         }),
         ('Pricing', {
-            'fields': ('pricing_model', 'base_price', 'currency', 'tax_rate')
+            'fields': ('pricing_model', 'base_price', 'currency', 'is_tax_inclusive'),
+            'description': 'If "Tax Inclusive" is checked, the base price already includes tax and no additional tax will be applied. Tax rate is configured globally in Currency & Taxes settings.'
         }),
         ('Configuration', {
             'fields': ('is_active', 'is_featured', 'allow_multiple', 'requires_approval')

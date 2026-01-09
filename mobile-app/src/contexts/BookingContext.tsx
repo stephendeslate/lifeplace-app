@@ -712,7 +712,8 @@ export function BookingProvider({ children }: BookingProviderProps) {
   const checkForRecoverableSession = useCallback(async () => {
     try {
       const recoverable = await getRecoverableSession();
-      if (recoverable && !isSessionExpired(recoverable.expires_at)) {
+      // Only show recovery prompt if there's actual progress (> 0%)
+      if (recoverable && !isSessionExpired(recoverable.expires_at) && recoverable.progress_percentage > 0) {
         dispatch({
           type: 'SET_RECOVERABLE_SESSION',
           payload: {

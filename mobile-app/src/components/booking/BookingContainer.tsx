@@ -75,8 +75,22 @@ export function BookingContainer({
   const [showError, setShowError] = useState(false);
   const navigation = useNavigation();
 
-  // Check if user has unsaved progress
-  const hasUnsavedProgress = currentSession && progress.currentStepIndex > 0;
+  // Get current step early for completion check
+  const currentStep = currentFlow?.enabled_steps[progress.currentStepIndex];
+  const steps = currentFlow?.enabled_steps || [];
+
+  // Check if booking is completed (on confirmation step with completed status)
+  const confirmationData = state.stepData.confirmation as ConfirmationStepData | undefined;
+  const isBookingCompleted = currentStep?.step_type === 'confirmation' && confirmationData?.completion_status === 'completed';
+
+  // Check if user has unsaved progress (but not if booking is completed)
+  const hasUnsavedProgress = currentSession && progress.currentStepIndex > 0 && !isBookingCompleted;
+
+  // Navigate directly to home screen
+  const navigateToHome = useCallback(() => {
+    actions.resetBooking();
+    router.replace('/(tabs)' as Href);
+  }, [actions]);
 
   // Prevent accidental navigation away with back gesture/button
   useEffect(() => {
@@ -98,18 +112,14 @@ export function BookingContainer({
           {
             text: 'Exit',
             style: 'destructive',
-            onPress: () => navigation.dispatch(e.data.action),
+            onPress: () => navigateToHome(),
           },
         ]
       );
     });
 
     return unsubscribe;
-  }, [navigation, hasUnsavedProgress]);
-
-  // Get current step
-  const currentStep = currentFlow?.enabled_steps[progress.currentStepIndex];
-  const steps = currentFlow?.enabled_steps || [];
+  }, [navigation, hasUnsavedProgress, navigateToHome]);
 
   // Generate breadcrumb items from steps
   const breadcrumbItems: BreadcrumbItem[] = steps.map((step, index) => ({
@@ -309,16 +319,14 @@ export function BookingContainer({
         {/* Navigation Footer */}
         {customFooter || (showNavigation && (() => {
           const isConfirmationStep = currentStep?.step_type === 'confirmation';
-          const confirmationData = state.stepData.confirmation as ConfirmationStepData | undefined;
-          const completionStatus = confirmationData?.completion_status || 'pending';
 
           // On confirmation step: show Back only when pending/processing, show "Return Home" when completed
           if (isConfirmationStep) {
-            if (completionStatus === 'completed') {
+            if (isBookingCompleted) {
               return (
                 <BookingNavigation
                   onBack={handleBack}
-                  onNext={handleClose}
+                  onNext={navigateToHome}
                   canGoBack={false}
                   canGoNext={true}
                   canSkip={false}

@@ -81,7 +81,6 @@ class ProductOption(BaseModel):
     pricing_model = models.CharField(max_length=10, choices=PRICING_MODEL_CHOICES, default='FIXED')
     base_price = models.DecimalField(max_digits=15, decimal_places=2)
     currency = models.CharField(max_length=3, default='PHP')
-    tax_rate = models.DecimalField(max_digits=5, decimal_places=2, default=12.00)
     is_tax_inclusive = models.BooleanField(
         default=False,
         help_text="If True, base_price already includes tax (no additional tax applied)"
@@ -177,10 +176,20 @@ class ProductOption(BaseModel):
     
     @property
     def price_with_tax(self):
-        """Calculate price including tax"""
+        """Calculate price including tax using global default tax rate"""
+        from core.domains.payments.models import TaxRate
+
         if self.pricing_model == 'CUSTOM':
             return None
-        tax_multiplier = 1 + (self.tax_rate / 100)
+
+        # If tax-inclusive, price already includes tax
+        if self.is_tax_inclusive:
+            return self.base_price
+
+        # Get global default tax rate
+        default_tax = TaxRate.objects.filter(is_default=True).first()
+        tax_rate = default_tax.rate if default_tax else 0
+        tax_multiplier = 1 + (tax_rate / 100)
         return self.base_price * tax_multiplier
 
 

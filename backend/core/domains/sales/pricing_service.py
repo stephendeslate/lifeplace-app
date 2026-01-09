@@ -27,13 +27,12 @@ def get_tax_rate_for_product(product) -> Decimal:
     """
     Get appropriate tax rate for a product/addon.
 
-    Priority:
-    1. If tax-inclusive, return 0 (tax already in price)
-    2. Use product's tax_rate if set and > 0
-    3. Fall back to global default TaxRate
+    Logic:
+    - If tax-inclusive, return 0 (tax already in price)
+    - Otherwise, use global default TaxRate
 
     Args:
-        product: ProductOption instance with tax_rate and is_tax_inclusive fields
+        product: ProductOption instance with is_tax_inclusive field
 
     Returns:
         Decimal: The applicable tax rate percentage (e.g., 12.00 for 12%)
@@ -42,12 +41,7 @@ def get_tax_rate_for_product(product) -> Decimal:
     if getattr(product, 'is_tax_inclusive', False):
         return Decimal('0')
 
-    # Use product's tax_rate if set (priority over global)
-    product_tax_rate = getattr(product, 'tax_rate', None)
-    if product_tax_rate is not None and Decimal(str(product_tax_rate)) > 0:
-        return Decimal(str(product_tax_rate))
-
-    # Fall back to global default
+    # Use global default tax rate
     return get_default_tax_rate()
 
 
@@ -608,6 +602,7 @@ class PricingCalculationService:
         """
         if not breakdown.line_items:
             breakdown.tax_amount = Decimal('0.00')
+            breakdown.tax_rate = Decimal('0.00')
             return
 
         # Calculate discount ratio to apply proportionally
@@ -616,8 +611,11 @@ class PricingCalculationService:
         if breakdown.subtotal > 0:
             discount_ratio = total_discount / breakdown.subtotal
 
-        # Calculate tax per line item
+        # Calculate tax per line item and track weighted tax rate
         total_tax = Decimal('0.00')
+        weighted_tax_rate_sum = Decimal('0.00')
+        total_taxable_amount = Decimal('0.00')
+
         for item in breakdown.line_items:
             # Item's taxable amount after proportional discount
             item_discount = (item.line_total * discount_ratio).quantize(Decimal('0.01'))
@@ -627,12 +625,23 @@ class PricingCalculationService:
             item_tax = (item_taxable * (item.tax_rate / 100)).quantize(Decimal('0.01'))
             total_tax += item_tax
 
+            # Track for weighted average tax rate calculation
             if item.tax_rate > 0:
+                weighted_tax_rate_sum += item_taxable * item.tax_rate
+                total_taxable_amount += item_taxable
                 logger.info(
                     f"Item tax: {item.name} - taxable ₱{item_taxable} @ {item.tax_rate}% = ₱{item_tax}"
                 )
 
         breakdown.tax_amount = total_tax
+
+        # Calculate effective tax rate for display
+        # Use weighted average if there are taxable items, otherwise use global default
+        if total_taxable_amount > 0:
+            breakdown.tax_rate = (weighted_tax_rate_sum / total_taxable_amount).quantize(Decimal('0.01'))
+        else:
+            # All items are tax-inclusive, use global default for display
+            breakdown.tax_rate = get_default_tax_rate()
 
         # Recalculate total
         breakdown.total_amount = (
@@ -643,7 +652,7 @@ class PricingCalculationService:
             + breakdown.tax_amount
         )
 
-        logger.info(f"Per-item tax calculated: ₱{breakdown.tax_amount}")
+        logger.info(f"Per-item tax calculated: ₱{breakdown.tax_amount} (effective rate: {breakdown.tax_rate}%)")
 
     @staticmethod
     def calculate_pricing_breakdown(pricing_line_items: List[PricingLineItem]) -> PricingBreakdown:

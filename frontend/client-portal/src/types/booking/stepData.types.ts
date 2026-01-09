@@ -24,7 +24,7 @@ export interface SelectedPackage {
   name: string;
   price: string; // base price as string
   quantity: number;
-  tax_rate?: string; // individual tax rate as percentage string (e.g., "0.00", "12.00")
+  is_tax_inclusive?: boolean; // If true, price already includes tax
   price_with_tax?: string; // pre-calculated price including tax
   is_custom_bundle?: boolean; // True if this is a custom bundle, not a pre-made package
   venue_ids?: number[]; // Venue IDs for custom bundle (to create on backend)
@@ -45,7 +45,7 @@ export interface SelectedAddon {
   price: string; // base price as string
   quantity: number;
   // Enhanced fields for proper tax calculation
-  tax_rate?: string; // individual tax rate as percentage string (e.g., "12.00")
+  is_tax_inclusive?: boolean; // If true, price already includes tax
   price_with_tax?: string; // pre-calculated price including tax
 }
 
@@ -209,7 +209,7 @@ export interface ProductOption {
   description: string;
   product_type: 'PACKAGE' | 'PRODUCT';
   base_price: string;
-  tax_rate: number | null;
+  is_tax_inclusive: boolean;
   category: number;
   category_name?: string;
   is_active: boolean;

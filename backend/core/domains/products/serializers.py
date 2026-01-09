@@ -92,8 +92,8 @@ class ProductOptionSerializer(serializers.ModelSerializer):
         model = ProductOption
         fields = [
             'id', 'name', 'description', 'category', 'category_name', 'category_path',
-            'pricing_model', 'pricing_model_display', 'base_price', 'currency', 'tax_rate',
-            'is_tax_inclusive',  # Critical: indicates if base_price already includes tax
+            'pricing_model', 'pricing_model_display', 'base_price', 'currency',
+            'is_tax_inclusive',  # Indicates if base_price already includes tax
             'type', 'type_display', 'is_active', 'is_featured', 'allow_multiple', 'requires_approval',
             'minimum_hours', 'maximum_hours', 'advance_booking_days', 'maximum_booking_days',
             'event_days', 'minimum_guests', 'maximum_guests',

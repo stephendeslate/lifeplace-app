@@ -38,7 +38,7 @@ export interface ProductOption {
   category_name: string | null;
   base_price: string;
   price_with_tax?: string;
-  tax_rate: string;
+  is_tax_inclusive: boolean;
   currency: string;
   pricing_model: 'FIXED' | 'HOURLY' | 'DAILY' | 'CUSTOM';
   unit_label: string | null;

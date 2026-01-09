@@ -105,7 +105,7 @@ export const selectedPackageSchema = z.object({
   name: z.string(),
   price: z.string(),
   quantity: z.number().min(1),
-  tax_rate: z.number().optional(),
+  is_tax_inclusive: z.boolean().optional(),
   price_with_tax: z.string().optional(),
   included_hours: z.number().optional(),
   excess_hours: z.number().optional(),
@@ -143,7 +143,7 @@ export const selectedAddonSchema = z.object({
   name: z.string(),
   price: z.string(),
   quantity: z.number().min(1),
-  tax_rate: z.number().optional(),
+  is_tax_inclusive: z.boolean().optional(),
   price_with_tax: z.string().optional(),
   category_id: z.number().optional(),
 });

@@ -46,13 +46,12 @@ def get_tax_rate_for_product(product):
     """
     Get appropriate tax rate for a product.
 
-    Priority:
-    1. If tax-inclusive, return 0 (tax already in price)
-    2. Use product's tax_rate if set and > 0
-    3. Fall back to global default TaxRate
+    Logic:
+    - If tax-inclusive, return 0 (tax already in price)
+    - Otherwise, use global default TaxRate
 
     Args:
-        product: ProductOption instance or dict with tax fields
+        product: ProductOption instance with is_tax_inclusive field
 
     Returns:
         Decimal: The applicable tax rate percentage
@@ -61,12 +60,7 @@ def get_tax_rate_for_product(product):
     if getattr(product, 'is_tax_inclusive', False):
         return Decimal('0')
 
-    # Use product's tax_rate if set (priority over global)
-    product_tax_rate = getattr(product, 'tax_rate', None)
-    if product_tax_rate is not None and Decimal(str(product_tax_rate)) > 0:
-        return Decimal(str(product_tax_rate))
-
-    # Fall back to global default
+    # Use global default tax rate
     return get_default_tax_rate()
 
 

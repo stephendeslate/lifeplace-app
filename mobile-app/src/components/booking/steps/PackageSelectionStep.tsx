@@ -195,6 +195,7 @@ function PackageCard({
     included_hours,
     excess_hour_price,
     has_excess_hours,
+    is_tax_inclusive,
   } = pkg;
 
   // Use effective_featured_image (inherits from venue) or fall back to thumbnail_url
@@ -267,9 +268,16 @@ function PackageCard({
         {showPricing && (
           <View style={styles.packagePricing}>
             <View>
-              <Text style={[styles.packagePrice, isCustomBundle && styles.packagePriceCustom]}>
-                {formatCurrency(parseFloat(base_price), { currency: 'PHP' })}
-              </Text>
+              <View style={styles.priceRow}>
+                <Text style={[styles.packagePrice, isCustomBundle && styles.packagePriceCustom]}>
+                  {formatCurrency(parseFloat(base_price), { currency: 'PHP' })}
+                </Text>
+                {is_tax_inclusive && (
+                  <View style={styles.taxInclusiveBadge}>
+                    <Text style={styles.taxInclusiveBadgeText}>Tax Incl.</Text>
+                  </View>
+                )}
+              </View>
               <Text style={styles.packagePriceUnit}>
                 {pricing_model === 'HOURLY' ? 'per hour' : 'per event'}
               </Text>
@@ -533,7 +541,7 @@ export function PackageSelectionStep({
           name: pkg.name,
           price: pkg.base_price,
           quantity: 1,
-          tax_rate: parseFloat(pkg.tax_rate || '0'),
+          is_tax_inclusive: pkg.is_tax_inclusive ?? false,
           included_hours: pkg.included_hours ?? undefined,
           excess_hour_rate: pkg.excess_hour_price ?? undefined,
         };
@@ -1026,6 +1034,11 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: colors.neutral.warmGray,
   },
+  priceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   packagePrice: {
     ...typeScale.titleLarge,
     color: colors.primary.black,
@@ -1033,6 +1046,18 @@ const styles = StyleSheet.create({
   },
   packagePriceCustom: {
     color: colors.tertiary.teal,
+  },
+  taxInclusiveBadge: {
+    backgroundColor: colors.accent.wood,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  taxInclusiveBadgeText: {
+    ...typeScale.labelSmall,
+    color: colors.neutral.white,
+    fontWeight: '600',
+    fontSize: 10,
   },
   packagePriceUnit: {
     ...typeScale.labelSmall,
