@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { settingsApi } from '../apis/settings.api';
 import { useToastActions } from '../contexts/ToastContext';
 import { useAuth } from '../contexts/AuthContext';
-import type { AccountSettingsFormData, PasswordChangeFormData } from '../types/settings.types';
+import type { AccountSettingsFormData, PasswordChangeFormData, CompanySettingsUpdateData } from '../types/settings.types';
 
 interface ApiError {
   response?: {
@@ -154,5 +154,55 @@ export const useAdminUsers = () => {
     // Utility functions
     refetchAdminUsers: adminUsersQuery.refetch,
     refetchInvitations: invitationsQuery.refetch,
+  };
+};
+
+/**
+ * Hook for company settings management
+ */
+export const useCompanySettings = () => {
+  const queryClient = useQueryClient();
+  const { showSuccess, showError } = useToastActions();
+
+  // Get company settings query
+  const companySettingsQuery = useQuery({
+    queryKey: ['companySettings'],
+    queryFn: settingsApi.getCompanySettings,
+    retry: 1,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+
+  // Update company settings mutation
+  const updateCompanySettingsMutation = useMutation({
+    mutationFn: (data: CompanySettingsUpdateData) => settingsApi.updateCompanySettings(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['companySettings'] });
+      showSuccess('Settings Updated', 'Company settings have been updated successfully.');
+    },
+    onError: (error: ApiError) => {
+      const message = error.response?.data?.detail || 'Failed to update company settings';
+      showError('Update Failed', message);
+    },
+  });
+
+  return {
+    // Query data
+    companySettings: companySettingsQuery.data,
+
+    // Loading states
+    isLoading: companySettingsQuery.isLoading,
+    isUpdating: updateCompanySettingsMutation.isPending,
+
+    // Error states
+    error: companySettingsQuery.error,
+    updateError: updateCompanySettingsMutation.error,
+
+    // Mutations
+    updateCompanySettings: updateCompanySettingsMutation.mutate,
+    updateCompanySettingsAsync: updateCompanySettingsMutation.mutateAsync,
+
+    // Utility functions
+    refetch: companySettingsQuery.refetch,
+    resetUpdateError: updateCompanySettingsMutation.reset,
   };
 };
