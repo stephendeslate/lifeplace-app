@@ -44,9 +44,14 @@ class WorkflowStage(BaseModel):
     is_automated = models.BooleanField(default=False)
     automation_type = models.CharField(max_length=50, choices=AUTOMATION_TYPE_CHOICES, blank=True)
     trigger_time = models.CharField(
-        max_length=255, 
+        max_length=255,
         blank=True,
-        help_text="When to trigger automation (ON_CREATION, AFTER_1_DAY, AFTER_3_DAYS, etc.)"
+        help_text=(
+            "When to trigger automation. Supported formats: "
+            "ON_CREATION (immediate), "
+            "AFTER_X_DAYS/AFTER_X_HOURS/AFTER_X_WEEKS (delay after stage start), "
+            "X_DAYS_BEFORE_EVENT (e.g., 30_DAYS_BEFORE_EVENT, 7_DAYS_BEFORE_EVENT)"
+        )
     )
     email_template = models.ForeignKey('communications.CommunicationTemplate', on_delete=models.SET_NULL, null=True, blank=True)
     task_description = models.TextField(blank=True)

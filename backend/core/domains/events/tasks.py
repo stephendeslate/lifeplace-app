@@ -486,3 +486,215 @@ def send_hold_expiring_reminder(self, event_id: int):
     except Exception as e:
         logger.error(f"Error sending hold reminder: {e}")
         raise
+
+
+# ============================================================
+# EVENT DATE REMINDER TASKS
+# ============================================================
+
+@shared_task(
+    bind=True,
+    max_retries=3,
+    default_retry_delay=60,
+)
+def send_event_date_reminder(self, event_id: int, days_before_event: int):
+    """
+    Send a reminder email to the client about their upcoming event.
+
+    Uses the reminder_email_template configured on the event's booking flow.
+    Creates an EventDateReminder record to prevent duplicate sends.
+
+    Args:
+        event_id: ID of the event
+        days_before_event: Number of days before event this reminder is for
+    """
+    from datetime import timedelta
+    from django.utils import timezone
+    from .models import Event, EventDateReminder
+    from core.domains.bookingflow.models import BookingSession
+    from core.domains.communications.services import CommunicationService
+    from core.domains.communications.context_service import (
+        CommunicationContextService, ContextType
+    )
+    from core.domains.notifications.services import NotificationService
+
+    try:
+        event = Event.objects.select_related(
+            'client', 'event_type', 'venue'
+        ).get(id=event_id)
+
+        # Skip if event is cancelled
+        if event.status == 'CANCELLED':
+            logger.info(f"Skipping event date reminder for event {event_id}: cancelled")
+            return {'status': 'skipped', 'reason': 'event_cancelled'}
+
+        # Check if reminder was already sent for this interval
+        if EventDateReminder.objects.filter(event=event, days_before=days_before_event).exists():
+            logger.info(
+                f"Skipping event date reminder for event {event_id}: "
+                f"already sent for {days_before_event} days"
+            )
+            return {'status': 'skipped', 'reason': 'already_sent'}
+
+        client = event.client
+        if not client:
+            logger.warning(f"Event {event_id} has no client")
+            return {'status': 'skipped', 'reason': 'no_client'}
+
+        # Get the booking flow via BookingSession
+        booking_session = BookingSession.objects.filter(
+            created_event=event
+        ).select_related('booking_flow__reminder_email_template').first()
+
+        if not booking_session or not booking_session.booking_flow:
+            logger.info(f"No booking flow found for event {event_id}")
+            return {'status': 'skipped', 'reason': 'no_booking_flow'}
+
+        reminder_template = booking_session.booking_flow.reminder_email_template
+        if not reminder_template:
+            logger.info(
+                f"No reminder template configured for booking flow "
+                f"{booking_session.booking_flow.id} ('{booking_session.booking_flow.name}')"
+            )
+            return {'status': 'skipped', 'reason': 'no_reminder_template'}
+
+        # Generate context for the email
+        context_data = CommunicationContextService.generate_context(
+            context_type=ContextType.EVENT,
+            client=client,
+            event=event,
+        )
+        context_data['days_until_event'] = days_before_event
+
+        # Send email using the configured reminder template
+        comm_service = CommunicationService()
+        record = comm_service.send_communication_by_template(
+            template=reminder_template,
+            recipient=client.email,
+            context_data=context_data,
+            client=client,
+            event=event,
+        )
+
+        communication_record_id = None
+        if record:
+            communication_record_id = record.id
+
+            # Record that reminder was sent
+            EventDateReminder.objects.create(
+                event=event,
+                days_before=days_before_event,
+                communication_record_id=communication_record_id
+            )
+
+            # Also create in-app notification
+            event_name = event.name or f"Event on {event.start_date.strftime('%B %d, %Y')}"
+            NotificationService.create_notification(
+                recipient=client,
+                notification_type='EVENT_REMINDER',
+                title=f'Upcoming Event Reminder - {days_before_event} day(s)',
+                message=(
+                    f'Your event "{event_name}" is scheduled for '
+                    f'{event.start_date.strftime("%B %d, %Y at %I:%M %p")}. '
+                    f'We look forward to seeing you!'
+                ),
+                related_event=event,
+                priority='HIGH' if days_before_event <= 1 else 'NORMAL',
+                channels=['IN_APP']
+            )
+
+            logger.info(
+                f"Sent event date reminder for event {event_id} "
+                f"({days_before_event} days before)"
+            )
+            return {
+                'status': 'sent',
+                'event_id': event_id,
+                'days_before': days_before_event,
+                'communication_record_id': str(communication_record_id) if communication_record_id else None
+            }
+        else:
+            logger.warning(f"Email send returned no record for event {event_id}")
+            return {'status': 'failed', 'reason': 'email_send_failed'}
+
+    except Event.DoesNotExist:
+        logger.warning(f"Event {event_id} not found for event date reminder")
+        return {'status': 'error', 'reason': 'event_not_found'}
+    except Exception as e:
+        logger.error(f"Error sending event date reminder for event {event_id}: {e}")
+        raise  # Let Celery retry
+
+
+@shared_task(
+    bind=True,
+    max_retries=1,
+)
+def schedule_event_date_reminders(self):
+    """
+    Daily task to schedule event date reminders.
+
+    Finds events with start_date in the configured reminder windows
+    (7, 3, 1 days before) and schedules reminder notifications.
+
+    Called daily via Celery beat.
+    """
+    from datetime import timedelta
+    from django.utils import timezone
+    from .models import Event, EventDateReminder
+    from core.domains.bookingflow.models import BookingSession
+
+    logger.info("Scheduling event date reminders")
+
+    today = timezone.now().date()
+    scheduled_count = 0
+    skipped_count = 0
+
+    # Define reminder intervals (days before event)
+    reminder_days = [7, 3, 1]  # 7 days, 3 days, and 1 day before event
+
+    for days in reminder_days:
+        # Find events starting in exactly X days
+        target_date = today + timedelta(days=days)
+
+        # Get events with start_date on target_date
+        events = Event.objects.filter(
+            start_date__date=target_date,
+            status__in=['LEAD', 'CONFIRMED'],
+            client__isnull=False,
+        ).exclude(
+            status='CANCELLED'
+        ).select_related('client')
+
+        for event in events:
+            try:
+                # Check if reminder already sent
+                if EventDateReminder.objects.filter(event=event, days_before=days).exists():
+                    skipped_count += 1
+                    continue
+
+                # Check if booking flow has a reminder template
+                booking_session = BookingSession.objects.filter(
+                    created_event=event
+                ).select_related('booking_flow__reminder_email_template').first()
+
+                if not booking_session or not booking_session.booking_flow:
+                    skipped_count += 1
+                    continue
+
+                if not booking_session.booking_flow.reminder_email_template:
+                    skipped_count += 1
+                    continue
+
+                # Schedule reminder
+                send_event_date_reminder.delay(event.id, days)
+                scheduled_count += 1
+                logger.info(f"Scheduled {days}-day event reminder for event {event.id}")
+
+            except Exception as e:
+                logger.error(f"Error scheduling event reminder for event {event.id}: {e}")
+
+    logger.info(
+        f"Event date reminders scheduling completed: "
+        f"{scheduled_count} scheduled, {skipped_count} skipped"
+    )
+    return {'scheduled': scheduled_count, 'skipped': skipped_count}

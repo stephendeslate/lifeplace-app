@@ -752,3 +752,43 @@ class EventFile(BaseModel):
             self.mime_type = mime_type or getattr(self.file, 'content_type', '')
 
         super().save(*args, **kwargs)
+
+
+class EventDateReminder(BaseModel):
+    """Tracks event date reminders sent to prevent duplicate reminders.
+
+    Used by the schedule_event_date_reminders Celery task to record
+    which reminders have been sent for each event at each interval
+    (e.g., 7 days before, 3 days before, 1 day before).
+    """
+    event = models.ForeignKey(
+        Event,
+        on_delete=models.CASCADE,
+        related_name='date_reminders',
+        help_text="The event this reminder was sent for"
+    )
+    days_before = models.PositiveIntegerField(
+        help_text="Number of days before event this reminder was sent"
+    )
+    sent_at = models.DateTimeField(
+        auto_now_add=True,
+        help_text="When this reminder was sent"
+    )
+    communication_record_id = models.UUIDField(
+        null=True,
+        blank=True,
+        help_text="UUID of the CommunicationRecord for tracking delivery status"
+    )
+
+    class Meta:
+        verbose_name = 'Event Date Reminder'
+        verbose_name_plural = 'Event Date Reminders'
+        unique_together = [['event', 'days_before']]
+        indexes = [
+            models.Index(fields=['event', 'days_before']),
+            models.Index(fields=['sent_at']),
+        ]
+        ordering = ['-sent_at']
+
+    def __str__(self):
+        return f"Reminder for Event {self.event_id} - {self.days_before} days before"

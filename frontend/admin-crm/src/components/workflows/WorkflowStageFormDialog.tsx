@@ -22,6 +22,7 @@ import {
   Accordion,
   AccordionSummary,
   AccordionDetails,
+  ListSubheader,
 } from '@mui/material';
 import {
   ExpandMore as ExpandMoreIcon,
@@ -277,7 +278,20 @@ export const WorkflowStageFormDialog: React.FC<WorkflowStageFormDialogProps> = (
                                 label="Trigger Time"
                                 onChange={(e) => handleInputChange('trigger_time', e.target.value)}
                               >
-                                {TRIGGER_TIMES.map((trigger) => (
+                                <ListSubheader>Immediate</ListSubheader>
+                                {TRIGGER_TIMES.filter(t => t.category === 'immediate').map((trigger) => (
+                                  <MenuItem key={trigger.value} value={trigger.value}>
+                                    {trigger.label}
+                                  </MenuItem>
+                                ))}
+                                <ListSubheader>After Stage Start</ListSubheader>
+                                {TRIGGER_TIMES.filter(t => t.category === 'after').map((trigger) => (
+                                  <MenuItem key={trigger.value} value={trigger.value}>
+                                    {trigger.label}
+                                  </MenuItem>
+                                ))}
+                                <ListSubheader>Before Event Date</ListSubheader>
+                                {TRIGGER_TIMES.filter(t => t.category === 'before_event').map((trigger) => (
                                   <MenuItem key={trigger.value} value={trigger.value}>
                                     {trigger.label}
                                   </MenuItem>
@@ -345,6 +359,13 @@ export const WorkflowStageFormDialog: React.FC<WorkflowStageFormDialogProps> = (
                           {formData.automation_type === 'CONTRACT' && !contractTemplates.length && (
                             <Alert severity="warning">
                               No contract templates found. Create contract templates in Template Settings first.
+                            </Alert>
+                          )}
+
+                          {formData.trigger_time?.includes('BEFORE_EVENT') && (
+                            <Alert severity="info">
+                              This automation will execute relative to the event&apos;s start date.
+                              Events without a start date configured will skip this trigger.
                             </Alert>
                           )}
                         </>

@@ -3,7 +3,7 @@ import logging
 
 from core.domains.events.models import Event, EventTimeline
 from core.domains.workflows.models import WorkflowStage
-from core.domains.workflows.tasks import schedule_stage_actions
+from core.domains.workflows.tasks import schedule_stage_actions, schedule_before_event_action
 from django.db import transaction
 
 logger = logging.getLogger(__name__)
@@ -231,12 +231,24 @@ class WorkflowEngine:
         """
         Execute actions for a workflow stage
 
-        This method dispatches to appropriate action handlers based on stage configuration
+        This method dispatches to appropriate action handlers based on stage configuration.
+
+        Supported trigger_time formats:
+        - ON_CREATION: Execute immediately when stage is reached
+        - AFTER_X_DAYS, AFTER_X_HOURS, AFTER_X_WEEKS: Delay after stage start
+        - X_DAYS_BEFORE_EVENT: Execute X days before event.start_date
         """
         if stage.is_automated:
             # Execute the stage's automation (handles all automation types)
             stage._execute_automation(event)
 
             # Schedule delayed actions if needed
-            if stage.trigger_time and stage.trigger_time.startswith('AFTER_'):
-                schedule_stage_actions.delay(event.id, stage.id)
+            if stage.trigger_time:
+                trigger_upper = stage.trigger_time.upper()
+
+                if trigger_upper.startswith('AFTER_'):
+                    # Delay after stage start (existing behavior)
+                    schedule_stage_actions.delay(event.id, stage.id)
+                elif '_DAYS_BEFORE_EVENT' in trigger_upper or '_BEFORE_EVENT' in trigger_upper:
+                    # Schedule to execute X days before event start_date
+                    schedule_before_event_action.delay(event.id, stage.id)
