@@ -41,4 +41,15 @@ urlpatterns = [
 
     # App Engagement (placeholder)
     path('engagement/', views.app_engagement, name='app-engagement'),
+
+    # Booking Flow Analytics
+    path('booking-flow/funnel/', views.booking_flow_funnel, name='booking-flow-funnel'),
+    path('booking-flow/performance/', views.booking_flow_performance, name='booking-flow-performance'),
+    path('booking-flow/abandonment/', views.booking_flow_abandonment, name='booking-flow-abandonment'),
+    path('booking-flow/trends/', views.booking_flow_trends, name='booking-flow-trends'),
+
+    # Questionnaire Analytics
+    path('questionnaires/summary/', views.questionnaire_summary, name='questionnaire-summary'),
+    path('questionnaires/<int:questionnaire_id>/heatmap/', views.questionnaire_field_heatmap, name='questionnaire-heatmap'),
+    path('questionnaires/problem-fields/', views.questionnaire_problem_fields, name='questionnaire-problems'),
 ]

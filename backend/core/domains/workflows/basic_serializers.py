@@ -34,13 +34,18 @@ class WorkflowTemplateSerializer(serializers.ModelSerializer):
 class WorkflowStageSerializer(serializers.ModelSerializer):
     """Basic serializer for the WorkflowStage model"""
     stage_display = serializers.CharField(source='get_stage_display', read_only=True)
-    
+
     class Meta:
         model = WorkflowStage
         fields = [
             'id', 'template', 'name', 'stage', 'stage_display', 'order',
             'is_automated', 'automation_type', 'trigger_time', 'email_template',
-            'task_description', 'progression_condition', 'required_tasks_completed',
+            'contract_template', 'task_description', 'progression_condition',
+            'required_tasks_completed',
+            # Trigger-on flags for conditional automation
+            'trigger_on_payment_received', 'trigger_on_quote_accepted',
+            'trigger_on_contract_signed', 'trigger_on_event_created',
+            'trigger_on_quote_sent',
             'metadata', 'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']

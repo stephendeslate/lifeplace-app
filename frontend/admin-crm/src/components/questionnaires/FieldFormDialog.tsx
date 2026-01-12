@@ -42,7 +42,17 @@ const defaultFormData: QuestionnaireFieldFormData = {
   required: false,
   order: 1,
   options: [],
+  // Phase 1.1
+  description: '',
+  placeholder: '',
+  // Phase 1.3 (deprecated)
   is_guest_count: false,
+  // Phase 2.1
+  show_conditions: {},
+  // Phase 4.1
+  max_file_size_mb: 10,
+  allowed_file_types: [],
+  max_files: 1,
 };
 
 export const FieldFormDialog: React.FC<FieldFormDialogProps> = ({
@@ -66,7 +76,17 @@ export const FieldFormDialog: React.FC<FieldFormDialogProps> = ({
           required: editingField.required ?? false,
           order: editingField.order || 1,
           options: editingField.options || [],
+          // Phase 1.1
+          description: editingField.description || '',
+          placeholder: editingField.placeholder || '',
+          // Phase 1.3
           is_guest_count: editingField.is_guest_count ?? false,
+          // Phase 2.1
+          show_conditions: editingField.show_conditions || {},
+          // Phase 4.1
+          max_file_size_mb: editingField.max_file_size_mb || 10,
+          allowed_file_types: editingField.allowed_file_types || [],
+          max_files: editingField.max_files || 1,
         });
       } else {
         setFormData(defaultFormData);
@@ -135,6 +155,7 @@ export const FieldFormDialog: React.FC<FieldFormDialogProps> = ({
       newErrors.order = 'Order must be a positive number';
     }
 
+    // Options required for select/multi-select but NOT for guests (categories are optional)
     if ((formData.type === 'select' || formData.type === 'multi-select') && formData.options.length === 0) {
       newErrors.options = 'Options are required for select fields';
     }
@@ -146,17 +167,33 @@ export const FieldFormDialog: React.FC<FieldFormDialogProps> = ({
   const handleSubmit = () => {
     if (!validateForm()) return;
 
+    // Determine if options are needed based on type
+    const needsOptions = formData.type === 'select' || formData.type === 'multi-select' || formData.type === 'guests';
+
     const submitData: CreateQuestionnaireFieldData | UpdateQuestionnaireFieldData = {
       name: formData.name.trim(),
       type: formData.type,
       required: formData.required,
       order: formData.order || 1,
-      // Use empty array for non-select fields instead of null
-      options: (formData.type === 'select' || formData.type === 'multi-select')
+      // Options for select, multi-select, and guests (categories)
+      options: needsOptions
         ? formData.options.filter(opt => opt.trim())
         : [],
-      // Only include is_guest_count for number fields
+      // Phase 1.1: Description and placeholder
+      description: formData.description.trim(),
+      placeholder: formData.placeholder.trim(),
+      // Phase 1.3: Only include is_guest_count for number fields (deprecated)
       is_guest_count: formData.type === 'number' ? formData.is_guest_count : false,
+      // Phase 2.1: Conditional display (skip if empty)
+      ...(Object.keys(formData.show_conditions).length > 0 && {
+        show_conditions: formData.show_conditions,
+      }),
+      // Phase 4.1: File upload settings (only for file type)
+      ...(formData.type === 'file' && {
+        max_file_size_mb: formData.max_file_size_mb,
+        allowed_file_types: formData.allowed_file_types,
+        max_files: formData.max_files,
+      }),
     };
 
     if (questionnaireId && !editingField) {
@@ -172,7 +209,9 @@ export const FieldFormDialog: React.FC<FieldFormDialogProps> = ({
     }
   };
 
-  const requiresOptions = (type: string) => type === 'select' || type === 'multi-select';
+  const requiresOptions = (type: string) => type === 'select' || type === 'multi-select' || type === 'guests';
+  const isFileType = (type: string) => type === 'file';
+  const isGuestsType = (type: string) => type === 'guests';
 
   return (
     <Dialog 
@@ -219,7 +258,7 @@ export const FieldFormDialog: React.FC<FieldFormDialogProps> = ({
                   helperText={errors.name}
                   required
                 />
-                
+
                 <FormControl fullWidth>
                   <InputLabel>Field Type</InputLabel>
                   <Select
@@ -234,6 +273,30 @@ export const FieldFormDialog: React.FC<FieldFormDialogProps> = ({
                     ))}
                   </Select>
                 </FormControl>
+
+                {/* Phase 1.1: Description field */}
+                <TextField
+                  fullWidth
+                  label="Description (Helper Text)"
+                  value={formData.description}
+                  onChange={handleInputChange('description')}
+                  multiline
+                  rows={2}
+                  placeholder="Optional: Provide guidance or instructions for this field"
+                  helperText="Shown below the field to help users understand what to enter"
+                />
+
+                {/* Phase 1.1: Placeholder field (for text-like inputs) */}
+                {['text', 'number', 'email', 'phone'].includes(formData.type) && (
+                  <TextField
+                    fullWidth
+                    label="Placeholder Text"
+                    value={formData.placeholder}
+                    onChange={handleInputChange('placeholder')}
+                    placeholder="e.g., Enter your answer here..."
+                    helperText="Shown inside the input field when empty"
+                  />
+                )}
 
                 <Box display="flex" gap={2}>
                   <TextField
@@ -296,20 +359,28 @@ export const FieldFormDialog: React.FC<FieldFormDialogProps> = ({
                   <Box>
                     <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
                       <Typography variant="h6">
-                        Options
+                        {isGuestsType(formData.type) ? 'Guest Categories' : 'Options'}
                       </Typography>
                       <Button
                         size="small"
                         startIcon={<AddIcon />}
                         onClick={handleAddOption}
                       >
-                        Add Option
+                        {isGuestsType(formData.type) ? 'Add Category' : 'Add Option'}
                       </Button>
                     </Box>
 
+                    {isGuestsType(formData.type) && (
+                      <Alert severity="info" sx={{ mb: 2 }}>
+                        Define guest categories (e.g., Adults, Children, Infants). Leave empty for a simple total count.
+                      </Alert>
+                    )}
+
                     {formData.options.length === 0 ? (
-                      <Alert severity="warning">
-                        At least one option is required for select fields.
+                      <Alert severity={isGuestsType(formData.type) ? 'info' : 'warning'}>
+                        {isGuestsType(formData.type)
+                          ? 'No categories defined. Users will enter a single total guest count.'
+                          : 'At least one option is required for select fields.'}
                       </Alert>
                     ) : (
                       <Stack spacing={1}>
@@ -318,7 +389,9 @@ export const FieldFormDialog: React.FC<FieldFormDialogProps> = ({
                             <TextField
                               size="small"
                               fullWidth
-                              placeholder={`Option ${index + 1}`}
+                              placeholder={isGuestsType(formData.type)
+                                ? `Category ${index + 1} (e.g., Adults)`
+                                : `Option ${index + 1}`}
                               value={option}
                               onChange={(e) => handleOptionChange(index, e.target.value)}
                             />
@@ -339,6 +412,55 @@ export const FieldFormDialog: React.FC<FieldFormDialogProps> = ({
                         {errors.options}
                       </Typography>
                     )}
+                  </Box>
+                )}
+
+                {/* Phase 4.1: File upload settings */}
+                {isFileType(formData.type) && (
+                  <Box
+                    sx={{
+                      p: 2,
+                      borderRadius: tokens.spacing.radius.lg,
+                      border: `1px solid ${tokens.color.borders.glass}`,
+                      background: `linear-gradient(135deg, ${tokens.color.neutral[50]} 0%, ${tokens.color.neutral[100]} 100%)`,
+                    }}
+                  >
+                    <Typography variant="subtitle2" fontWeight={600} mb={2}>
+                      File Upload Settings
+                    </Typography>
+                    <Stack spacing={2}>
+                      <Box display="flex" gap={2}>
+                        <TextField
+                          label="Max File Size (MB)"
+                          type="number"
+                          value={formData.max_file_size_mb}
+                          onChange={handleInputChange('max_file_size_mb')}
+                          inputProps={{ min: 1, max: 100 }}
+                          size="small"
+                          sx={{ flex: 1 }}
+                        />
+                        <TextField
+                          label="Max Files"
+                          type="number"
+                          value={formData.max_files}
+                          onChange={handleInputChange('max_files')}
+                          inputProps={{ min: 1, max: 10 }}
+                          size="small"
+                          sx={{ flex: 1 }}
+                        />
+                      </Box>
+                      <TextField
+                        label="Allowed File Types"
+                        value={formData.allowed_file_types.join(', ')}
+                        onChange={(e) => {
+                          const types = e.target.value.split(',').map(t => t.trim().toLowerCase()).filter(Boolean);
+                          setFormData(prev => ({ ...prev, allowed_file_types: types }));
+                        }}
+                        placeholder="pdf, jpg, png, doc"
+                        helperText="Comma-separated list of allowed extensions (leave empty for all types)"
+                        size="small"
+                      />
+                    </Stack>
                   </Box>
                 )}
               </Stack>

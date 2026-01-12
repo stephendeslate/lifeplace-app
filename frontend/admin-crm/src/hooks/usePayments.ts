@@ -65,6 +65,15 @@ export const usePaymentGateways = () => {
   });
 };
 
+export const useGatewayHealth = () => {
+  return useQuery({
+    queryKey: [...QUERY_KEYS.paymentGateways, 'health'],
+    queryFn: paymentsApi.getGatewayHealth,
+    refetchInterval: 5 * 60 * 1000, // Refetch every 5 minutes
+    staleTime: 2 * 60 * 1000, // Consider stale after 2 minutes
+  });
+};
+
 export const usePaymentGateway = (id: number) => {
   return useQuery({
     queryKey: QUERY_KEYS.paymentGateway(id),

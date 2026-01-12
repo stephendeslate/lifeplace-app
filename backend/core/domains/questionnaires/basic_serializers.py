@@ -23,11 +23,20 @@ class QuestionnaireBasicSerializer(serializers.ModelSerializer):
 
 class QuestionnaireFieldBasicSerializer(serializers.ModelSerializer):
     """Basic serializer for the QuestionnaireField model"""
-    
+
     class Meta:
         model = QuestionnaireField
         fields = [
-            'id', 'questionnaire', 'name', 'type', 
-            'required', 'order', 'options', 'created_at', 'updated_at'
+            'id', 'questionnaire', 'name', 'type',
+            'required', 'order', 'options',
+            # Phase 1.1: Description and placeholder
+            'description', 'placeholder',
+            # Phase 1.3: Guest count (deprecated - use 'guests' type)
+            'is_guest_count',
+            # Phase 2.1: Conditional display
+            'show_conditions',
+            # Phase 4.1: File upload settings
+            'max_file_size_mb', 'allowed_file_types', 'max_files',
+            'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']

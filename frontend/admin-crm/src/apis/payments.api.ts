@@ -66,6 +66,16 @@ export const paymentsApi = {
   },
 
   /**
+   * Gateway Health Status
+   */
+  getGatewayHealth: async (): Promise<Record<number, import('../types/payments.types').GatewayHealth>> => {
+    const response = await api.get<Record<number, import('../types/payments.types').GatewayHealth>>(
+      '/payments/gateways/health/'
+    );
+    return response.data;
+  },
+
+  /**
    * Tax Rates
    */
   getTaxRates: async (): Promise<TaxRate[]> => {

@@ -26,6 +26,8 @@ class ContextType:
     ADMIN = 'ADMIN'
     NOTIFICATION = 'NOTIFICATION'
     MANUAL = 'MANUAL'
+    PAYMENT = 'PAYMENT'
+    INVOICE = 'INVOICE'
 
     CHOICES = [
         (CLIENT, 'Client'),
@@ -36,6 +38,8 @@ class ContextType:
         (ADMIN, 'Admin'),
         (NOTIFICATION, 'Notification'),
         (MANUAL, 'Manual'),
+        (PAYMENT, 'Payment'),
+        (INVOICE, 'Invoice'),
     ]
 
 
@@ -49,6 +53,8 @@ REQUIRED_OBJECTS = {
     ContextType.ADMIN: ['user', 'admin_invitation'],
     ContextType.NOTIFICATION: ['user', 'notification'],
     ContextType.MANUAL: [],  # All optional
+    ContextType.PAYMENT: ['client', 'event', 'payment'],
+    ContextType.INVOICE: ['client', 'event', 'invoice'],
 }
 
 
@@ -58,7 +64,8 @@ VARIABLE_GROUPS = {
         "label": "Client",
         "icon": "person",
         "available_in": [ContextType.CLIENT, ContextType.EVENT, ContextType.BOOKING,
-                         ContextType.QUOTE, ContextType.CONTRACT, ContextType.MANUAL],
+                         ContextType.QUOTE, ContextType.CONTRACT, ContextType.MANUAL,
+                         ContextType.PAYMENT, ContextType.INVOICE],
         "variables": {
             "client_name": {"description": "Full name of the client", "required": True},
             "client_first_name": {"description": "Client's first name", "required": True},
@@ -73,7 +80,8 @@ VARIABLE_GROUPS = {
         "label": "Event",
         "icon": "event",
         "available_in": [ContextType.EVENT, ContextType.BOOKING, ContextType.QUOTE,
-                         ContextType.CONTRACT, ContextType.MANUAL],
+                         ContextType.CONTRACT, ContextType.MANUAL,
+                         ContextType.PAYMENT, ContextType.INVOICE],
         "variables": {
             "event_name": {"description": "Event name or title", "required": True},
             "event_type": {"description": "Type of event (Wedding, Corporate, etc.)", "required": True},
@@ -94,7 +102,8 @@ VARIABLE_GROUPS = {
     "financial": {
         "label": "Financial",
         "icon": "payments",
-        "available_in": [ContextType.BOOKING, ContextType.QUOTE, ContextType.CONTRACT],
+        "available_in": [ContextType.BOOKING, ContextType.QUOTE, ContextType.CONTRACT,
+                         ContextType.PAYMENT, ContextType.INVOICE],
         "variables": {
             "total_amount": {"description": "Total amount (numeric)", "required": True},
             "total_amount_formatted": {"description": "Total amount (currency formatted)", "required": True},
@@ -107,6 +116,66 @@ VARIABLE_GROUPS = {
             "balance_due_date": {"description": "Date when balance is due", "required": False},
             "amount_paid": {"description": "Amount already paid", "required": True},
             "amount_due": {"description": "Amount currently due", "required": True},
+        }
+    },
+    "payment": {
+        "label": "Payment",
+        "icon": "payment",
+        "available_in": [ContextType.PAYMENT],
+        "variables": {
+            "payment_number": {"description": "Unique payment reference number", "required": True},
+            "payment_amount": {"description": "Payment amount (numeric)", "required": True},
+            "payment_amount_formatted": {"description": "Payment amount (formatted with currency)", "required": True},
+            "payment_status": {"description": "Payment status (Completed, Pending, etc.)", "required": True},
+            "payment_date": {"description": "Date payment was made", "required": False},
+            "payment_due_date": {"description": "Payment due date", "required": True},
+            "payment_method": {"description": "Payment method used (Credit Card, Bank Transfer, etc.)", "required": False},
+            "payment_method_last_four": {"description": "Last 4 digits of card/account", "required": False},
+            "receipt_number": {"description": "Receipt reference number", "required": False},
+            "receipt_link": {"description": "Link to download receipt PDF", "required": False},
+            "transaction_id": {"description": "Gateway transaction ID", "required": False},
+            "is_deposit": {"description": "Whether this is a deposit payment", "required": False},
+            "is_installment": {"description": "Whether this is an installment payment", "required": False},
+            "installment_number": {"description": "Installment number (e.g., 1 of 4)", "required": False},
+            "remaining_balance": {"description": "Remaining balance after this payment", "required": False},
+            "remaining_balance_formatted": {"description": "Remaining balance formatted", "required": False},
+        }
+    },
+    "invoice": {
+        "label": "Invoice",
+        "icon": "receipt",
+        "available_in": [ContextType.INVOICE, ContextType.PAYMENT],
+        "variables": {
+            "invoice_number": {"description": "Invoice ID/number", "required": True},
+            "invoice_issue_date": {"description": "Invoice issue date", "required": True},
+            "invoice_due_date": {"description": "Invoice due date", "required": True},
+            "invoice_status": {"description": "Invoice status", "required": True},
+            "invoice_subtotal": {"description": "Subtotal before tax", "required": True},
+            "invoice_tax_amount": {"description": "Tax amount", "required": False},
+            "invoice_total": {"description": "Total amount due", "required": True},
+            "invoice_total_formatted": {"description": "Total formatted with currency", "required": True},
+            "invoice_paid_amount": {"description": "Amount already paid", "required": True},
+            "invoice_remaining": {"description": "Remaining amount due", "required": True},
+            "invoice_remaining_formatted": {"description": "Remaining formatted", "required": True},
+            "invoice_link": {"description": "Link to view/pay invoice online", "required": False},
+            "invoice_pdf_link": {"description": "Link to download invoice PDF", "required": False},
+            "line_items_summary": {"description": "Summary of invoice line items", "required": False},
+            "payment_terms": {"description": "Payment terms text", "required": False},
+        }
+    },
+    "payment_plan": {
+        "label": "Payment Plan",
+        "icon": "calendar_month",
+        "available_in": [ContextType.PAYMENT],
+        "variables": {
+            "plan_total_amount": {"description": "Total payment plan amount", "required": False},
+            "plan_down_payment": {"description": "Down payment amount", "required": False},
+            "plan_installments_count": {"description": "Number of installments", "required": False},
+            "plan_frequency": {"description": "Payment frequency (Weekly, Monthly, etc.)", "required": False},
+            "plan_next_payment_date": {"description": "Next payment due date", "required": False},
+            "plan_next_payment_amount": {"description": "Next payment amount", "required": False},
+            "plan_completion_percentage": {"description": "Percentage of plan completed", "required": False},
+            "plan_remaining_installments": {"description": "Number of remaining installments", "required": False},
         }
     },
     "booking": {
@@ -173,7 +242,8 @@ VARIABLE_GROUPS = {
         "icon": "settings",
         "available_in": [ContextType.CLIENT, ContextType.EVENT, ContextType.BOOKING,
                          ContextType.QUOTE, ContextType.CONTRACT, ContextType.ADMIN,
-                         ContextType.NOTIFICATION, ContextType.MANUAL],
+                         ContextType.NOTIFICATION, ContextType.MANUAL,
+                         ContextType.PAYMENT, ContextType.INVOICE],
         "variables": {
             "site_name": {"description": "Platform/site name", "required": True},
             "current_date": {"description": "Today's date", "required": True},
@@ -229,6 +299,8 @@ class CommunicationContextService:
         user=None,
         admin_invitation=None,
         notification=None,
+        payment=None,
+        invoice=None,
     ) -> None:
         """
         Validate that required objects are provided for the context type.
@@ -244,6 +316,8 @@ class CommunicationContextService:
             'user': user,
             'admin_invitation': admin_invitation,
             'notification': notification,
+            'payment': payment,
+            'invoice': invoice,
         }
 
         missing = [obj for obj in required if not provided.get(obj)]
@@ -265,6 +339,8 @@ class CommunicationContextService:
         user=None,
         admin_invitation=None,
         notification=None,
+        payment=None,
+        invoice=None,
         validate: bool = True,
     ) -> Dict[str, Any]:
         """
@@ -280,6 +356,8 @@ class CommunicationContextService:
             user: User instance for admin/notification context
             admin_invitation: AdminInvitation instance for admin context
             notification: Notification instance for notification context
+            payment: Payment instance for payment context
+            invoice: Invoice instance for invoice context
             validate: Whether to validate required objects (default True)
 
         Returns:
@@ -296,6 +374,8 @@ class CommunicationContextService:
                 user=user,
                 admin_invitation=admin_invitation,
                 notification=notification,
+                payment=payment,
+                invoice=invoice,
             )
 
         context = {}
@@ -326,8 +406,18 @@ class CommunicationContextService:
             context.update(cls._get_notification_context(notification, user))
 
         # Add financial context if event has pricing data
-        if event and context_type in [ContextType.BOOKING, ContextType.QUOTE, ContextType.CONTRACT]:
+        if event and context_type in [ContextType.BOOKING, ContextType.QUOTE, ContextType.CONTRACT,
+                                       ContextType.PAYMENT, ContextType.INVOICE]:
             context.update(cls._get_financial_context(event, quote))
+
+        # Add payment context
+        if payment:
+            context.update(cls._get_payment_context(payment))
+            context.update(cls._get_payment_plan_context(payment))
+
+        # Add invoice context
+        if invoice:
+            context.update(cls._get_invoice_context(invoice))
 
         logger.info(f"Generated {context_type} context with {len(context)} variables")
         return context
@@ -615,4 +705,131 @@ class CommunicationContextService:
             # Formatted versions
             'deposit_amount_formatted': format_amount(deposit_amount),
             'balance_amount_formatted': format_amount(balance_amount),
+        }
+
+    @staticmethod
+    def _get_payment_context(payment) -> Dict[str, Any]:
+        """Get payment-related context variables."""
+        frontend_url = getattr(settings, 'FRONTEND_URL', 'https://lifeplacealfonso.com')
+
+        # Format amount
+        try:
+            amount_formatted = payment.format_amount_with_currency()
+        except Exception:
+            currency_symbol = '₱' if payment.currency == 'PHP' else '$'
+            amount_formatted = f"{currency_symbol}{payment.amount:,.2f}"
+
+        # Payment method info
+        method_name = ''
+        method_last_four = ''
+        if payment.payment_method:
+            method_name = payment.payment_method.get_type_display()
+            method_last_four = payment.payment_method.last_four or ''
+
+        # Check if deposit/installment
+        is_deposit = bool(payment.description and 'deposit' in payment.description.lower())
+        is_installment = payment.installment is not None
+        installment_info = ''
+        if is_installment and payment.installment:
+            installment_info = f"{payment.installment.installment_number} of {payment.installment.payment_plan.number_of_installments}"
+
+        # Calculate remaining balance
+        remaining_balance = Decimal('0')
+        if payment.event:
+            remaining_balance = (payment.event.total_amount_due or Decimal('0')) - (payment.event.total_amount_paid or Decimal('0'))
+
+        # Format remaining balance
+        currency_symbol = '₱' if payment.currency == 'PHP' else '$'
+        remaining_formatted = f"{currency_symbol}{remaining_balance:,.0f}" if payment.currency == 'PHP' else f"{currency_symbol}{remaining_balance:,.2f}"
+
+        # Receipt link
+        receipt_link = ''
+        if payment.status == 'COMPLETED' and payment.receipt_number:
+            receipt_link = f"{frontend_url}/portal/payments/{payment.id}/receipt"
+
+        # Transaction ID
+        transaction_id = ''
+        latest_transaction = payment.transactions.order_by('-created_at').first()
+        if latest_transaction:
+            transaction_id = latest_transaction.transaction_id or ''
+
+        return {
+            'payment_number': payment.payment_number,
+            'payment_amount': str(payment.amount),
+            'payment_amount_formatted': amount_formatted,
+            'payment_status': payment.get_status_display(),
+            'payment_date': payment.paid_on.strftime('%B %d, %Y') if payment.paid_on else '',
+            'payment_due_date': payment.due_date.strftime('%B %d, %Y') if payment.due_date else '',
+            'payment_method': method_name,
+            'payment_method_last_four': method_last_four,
+            'receipt_number': payment.receipt_number or '',
+            'receipt_link': receipt_link,
+            'transaction_id': transaction_id,
+            'is_deposit': is_deposit,
+            'is_installment': is_installment,
+            'installment_number': installment_info,
+            'remaining_balance': str(remaining_balance),
+            'remaining_balance_formatted': remaining_formatted,
+        }
+
+    @staticmethod
+    def _get_invoice_context(invoice) -> Dict[str, Any]:
+        """Get invoice-related context variables."""
+        frontend_url = getattr(settings, 'FRONTEND_URL', 'https://lifeplacealfonso.com')
+        currency_symbol = '₱' if invoice.currency == 'PHP' else '$'
+
+        # Line items summary
+        line_items = []
+        for item in invoice.line_items.all():
+            line_items.append(f"- {item.description}: {currency_symbol}{item.total:,.0f}")
+        line_items_summary = '\n'.join(line_items) if line_items else 'No items'
+
+        # Paid and remaining
+        paid_amount = invoice.paid_amount or Decimal('0')
+        remaining = invoice.remaining_amount or invoice.total_amount
+
+        return {
+            'invoice_number': invoice.invoice_id,
+            'invoice_issue_date': invoice.issue_date.strftime('%B %d, %Y') if invoice.issue_date else '',
+            'invoice_due_date': invoice.due_date.strftime('%B %d, %Y') if invoice.due_date else '',
+            'invoice_status': invoice.get_status_display(),
+            'invoice_subtotal': str(invoice.subtotal),
+            'invoice_tax_amount': str(invoice.tax_amount),
+            'invoice_total': str(invoice.total_amount),
+            'invoice_total_formatted': f"{currency_symbol}{invoice.total_amount:,.0f}",
+            'invoice_paid_amount': str(paid_amount),
+            'invoice_remaining': str(remaining),
+            'invoice_remaining_formatted': f"{currency_symbol}{remaining:,.0f}",
+            'invoice_link': f"{frontend_url}/portal/invoices/{invoice.id}",
+            'invoice_pdf_link': f"{frontend_url}/api/payments/client/invoices/{invoice.id}/download_pdf/",
+            'line_items_summary': line_items_summary,
+            'payment_terms': invoice.payment_terms or '',
+        }
+
+    @staticmethod
+    def _get_payment_plan_context(payment) -> Dict[str, Any]:
+        """Get payment plan context if payment is part of a plan."""
+        if not payment.installment or not payment.installment.payment_plan:
+            return {}
+
+        plan = payment.installment.payment_plan
+        currency_symbol = '₱' if plan.currency == 'PHP' else '$'
+
+        # Get next pending installment
+        next_installment = plan.installments.filter(status='PENDING').order_by('due_date').first()
+
+        # Completion percentage
+        paid_installments = plan.installments.filter(status='PAID').count()
+        total_installments = plan.number_of_installments
+        completion_pct = int((paid_installments / total_installments) * 100) if total_installments > 0 else 0
+
+        return {
+            'plan_total_amount': f"{currency_symbol}{plan.total_amount:,.0f}",
+            'plan_down_payment': f"{currency_symbol}{plan.down_payment_amount:,.0f}",
+            'plan_installments_count': str(plan.number_of_installments),
+            'plan_frequency': plan.get_frequency_display(),
+            'plan_next_payment_date': next_installment.due_date.strftime('%B %d, %Y') if next_installment else 'N/A',
+            'plan_next_payment_amount': f"{currency_symbol}{next_installment.amount:,.0f}" if next_installment else 'N/A',
+            'plan_completion_percentage': f"{completion_pct}%",
+            'plan_remaining_installments': str(total_installments - paid_installments),
         }

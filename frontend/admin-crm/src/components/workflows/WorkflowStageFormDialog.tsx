@@ -29,18 +29,19 @@ import {
 } from '@mui/icons-material';
 import { useCommunications } from '../../hooks/useCommunications';
 import { useContractTemplates } from '../../hooks/useContracts';
-import type { 
+import { useQuoteTemplates } from '../../hooks/useSales';
+import type {
   WorkflowStageFormDialogProps,
   CreateWorkflowStageData,
   UpdateWorkflowStageData,
   StageType,
   AutomationType,
 } from '../../types/workflows.types';
-import { 
-  STAGE_TYPES, 
-  AUTOMATION_TYPES, 
-  TRIGGER_TIMES, 
-  PROGRESSION_CONDITIONS 
+import {
+  STAGE_TYPES,
+  AUTOMATION_TYPES,
+  TRIGGER_TIMES,
+  PROGRESSION_CONDITIONS
 } from '../../types/workflows.types';
 
 const defaultFormData: CreateWorkflowStageData = {
@@ -55,6 +56,12 @@ const defaultFormData: CreateWorkflowStageData = {
   task_description: '',
   progression_condition: '',
   required_tasks_completed: false,
+  // Trigger-on flags
+  trigger_on_payment_received: false,
+  trigger_on_quote_accepted: false,
+  trigger_on_contract_signed: false,
+  trigger_on_event_created: false,
+  trigger_on_quote_sent: false,
   metadata: {},
 };
 
@@ -71,8 +78,9 @@ export const WorkflowStageFormDialog: React.FC<WorkflowStageFormDialogProps> = (
 
   const { useTemplates } = useCommunications();
   const { data: emailTemplates = [] } = useTemplates({ channel: 'EMAIL' });
-  
+
   const { data: contractTemplates = [] } = useContractTemplates();
+  const { data: quoteTemplates = [] } = useQuoteTemplates();
 
   const isEditing = !!editingStage;
 
@@ -91,6 +99,12 @@ export const WorkflowStageFormDialog: React.FC<WorkflowStageFormDialogProps> = (
           task_description: editingStage.task_description || '',
           progression_condition: editingStage.progression_condition || '',
           required_tasks_completed: editingStage.required_tasks_completed,
+          // Trigger-on flags
+          trigger_on_payment_received: editingStage.trigger_on_payment_received || false,
+          trigger_on_quote_accepted: editingStage.trigger_on_quote_accepted || false,
+          trigger_on_contract_signed: editingStage.trigger_on_contract_signed || false,
+          trigger_on_event_created: editingStage.trigger_on_event_created || false,
+          trigger_on_quote_sent: editingStage.trigger_on_quote_sent || false,
           metadata: editingStage.metadata || {},
         });
       } else {
@@ -102,6 +116,17 @@ export const WorkflowStageFormDialog: React.FC<WorkflowStageFormDialogProps> = (
       setErrors({});
     }
   }, [editingStage, templateId, open]);
+
+  // Handler for metadata changes
+  const handleMetadataChange = (key: string, value: unknown) => {
+    setFormData(prev => ({
+      ...prev,
+      metadata: {
+        ...prev.metadata,
+        [key]: value,
+      },
+    }));
+  };
 
   const handleInputChange = (field: keyof CreateWorkflowStageData, value: string | boolean | number | null) => {
     setFormData(prev => ({
@@ -368,11 +393,151 @@ export const WorkflowStageFormDialog: React.FC<WorkflowStageFormDialogProps> = (
                               Events without a start date configured will skip this trigger.
                             </Alert>
                           )}
+
+                          {/* Automation-specific configuration */}
+                          {formData.automation_type === 'TASK' && (
+                            <FormControl fullWidth>
+                              <InputLabel>Task Priority</InputLabel>
+                              <Select
+                                value={(formData.metadata?.task_priority as string) || 'MEDIUM'}
+                                label="Task Priority"
+                                onChange={(e) => handleMetadataChange('task_priority', e.target.value)}
+                              >
+                                <MenuItem value="LOW">Low</MenuItem>
+                                <MenuItem value="MEDIUM">Medium</MenuItem>
+                                <MenuItem value="HIGH">High</MenuItem>
+                                <MenuItem value="URGENT">Urgent</MenuItem>
+                              </Select>
+                            </FormControl>
+                          )}
+
+                          {formData.automation_type === 'QUOTE' && (
+                            <FormControl fullWidth>
+                              <InputLabel>Quote Template (Optional)</InputLabel>
+                              <Select
+                                value={(formData.metadata?.quote_template_id as string) || ''}
+                                label="Quote Template (Optional)"
+                                onChange={(e) => handleMetadataChange('quote_template_id', e.target.value ? parseInt(e.target.value as string) : null)}
+                              >
+                                <MenuItem value="">
+                                  <em>Use Default (by Event Type)</em>
+                                </MenuItem>
+                                {quoteTemplates.map((template) => (
+                                  <MenuItem key={template.id} value={template.id}>
+                                    {template.name}
+                                  </MenuItem>
+                                ))}
+                              </Select>
+                            </FormControl>
+                          )}
+
+                          {formData.automation_type === 'CONTRACT' && (
+                            <TextField
+                              type="number"
+                              label="Signature Deadline (Hours)"
+                              value={(formData.metadata?.signature_deadline_hours as number) || 48}
+                              onChange={(e) => handleMetadataChange('signature_deadline_hours', parseInt(e.target.value) || 48)}
+                              helperText="Hours until contract signature expires"
+                              fullWidth
+                            />
+                          )}
+
+                          {formData.automation_type === 'REMINDER' && (
+                            <>
+                              <TextField
+                                type="number"
+                                label="Days Until Due"
+                                value={(formData.metadata?.days_until_due as number) || 7}
+                                onChange={(e) => handleMetadataChange('days_until_due', parseInt(e.target.value) || 7)}
+                                helperText="Number of days shown in the reminder"
+                                fullWidth
+                              />
+                              <FormControl fullWidth>
+                                <InputLabel>Reminder Type</InputLabel>
+                                <Select
+                                  value={(formData.metadata?.reminder_type as string) || 'WORKFLOW_REMINDER'}
+                                  label="Reminder Type"
+                                  onChange={(e) => handleMetadataChange('reminder_type', e.target.value)}
+                                >
+                                  <MenuItem value="WORKFLOW_REMINDER">General Reminder</MenuItem>
+                                  <MenuItem value="PAYMENT_REMINDER">Payment Reminder</MenuItem>
+                                  <MenuItem value="EVENT_REMINDER">Event Reminder</MenuItem>
+                                </Select>
+                              </FormControl>
+                            </>
+                          )}
                         </>
                       )}
                     </Stack>
                   </AccordionDetails>
                 </Accordion>
+
+                {/* Event Triggers - Execute automation when specific events occur */}
+                {formData.is_automated && (
+                  <Accordion>
+                    <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                      <Typography variant="h6">Event Triggers</Typography>
+                    </AccordionSummary>
+                    <AccordionDetails>
+                      <Stack spacing={2}>
+                        <Alert severity="info" sx={{ mb: 1 }}>
+                          These triggers execute the automation when specific events occur, without advancing to the next stage.
+                          This is useful for sending notifications or performing actions in response to business events.
+                        </Alert>
+
+                        <FormControlLabel
+                          control={
+                            <Switch
+                              checked={formData.trigger_on_event_created || false}
+                              onChange={(e) => handleInputChange('trigger_on_event_created', e.target.checked)}
+                            />
+                          }
+                          label="Execute when event is created"
+                        />
+
+                        <FormControlLabel
+                          control={
+                            <Switch
+                              checked={formData.trigger_on_quote_sent || false}
+                              onChange={(e) => handleInputChange('trigger_on_quote_sent', e.target.checked)}
+                            />
+                          }
+                          label="Execute when quote is sent"
+                        />
+
+                        <FormControlLabel
+                          control={
+                            <Switch
+                              checked={formData.trigger_on_quote_accepted || false}
+                              onChange={(e) => handleInputChange('trigger_on_quote_accepted', e.target.checked)}
+                            />
+                          }
+                          label="Execute when quote is accepted"
+                        />
+
+                        <FormControlLabel
+                          control={
+                            <Switch
+                              checked={formData.trigger_on_contract_signed || false}
+                              onChange={(e) => handleInputChange('trigger_on_contract_signed', e.target.checked)}
+                            />
+                          }
+                          label="Execute when contract is signed"
+                        />
+
+                        <FormControlLabel
+                          control={
+                            <Switch
+                              checked={formData.trigger_on_payment_received || false}
+                              onChange={(e) => handleInputChange('trigger_on_payment_received', e.target.checked)}
+                            />
+                          }
+                          label="Execute when payment is received"
+                        />
+                      </Stack>
+                    </AccordionDetails>
+                  </Accordion>
+                )}
 
                 {/* Progression Settings */}
                 <Accordion>

@@ -307,6 +307,8 @@ class CommunicationService:
         sent_by: Optional[User] = None,  # type: ignore
         use_async: bool = False,
         event=None,  # Optional Event instance
+        payment=None,  # Optional Payment instance for payment-related communications
+        invoice=None,  # Optional Invoice instance for invoice-related communications
         skip_preference_check: bool = False  # Skip user preference check for critical messages
     ) -> Optional[CommunicationRecord]:
         """Send a communication using a template with optional async processing"""
@@ -324,6 +326,8 @@ class CommunicationService:
                     client_id=client.id if client else None,
                     sent_by_id=sent_by.id if sent_by else None,
                     event_id=event.id if event else None,
+                    payment_id=payment.id if payment else None,
+                    invoice_id=invoice.id if invoice else None,
                     skip_preference_check=skip_preference_check
                 )
 
@@ -348,6 +352,7 @@ class CommunicationService:
 
         return self.send_communication_by_template(
             template, recipient, context_data, client, sent_by, event,
+            payment=payment, invoice=invoice,
             skip_preference_check=skip_preference_check
         )
     
@@ -359,12 +364,44 @@ class CommunicationService:
         client: Optional[User] = None,  # type: ignore
         sent_by: Optional[User] = None,  # type: ignore
         event=None,  # Optional Event instance
+        payment=None,  # Optional Payment instance for payment-related communications
+        invoice=None,  # Optional Invoice instance for invoice-related communications
         skip_preference_check: bool = False  # Skip user preference check for critical messages
     ) -> Optional[CommunicationRecord]:
-        """Send communication using template object - Enhanced for manual messages"""
+        """Send communication using template object - Enhanced for manual messages and payments"""
 
         if context_data is None:
             context_data = {}
+
+        # Auto-generate payment/invoice context if provided
+        if payment or invoice:
+            try:
+                from .context_service import CommunicationContextService, ContextType
+
+                # Determine context type
+                if payment:
+                    ctx_type = ContextType.PAYMENT
+                elif invoice:
+                    ctx_type = ContextType.INVOICE
+                else:
+                    ctx_type = template.context_type
+
+                # Generate context with payment/invoice data
+                generated_context = CommunicationContextService.generate_context(
+                    context_type=ctx_type,
+                    client=client,
+                    event=event,
+                    payment=payment,
+                    invoice=invoice,
+                    validate=False  # Don't validate, we're providing what we have
+                )
+
+                # Merge generated context with provided context (provided takes precedence)
+                generated_context.update(context_data)
+                context_data = generated_context
+
+            except Exception as e:
+                logger.warning(f"Failed to generate payment/invoice context: {e}")
 
         # Check user preferences before sending (GDPR/CAN-SPAM compliance)
         if not skip_preference_check and client is not None:

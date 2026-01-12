@@ -23,6 +23,13 @@ import type {
   CalendarUtilization,
   BookingTimeAnalysis,
   PlaceholderResponse,
+  BookingFlowFunnelStep,
+  BookingFlowPerformance,
+  BookingFlowAbandonment,
+  BookingFlowTrend,
+  QuestionnaireSummary,
+  QuestionnaireFieldHeatmap,
+  QuestionnaireProblemField,
 } from '../types/analytics.types';
 
 // Helper to build URL params from date range
@@ -251,6 +258,88 @@ export const analyticsApi = {
 
   getAppEngagement: async (): Promise<PlaceholderResponse> => {
     const response = await api.get<PlaceholderResponse>('/analytics/engagement/');
+    return response.data;
+  },
+
+  // =========================================================================
+  // Booking Flow Analytics
+  // =========================================================================
+
+  getBookingFlowFunnel: async (
+    dateRange: DateRange,
+    flowId?: string
+  ): Promise<BookingFlowFunnelStep[]> => {
+    const params: Record<string, string> = {};
+    if (flowId) params.flow_id = flowId;
+    const response = await api.get<BookingFlowFunnelStep[]>(
+      `/analytics/booking-flow/funnel/?${buildParams(dateRange, params)}`
+    );
+    return response.data;
+  },
+
+  getBookingFlowPerformance: async (
+    dateRange: DateRange
+  ): Promise<BookingFlowPerformance[]> => {
+    const response = await api.get<BookingFlowPerformance[]>(
+      `/analytics/booking-flow/performance/?${buildParams(dateRange)}`
+    );
+    return response.data;
+  },
+
+  getBookingFlowAbandonment: async (
+    dateRange: DateRange,
+    flowId?: string
+  ): Promise<BookingFlowAbandonment> => {
+    const params: Record<string, string> = {};
+    if (flowId) params.flow_id = flowId;
+    const response = await api.get<BookingFlowAbandonment>(
+      `/analytics/booking-flow/abandonment/?${buildParams(dateRange, params)}`
+    );
+    return response.data;
+  },
+
+  getBookingFlowTrends: async (
+    dateRange: DateRange,
+    flowId?: string
+  ): Promise<BookingFlowTrend[]> => {
+    const params: Record<string, string> = {};
+    if (flowId) params.flow_id = flowId;
+    const response = await api.get<BookingFlowTrend[]>(
+      `/analytics/booking-flow/trends/?${buildParams(dateRange, params)}`
+    );
+    return response.data;
+  },
+
+  // =========================================================================
+  // Questionnaire Analytics
+  // =========================================================================
+
+  getQuestionnaireSummary: async (
+    dateRange: DateRange
+  ): Promise<QuestionnaireSummary> => {
+    const response = await api.get<QuestionnaireSummary>(
+      `/analytics/questionnaires/summary/?${buildParams(dateRange)}`
+    );
+    return response.data;
+  },
+
+  getQuestionnaireFieldHeatmap: async (
+    questionnaireId: number,
+    dateRange: DateRange
+  ): Promise<QuestionnaireFieldHeatmap[]> => {
+    const response = await api.get<QuestionnaireFieldHeatmap[]>(
+      `/analytics/questionnaires/${questionnaireId}/heatmap/?${buildParams(dateRange)}`
+    );
+    return response.data;
+  },
+
+  getQuestionnaireProblemFields: async (
+    dateRange: DateRange,
+    threshold: number = 80
+  ): Promise<QuestionnaireProblemField[]> => {
+    const response = await api.get<QuestionnaireProblemField[]>(
+      `/analytics/questionnaires/problem-fields/?${buildParams(dateRange, { threshold: String(threshold) })}`
+    );
     return response.data;
   },
 };

@@ -225,3 +225,93 @@ export const LEAD_SOURCE_OPTIONS = [
 ] as const;
 
 export type LeadSourceValue = typeof LEAD_SOURCE_OPTIONS[number]['value'];
+
+// ============================================================================
+// Booking Flow Analytics Types
+// ============================================================================
+
+export interface BookingFlowFunnelStep {
+  step_type: string;
+  step_name: string;
+  order: number;
+  sessions_reached: number;
+  sessions_completed: number;
+  completion_rate: number;
+  drop_off_rate: number;
+}
+
+export interface BookingFlowPerformance {
+  flow_id: number;
+  flow_name: string;
+  event_type: string;
+  total_sessions: number;
+  completed_sessions: number;
+  abandoned_sessions: number;
+  conversion_rate: number;
+  abandonment_rate: number;
+  total_revenue: number;
+  avg_revenue: number;
+}
+
+export interface BookingFlowAbandonment {
+  total_abandoned: number;
+  by_step: {
+    step_type: string;
+    step_name: string;
+    count: number;
+    percentage: number;
+  }[];
+}
+
+export interface BookingFlowTrend {
+  date: string;
+  total_sessions: number;
+  completed_sessions: number;
+  abandoned_sessions: number;
+  conversion_rate: number;
+}
+
+// ============================================================================
+// Questionnaire Analytics Types
+// ============================================================================
+
+export interface QuestionnaireSummaryItem {
+  questionnaire_id: number;
+  questionnaire_name: string;
+  total_fields: number;
+  required_fields: number;
+  events_with_responses: number;
+  complete_responses: number;
+  incomplete_responses: number;
+  completion_rate: number;
+}
+
+export interface QuestionnaireSummary {
+  overall: {
+    total_events_with_responses: number;
+    total_complete: number;
+    total_incomplete: number;
+    overall_completion_rate: number;
+  };
+  by_questionnaire: QuestionnaireSummaryItem[];
+}
+
+export interface QuestionnaireFieldHeatmap {
+  field_id: number;
+  field_name: string;
+  field_type: string;
+  required: boolean;
+  order: number;
+  response_count: number;
+  completion_rate: number;
+}
+
+export interface QuestionnaireProblemField {
+  questionnaire_id: number;
+  questionnaire_name: string;
+  field_id: number;
+  field_name: string;
+  field_type: string;
+  completion_rate: number;
+  gap_from_threshold: number;
+}

@@ -47,6 +47,7 @@ import { useWorkflowTemplates } from '../../../hooks/useWorkflows';
 import { useCommunications } from '../../../hooks/useCommunications';
 import { useDiscounts } from '../../../hooks/useProducts';
 import { usePaymentGateways } from '../../../hooks/usePayments';
+import { getGatewayPaymentMethods } from '../../../types/payments.types';
 
 // Modern Design System imports
 
@@ -703,6 +704,32 @@ export const BookingFlowFormDialog: React.FC<BookingFlowFormDialogProps> = ({
                         Leave empty to use all active payment gateways
                       </Typography>
                     </FormControl>
+
+                    {/* Payment Methods Preview */}
+                    {formData.allowed_payment_gateways.length > 0 && (
+                      <Box sx={{ p: 2, bgcolor: 'primary.50', borderRadius: 1, border: '1px solid', borderColor: 'primary.200' }}>
+                        <Typography variant="subtitle2" color="primary.dark" gutterBottom>
+                          Available Payment Methods for Clients
+                        </Typography>
+                        <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                          {Array.from(new Set(
+                            formData.allowed_payment_gateways.flatMap(gatewayId => {
+                              const gateway = paymentGatewaysData.find(g => g.id === gatewayId);
+                              if (!gateway) return [];
+                              return getGatewayPaymentMethods(gateway.code).map(m => m.name);
+                            })
+                          )).map((methodName) => (
+                            <Chip
+                              key={methodName}
+                              label={methodName}
+                              size="small"
+                              variant="outlined"
+                              sx={{ bgcolor: 'white' }}
+                            />
+                          ))}
+                        </Stack>
+                      </Box>
+                    )}
 
                     <FormControl 
                       fullWidth 

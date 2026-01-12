@@ -224,6 +224,74 @@ export const useBookingTimeAnalysis = (dateRange: DateRange) => {
 };
 
 // ============================================================================
+// Booking Flow Analytics Hooks
+// ============================================================================
+
+export const useBookingFlowFunnel = (dateRange: DateRange, flowId?: string) => {
+  return useQuery({
+    queryKey: ['analytics', 'booking-flow', 'funnel', dateRange, flowId],
+    queryFn: () => analyticsApi.getBookingFlowFunnel(dateRange, flowId),
+    staleTime: 5 * 60 * 1000,
+  });
+};
+
+export const useBookingFlowPerformance = (dateRange: DateRange) => {
+  return useQuery({
+    queryKey: ['analytics', 'booking-flow', 'performance', dateRange],
+    queryFn: () => analyticsApi.getBookingFlowPerformance(dateRange),
+    staleTime: 5 * 60 * 1000,
+  });
+};
+
+export const useBookingFlowAbandonment = (dateRange: DateRange, flowId?: string) => {
+  return useQuery({
+    queryKey: ['analytics', 'booking-flow', 'abandonment', dateRange, flowId],
+    queryFn: () => analyticsApi.getBookingFlowAbandonment(dateRange, flowId),
+    staleTime: 5 * 60 * 1000,
+  });
+};
+
+export const useBookingFlowTrends = (dateRange: DateRange, flowId?: string) => {
+  return useQuery({
+    queryKey: ['analytics', 'booking-flow', 'trends', dateRange, flowId],
+    queryFn: () => analyticsApi.getBookingFlowTrends(dateRange, flowId),
+    staleTime: 5 * 60 * 1000,
+  });
+};
+
+// ============================================================================
+// Questionnaire Analytics Hooks
+// ============================================================================
+
+export const useQuestionnaireSummary = (dateRange: DateRange) => {
+  return useQuery({
+    queryKey: ['analytics', 'questionnaires', 'summary', dateRange],
+    queryFn: () => analyticsApi.getQuestionnaireSummary(dateRange),
+    staleTime: 5 * 60 * 1000,
+  });
+};
+
+export const useQuestionnaireFieldHeatmap = (
+  questionnaireId: number | null,
+  dateRange: DateRange
+) => {
+  return useQuery({
+    queryKey: ['analytics', 'questionnaires', 'heatmap', questionnaireId, dateRange],
+    queryFn: () => analyticsApi.getQuestionnaireFieldHeatmap(questionnaireId!, dateRange),
+    enabled: questionnaireId !== null,
+    staleTime: 5 * 60 * 1000,
+  });
+};
+
+export const useQuestionnaireProblemFields = (dateRange: DateRange, threshold: number = 80) => {
+  return useQuery({
+    queryKey: ['analytics', 'questionnaires', 'problems', dateRange, threshold],
+    queryFn: () => analyticsApi.getQuestionnaireProblemFields(dateRange, threshold),
+    staleTime: 5 * 60 * 1000,
+  });
+};
+
+// ============================================================================
 // Export Functions (not hooks, just utilities)
 // ============================================================================
 

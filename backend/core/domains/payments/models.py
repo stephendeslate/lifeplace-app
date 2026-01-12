@@ -620,23 +620,58 @@ class Payment(BaseModel):
         return self.receipt_number
     
     def send_receipt_notification(self):
-        """Send receipt notification to the client"""
+        """Send receipt notification to the client via email"""
         if self.status == 'COMPLETED' and not self.receipt_sent:
+            client = self.event.client
+            is_successful = False
+            template_used = None
+
+            try:
+                # Send receipt email via CommunicationService
+                from core.domains.communications.services import CommunicationService
+
+                comm_service = CommunicationService()
+                record = comm_service.send_communication(
+                    template_name='Payment Receipt',
+                    recipient=client.email,
+                    client=client,
+                    event=self.event,
+                    payment=self,
+                    skip_preference_check=True  # Receipts are transactional, always send
+                )
+
+                is_successful = record is not None and record.delivery_status == 'SENT'
+
+                if record and record.id:
+                    # Get the template used
+                    from core.domains.communications.models import CommunicationTemplate
+                    try:
+                        template_used = CommunicationTemplate.objects.get(name='Payment Receipt')
+                    except CommunicationTemplate.DoesNotExist:
+                        pass
+
+                logger.info(f"Payment receipt email sent for payment {self.payment_number}")
+
+            except Exception as e:
+                logger.error(f"Failed to send payment receipt email for {self.payment_number}: {e}")
+                is_successful = False
+
             # Create notification record
             PaymentNotification.objects.create(
                 payment=self,
                 notification_type='PAYMENT_RECEIVED',
                 sent_at=timezone.now(),
-                sent_to=self.event.client.email,
-                is_successful=True
+                sent_to=client.email,
+                is_successful=is_successful,
+                template_used=template_used
             )
-            
+
             # Update receipt sent status
             self.receipt_sent = True
             self.receipt_sent_on = timezone.now()
             self.save(update_fields=['receipt_sent', 'receipt_sent_on'])
-            
-            return True
+
+            return is_successful
         return False
     
     def format_amount_with_currency(self, user=None):

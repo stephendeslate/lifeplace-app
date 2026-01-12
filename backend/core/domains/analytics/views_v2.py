@@ -17,6 +17,8 @@ from .services import (
     CustomersAnalyticsService,
     OperationsAnalyticsService,
     ExportService,
+    BookingFlowIntegrationService,
+    QuestionnaireIntegrationService,
 )
 
 
@@ -388,3 +390,138 @@ def inventory_report(request):
 def app_engagement(request):
     """App engagement - PLACEHOLDER."""
     return Response(OperationsAnalyticsService.get_app_engagement_placeholder())
+
+
+# ============================================================================
+# BOOKING FLOW ANALYTICS
+# ============================================================================
+
+@api_view(['GET'])
+@permission_classes([IsAdminUser])
+def booking_flow_funnel(request):
+    """
+    Step-by-step funnel analysis for booking flows.
+
+    Query params:
+        - start_date: ISO date string
+        - end_date: ISO date string
+        - flow_id: Optional specific flow ID
+    """
+    start_date, end_date = parse_date_range(request)
+    flow_id = request.query_params.get('flow_id')
+
+    data = BookingFlowIntegrationService.get_funnel_analysis(
+        start_date, end_date, flow_id
+    )
+    return Response(data)
+
+
+@api_view(['GET'])
+@permission_classes([IsAdminUser])
+def booking_flow_performance(request):
+    """
+    Performance summary for all booking flows.
+
+    Query params:
+        - start_date: ISO date string
+        - end_date: ISO date string
+    """
+    start_date, end_date = parse_date_range(request)
+    data = BookingFlowIntegrationService.get_flow_performance_summary(start_date, end_date)
+    return Response(data)
+
+
+@api_view(['GET'])
+@permission_classes([IsAdminUser])
+def booking_flow_abandonment(request):
+    """
+    Abandonment analysis for booking flows.
+
+    Query params:
+        - start_date: ISO date string
+        - end_date: ISO date string
+        - flow_id: Optional specific flow ID
+    """
+    start_date, end_date = parse_date_range(request)
+    flow_id = request.query_params.get('flow_id')
+
+    data = BookingFlowIntegrationService.get_abandonment_analysis(
+        start_date, end_date, flow_id
+    )
+    return Response(data)
+
+
+@api_view(['GET'])
+@permission_classes([IsAdminUser])
+def booking_flow_trends(request):
+    """
+    Daily trends for booking flow metrics.
+
+    Query params:
+        - start_date: ISO date string
+        - end_date: ISO date string
+        - flow_id: Optional specific flow ID
+    """
+    start_date, end_date = parse_date_range(request)
+    flow_id = request.query_params.get('flow_id')
+
+    data = BookingFlowIntegrationService.get_daily_booking_flow_trends(
+        start_date, end_date, flow_id
+    )
+    return Response(data)
+
+
+# ============================================================================
+# QUESTIONNAIRE ANALYTICS
+# ============================================================================
+
+@api_view(['GET'])
+@permission_classes([IsAdminUser])
+def questionnaire_summary(request):
+    """
+    Questionnaire completion summary across all questionnaires.
+
+    Query params:
+        - start_date: ISO date string
+        - end_date: ISO date string
+    """
+    start_date, end_date = parse_date_range(request)
+    data = QuestionnaireIntegrationService.get_questionnaire_summary(start_date, end_date)
+    return Response(data)
+
+
+@api_view(['GET'])
+@permission_classes([IsAdminUser])
+def questionnaire_field_heatmap(request, questionnaire_id):
+    """
+    Field-level completion heatmap for a questionnaire.
+
+    Query params:
+        - start_date: ISO date string
+        - end_date: ISO date string
+    """
+    start_date, end_date = parse_date_range(request)
+    data = QuestionnaireIntegrationService.get_field_completion_heatmap(
+        questionnaire_id, start_date, end_date
+    )
+    return Response(data)
+
+
+@api_view(['GET'])
+@permission_classes([IsAdminUser])
+def questionnaire_problem_fields(request):
+    """
+    Identify fields with low completion rates.
+
+    Query params:
+        - start_date: ISO date string
+        - end_date: ISO date string
+        - threshold: Minimum completion rate (default: 80)
+    """
+    start_date, end_date = parse_date_range(request)
+    threshold = float(request.query_params.get('threshold', 80))
+
+    data = QuestionnaireIntegrationService.get_low_completion_fields(
+        start_date, end_date, threshold
+    )
+    return Response(data)

@@ -48,6 +48,7 @@ app.conf.update(
         'core.domains.questionnaires.tasks.*': {'queue': 'events'},
         'core.domains.sales.tasks.*': {'queue': 'sales'},
         'core.domains.security.tasks.*': {'queue': 'notifications'},
+        'core.domains.payments.tasks.*': {'queue': 'payments'},
         'sales.*': {'queue': 'sales'},
     },
     
@@ -159,6 +160,38 @@ app.conf.update(
             'task': 'core.domains.notifications.tasks.cleanup_inactive_push_tokens',
             'schedule': 24 * 60 * 60,  # Daily
             'options': {'queue': 'notifications'}
+        },
+        # Payment automation tasks
+        'process-autopay-installments': {
+            'task': 'core.domains.payments.tasks.process_due_autopay_installments',
+            'schedule': 24 * 60 * 60,  # Daily
+            'options': {'queue': 'payments'}
+        },
+        'send-payment-reminders': {
+            'task': 'core.domains.payments.tasks.send_payment_reminders',
+            'schedule': 24 * 60 * 60,  # Daily
+            'options': {'queue': 'payments'}
+        },
+        'process-overdue-payments': {
+            'task': 'core.domains.payments.tasks.process_overdue_payments',
+            'schedule': 24 * 60 * 60,  # Daily
+            'options': {'queue': 'payments'}
+        },
+        'check-gateway-health': {
+            'task': 'core.domains.payments.tasks.check_gateway_health',
+            'schedule': 15 * 60,  # Every 15 minutes
+            'options': {'queue': 'payments'}
+        },
+        # Analytics tasks
+        'update-booking-flow-analytics': {
+            'task': 'core.domains.analytics.tasks.update_all_booking_flow_analytics',
+            'schedule': 24 * 60 * 60,  # Daily
+            'options': {'queue': 'analytics'}
+        },
+        'cache-daily-kpis': {
+            'task': 'core.domains.analytics.tasks.cache_daily_kpis',
+            'schedule': 60 * 60,  # Hourly
+            'options': {'queue': 'analytics'}
         },
     },
 )

@@ -22,9 +22,31 @@ export interface QuestionnaireField {
   required: boolean;
   order: number;
   options: string[] | null;
+  // Phase 1.1: Description and placeholder
+  description: string;
+  placeholder: string;
+  // Phase 1.3: Guest count (deprecated - use 'guests' type)
   is_guest_count: boolean;
+  // Phase 2.1: Conditional display
+  show_conditions: ShowConditions;
+  // Phase 4.1: File upload settings
+  max_file_size_mb: number;
+  allowed_file_types: string[];
+  max_files: number;
   created_at: string;
   updated_at: string;
+}
+
+// Conditional display logic
+export interface FieldCondition {
+  field_id: string;
+  operator: 'equals' | 'not_equals' | 'greater_than' | 'less_than' | 'contains';
+  value: string;
+}
+
+export interface ShowConditions {
+  logic?: 'AND' | 'OR';
+  conditions?: FieldCondition[];
 }
 
 export interface QuestionnaireResponse {
@@ -38,7 +60,7 @@ export interface QuestionnaireResponse {
   updated_at: string;
 }
 
-export type QuestionnaireFieldType = 
+export type QuestionnaireFieldType =
   | 'text'
   | 'number'
   | 'date'
@@ -48,7 +70,8 @@ export type QuestionnaireFieldType =
   | 'multi-select'
   | 'email'
   | 'phone'
-  | 'file';
+  | 'file'
+  | 'guests';
 
 export const QUESTIONNAIRE_FIELD_TYPES = [
   { value: 'text', label: 'Text' },
@@ -61,6 +84,7 @@ export const QUESTIONNAIRE_FIELD_TYPES = [
   { value: 'email', label: 'Email' },
   { value: 'phone', label: 'Phone' },
   { value: 'file', label: 'File Upload' },
+  { value: 'guests', label: 'Guest Count' },
 ] as const;
 
 // Create/Update types
@@ -81,7 +105,17 @@ export interface CreateQuestionnaireFieldData {
   required?: boolean;
   order?: number;
   options?: string[] | null;
+  // Phase 1.1
+  description?: string;
+  placeholder?: string;
+  // Phase 1.3 (deprecated)
   is_guest_count?: boolean;
+  // Phase 2.1
+  show_conditions?: ShowConditions;
+  // Phase 4.1
+  max_file_size_mb?: number;
+  allowed_file_types?: string[];
+  max_files?: number;
 }
 
 export type UpdateQuestionnaireFieldData = Partial<CreateQuestionnaireFieldData>;
@@ -117,7 +151,17 @@ export interface QuestionnaireFieldFormData {
   required: boolean;
   order: number;
   options: string[];
+  // Phase 1.1
+  description: string;
+  placeholder: string;
+  // Phase 1.3 (deprecated)
   is_guest_count: boolean;
+  // Phase 2.1
+  show_conditions: ShowConditions;
+  // Phase 4.1
+  max_file_size_mb: number;
+  allowed_file_types: string[];
+  max_files: number;
 }
 
 // Action types

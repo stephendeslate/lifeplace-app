@@ -8,6 +8,8 @@ from .views import (
     currency_format_settings_view,
     LegalDocumentViewSet,
     PublicLegalDocumentView,
+    CompanySettingsView,
+    PublicCompanySettingsView,
 )
 
 app_name = 'settings'
@@ -25,4 +27,10 @@ urlpatterns = [
 
     # Public legal documents
     path('public/legal/<str:document_type>/', PublicLegalDocumentView.as_view(), name='public-legal-document'),
+
+    # Company settings (admin)
+    path('company/', CompanySettingsView.as_view(), name='company-settings'),
+
+    # Public company settings (client-facing)
+    path('public/company/', PublicCompanySettingsView.as_view(), name='public-company-settings'),
 ]

@@ -22,6 +22,7 @@ import {
   CheckCircle as ActiveIcon,
   Cancel as InactiveIcon,
   History as HistoryIcon,
+  SwapVert as ReorderIcon,
 } from '@mui/icons-material';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useLayout } from '../../../contexts/LayoutContext';
@@ -50,6 +51,7 @@ import type { ModernFormSection } from '../../../components/common/ModernForm';
 import { WorkflowStageFormDialog } from '../../../components/workflows/WorkflowStageFormDialog';
 import { WorkflowStagesTable } from '../../../components/workflows/WorkflowStagesTable';
 import { WorkflowExecutionHistory } from '../../../components/workflows/WorkflowExecutionHistory';
+import { WorkflowStageReorderDialog } from '../../../components/workflows/WorkflowStageReorderDialog';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -80,6 +82,7 @@ export const WorkflowTemplateDetails: React.FC = () => {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [stageDialogOpen, setStageDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [reorderDialogOpen, setReorderDialogOpen] = useState(false);
   const [editingStage, setEditingStage] = useState<WorkflowStage | null>(null);
   const [deleteStageId, setDeleteStageId] = useState<number | null>(null);
 
@@ -202,9 +205,18 @@ export const WorkflowTemplateDetails: React.FC = () => {
         is_automated: data.is_automated,
         automation_type: data.automation_type,
         trigger_time: data.trigger_time,
+        email_template: data.email_template,
+        contract_template: data.contract_template,
         task_description: data.task_description,
         progression_condition: data.progression_condition,
         required_tasks_completed: data.required_tasks_completed,
+        // Trigger-on flags
+        trigger_on_payment_received: data.trigger_on_payment_received,
+        trigger_on_quote_accepted: data.trigger_on_quote_accepted,
+        trigger_on_contract_signed: data.trigger_on_contract_signed,
+        trigger_on_event_created: data.trigger_on_event_created,
+        trigger_on_quote_sent: data.trigger_on_quote_sent,
+        metadata: data.metadata,
       };
 
       updateStage({ id: editingStage.id, data: updateData }, {
@@ -224,9 +236,18 @@ export const WorkflowTemplateDetails: React.FC = () => {
         is_automated: data.is_automated,
         automation_type: data.automation_type,
         trigger_time: data.trigger_time,
+        email_template: data.email_template,
+        contract_template: data.contract_template,
         task_description: data.task_description,
         progression_condition: data.progression_condition,
         required_tasks_completed: data.required_tasks_completed,
+        // Trigger-on flags
+        trigger_on_payment_received: data.trigger_on_payment_received,
+        trigger_on_quote_accepted: data.trigger_on_quote_accepted,
+        trigger_on_contract_signed: data.trigger_on_contract_signed,
+        trigger_on_event_created: data.trigger_on_event_created,
+        trigger_on_quote_sent: data.trigger_on_quote_sent,
+        metadata: data.metadata,
       };
 
       createStage(createData, {
@@ -530,14 +551,25 @@ export const WorkflowTemplateDetails: React.FC = () => {
           {/* Header Actions */}
           <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
             <Typography variant="h6">Workflow Stages</Typography>
-            <Button
-              startIcon={<AddIcon />}
-              variant="contained"
-              color="primary"
-              onClick={handleAddStage}
-            >
-              Add Stage
-            </Button>
+            <Stack direction="row" spacing={1}>
+              {stages.length > 1 && (
+                <Button
+                  startIcon={<ReorderIcon />}
+                  variant="outlined"
+                  onClick={() => setReorderDialogOpen(true)}
+                >
+                  Reorder
+                </Button>
+              )}
+              <Button
+                startIcon={<AddIcon />}
+                variant="contained"
+                color="primary"
+                onClick={handleAddStage}
+              >
+                Add Stage
+              </Button>
+            </Stack>
           </Box>
 
           {/* Stages by Type */}
@@ -588,7 +620,7 @@ export const WorkflowTemplateDetails: React.FC = () => {
                         isLoading={isLoadingStages}
                         onEdit={handleEditStage}
                         onDelete={handleDeleteStage}
-                        onReorder={() => {}} // TODO: Implement reordering
+                        onReorder={() => setReorderDialogOpen(true)}
                         isDeleting={isDeletingStage}
                       />
                     )}
@@ -684,6 +716,17 @@ export const WorkflowTemplateDetails: React.FC = () => {
           Are you sure you want to delete this stage? This action cannot be undone.
         </Typography>
       </ModernDialog>
+
+      <WorkflowStageReorderDialog
+        open={reorderDialogOpen}
+        onClose={() => setReorderDialogOpen(false)}
+        templateId={templateId}
+        stages={stages}
+        onReorderComplete={() => {
+          refetchStages();
+          refetchTemplate();
+        }}
+      />
     </ModernSettingsLayout>
   );
 };

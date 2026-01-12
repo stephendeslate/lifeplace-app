@@ -18,7 +18,7 @@ import {
   Settings as SettingsIcon,
 } from '@mui/icons-material';
 import { useLayout } from '../../../contexts/LayoutContext';
-import { usePaymentGateways } from '../../../hooks/usePayments';
+import { usePaymentGateways, useGatewayHealth } from '../../../hooks/usePayments';
 import {
   PaymentGatewayTable,
   PaymentGatewayFormDialog,
@@ -68,6 +68,7 @@ export const Payments: React.FC = () => {
 
   // Data fetching
   const { data: gateways = [], isLoading: gatewaysLoading, refetch: refetchGateways } = usePaymentGateways();
+  const { data: healthData, refetch: refetchHealth } = useGatewayHealth();
 
   useEffect(() => {
     setBreadcrumbs([
@@ -103,6 +104,7 @@ export const Payments: React.FC = () => {
 
   const handleRefresh = () => {
     refetchGateways();
+    refetchHealth();
   };
 
   const handleToggleSearch = () => {
@@ -381,6 +383,7 @@ export const Payments: React.FC = () => {
               gateways={gateways}
               isLoading={gatewaysLoading}
               onEdit={handleEditGateway}
+              healthData={healthData}
             />
           </TabPanel>
 

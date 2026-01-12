@@ -133,6 +133,50 @@ class QuestionnaireService:
         logger.info(f"Reordered questionnaires")
         return questionnaires.order_by('order')
 
+    @staticmethod
+    def duplicate_questionnaire(questionnaire_id, new_name=None):
+        """
+        Duplicate a questionnaire with all its fields.
+
+        Args:
+            questionnaire_id: ID of the questionnaire to duplicate
+            new_name: Optional name for the new questionnaire
+
+        Returns:
+            The newly created questionnaire
+        """
+        original = QuestionnaireService.get_questionnaire_by_id(questionnaire_id)
+
+        with transaction.atomic():
+            # Create new questionnaire
+            new_questionnaire = Questionnaire.objects.create(
+                name=new_name or f"{original.name} (Copy)",
+                event_type=original.event_type,
+                is_active=False,  # Start as inactive for review
+                order=original.order + 1
+            )
+
+            # Copy all fields with all new attributes
+            for field in original.fields.all().order_by('order'):
+                QuestionnaireField.objects.create(
+                    questionnaire=new_questionnaire,
+                    name=field.name,
+                    type=field.type,
+                    required=field.required,
+                    order=field.order,
+                    options=field.options,
+                    description=field.description,
+                    placeholder=field.placeholder,
+                    is_guest_count=field.is_guest_count,
+                    show_conditions=field.show_conditions,
+                    max_file_size_mb=field.max_file_size_mb,
+                    allowed_file_types=field.allowed_file_types,
+                    max_files=field.max_files,
+                )
+
+            logger.info(f"Duplicated questionnaire '{original.name}' to '{new_questionnaire.name}'")
+            return new_questionnaire
+
 
 class QuestionnaireFieldService:
     """Service for managing questionnaire fields"""
@@ -436,8 +480,9 @@ class QuestionnaireResponseService:
     @staticmethod
     def save_event_responses(event_id, responses_data):
         """
-        Save multiple responses for an event at once
-        
+        Save multiple responses for an event at once.
+        Also updates the event's guest count if there are guest-related fields.
+
         Args:
             event_id: ID of the event
             responses_data: List of {field_id, value} dictionaries
@@ -445,22 +490,96 @@ class QuestionnaireResponseService:
         with transaction.atomic():
             # Delete existing responses for this event
             QuestionnaireResponse.objects.filter(event_id=event_id).delete()
-            
+
             # Create new responses
             created_responses = []
             for response_data in responses_data:
                 field_id = response_data.get('field')
                 value = response_data.get('value')
-                
+
                 if not field_id or value is None:
                     continue
-                
+
                 response = QuestionnaireResponseService.create_response({
                     'event_id': event_id,
                     'field_id': field_id,
                     'value': str(value)
                 })
                 created_responses.append(response)
-            
+
             logger.info(f"Saved {len(created_responses)} responses for event {event_id}")
+
+            # Sync guest count after saving responses
+            QuestionnaireResponseService.sync_event_guest_count(event_id)
+
             return created_responses
+
+    @staticmethod
+    def sync_event_guest_count(event_id):
+        """
+        Recalculate and update event guest count from questionnaire responses.
+        Handles both legacy is_guest_count flag and new 'guests' field type.
+
+        Args:
+            event_id: ID of the event to update
+        """
+        import json
+        from core.domains.events.models import Event
+
+        try:
+            event = Event.objects.get(id=event_id)
+        except Event.DoesNotExist:
+            logger.warning(f"Event {event_id} not found for guest count sync")
+            return
+
+        # Get all responses that contribute to guest count
+        guest_responses = QuestionnaireResponse.objects.filter(
+            event_id=event_id
+        ).filter(
+            Q(field__type='guests') | Q(field__is_guest_count=True, field__type='number')
+        ).select_related('field')
+
+        total_guests = 0
+        guest_breakdown = {}
+
+        for response in guest_responses:
+            try:
+                if response.field.type == 'guests':
+                    # New guests field type - expects JSON with categories
+                    # Format: {"Adults": 50, "Children": 10}
+                    categories = response.field.options or []
+                    if categories:
+                        try:
+                            data = json.loads(response.value)
+                            for category, count in data.items():
+                                count_int = int(count)
+                                guest_breakdown[category] = guest_breakdown.get(category, 0) + count_int
+                                total_guests += count_int
+                        except (json.JSONDecodeError, ValueError):
+                            # Try as simple number
+                            total_guests += int(response.value)
+                    else:
+                        # No categories, treat as simple number
+                        total_guests += int(response.value)
+
+                elif response.field.is_guest_count and response.field.type == 'number':
+                    # Legacy is_guest_count flag on number fields
+                    total_guests += int(response.value)
+
+            except (ValueError, TypeError) as e:
+                logger.warning(f"Could not parse guest count from response {response.id}: {e}")
+                continue
+
+        # Update event if there are any guest count values
+        if total_guests > 0 or guest_responses.exists():
+            event.num_participants = total_guests
+            event.save(update_fields=['num_participants'])
+            logger.info(f"Updated event {event_id} guest count to {total_guests}")
+
+            # Also update EventProductOptions for consistent guest count
+            for epo in event.event_products.all():
+                epo.num_participants = total_guests
+                epo.save(update_fields=['num_participants'])
+
+            if guest_breakdown:
+                logger.info(f"Guest breakdown for event {event_id}: {guest_breakdown}")

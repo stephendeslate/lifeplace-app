@@ -25,36 +25,28 @@ export interface PaymentSettings {
   updated_at: string;
 }
 
-// Payment Plan Settings - CONSOLIDATED from bookingflow domain
+/**
+ * Public Payment Plan Settings - matches PublicPaymentSettingsSerializer
+ *
+ * This is the public-facing subset of PaymentSettings exposed to client portal.
+ * Only safe, client-facing fields are included. Internal fields (late fees,
+ * retry settings, grace periods) are intentionally excluded for security.
+ *
+ * For flow-specific overrides, use effective_payment_terms from PaymentInfoStepConfiguration.
+ */
 export interface PaymentPlanSettings {
   id: number;
 
-  // Payment plan settings
+  // Client-facing payment configuration
   balance_due_days: number;
-  grace_period_days: number;
-  default_installments: number;
-  default_installment_frequency: 'WEEKLY' | 'BIWEEKLY' | 'MONTHLY';
-
-  // Deposit settings
   default_deposit_percentage: number;
+  default_currency: string;
 
-  // Late fee settings
-  late_fee_enabled: boolean;
-  default_late_fee_amount: number;
-
-  // Auto retry settings
-  auto_payment_retry_attempts: number;
-  auto_payment_retry_delay_days: number;
-
-  // REFUND POLICY - CONSOLIDATED
+  // Refund policy (public transparency)
   allow_refunds: boolean;
   refund_deadline_hours: number;
   refund_percentage: number;
   refund_policy_text: string;
-
-  // Timestamps
-  created_at?: string;
-  updated_at?: string;
 }
 
 export interface TaxRate {

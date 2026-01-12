@@ -2,13 +2,13 @@
 // Migrated to use the unified settings system
 
 import React, { useState } from 'react';
-import { Quiz as QuestionnaireIcon, Edit as EditIcon } from '@mui/icons-material';
+import { Quiz as QuestionnaireIcon, Edit as EditIcon, Visibility as PreviewIcon } from '@mui/icons-material';
 import { SettingsPage, type SettingsPageConfig, type SettingsTableColumn } from '../../../components/common/settings';
 import { useQuestionnaires } from '../../../hooks/useQuestionnaires';
 import { useEventTypes } from '../../../hooks/useEvents';
 import type { Questionnaire, CreateQuestionnaireData, UpdateQuestionnaireData } from '../../../types/questionnaires.types';
 import type { ModernFormSection } from '../../../components/common/ModernForm';
-import { ManageQuestionsDialog } from '../../../components/questionnaires/ManageQuestionsDialog';
+import { ManageQuestionsDialog, QuestionnairePreviewDialog } from '../../../components/questionnaires';
 
 // Table columns configuration
 const columns: SettingsTableColumn<Questionnaire>[] = [
@@ -113,6 +113,7 @@ const defaultQuestionnaire: Questionnaire = {
 
 export const QuestionnaireTemplates = () => {
   const [manageQuestionsOpen, setManageQuestionsOpen] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
   const [selectedQuestionnaire, setSelectedQuestionnaire] = useState<Questionnaire | null>(null);
 
   // Get questionnaires and event types
@@ -231,6 +232,16 @@ export const QuestionnaireTemplates = () => {
     setSelectedQuestionnaire(null);
   };
 
+  const handlePreview = (questionnaire: Questionnaire) => {
+    setSelectedQuestionnaire(questionnaire);
+    setPreviewOpen(true);
+  };
+
+  const handleClosePreview = () => {
+    setPreviewOpen(false);
+    setSelectedQuestionnaire(null);
+  };
+
   return (
     <>
       <SettingsPage
@@ -248,6 +259,12 @@ export const QuestionnaireTemplates = () => {
         isDeleting={isDeletingQuestionnaire}
         customTableActions={[
           {
+            label: 'Preview',
+            icon: React.createElement(PreviewIcon),
+            onClick: handlePreview,
+            color: 'info',
+          },
+          {
             label: 'Manage Questions',
             icon: React.createElement(EditIcon),
             onClick: handleManageQuestions,
@@ -263,6 +280,12 @@ export const QuestionnaireTemplates = () => {
           id: selectedQuestionnaire.id,
           name: selectedQuestionnaire.name,
         } : null}
+      />
+
+      <QuestionnairePreviewDialog
+        open={previewOpen}
+        onClose={handleClosePreview}
+        questionnaire={selectedQuestionnaire}
       />
     </>
   );

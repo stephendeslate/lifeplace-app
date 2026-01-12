@@ -1,8 +1,8 @@
 # Mobile App Pre-Production TODO List
 
 **Generated:** 2025-12-29
-**Last Updated:** 2026-01-11 (Comprehensive update with verified gaps from PRODUCTION_SERVICES_GUIDE.md)
-**Status:** Cleaned - completed items removed, testing status corrected based on actual codebase analysis
+**Last Updated:** 2026-01-11 (Second verification pass - gaps confirmed against actual codebase)
+**Status:** Updated with verified gaps from codebase analysis
 
 ---
 
@@ -181,16 +181,16 @@ eas credentials
 | Hook tests | ~8 | 1 | `hooks/__tests__/useDashboard.test.tsx` |
 | Utility tests | ~6 | 2 | `utils/currency.test.ts`, `utils/timezone.test.ts` |
 | E2E Maestro flows | ~20 | 4 | `.maestro/auth/login.yaml`, `register.yaml`, `booking/complete-flow.yaml`, `contracts/sign-contract.yaml` |
-| CI/CD workflow | 1 | 0 | None |
-| Accessibility tests | ~10 | 0 | None |
+| CI/CD workflow | 1 | ✅ 1 | `.github/workflows/mobile-tests.yml` (unit tests, E2E, accessibility, security scan, build check) |
+| Accessibility tests | ~10 | 0 | Helpers exist (`src/test/utils/a11yHelpers.ts` - 325 lines) but NO test files use them |
 
 **What's Still Missing:**
 - ~21 more component tests (priority: booking steps, payment components)
 - ~7 more hook tests (priority: `useAuth`, `useBookingSession`, `usePayment`)
 - ~4 more utility tests (priority: `bookingValidation`, `errorHandler`)
 - ~16 more E2E flows (priority: payment flows, settings, documents)
-- `.github/workflows/mobile-tests.yml` (CI/CD)
-- Accessibility tests
+- Accessibility test files (utilities exist at `src/test/utils/a11yHelpers.ts` but NO actual `*.a11y.test.tsx` files)
+- Android E2E tests in CI (only iOS currently - see CI gaps below)
 
 **Priority Test Files to Create:**
 ```
@@ -200,7 +200,43 @@ src/hooks/useAuth.test.ts                               (security critical)
 src/hooks/booking/usePayment.test.ts                    (money critical)
 src/utils/bookingValidation.test.ts                     (data integrity)
 .maestro/payments/make-payment.yaml                     (E2E critical path)
-.github/workflows/mobile-tests.yml                      (CI/CD)
+src/**/*.a11y.test.tsx                                  (accessibility tests to satisfy CI)
+```
+
+### CI/CD Workflow (EXISTS ✅)
+
+**File:** `.github/workflows/mobile-tests.yml` (242 lines)
+
+The workflow runs on push/PR to main, develop, and client-portal branches when mobile-app changes.
+
+**Jobs included:**
+| Job | Description | Runs On |
+|-----|-------------|---------|
+| `unit-tests` | Jest tests with coverage, uploads to Codecov | Every push/PR |
+| `e2e-tests-ios` | Maestro E2E on iOS simulator | Main branch only |
+| `accessibility` | Runs tests matching `a11y` pattern | Every push/PR |
+| `security-scan` | `npm audit` and `better-npm-audit` | Every push/PR |
+| `build-check` | Expo web export + config verification | Every push/PR |
+
+**What's still needed for CI:**
+- Actual accessibility test files (helpers exist at `a11yHelpers.ts` but no tests use them - CI passes with `--passWithNoTests`)
+- Android E2E tests (only iOS currently - no `e2e-tests-android` job exists in workflow)
+- More unit test coverage for critical paths (payment/auth hooks untested)
+
+### CI/CD Gap: Android E2E Tests (VERIFIED)
+
+**Current State:** The workflow only has `e2e-tests-ios` job. No Android equivalent exists.
+
+**Impact:** Android-specific bugs may not be caught before release.
+
+**Required Action:** Add `e2e-tests-android` job to `.github/workflows/mobile-tests.yml`:
+```yaml
+e2e-tests-android:
+  name: E2E Tests (Android)
+  runs-on: ubuntu-latest
+  needs: unit-tests
+  if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+  # ... Android emulator setup and Maestro tests
 ```
 
 ---
@@ -417,6 +453,38 @@ Based on [PRODUCTION_SERVICES_GUIDE.md](../docs/PRODUCTION_SERVICES_GUIDE.md):
 
 ---
 
+## Codebase Verification Summary (2026-01-11)
+
+The following items were **verified against actual code**:
+
+### Confirmed Blockers (Code Evidence Found)
+| Item | Verification | Evidence |
+|------|--------------|----------|
+| SSL placeholder hashes | ✅ Confirmed | `sslPinning.ts:54-64` contains `sha256/AAAA...` and `sha256/BBBB...` |
+| Security check placeholders | ✅ Confirmed | `securityChecks.ts:72,77` contains `YOUR_SIGNING_CERTIFICATE_HASH` and `YOUR_TEAM_ID` |
+| Crash reporting placeholder | ✅ Confirmed | `crashReporting.ts:24,37,46,55` has TODO comments, only console.log stubs |
+| Backend cloud storage missing | ✅ Confirmed | `requirements.txt` has no `django-storages` or `boto3` |
+| Test env values | ✅ Confirmed | `.env:4` has local IP, `.env:7` has `pk_test_` key |
+
+### Confirmed Complete (Code Evidence Found)
+| Item | Verification | Evidence |
+|------|--------------|----------|
+| Apple Pay config | ✅ Complete | `app.json:104` has `merchantIdentifier: merchant.com.lifeplace.app` |
+| Backend Sentry | ✅ Complete | `settings.py:636-672` has full Sentry init with Django/Redis/Celery integrations |
+| Notification service | ✅ Complete | `notifications.ts` - 464 lines with full implementation |
+| Stripe provider | ✅ Complete | `StripeProvider.tsx` configured with merchantIdentifier |
+| Backend tests | ✅ Comprehensive | 28 test files including `test_webhooks.py`, `test_stripe_integration.py` |
+| A11y test helpers | ✅ Complete | `a11yHelpers.ts` - 325 lines of testing utilities |
+
+### Verified Gaps (Missing From TODO List)
+| Gap | Status | Action Required |
+|-----|--------|-----------------|
+| Android E2E in CI | **Missing** | Add `e2e-tests-android` job to workflow |
+| Accessibility test files | **Missing** | Create `*.a11y.test.tsx` files using existing helpers |
+| Critical hook tests | **Missing** | Create `useAuth.test.ts`, `usePayment.test.ts` |
+
+---
+
 ## Quick Reference: What Blocks Production Release
 
 | Blocker | Type | Estimated Effort | Files to Change |
@@ -428,7 +496,21 @@ Based on [PRODUCTION_SERVICES_GUIDE.md](../docs/PRODUCTION_SERVICES_GUIDE.md):
 | APNs/FCM keys | Configuration | 1 hr | EAS credentials (CLI) |
 | Backend cloud storage | Backend code | 2-4 hrs | `settings.py`, `requirements.txt` |
 
-**Estimated Total Time to Production-Ready:** 8-12 hours of focused work
+**Already Complete (Verified Against Codebase):**
+| Item | Status | Location |
+|------|--------|----------|
+| CI/CD workflow | ✅ Complete | `.github/workflows/mobile-tests.yml` (242 lines) |
+| Test infrastructure setup | ✅ Complete | `jest.config.js`, `src/__tests__/utils.tsx` |
+| MSW mock server | ✅ Complete | `src/__tests__/mocks/server.ts` |
+| Apple Pay merchant ID | ✅ Configured | `app.json:104` - `merchant.com.lifeplace.app` |
+| Accessibility test helpers | ✅ Complete | `src/test/utils/a11yHelpers.ts` (325 lines) |
+| Backend payment tests | ✅ Comprehensive | 28 test files in `backend/core/domains/` including webhook tests |
+| Push notification service | ✅ Complete | `src/services/notifications.ts` (464 lines) |
+
+**Estimated Total Time to Production-Ready:** 8-14 hours of focused work
+- P0 blockers: 4-6 hours (config + backend storage)
+- P1 high priority: 3-5 hours (Sentry + credentials)
+- P2 testing gaps: 4-8 hours (Android E2E, accessibility tests, hook tests) - optional for initial release
 
 ---
 
@@ -448,10 +530,16 @@ find src -name "*.test.ts" -o -name "*.test.tsx" | wc -l
 
 # List Maestro E2E flows
 find .maestro -name "*.yaml" | wc -l
+
+# Verify CI/CD workflow exists
+cat ../.github/workflows/mobile-tests.yml | head -20
+
+# Run tests locally
+npm run test:ci
 ```
 
 ---
 
 *This document tracks remaining pre-production work.*
 *Cross-reference with [PRODUCTION_SERVICES_GUIDE.md](../docs/PRODUCTION_SERVICES_GUIDE.md) for backend deployment.*
-*Last updated: 2026-01-11*
+*Last updated: 2026-01-11 (verified against actual codebase - gaps confirmed)*
