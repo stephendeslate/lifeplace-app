@@ -55,16 +55,24 @@ export const AUTOMATION_TYPES = [
 ] as const;
 
 export const TRIGGER_TIMES = [
-  { value: 'ON_CREATION', label: 'Immediately' },
-  { value: 'AFTER_1_HOUR', label: 'After 1 Hour' },
-  { value: 'AFTER_3_HOURS', label: 'After 3 Hours' },
-  { value: 'AFTER_6_HOURS', label: 'After 6 Hours' },
-  { value: 'AFTER_12_HOURS', label: 'After 12 Hours' },
-  { value: 'AFTER_1_DAY', label: 'After 1 Day' },
-  { value: 'AFTER_2_DAYS', label: 'After 2 Days' },
-  { value: 'AFTER_3_DAYS', label: 'After 3 Days' },
-  { value: 'AFTER_1_WEEK', label: 'After 1 Week' },
-  { value: 'AFTER_2_WEEKS', label: 'After 2 Weeks' },
+  // Immediate
+  { value: 'ON_CREATION', label: 'Immediately', category: 'immediate' },
+  // After delays (relative to stage start)
+  { value: 'AFTER_1_HOUR', label: 'After 1 Hour', category: 'after' },
+  { value: 'AFTER_3_HOURS', label: 'After 3 Hours', category: 'after' },
+  { value: 'AFTER_6_HOURS', label: 'After 6 Hours', category: 'after' },
+  { value: 'AFTER_12_HOURS', label: 'After 12 Hours', category: 'after' },
+  { value: 'AFTER_1_DAY', label: 'After 1 Day', category: 'after' },
+  { value: 'AFTER_2_DAYS', label: 'After 2 Days', category: 'after' },
+  { value: 'AFTER_3_DAYS', label: 'After 3 Days', category: 'after' },
+  { value: 'AFTER_1_WEEK', label: 'After 1 Week', category: 'after' },
+  { value: 'AFTER_2_WEEKS', label: 'After 2 Weeks', category: 'after' },
+  // Before event date (relative to event start_date)
+  { value: '30_DAYS_BEFORE_EVENT', label: '30 Days Before Event', category: 'before_event' },
+  { value: '14_DAYS_BEFORE_EVENT', label: '14 Days Before Event', category: 'before_event' },
+  { value: '7_DAYS_BEFORE_EVENT', label: '7 Days Before Event', category: 'before_event' },
+  { value: '3_DAYS_BEFORE_EVENT', label: '3 Days Before Event', category: 'before_event' },
+  { value: '1_DAY_BEFORE_EVENT', label: '1 Day Before Event', category: 'before_event' },
 ] as const;
 
 export const PROGRESSION_CONDITIONS = [

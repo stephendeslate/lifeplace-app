@@ -67,7 +67,22 @@ export const WorkflowVisualization: React.FC<WorkflowVisualizationProps> = ({
       'AFTER_3_DAYS': 'After 3 Days',
       'AFTER_1_WEEK': 'After 1 Week',
       'AFTER_2_WEEKS': 'After 2 Weeks',
+      // Before event triggers
+      '30_DAYS_BEFORE_EVENT': '30 Days Before Event',
+      '14_DAYS_BEFORE_EVENT': '14 Days Before Event',
+      '7_DAYS_BEFORE_EVENT': '7 Days Before Event',
+      '3_DAYS_BEFORE_EVENT': '3 Days Before Event',
+      '1_DAY_BEFORE_EVENT': '1 Day Before Event',
     };
+
+    // Handle dynamic BEFORE_EVENT patterns (e.g., "45_DAYS_BEFORE_EVENT")
+    if (!triggerMap[triggerTime] && triggerTime.includes('BEFORE_EVENT')) {
+      const match = triggerTime.match(/^(\d+)_DAYS?_BEFORE_EVENT$/i);
+      if (match) {
+        const days = parseInt(match[1], 10);
+        return `${days} Day${days !== 1 ? 's' : ''} Before Event`;
+      }
+    }
 
     return triggerMap[triggerTime] || triggerTime;
   };

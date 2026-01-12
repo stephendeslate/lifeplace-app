@@ -831,7 +831,7 @@ export const BookingFlowFormDialog: React.FC<BookingFlowFormDialogProps> = ({
                         ))}
                       </Select>
                       <Typography variant="caption" color="text.secondary" sx={{ mt: 1 }}>
-                        Automated reminder emails before the event
+                        Automated reminder emails sent 7, 3, and 1 day(s) before the event
                       </Typography>
                     </FormControl>
                   </Stack>

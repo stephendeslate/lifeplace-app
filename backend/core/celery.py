@@ -99,6 +99,17 @@ app.conf.update(
             'schedule': 24 * 60 * 60,  # Daily
             'options': {'queue': 'events'}
         },
+        'schedule-event-date-reminders': {
+            'task': 'core.domains.events.tasks.schedule_event_date_reminders',
+            'schedule': 24 * 60 * 60,  # Daily
+            'options': {'queue': 'events'}
+        },
+        # Workflow BEFORE_EVENT trigger sweep
+        'process-before-event-triggers': {
+            'task': 'core.domains.workflows.tasks.process_before_event_triggers',
+            'schedule': 24 * 60 * 60,  # Daily
+            'options': {'queue': 'events'}
+        },
         # Contract expiry tasks
         'expire-contracts': {
             'task': 'core.domains.contracts.tasks.expire_contracts',
