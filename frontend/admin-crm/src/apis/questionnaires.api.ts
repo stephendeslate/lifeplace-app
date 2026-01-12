@@ -61,6 +61,18 @@ export const questionnairesApi = {
     return response.data;
   },
 
+  duplicateQuestionnaire: async (id: number, newName?: string): Promise<Questionnaire> => {
+    const response = await api.post<Questionnaire>(`/questionnaires/questionnaires/${id}/duplicate/`, {
+      name: newName,
+    });
+    return response.data;
+  },
+
+  getValidationRules: async (): Promise<{ rules: Record<string, unknown>; field_types: string[] }> => {
+    const response = await api.get('/questionnaires/questionnaires/validation_rules/');
+    return response.data;
+  },
+
   // Questionnaire Fields
   getQuestionnaireFields: async (questionnaireId: number): Promise<QuestionnaireField[]> => {
     const response = await api.get<QuestionnaireField[]>(`/questionnaires/questionnaires/${questionnaireId}/fields/`);
@@ -133,4 +145,85 @@ export const questionnairesApi = {
     const response = await api.post<QuestionnaireResponse[]>('/questionnaires/responses/save_event_responses/', data);
     return response.data;
   },
+
+  // Analytics
+  getQuestionnaireAnalytics: async (id: number): Promise<QuestionnaireAnalytics> => {
+    const response = await api.get<QuestionnaireAnalytics>(`/questionnaires/questionnaires/${id}/analytics/`);
+    return response.data;
+  },
+
+  getAnalyticsSummary: async (): Promise<QuestionnaireAnalyticsSummary[]> => {
+    const response = await api.get<QuestionnaireAnalyticsSummary[]>('/questionnaires/questionnaires/analytics_summary/');
+    return response.data;
+  },
+
+  getResponseTrends: async (id: number, days?: number): Promise<QuestionnaireResponseTrends> => {
+    const params = days ? `?days=${days}` : '';
+    const response = await api.get<QuestionnaireResponseTrends>(`/questionnaires/questionnaires/${id}/response_trends/${params}`);
+    return response.data;
+  },
+
+  getFieldValueDistribution: async (fieldId: number, limit?: number): Promise<FieldValueDistribution> => {
+    const params = limit ? `?limit=${limit}` : '';
+    const response = await api.get<FieldValueDistribution>(`/questionnaires/fields/${fieldId}/value_distribution/${params}`);
+    return response.data;
+  },
 };
+
+// Analytics types
+export interface QuestionnaireAnalytics {
+  questionnaire_id: number;
+  questionnaire_name: string;
+  total_fields: number;
+  required_fields: number;
+  events_with_responses: number;
+  complete_responses: number;
+  incomplete_responses: number;
+  completion_rate: number;
+  field_completion_rates: Record<string, FieldCompletionRate>;
+  recent_activity: {
+    last_7_days: number;
+    last_30_days: number;
+    last_90_days: number;
+  };
+}
+
+export interface FieldCompletionRate {
+  field_id: number;
+  field_type: string;
+  required: boolean;
+  response_count: number;
+  completion_rate: number;
+}
+
+export interface QuestionnaireAnalyticsSummary {
+  questionnaire_id: number;
+  questionnaire_name: string;
+  is_active: boolean;
+  total_fields: number;
+  events_with_responses: number;
+  total_responses: number;
+}
+
+export interface QuestionnaireResponseTrends {
+  questionnaire_id: number;
+  questionnaire_name: string;
+  period_days: number;
+  daily_counts: Array<{
+    date: string | null;
+    events: number;
+    responses: number;
+  }>;
+}
+
+export interface FieldValueDistribution {
+  field_id: number;
+  field_name: string;
+  field_type: string;
+  total_responses: number;
+  distribution: Array<{
+    value: string;
+    count: number;
+    percentage: number;
+  }>;
+}

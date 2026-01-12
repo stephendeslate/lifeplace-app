@@ -54,6 +54,13 @@ class WorkflowStage(BaseModel):
         )
     )
     email_template = models.ForeignKey('communications.CommunicationTemplate', on_delete=models.SET_NULL, null=True, blank=True)
+    contract_template = models.ForeignKey(
+        'contracts.ContractTemplate',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        help_text="Contract template to use for CONTRACT automation"
+    )
     task_description = models.TextField(blank=True)
     
     # New fields for enhanced workflow stages
@@ -222,29 +229,37 @@ class WorkflowStage(BaseModel):
                 from core.domains.contracts.models import EventContract, ContractTemplate
                 from core.domains.contracts.services import EventContractService
 
-                contract_template_id = self.metadata.get('contract_template_id')
-                if not contract_template_id:
-                    logger.error(
-                        f"No contract template ID configured in metadata for stage '{self.name}' "
-                        f"(stage_id={self.id}). Skipping contract generation."
-                    )
-                    return
+                # Use FK field first, fall back to metadata for backward compatibility
+                contract_template_obj = None
+                contract_template_id = None
 
-                # Validate contract template exists
-                try:
-                    contract_template = ContractTemplate.objects.get(id=contract_template_id)
-                except ContractTemplate.DoesNotExist:
+                if self.contract_template:
+                    # Use the FK field (preferred)
+                    contract_template_obj = self.contract_template
+                    contract_template_id = self.contract_template.id
+                elif self.metadata.get('contract_template_id'):
+                    # Fall back to metadata for backward compatibility
+                    contract_template_id = self.metadata.get('contract_template_id')
+                    try:
+                        contract_template_obj = ContractTemplate.objects.get(id=contract_template_id)
+                    except ContractTemplate.DoesNotExist:
+                        logger.error(
+                            f"Contract template ID {contract_template_id} not found for stage '{self.name}'. "
+                            f"Available templates: {list(ContractTemplate.objects.values_list('id', 'name'))}. "
+                            f"Skipping contract generation."
+                        )
+                        return
+                else:
                     logger.error(
-                        f"Contract template ID {contract_template_id} not found for stage '{self.name}'. "
-                        f"Available templates: {list(ContractTemplate.objects.values_list('id', 'name'))}. "
-                        f"Skipping contract generation."
+                        f"No contract template configured for stage '{self.name}' "
+                        f"(stage_id={self.id}). Skipping contract generation."
                     )
                     return
 
                 # Check if contract already exists for this event
                 existing_contract = EventContract.objects.filter(
                     event=event,
-                    template=contract_template,
+                    template=contract_template_obj,
                     is_amendment=False
                 ).first()
 

@@ -31,6 +31,12 @@ export interface WorkflowStage {
   task_description: string;
   progression_condition: string;
   required_tasks_completed: boolean;
+  // Trigger-on flags for conditional automation
+  trigger_on_payment_received: boolean;
+  trigger_on_quote_accepted: boolean;
+  trigger_on_contract_signed: boolean;
+  trigger_on_event_created: boolean;
+  trigger_on_quote_sent: boolean;
   metadata: Record<string, unknown>;
   created_at: string;
   updated_at: string;
@@ -108,6 +114,12 @@ export interface CreateWorkflowStageData {
   task_description?: string;
   progression_condition?: string;
   required_tasks_completed?: boolean;
+  // Trigger-on flags for conditional automation
+  trigger_on_payment_received?: boolean;
+  trigger_on_quote_accepted?: boolean;
+  trigger_on_contract_signed?: boolean;
+  trigger_on_event_created?: boolean;
+  trigger_on_quote_sent?: boolean;
   metadata?: Record<string, unknown>;
 }
 

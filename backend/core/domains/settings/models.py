@@ -455,3 +455,235 @@ class MobileAppVersion(BaseModel):
 
     def __str__(self):
         return f"{self.get_platform_display()} - v{self.latest_version}"
+
+
+class CompanySettings(BaseModel):
+    """
+    Centralized company/business information for branding and documents.
+    Follows singleton pattern - only one instance allowed.
+    """
+
+    # Basic Information
+    company_name = models.CharField(
+        max_length=255,
+        default='LifePlace Retreat & Events Center',
+        help_text="Official company name"
+    )
+    company_tagline = models.CharField(
+        max_length=255,
+        blank=True,
+        help_text="Company tagline or slogan"
+    )
+
+    # Logo and Branding
+    logo = models.ImageField(
+        upload_to='company/logos/',
+        null=True,
+        blank=True,
+        help_text="Company logo (recommended: PNG, 300x100px)"
+    )
+    logo_dark = models.ImageField(
+        upload_to='company/logos/',
+        null=True,
+        blank=True,
+        help_text="Logo for dark backgrounds"
+    )
+    favicon = models.ImageField(
+        upload_to='company/icons/',
+        null=True,
+        blank=True,
+        help_text="Favicon (recommended: 32x32px PNG)"
+    )
+
+    # Brand Colors
+    primary_color = models.CharField(
+        max_length=7,
+        default='#2c5aa0',
+        help_text="Primary brand color (hex code)"
+    )
+    secondary_color = models.CharField(
+        max_length=7,
+        default='#1a365d',
+        help_text="Secondary brand color (hex code)"
+    )
+    accent_color = models.CharField(
+        max_length=7,
+        default='#38a169',
+        help_text="Accent color for highlights (hex code)"
+    )
+
+    # Contact Information
+    email = models.EmailField(
+        default='info@lifeplacealfonso.com',
+        help_text="Primary contact email"
+    )
+    support_email = models.EmailField(
+        default='support@lifeplacealfonso.com',
+        help_text="Support email address"
+    )
+    phone = models.CharField(
+        max_length=20,
+        blank=True,
+        help_text="Primary phone number"
+    )
+    phone_secondary = models.CharField(
+        max_length=20,
+        blank=True,
+        help_text="Secondary phone number"
+    )
+
+    # Address
+    address_line1 = models.CharField(
+        max_length=255,
+        blank=True,
+        help_text="Street address line 1"
+    )
+    address_line2 = models.CharField(
+        max_length=255,
+        blank=True,
+        help_text="Street address line 2"
+    )
+    city = models.CharField(
+        max_length=100,
+        default='Alfonso',
+        help_text="City"
+    )
+    province = models.CharField(
+        max_length=100,
+        default='Cavite',
+        help_text="Province/State"
+    )
+    postal_code = models.CharField(
+        max_length=20,
+        blank=True,
+        help_text="Postal/ZIP code"
+    )
+    country = models.CharField(
+        max_length=100,
+        default='Philippines',
+        help_text="Country"
+    )
+
+    # Business Registration
+    business_registration_number = models.CharField(
+        max_length=100,
+        blank=True,
+        help_text="Business registration/TIN number"
+    )
+    vat_number = models.CharField(
+        max_length=100,
+        blank=True,
+        help_text="VAT registration number"
+    )
+
+    # Online Presence
+    website = models.URLField(
+        default='https://lifeplacealfonso.com',
+        help_text="Company website URL"
+    )
+    facebook_url = models.URLField(
+        blank=True,
+        help_text="Facebook page URL"
+    )
+    instagram_url = models.URLField(
+        blank=True,
+        help_text="Instagram profile URL"
+    )
+
+    # PDF/Document Settings
+    pdf_footer_text = models.TextField(
+        blank=True,
+        default='Thank you for choosing LifePlace Retreat & Events Center!',
+        help_text="Footer text for PDF documents"
+    )
+    invoice_terms = models.TextField(
+        blank=True,
+        help_text="Default invoice payment terms"
+    )
+    receipt_terms = models.TextField(
+        blank=True,
+        help_text="Terms printed on receipts"
+    )
+
+    # Bank Details (for invoices)
+    bank_name = models.CharField(
+        max_length=100,
+        blank=True,
+        help_text="Bank name for wire transfers"
+    )
+    bank_account_name = models.CharField(
+        max_length=255,
+        blank=True,
+        help_text="Account holder name"
+    )
+    bank_account_number = models.CharField(
+        max_length=50,
+        blank=True,
+        help_text="Bank account number"
+    )
+    bank_branch = models.CharField(
+        max_length=100,
+        blank=True,
+        help_text="Bank branch"
+    )
+    bank_swift_code = models.CharField(
+        max_length=20,
+        blank=True,
+        help_text="SWIFT/BIC code for international transfers"
+    )
+
+    class Meta:
+        verbose_name = "Company Settings"
+        verbose_name_plural = "Company Settings"
+
+    def __str__(self):
+        return f"Company Settings - {self.company_name}"
+
+    def save(self, *args, **kwargs):
+        # Ensure only one instance exists (singleton pattern)
+        if not self.pk and CompanySettings.objects.exists():
+            raise ValueError("Only one CompanySettings instance is allowed")
+        super().save(*args, **kwargs)
+
+    @classmethod
+    def get_settings(cls):
+        """Get or create the singleton company settings instance."""
+        settings, created = cls.objects.get_or_create(pk=1)
+        return settings
+
+    def get_full_address(self):
+        """Return formatted full address."""
+        parts = [self.address_line1]
+        if self.address_line2:
+            parts.append(self.address_line2)
+        parts.append(f"{self.city}, {self.province} {self.postal_code}".strip())
+        parts.append(self.country)
+        return '\n'.join(filter(None, parts))
+
+    def get_logo_url(self):
+        """Get the logo URL or None."""
+        if self.logo:
+            return self.logo.url
+        return None
+
+    def to_pdf_context(self):
+        """Return context dict for PDF generation."""
+        return {
+            'company_name': self.company_name,
+            'company_tagline': self.company_tagline,
+            'logo_path': self.logo.path if self.logo else None,
+            'primary_color': self.primary_color,
+            'secondary_color': self.secondary_color,
+            'email': self.email,
+            'phone': self.phone,
+            'website': self.website,
+            'full_address': self.get_full_address(),
+            'business_registration_number': self.business_registration_number,
+            'vat_number': self.vat_number,
+            'bank_name': self.bank_name,
+            'bank_account_name': self.bank_account_name,
+            'bank_account_number': self.bank_account_number,
+            'bank_branch': self.bank_branch,
+            'pdf_footer_text': self.pdf_footer_text,
+            'invoice_terms': self.invoice_terms,
+        }

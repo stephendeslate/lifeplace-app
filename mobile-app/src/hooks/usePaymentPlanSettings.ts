@@ -113,13 +113,11 @@ export const useBalanceDueDate = (eventDate?: string) => {
     return {
       balanceDueDays: 7, // Default fallback
       balanceDueDate: null,
-      gracePeriodDays: 3,
       isLoading,
     };
   }
 
   const balanceDueDays = settings.balance_due_days || 7;
-  const gracePeriodDays = settings.grace_period_days || 3;
 
   // Calculate balance due date (balanceDueDays before event)
   const eventDateObj = new Date(eventDate);
@@ -129,7 +127,6 @@ export const useBalanceDueDate = (eventDate?: string) => {
   return {
     balanceDueDays,
     balanceDueDate: balanceDueDate.toISOString().split('T')[0],
-    gracePeriodDays,
     isLoading,
   };
 };

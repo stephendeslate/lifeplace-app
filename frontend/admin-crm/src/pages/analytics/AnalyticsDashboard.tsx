@@ -8,6 +8,8 @@ import BusinessIcon from '@mui/icons-material/Business';
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
 import GroupAddIcon from '@mui/icons-material/GroupAdd';
 import PercentIcon from '@mui/icons-material/Percent';
+import TimelineIcon from '@mui/icons-material/Timeline';
+import QuizIcon from '@mui/icons-material/Quiz';
 
 import { KPICard, DateRangeFilter } from '../../components/analytics';
 import { useDashboardKPIs, useDateRange } from '../../hooks/useAnalytics';
@@ -15,6 +17,8 @@ import { SalesReportsTab } from './tabs/SalesReportsTab';
 import { EventsReportsTab } from './tabs/EventsReportsTab';
 import { CustomersReportsTab } from './tabs/CustomersReportsTab';
 import { OperationsReportsTab } from './tabs/OperationsReportsTab';
+import { BookingFlowTab } from './tabs/BookingFlowTab';
+import { QuestionnairesTab } from './tabs/QuestionnairesTab';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -183,6 +187,16 @@ export const AnalyticsDashboard: React.FC = () => {
             iconPosition="start"
             label="Operations"
           />
+          <Tab
+            icon={<TimelineIcon />}
+            iconPosition="start"
+            label="Booking Flows"
+          />
+          <Tab
+            icon={<QuizIcon />}
+            iconPosition="start"
+            label="Questionnaires"
+          />
         </Tabs>
       </Paper>
 
@@ -198,6 +212,12 @@ export const AnalyticsDashboard: React.FC = () => {
       </TabPanel>
       <TabPanel value={activeTab} index={3}>
         <OperationsReportsTab dateRange={dateRange} />
+      </TabPanel>
+      <TabPanel value={activeTab} index={4}>
+        <BookingFlowTab dateRange={dateRange} />
+      </TabPanel>
+      <TabPanel value={activeTab} index={5}>
+        <QuestionnairesTab dateRange={dateRange} />
       </TabPanel>
     </Box>
   );

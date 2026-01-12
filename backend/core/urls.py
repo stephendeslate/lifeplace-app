@@ -33,6 +33,7 @@ urlpatterns = [
     path('api/notes/', include('core.domains.notes.urls')),
     path('api/notifications/', include('core.domains.notifications.urls')),
     path('api/analytics/', include('core.domains.analytics.urls_v2')),
+    path('api/client/analytics/', include('core.domains.analytics.urls_client')),
     path('api/settings/', include('core.domains.settings.urls')),
     path('api/messaging/', include('core.domains.messaging.urls')),
     path('api/vip/', include('core.domains.vip.urls')),

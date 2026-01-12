@@ -10,6 +10,8 @@ from reportlab.lib.units import inch
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
 from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT, TA_JUSTIFY
 
+from core.utils.pdf_branding import PDFBrandingService
+
 logger = logging.getLogger(__name__)
 
 
@@ -29,6 +31,10 @@ class QuotePDFService:
         """
         buffer = io.BytesIO()
 
+        # Get branding from CompanySettings
+        branding = PDFBrandingService.get_branding_context()
+        primary_color = branding.primary_color_rgb
+
         # Create the PDF document
         doc = SimpleDocTemplate(
             buffer,
@@ -43,14 +49,14 @@ class QuotePDFService:
         story = []
         styles = getSampleStyleSheet()
 
-        # Custom styles
+        # Custom styles using dynamic branding colors
         title_style = ParagraphStyle(
             'CustomTitle',
             parent=styles['Heading1'],
             fontSize=20,
             spaceAfter=30,
             alignment=TA_CENTER,
-            textColor=colors.HexColor('#2c5aa0')
+            textColor=primary_color
         )
 
         subtitle_style = ParagraphStyle(
@@ -58,7 +64,7 @@ class QuotePDFService:
             parent=styles['Heading2'],
             fontSize=14,
             spaceAfter=20,
-            textColor=colors.HexColor('#2c5aa0')
+            textColor=primary_color
         )
 
         body_style = ParagraphStyle(
@@ -81,7 +87,7 @@ class QuotePDFService:
             'HeaderText',
             parent=styles['Normal'],
             fontSize=12,
-            textColor=colors.HexColor('#2c5aa0'),
+            textColor=primary_color,
             alignment=TA_RIGHT
         )
 
@@ -111,7 +117,7 @@ class QuotePDFService:
             ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
             ('FONTSIZE', (0, 0), (-1, -1), 10),
             ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
-            ('TEXTCOLOR', (0, 0), (0, -1), colors.HexColor('#2c5aa0')),
+            ('TEXTCOLOR', (0, 0), (0, -1), primary_color),
             ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
             ('VALIGN', (0, 0), (-1, -1), 'TOP'),
             ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
@@ -156,7 +162,7 @@ class QuotePDFService:
             ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
             ('FONTSIZE', (0, 0), (-1, -1), 10),
             ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
-            ('TEXTCOLOR', (0, 0), (0, -1), colors.HexColor('#2c5aa0')),
+            ('TEXTCOLOR', (0, 0), (0, -1), primary_color),
             ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
             ('VALIGN', (0, 0), (-1, -1), 'TOP'),
             ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
@@ -192,7 +198,7 @@ class QuotePDFService:
         items_table = Table(items_data, colWidths=[3*inch, 0.7*inch, 1.2*inch, 1.3*inch])
         items_table.setStyle(TableStyle([
             # Header row
-            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#2c5aa0')),
+            ('BACKGROUND', (0, 0), (-1, 0), primary_color),
             ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
             ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
             ('FONTSIZE', (0, 0), (-1, 0), 10),
@@ -238,9 +244,9 @@ class QuotePDFService:
             # Total row (last row)
             ('FONTNAME', (0, -1), (-1, -1), 'Helvetica-Bold'),
             ('FONTSIZE', (0, -1), (-1, -1), 12),
-            ('TEXTCOLOR', (0, -1), (-1, -1), colors.HexColor('#2c5aa0')),
+            ('TEXTCOLOR', (0, -1), (-1, -1), primary_color),
             ('ALIGN', (0, -1), (-1, -1), 'RIGHT'),
-            ('LINEABOVE', (0, -1), (-1, -1), 2, colors.HexColor('#2c5aa0')),
+            ('LINEABOVE', (0, -1), (-1, -1), 2, primary_color),
 
             # All rows
             ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),

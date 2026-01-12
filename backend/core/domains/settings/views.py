@@ -7,7 +7,7 @@ from rest_framework.views import APIView
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from packaging import version as semver
-from .models import AppSettings, CurrencySettings, LegalDocument, MobileAppVersion
+from .models import AppSettings, CurrencySettings, LegalDocument, MobileAppVersion, CompanySettings
 from .serializers import (
     CurrencySettingsSerializer,
     CurrencySettingsCreateSerializer,
@@ -18,6 +18,8 @@ from .serializers import (
     LegalDocumentUpdateSerializer,
     PublicLegalDocumentSerializer,
     MobileAppVersionSerializer,
+    CompanySettingsSerializer,
+    PublicCompanySettingsSerializer,
 )
 from .services import AppSettingsService, CurrencySettingsService
 import logging
@@ -341,6 +343,82 @@ class PublicLegalDocumentView(APIView):
             return Response({
                 'success': False,
                 'message': 'Failed to retrieve legal document'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class CompanySettingsView(APIView):
+    """
+    API for managing company settings (singleton).
+    Used for branding, contact info, and PDF generation context.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        """Get company settings (admin view with all fields)"""
+        try:
+            settings = CompanySettings.get_settings()
+            serializer = CompanySettingsSerializer(settings)
+            return Response({
+                'success': True,
+                'data': serializer.data,
+                'message': 'Company settings retrieved successfully'
+            })
+        except Exception as e:
+            logger.error(f"Failed to get company settings: {e}")
+            return Response({
+                'success': False,
+                'message': 'Failed to retrieve company settings'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def put(self, request):
+        """Update company settings"""
+        try:
+            settings = CompanySettings.get_settings()
+            serializer = CompanySettingsSerializer(settings, data=request.data, partial=True)
+
+            if serializer.is_valid():
+                serializer.save()
+                return Response({
+                    'success': True,
+                    'data': serializer.data,
+                    'message': 'Company settings updated successfully'
+                })
+            else:
+                return Response({
+                    'success': False,
+                    'message': 'Invalid data',
+                    'errors': serializer.errors
+                }, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            logger.error(f"Failed to update company settings: {e}")
+            return Response({
+                'success': False,
+                'message': str(e)
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+
+class PublicCompanySettingsView(APIView):
+    """
+    Public API for company branding information.
+    Used by client-facing applications (excludes sensitive data).
+    """
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request):
+        """Get public company settings"""
+        try:
+            settings = CompanySettings.get_settings()
+            serializer = PublicCompanySettingsSerializer(settings)
+            return Response({
+                'success': True,
+                'data': serializer.data,
+                'message': 'Company information retrieved successfully'
+            })
+        except Exception as e:
+            logger.error(f"Failed to get public company settings: {e}")
+            return Response({
+                'success': False,
+                'message': 'Failed to retrieve company information'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 

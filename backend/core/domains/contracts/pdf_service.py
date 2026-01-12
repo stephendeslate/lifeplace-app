@@ -18,6 +18,8 @@ import re
 import base64
 from io import BytesIO
 
+from core.utils.pdf_branding import PDFBrandingService
+
 logger = logging.getLogger(__name__)
 
 
@@ -28,15 +30,19 @@ class ContractPDFService:
     def generate_contract_pdf(contract):
         """
         Generate a PDF version of a signed contract
-        
+
         Args:
             contract: EventContract instance
-            
+
         Returns:
             BytesIO buffer containing the PDF
         """
         buffer = io.BytesIO()
-        
+
+        # Get branding from CompanySettings
+        branding = PDFBrandingService.get_branding_context()
+        primary_color = branding.primary_color_rgb
+
         # Create the PDF document
         doc = SimpleDocTemplate(
             buffer,
@@ -46,27 +52,27 @@ class ContractPDFService:
             topMargin=72,
             bottomMargin=72,
         )
-        
+
         # Build the story (content)
         story = []
         styles = getSampleStyleSheet()
-        
-        # Custom styles
+
+        # Custom styles using dynamic branding colors
         title_style = ParagraphStyle(
             'CustomTitle',
             parent=styles['Heading1'],
             fontSize=18,
             spaceAfter=30,
             alignment=TA_CENTER,
-            textColor=colors.HexColor('#2c5aa0')
+            textColor=primary_color
         )
-        
+
         subtitle_style = ParagraphStyle(
             'CustomSubtitle',
             parent=styles['Heading2'],
             fontSize=14,
             spaceAfter=20,
-            textColor=colors.HexColor('#2c5aa0')
+            textColor=primary_color
         )
         
         body_style = ParagraphStyle(
@@ -162,7 +168,7 @@ class ContractPDFService:
             
             sig_table = Table(signatures_data, colWidths=[1.2*inch, 1.5*inch, 2*inch, 1.2*inch, 1.1*inch])
             sig_table.setStyle(TableStyle([
-                ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#2c5aa0')),
+                ('BACKGROUND', (0, 0), (-1, 0), primary_color),
                 ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
                 ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
                 ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
@@ -251,15 +257,19 @@ class ContractPDFService:
     def generate_signature_summary_pdf(contract):
         """
         Generate a signature summary PDF for contracts
-        
+
         Args:
             contract: EventContract instance
-            
+
         Returns:
             BytesIO buffer containing the PDF
         """
         buffer = io.BytesIO()
-        
+
+        # Get branding from CompanySettings
+        branding = PDFBrandingService.get_branding_context()
+        primary_color = branding.primary_color_rgb
+
         doc = SimpleDocTemplate(
             buffer,
             pagesize=A4,
@@ -268,17 +278,17 @@ class ContractPDFService:
             topMargin=72,
             bottomMargin=72,
         )
-        
+
         story = []
         styles = getSampleStyleSheet()
-        
+
         title_style = ParagraphStyle(
             'Title',
             parent=styles['Heading1'],
             fontSize=16,
             spaceAfter=30,
             alignment=TA_CENTER,
-            textColor=colors.HexColor('#2c5aa0')
+            textColor=primary_color
         )
         
         # Title

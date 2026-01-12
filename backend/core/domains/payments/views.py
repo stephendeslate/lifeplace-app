@@ -322,6 +322,88 @@ class PaymentGatewayViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
+    @action(detail=False, methods=['get'])
+    def health(self, request):
+        """
+        Get health status for all payment gateways.
+
+        Returns health information including:
+        - Configuration status
+        - Last successful transaction
+        - Test mode status
+        - Any error messages
+        """
+        from django.utils import timezone
+        from datetime import timedelta
+
+        gateways = self.get_queryset()
+        health_data = {}
+
+        for gateway in gateways:
+            # Check if gateway is properly configured
+            is_configured = False
+            test_mode = False
+            error_message = None
+
+            if gateway.config:
+                # Check for Stripe configuration
+                if gateway.code == 'stripe':
+                    is_configured = bool(
+                        gateway.config.get('publishable_key') and
+                        gateway.config.get('secret_key')
+                    )
+                    test_mode = gateway.config.get('test_mode', False)
+                # Check for PayMongo configuration
+                elif gateway.code == 'paymongo':
+                    is_configured = bool(
+                        gateway.config.get('public_key') and
+                        gateway.config.get('secret_key')
+                    )
+                    test_mode = gateway.config.get('test_mode', False)
+                # Generic check for other gateways
+                else:
+                    is_configured = len(gateway.config) > 0
+                    test_mode = gateway.config.get('test_mode', False)
+
+            # Get last successful transaction
+            last_transaction = PaymentTransaction.objects.filter(
+                gateway=gateway,
+                status='COMPLETED'
+            ).order_by('-created_at').first()
+
+            last_successful = last_transaction.created_at.isoformat() if last_transaction else None
+
+            # Determine health status
+            if not gateway.is_active:
+                health_status = 'unknown'
+            elif not is_configured:
+                health_status = 'unhealthy'
+                error_message = 'Gateway is not properly configured'
+            elif last_transaction:
+                # Check if there was a successful transaction in the last 24 hours
+                if last_transaction.created_at > timezone.now() - timedelta(hours=24):
+                    health_status = 'healthy'
+                else:
+                    health_status = 'degraded'
+                    error_message = 'No recent transactions'
+            else:
+                # No transactions but configured - could be new gateway
+                health_status = 'degraded'
+                error_message = 'No transaction history'
+
+            health_data[gateway.id] = {
+                'gateway_id': gateway.id,
+                'gateway_code': gateway.code,
+                'status': health_status,
+                'last_checked': timezone.now().isoformat(),
+                'last_successful_transaction': last_successful,
+                'error_message': error_message,
+                'is_configured': is_configured,
+                'test_mode': test_mode,
+            }
+
+        return Response(health_data)
+
 
 class TaxRateViewSet(viewsets.ModelViewSet):
     """ViewSet for managing tax rates"""

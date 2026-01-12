@@ -31,10 +31,11 @@ class WorkflowTriggerSerializer(serializers.ModelSerializer):
 
 class WorkflowStageDetailSerializer(WorkflowStageSerializer):
     """Detailed serializer for WorkflowStage including related objects"""
-    email_template_name = serializers.CharField(source='email_template.name', read_only=True)
-    
+    email_template_name = serializers.CharField(source='email_template.name', read_only=True, allow_null=True)
+    contract_template_name = serializers.CharField(source='contract_template.name', read_only=True, allow_null=True)
+
     class Meta(WorkflowStageSerializer.Meta):
-        fields = WorkflowStageSerializer.Meta.fields + ['email_template_name']
+        fields = WorkflowStageSerializer.Meta.fields + ['email_template_name', 'contract_template_name']
 
 
 class WorkflowTemplateDetailSerializer(WorkflowTemplateSerializer):

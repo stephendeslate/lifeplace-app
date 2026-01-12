@@ -23,6 +23,7 @@ import { TimePicker } from '@mui/x-date-pickers/TimePicker';
 import {
   CloudUpload as UploadIcon,
   Preview as PreviewIcon,
+  Group as GuestsIcon,
 } from '@mui/icons-material';
 import type { Questionnaire, QuestionnaireField } from '../../types/questionnaires.types';
 
@@ -35,64 +36,81 @@ export const QuestionnairePreview: React.FC<QuestionnairePreviewProps> = ({
   questionnaire,
   compact = false,
 }) => {
+  // Helper to wrap field with description
+  const withDescription = (fieldElement: React.ReactNode, field: QuestionnaireField) => (
+    <Box>
+      {fieldElement}
+      {field.description && (
+        <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+          {field.description}
+        </Typography>
+      )}
+    </Box>
+  );
+
   const renderField = (field: QuestionnaireField) => {
     const isRequired = field.required;
     const label = `${field.name}${isRequired ? ' *' : ''}`;
+    const placeholder = field.placeholder || undefined;
 
     switch (field.type) {
       case 'text':
-        return (
+        return withDescription(
           <TextField
             fullWidth
             label={label}
-            placeholder={`Enter ${field.name.toLowerCase()}`}
+            placeholder={placeholder || `Enter ${field.name.toLowerCase()}`}
             required={isRequired}
             disabled
             size={compact ? 'small' : 'medium'}
-          />
+          />,
+          field
         );
 
       case 'number':
-        return (
+        return withDescription(
           <TextField
             fullWidth
             label={label}
             type="number"
-            placeholder="0"
+            placeholder={placeholder || '0'}
             required={isRequired}
             disabled
             size={compact ? 'small' : 'medium'}
-          />
+          />,
+          field
         );
 
       case 'email':
-        return (
+        return withDescription(
           <TextField
             fullWidth
             label={label}
             type="email"
-            placeholder="example@email.com"
+            placeholder={placeholder || 'example@email.com'}
             required={isRequired}
             disabled
             size={compact ? 'small' : 'medium'}
-          />
+          />,
+          field
         );
 
       case 'phone':
-        return (
+        return withDescription(
           <TextField
             fullWidth
             label={label}
             type="tel"
-            placeholder="+1 (555) 123-4567"
+            placeholder={placeholder || '+1 (555) 123-4567'}
             required={isRequired}
             disabled
             size={compact ? 'small' : 'medium'}
-          />
+          />,
+          field
         );
 
       case 'date':
-        return (
+        return withDescription(
           <DatePicker
             label={label}
             disabled
@@ -103,11 +121,12 @@ export const QuestionnairePreview: React.FC<QuestionnairePreviewProps> = ({
                 size: compact ? 'small' : 'medium',
               }
             }}
-          />
+          />,
+          field
         );
 
       case 'time':
-        return (
+        return withDescription(
           <TimePicker
             label={label}
             disabled
@@ -118,20 +137,22 @@ export const QuestionnairePreview: React.FC<QuestionnairePreviewProps> = ({
                 size: compact ? 'small' : 'medium',
               }
             }}
-          />
+          />,
+          field
         );
 
       case 'boolean':
-        return (
+        return withDescription(
           <FormControlLabel
             control={<Checkbox disabled />}
             label={label}
             sx={{ alignItems: 'flex-start' }}
-          />
+          />,
+          field
         );
 
       case 'select':
-        return (
+        return withDescription(
           <FormControl fullWidth size={compact ? 'small' : 'medium'}>
             <InputLabel>{label}</InputLabel>
             <Select
@@ -145,11 +166,12 @@ export const QuestionnairePreview: React.FC<QuestionnairePreviewProps> = ({
                 </MenuItem>
               ))}
             </Select>
-          </FormControl>
+          </FormControl>,
+          field
         );
 
       case 'multi-select':
-        return (
+        return withDescription(
           <Box>
             <Typography variant="body2" color="text.secondary" gutterBottom>
               {label}
@@ -163,11 +185,12 @@ export const QuestionnairePreview: React.FC<QuestionnairePreviewProps> = ({
                 />
               ))}
             </Stack>
-          </Box>
+          </Box>,
+          field
         );
 
       case 'file':
-        return (
+        return withDescription(
           <Box>
             <Typography variant="body2" color="text.secondary" gutterBottom>
               {label}
@@ -177,7 +200,7 @@ export const QuestionnairePreview: React.FC<QuestionnairePreviewProps> = ({
               startIcon={<UploadIcon />}
               disabled
               fullWidth
-              sx={{ 
+              sx={{
                 justifyContent: 'flex-start',
                 color: 'text.disabled',
                 borderColor: 'text.disabled',
@@ -185,19 +208,70 @@ export const QuestionnairePreview: React.FC<QuestionnairePreviewProps> = ({
             >
               Choose file to upload
             </Button>
-          </Box>
+            {(field.max_file_size_mb || field.allowed_file_types?.length > 0) && (
+              <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                {field.allowed_file_types?.length > 0 && `Allowed: ${field.allowed_file_types.join(', ')}`}
+                {field.allowed_file_types?.length > 0 && field.max_file_size_mb && ' • '}
+                {field.max_file_size_mb && `Max size: ${field.max_file_size_mb}MB`}
+                {field.max_files > 1 && ` • Up to ${field.max_files} files`}
+              </Typography>
+            )}
+          </Box>,
+          field
+        );
+
+      case 'guests':
+        return withDescription(
+          <Box>
+            <Box display="flex" alignItems="center" gap={1} mb={1}>
+              <GuestsIcon color="primary" fontSize="small" />
+              <Typography variant="body2" color="text.secondary">
+                {label}
+              </Typography>
+            </Box>
+            {field.options && field.options.length > 0 ? (
+              <Stack spacing={1}>
+                {field.options.map((category, index) => (
+                  <Box key={index} display="flex" alignItems="center" gap={2}>
+                    <Typography variant="body2" sx={{ minWidth: 100 }}>
+                      {category}:
+                    </Typography>
+                    <TextField
+                      type="number"
+                      size="small"
+                      disabled
+                      placeholder="0"
+                      sx={{ width: 80 }}
+                      inputProps={{ min: 0 }}
+                    />
+                  </Box>
+                ))}
+              </Stack>
+            ) : (
+              <TextField
+                fullWidth
+                type="number"
+                placeholder={placeholder || 'Total guests'}
+                disabled
+                size={compact ? 'small' : 'medium'}
+                inputProps={{ min: 0 }}
+              />
+            )}
+          </Box>,
+          field
         );
 
       default:
-        return (
+        return withDescription(
           <TextField
             fullWidth
             label={label}
-            placeholder="Text input"
+            placeholder={placeholder || 'Text input'}
             required={isRequired}
             disabled
             size={compact ? 'small' : 'medium'}
-          />
+          />,
+          field
         );
     }
   };

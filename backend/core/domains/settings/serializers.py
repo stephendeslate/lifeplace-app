@@ -1,7 +1,7 @@
 # backend/core/domains/settings/serializers.py
 
 from rest_framework import serializers
-from .models import AppSettings, CurrencySettings, LegalDocument, MobileAppVersion
+from .models import AppSettings, CurrencySettings, LegalDocument, MobileAppVersion, CompanySettings
 
 
 class AppSettingsSerializer(serializers.ModelSerializer):
@@ -287,3 +287,88 @@ class MobileAppVersionSerializer(serializers.ModelSerializer):
         model = MobileAppVersion
         fields = '__all__'
         read_only_fields = ['id', 'created_at', 'updated_at']
+
+
+class CompanySettingsSerializer(serializers.ModelSerializer):
+    """
+    Full serializer for company settings (admin use).
+    Includes all fields for managing company branding and information.
+    """
+    full_address = serializers.CharField(source='get_full_address', read_only=True)
+    logo_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = CompanySettings
+        fields = [
+            'id',
+            'company_name',
+            'company_tagline',
+            'logo',
+            'logo_url',
+            'logo_dark',
+            'favicon',
+            'primary_color',
+            'secondary_color',
+            'accent_color',
+            'email',
+            'support_email',
+            'phone',
+            'phone_secondary',
+            'address_line1',
+            'address_line2',
+            'city',
+            'province',
+            'postal_code',
+            'country',
+            'full_address',
+            'business_registration_number',
+            'vat_number',
+            'website',
+            'facebook_url',
+            'instagram_url',
+            'pdf_footer_text',
+            'invoice_terms',
+            'receipt_terms',
+            'bank_name',
+            'bank_account_name',
+            'bank_account_number',
+            'bank_branch',
+            'bank_swift_code',
+            'created_at',
+            'updated_at',
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at', 'full_address', 'logo_url']
+
+    def get_logo_url(self, obj):
+        """Get the logo URL or None."""
+        return obj.get_logo_url()
+
+
+class PublicCompanySettingsSerializer(serializers.ModelSerializer):
+    """
+    Public-facing company settings (excludes sensitive info like bank details).
+    Used by client-facing applications.
+    """
+    full_address = serializers.CharField(source='get_full_address', read_only=True)
+    logo_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = CompanySettings
+        fields = [
+            'company_name',
+            'company_tagline',
+            'logo_url',
+            'primary_color',
+            'secondary_color',
+            'accent_color',
+            'email',
+            'phone',
+            'full_address',
+            'website',
+            'facebook_url',
+            'instagram_url',
+        ]
+
+    def get_logo_url(self, obj):
+        """Get the logo URL or None."""
+        return obj.get_logo_url()

@@ -23,13 +23,13 @@ import {
   Payment as PayMongoIcon,
 } from '@mui/icons-material';
 import { useCreatePaymentGateway, useUpdatePaymentGateway } from '../../hooks/usePayments';
-import type { 
-  PaymentGateway, 
+import type {
+  PaymentGateway,
   PaymentGatewayFormData,
   StripeConfig,
   PayMongoConfig,
 } from '../../types/payments.types';
-import { GATEWAY_TEMPLATES } from '../../types/payments.types';
+import { GATEWAY_TEMPLATES, getGatewayPaymentMethods } from '../../types/payments.types';
 import { tokens } from '../../design-system/tokens';
 
 interface PaymentGatewayFormDialogProps {
@@ -379,22 +379,40 @@ export const PaymentGatewayFormDialog: React.FC<PaymentGatewayFormDialogProps> =
           {isStripe && (
             <>
               <Divider sx={{ my: 3 }} />
-              
+
               <Box sx={{ mb: 2 }}>
                 <Box display="flex" alignItems="center" gap={1} mb={1}>
                   <StripeIcon color="primary" />
                   <Typography variant="h6">
                     Stripe Configuration
                   </Typography>
-                  <Chip 
-                    label="Recommended" 
-                    size="small" 
-                    color="success" 
+                  <Chip
+                    label="Recommended"
+                    size="small"
+                    color="success"
                   />
                 </Box>
                 <Typography variant="body2" color="text.secondary">
                   Enter your Stripe API keys from your Stripe Dashboard → Developers → API Keys.
                 </Typography>
+
+                {/* Supported Payment Methods */}
+                <Box sx={{ mt: 2, p: 2, bgcolor: 'success.50', borderRadius: 1, border: '1px solid', borderColor: 'success.200' }}>
+                  <Typography variant="subtitle2" color="success.dark" gutterBottom>
+                    Supported Payment Methods
+                  </Typography>
+                  <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                    {getGatewayPaymentMethods('stripe').map((method) => (
+                      <Chip
+                        key={method.code}
+                        label={method.icon.length <= 2 ? `${method.icon} ${method.name}` : method.name}
+                        size="small"
+                        variant="outlined"
+                        sx={{ bgcolor: 'white' }}
+                      />
+                    ))}
+                  </Stack>
+                </Box>
               </Box>
 
               <Stack spacing={3}>
@@ -482,22 +500,40 @@ export const PaymentGatewayFormDialog: React.FC<PaymentGatewayFormDialogProps> =
           {isPayMongo && (
             <>
               <Divider sx={{ my: 3 }} />
-              
+
               <Box sx={{ mb: 2 }}>
                 <Box display="flex" alignItems="center" gap={1} mb={1}>
                   <PayMongoIcon color="primary" />
                   <Typography variant="h6">
                     PayMongo Configuration
                   </Typography>
-                  <Chip 
-                    label="Philippines" 
-                    size="small" 
-                    color="info" 
+                  <Chip
+                    label="Philippines"
+                    size="small"
+                    color="info"
                   />
                 </Box>
                 <Typography variant="body2" color="text.secondary">
                   Enter your PayMongo API credentials from your PayMongo Dashboard → Developers → API Keys.
                 </Typography>
+
+                {/* Supported Payment Methods */}
+                <Box sx={{ mt: 2, p: 2, bgcolor: 'info.50', borderRadius: 1, border: '1px solid', borderColor: 'info.200' }}>
+                  <Typography variant="subtitle2" color="info.dark" gutterBottom>
+                    Supported Payment Methods (Philippines)
+                  </Typography>
+                  <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                    {getGatewayPaymentMethods('paymongo').map((method) => (
+                      <Chip
+                        key={method.code}
+                        label={method.icon.length <= 2 ? `${method.icon} ${method.name}` : method.name}
+                        size="small"
+                        variant="outlined"
+                        sx={{ bgcolor: 'white' }}
+                      />
+                    ))}
+                  </Stack>
+                </Box>
               </Box>
 
               <Stack spacing={3}>

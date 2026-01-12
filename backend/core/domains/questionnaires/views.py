@@ -134,6 +134,34 @@ class QuestionnaireViewSet(viewsets.ModelViewSet):
         serializer = QuestionnaireDetailSerializer(active_questionnaires, many=True)
         return Response(serializer.data)
 
+    @action(detail=False, methods=['get'])
+    def validation_rules(self, request):
+        """
+        Get all validation rules for frontend consumption.
+        Returns validation patterns, messages, and examples for each field type.
+        """
+        from .validation import FieldValidator
+        return Response({
+            'rules': FieldValidator.get_all_validation_rules(),
+            'field_types': [choice[0] for choice in QuestionnaireField.FIELD_TYPES]
+        })
+
+    @action(detail=True, methods=['post'])
+    def duplicate(self, request, pk=None):
+        """
+        Duplicate a questionnaire with all its fields.
+        The new questionnaire will be inactive by default.
+        """
+        new_name = request.data.get('name')
+
+        with transaction.atomic():
+            new_questionnaire = QuestionnaireService.duplicate_questionnaire(pk, new_name)
+
+        return Response(
+            QuestionnaireDetailSerializer(new_questionnaire).data,
+            status=status.HTTP_201_CREATED
+        )
+
     @action(detail=False, methods=['get'], url_path='for_event/(?P<event_id>[^/.]+)')
     def for_event(self, request, event_id=None):
         """Get questionnaires configured for a specific event's booking flow"""
@@ -199,6 +227,38 @@ class QuestionnaireViewSet(viewsets.ModelViewSet):
 
         # If no booking flow and no responses, return empty list
         return Response([])
+
+    @action(detail=True, methods=['get'])
+    def analytics(self, request, pk=None):
+        """
+        Get analytics for a specific questionnaire.
+        Returns completion rates, response counts, and field-level stats.
+        """
+        from .analytics import QuestionnaireAnalytics
+        stats = QuestionnaireAnalytics.get_questionnaire_stats(int(pk))
+        return Response(stats)
+
+    @action(detail=False, methods=['get'])
+    def analytics_summary(self, request):
+        """
+        Get summary analytics for all questionnaires.
+        Returns basic stats for each questionnaire in a list.
+        """
+        from .analytics import QuestionnaireAnalytics
+        summaries = QuestionnaireAnalytics.get_all_questionnaires_summary()
+        return Response(summaries)
+
+    @action(detail=True, methods=['get'])
+    def response_trends(self, request, pk=None):
+        """
+        Get daily response trends for a questionnaire.
+        Query params:
+            days: Number of days to look back (default: 30)
+        """
+        from .analytics import QuestionnaireAnalytics
+        days = int(request.query_params.get('days', 30))
+        trends = QuestionnaireAnalytics.get_response_trends(int(pk), days)
+        return Response(trends)
 
 
 class QuestionnaireFieldViewSet(viewsets.ModelViewSet):
@@ -281,6 +341,19 @@ class QuestionnaireFieldViewSet(viewsets.ModelViewSet):
         
         serializer = self.get_serializer(reordered_fields, many=True)
         return Response(serializer.data)
+
+    @action(detail=True, methods=['get'])
+    def value_distribution(self, request, pk=None):
+        """
+        Get value distribution for a specific field.
+        Useful for analyzing select/multi-select field responses.
+        Query params:
+            limit: Maximum number of values to return (default: 10)
+        """
+        from .analytics import QuestionnaireAnalytics
+        limit = int(request.query_params.get('limit', 10))
+        distribution = QuestionnaireAnalytics.get_field_value_distribution(int(pk), limit)
+        return Response(distribution)
 
 
 class QuestionnaireResponseViewSet(viewsets.ModelViewSet):

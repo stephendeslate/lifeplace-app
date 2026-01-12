@@ -9,29 +9,41 @@ from .models import Questionnaire, QuestionnaireField, QuestionnaireResponse
 class QuestionnaireFieldSerializer(serializers.ModelSerializer):
     """Serializer for the QuestionnaireField model"""
     type_display = serializers.CharField(source='get_type_display', read_only=True)
-    
+
     class Meta:
         model = QuestionnaireField
         fields = [
             'id', 'questionnaire', 'name', 'type', 'type_display',
-            'required', 'order', 'options', 'is_guest_count', 'created_at', 'updated_at'
+            'required', 'order', 'options',
+            # Phase 1.1: Description and placeholder
+            'description', 'placeholder',
+            # Phase 1.3: Guest count (deprecated but kept for compatibility)
+            'is_guest_count',
+            # Phase 2.1: Conditional display
+            'show_conditions',
+            # Phase 4.1: File upload settings
+            'max_file_size_mb', 'allowed_file_types', 'max_files',
+            'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
-    
+
     def validate(self, data):
         """Validate field data based on field type"""
         field_type = data.get('type')
         options = data.get('options')
-        
+
         # Make sure select and multi-select have options
         if field_type in ['select', 'multi-select'] and (not options or len(options) == 0):
             raise OptionsRequired()
-        
+
+        # For 'guests' type, options define guest categories (optional)
+        # Example: ["Adults", "Children (5-12)", "Infants (0-4)"]
+
         # Make sure field type is valid
         valid_types = [choice[0] for choice in QuestionnaireField.FIELD_TYPES]
         if field_type not in valid_types:
             raise InvalidFieldType(detail=f"Field type must be one of: {', '.join(valid_types)}")
-        
+
         return data
 
 
@@ -66,22 +78,32 @@ class QuestionnaireFieldCreateSerializer(serializers.ModelSerializer):
     """Serializer for creating questionnaire fields - without requiring questionnaire"""
     class Meta:
         model = QuestionnaireField
-        fields = ['name', 'type', 'required', 'order', 'options', 'is_guest_count']
-    
+        fields = [
+            'name', 'type', 'required', 'order', 'options',
+            # Phase 1.1: Description and placeholder
+            'description', 'placeholder',
+            # Phase 1.3: Guest count (deprecated)
+            'is_guest_count',
+            # Phase 2.1: Conditional display
+            'show_conditions',
+            # Phase 4.1: File upload settings
+            'max_file_size_mb', 'allowed_file_types', 'max_files',
+        ]
+
     def validate(self, data):
         """Validate field data based on field type"""
         field_type = data.get('type')
         options = data.get('options')
-        
+
         # Make sure select and multi-select have options
         if field_type in ['select', 'multi-select'] and (not options or len(options) == 0):
             raise OptionsRequired()
-        
+
         # Make sure field type is valid
         valid_types = [choice[0] for choice in QuestionnaireField.FIELD_TYPES]
         if field_type not in valid_types:
             raise InvalidFieldType(detail=f"Field type must be one of: {', '.join(valid_types)}")
-        
+
         return data
 
 
