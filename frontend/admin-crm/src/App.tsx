@@ -23,7 +23,7 @@ import { AnalyticsDashboard } from './pages/analytics';
 // Enhanced Settings imports
 import { EnhancedSettingsLayout } from './pages/settings/EnhancedSettingsLayout';
 import { EnhancedSettings } from './pages/settings/EnhancedSettings';
-import { AccountSettings, AdminUsers } from './pages/settings/account';
+import { AccountSettings, AdminUsers, CompanySettings } from './pages/settings/account';
 import { Notifications } from './pages/settings/account/Notifications';
 import { BookingFlows, BookingFlowDetails, EventTypes, BookingFlowPreviewPage } from './pages/settings/booking';
 import { ContractTemplates, QuestionnaireTemplates, WorkflowTemplates, WorkflowTemplateDetails } from './pages/settings/templates';
@@ -350,6 +350,14 @@ const AppRouter: React.FC = () => {
         element={
           <SettingsRoute>
             <Notifications />
+          </SettingsRoute>
+        }
+      />
+      <Route
+        path="/settings/account/company-settings"
+        element={
+          <SettingsRoute>
+            <CompanySettings />
           </SettingsRoute>
         }
       />

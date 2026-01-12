@@ -140,3 +140,79 @@ export interface LegalDocumentUpdateData {
   effective_date?: string | null;
   is_published?: boolean;
 }
+
+/**
+ * Company Settings - Branding and business information
+ */
+export interface CompanySettings {
+  id: number;
+  company_name: string;
+  company_tagline: string;
+  logo: string | null;
+  logo_url: string | null;
+  logo_dark: string | null;
+  favicon: string | null;
+  primary_color: string;
+  secondary_color: string;
+  accent_color: string;
+  email: string;
+  support_email: string;
+  phone: string;
+  phone_secondary: string;
+  address_line1: string;
+  address_line2: string;
+  city: string;
+  province: string;
+  postal_code: string;
+  country: string;
+  full_address: string;
+  business_registration_number: string;
+  vat_number: string;
+  website: string;
+  facebook_url: string;
+  instagram_url: string;
+  pdf_footer_text: string;
+  invoice_terms: string;
+  receipt_terms: string;
+  bank_name: string;
+  bank_account_name: string;
+  bank_account_number: string;
+  bank_branch: string;
+  bank_swift_code: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CompanySettingsUpdateData {
+  company_name?: string;
+  company_tagline?: string;
+  logo?: File | null;
+  logo_dark?: File | null;
+  favicon?: File | null;
+  primary_color?: string;
+  secondary_color?: string;
+  accent_color?: string;
+  email?: string;
+  support_email?: string;
+  phone?: string;
+  phone_secondary?: string;
+  address_line1?: string;
+  address_line2?: string;
+  city?: string;
+  province?: string;
+  postal_code?: string;
+  country?: string;
+  business_registration_number?: string;
+  vat_number?: string;
+  website?: string;
+  facebook_url?: string;
+  instagram_url?: string;
+  pdf_footer_text?: string;
+  invoice_terms?: string;
+  receipt_terms?: string;
+  bank_name?: string;
+  bank_account_name?: string;
+  bank_account_number?: string;
+  bank_branch?: string;
+  bank_swift_code?: string;
+}

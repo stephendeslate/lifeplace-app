@@ -16,6 +16,7 @@ import {
   CurrencyExchange,
   Star,
   Gavel,
+  Business,
 } from '@mui/icons-material';
 import type { SettingsNavigationGroup } from '../types/settings.types';
 
@@ -44,6 +45,13 @@ export const settingsNavigationConfig: SettingsNavigationGroup[] = [
         path: '/settings/account/notifications',
         icon: Notifications,
         description: 'Configure notification preferences',
+      },
+      {
+        id: 'company-settings',
+        label: 'Company Settings',
+        path: '/settings/account/company-settings',
+        icon: Business,
+        description: 'Configure company branding and PDF settings',
       },
     ],
   },
