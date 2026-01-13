@@ -27,44 +27,61 @@ export interface NotificationPreference {
   email_enabled: boolean;
   sms_enabled: boolean;
   in_app_enabled: boolean;
+  push_enabled: boolean;
 
-  // Category preferences
+  // Category preferences - System
   system_email: boolean;
   system_sms: boolean;
   system_in_app: boolean;
+  system_push: boolean;
 
+  // Category preferences - Event
   event_email: boolean;
   event_sms: boolean;
   event_in_app: boolean;
+  event_push: boolean;
 
+  // Category preferences - Task
   task_email: boolean;
   task_sms: boolean;
   task_in_app: boolean;
+  task_push: boolean;
 
+  // Category preferences - Payment
   payment_email: boolean;
   payment_sms: boolean;
   payment_in_app: boolean;
+  payment_push: boolean;
 
+  // Category preferences - Client
   client_email: boolean;
   client_sms: boolean;
   client_in_app: boolean;
+  client_push: boolean;
 
+  // Category preferences - Contract
   contract_email: boolean;
   contract_sms: boolean;
   contract_in_app: boolean;
+  contract_push: boolean;
 
+  // Category preferences - Workflow
   workflow_email: boolean;
   workflow_sms: boolean;
   workflow_in_app: boolean;
+  workflow_push: boolean;
 
+  // Category preferences - Communication
   communication_email: boolean;
   communication_sms: boolean;
   communication_in_app: boolean;
+  communication_push: boolean;
 
-  // Marketing preferences (explicit consent required - GDPR/CAN-SPAM)
+  // Marketing preferences (explicit consent required - GDPR/DPA compliance)
   marketing_email: boolean;
   marketing_sms: boolean;
   marketing_in_app: boolean;
+  marketing_push: boolean;
 
   // Advanced preferences
   quiet_hours_enabled: boolean;
@@ -191,44 +208,61 @@ export interface UpdateNotificationPreferenceData {
   email_enabled?: boolean;
   sms_enabled?: boolean;
   in_app_enabled?: boolean;
+  push_enabled?: boolean;
 
-  // Category preferences
+  // Category preferences - System
   system_email?: boolean;
   system_sms?: boolean;
   system_in_app?: boolean;
+  system_push?: boolean;
 
+  // Category preferences - Event
   event_email?: boolean;
   event_sms?: boolean;
   event_in_app?: boolean;
+  event_push?: boolean;
 
+  // Category preferences - Task
   task_email?: boolean;
   task_sms?: boolean;
   task_in_app?: boolean;
+  task_push?: boolean;
 
+  // Category preferences - Payment
   payment_email?: boolean;
   payment_sms?: boolean;
   payment_in_app?: boolean;
+  payment_push?: boolean;
 
+  // Category preferences - Client
   client_email?: boolean;
   client_sms?: boolean;
   client_in_app?: boolean;
+  client_push?: boolean;
 
+  // Category preferences - Contract
   contract_email?: boolean;
   contract_sms?: boolean;
   contract_in_app?: boolean;
+  contract_push?: boolean;
 
+  // Category preferences - Workflow
   workflow_email?: boolean;
   workflow_sms?: boolean;
   workflow_in_app?: boolean;
+  workflow_push?: boolean;
 
+  // Category preferences - Communication
   communication_email?: boolean;
   communication_sms?: boolean;
   communication_in_app?: boolean;
+  communication_push?: boolean;
 
-  // Marketing preferences (explicit consent required - GDPR/CAN-SPAM)
+  // Marketing preferences (explicit consent required - GDPR/DPA compliance)
   marketing_email?: boolean;
   marketing_sms?: boolean;
   marketing_in_app?: boolean;
+  marketing_push?: boolean;
 
   // Advanced preferences
   quiet_hours_enabled?: boolean;
@@ -248,7 +282,7 @@ export type CategoryPreferenceKey =
 /**
  * Delivery method types
  */
-export type DeliveryMethod = 'email' | 'sms' | 'in_app';
+export type DeliveryMethod = 'email' | 'sms' | 'in_app' | 'push';
 
 /**
  * Helper to get category preference field name
