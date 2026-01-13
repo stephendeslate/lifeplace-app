@@ -33,6 +33,9 @@ import {
   Block,
   Settings,
   NotificationsActive,
+  PhoneIphone,
+  Campaign,
+  Warning,
 } from '@mui/icons-material';
 import { LocalizationProvider, TimePicker } from '@mui/x-date-pickers';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
@@ -70,33 +73,57 @@ export const NotificationPreferencesForm: React.FC<NotificationPreferencesFormPr
   useEffect(() => {
     if (preferences) {
       setFormData({
+        // Global toggles
         email_enabled: preferences.email_enabled,
         sms_enabled: preferences.sms_enabled,
         in_app_enabled: preferences.in_app_enabled,
+        push_enabled: preferences.push_enabled,
+        // System category
         system_email: preferences.system_email,
         system_sms: preferences.system_sms,
         system_in_app: preferences.system_in_app,
+        system_push: preferences.system_push,
+        // Event category
         event_email: preferences.event_email,
         event_sms: preferences.event_sms,
         event_in_app: preferences.event_in_app,
+        event_push: preferences.event_push,
+        // Task category
         task_email: preferences.task_email,
         task_sms: preferences.task_sms,
         task_in_app: preferences.task_in_app,
+        task_push: preferences.task_push,
+        // Payment category
         payment_email: preferences.payment_email,
         payment_sms: preferences.payment_sms,
         payment_in_app: preferences.payment_in_app,
+        payment_push: preferences.payment_push,
+        // Client category
         client_email: preferences.client_email,
         client_sms: preferences.client_sms,
         client_in_app: preferences.client_in_app,
+        client_push: preferences.client_push,
+        // Contract category
         contract_email: preferences.contract_email,
         contract_sms: preferences.contract_sms,
         contract_in_app: preferences.contract_in_app,
+        contract_push: preferences.contract_push,
+        // Workflow category
         workflow_email: preferences.workflow_email,
         workflow_sms: preferences.workflow_sms,
         workflow_in_app: preferences.workflow_in_app,
+        workflow_push: preferences.workflow_push,
+        // Communication category
         communication_email: preferences.communication_email,
         communication_sms: preferences.communication_sms,
         communication_in_app: preferences.communication_in_app,
+        communication_push: preferences.communication_push,
+        // Marketing category (opt-in only)
+        marketing_email: preferences.marketing_email,
+        marketing_sms: preferences.marketing_sms,
+        marketing_in_app: preferences.marketing_in_app,
+        marketing_push: preferences.marketing_push,
+        // Advanced
         quiet_hours_enabled: preferences.quiet_hours_enabled,
         digest_frequency: preferences.digest_frequency,
         disabled_types: preferences.disabled_types,
@@ -176,8 +203,8 @@ export const NotificationPreferencesForm: React.FC<NotificationPreferencesFormPr
               {label}
             </Typography>
           </Box>
-          
-          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} flexWrap="wrap" useFlexGap>
             <FormControlLabel
               control={
                 <Switch
@@ -193,7 +220,7 @@ export const NotificationPreferencesForm: React.FC<NotificationPreferencesFormPr
                 </Box>
               }
             />
-            
+
             <FormControlLabel
               control={
                 <Switch
@@ -209,7 +236,7 @@ export const NotificationPreferencesForm: React.FC<NotificationPreferencesFormPr
                 </Box>
               }
             />
-            
+
             <FormControlLabel
               control={
                 <Switch
@@ -222,6 +249,22 @@ export const NotificationPreferencesForm: React.FC<NotificationPreferencesFormPr
                 <Box display="flex" alignItems="center" gap={1}>
                   <Notifications fontSize="small" />
                   <Typography variant="body2">In-App</Typography>
+                </Box>
+              }
+            />
+
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={formData[`${categoryKey}_push` as keyof UpdateNotificationPreferenceData] as boolean ?? false}
+                  onChange={(e) => handleFieldChange(`${categoryKey}_push` as keyof UpdateNotificationPreferenceData, e.target.checked)}
+                  disabled={!formData.push_enabled}
+                />
+              }
+              label={
+                <Box display="flex" alignItems="center" gap={1}>
+                  <PhoneIphone fontSize="small" />
+                  <Typography variant="body2">Push</Typography>
                 </Box>
               }
             />
@@ -291,8 +334,8 @@ export const NotificationPreferencesForm: React.FC<NotificationPreferencesFormPr
                 Control which delivery methods are available for notifications
               </Typography>
               
-              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={3}>
-                <Paper sx={{ p: 2, textAlign: 'center', bgcolor: formData.email_enabled ? 'primary.50' : 'grey.50', flex: 1 }}>
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} flexWrap="wrap" useFlexGap>
+                <Paper sx={{ p: 2, textAlign: 'center', bgcolor: formData.email_enabled ? 'primary.50' : 'grey.50', flex: 1, minWidth: 180 }}>
                   <FormControlLabel
                     control={
                       <Switch
@@ -303,13 +346,13 @@ export const NotificationPreferencesForm: React.FC<NotificationPreferencesFormPr
                     label={
                       <Box display="flex" alignItems="center" gap={1}>
                         <Email fontSize="small" />
-                        <Typography variant="body2" fontWeight="medium">Email Notifications</Typography>
+                        <Typography variant="body2" fontWeight="medium">Email</Typography>
                       </Box>
                     }
                   />
                 </Paper>
-                
-                <Paper sx={{ p: 2, textAlign: 'center', bgcolor: formData.sms_enabled ? 'warning.50' : 'grey.50', flex: 1 }}>
+
+                <Paper sx={{ p: 2, textAlign: 'center', bgcolor: formData.sms_enabled ? 'warning.50' : 'grey.50', flex: 1, minWidth: 180 }}>
                   <FormControlLabel
                     control={
                       <Switch
@@ -320,13 +363,13 @@ export const NotificationPreferencesForm: React.FC<NotificationPreferencesFormPr
                     label={
                       <Box display="flex" alignItems="center" gap={1}>
                         <Sms fontSize="small" />
-                        <Typography variant="body2" fontWeight="medium">SMS Notifications</Typography>
+                        <Typography variant="body2" fontWeight="medium">SMS</Typography>
                       </Box>
                     }
                   />
                 </Paper>
-                
-                <Paper sx={{ p: 2, textAlign: 'center', bgcolor: formData.in_app_enabled ? 'success.50' : 'grey.50', flex: 1 }}>
+
+                <Paper sx={{ p: 2, textAlign: 'center', bgcolor: formData.in_app_enabled ? 'success.50' : 'grey.50', flex: 1, minWidth: 180 }}>
                   <FormControlLabel
                     control={
                       <Switch
@@ -337,7 +380,24 @@ export const NotificationPreferencesForm: React.FC<NotificationPreferencesFormPr
                     label={
                       <Box display="flex" alignItems="center" gap={1}>
                         <Notifications fontSize="small" />
-                        <Typography variant="body2" fontWeight="medium">In-App Notifications</Typography>
+                        <Typography variant="body2" fontWeight="medium">In-App</Typography>
+                      </Box>
+                    }
+                  />
+                </Paper>
+
+                <Paper sx={{ p: 2, textAlign: 'center', bgcolor: formData.push_enabled ? 'info.50' : 'grey.50', flex: 1, minWidth: 180 }}>
+                  <FormControlLabel
+                    control={
+                      <Switch
+                        checked={formData.push_enabled ?? true}
+                        onChange={(e) => handleFieldChange('push_enabled', e.target.checked)}
+                      />
+                    }
+                    label={
+                      <Box display="flex" alignItems="center" gap={1}>
+                        <PhoneIphone fontSize="small" />
+                        <Typography variant="body2" fontWeight="medium">Push</Typography>
                       </Box>
                     }
                   />
@@ -365,6 +425,93 @@ export const NotificationPreferencesForm: React.FC<NotificationPreferencesFormPr
                 {renderCategoryPreferences('CONTRACT', 'Contract Updates', <Notifications color="action" />)}
                 {renderCategoryPreferences('WORKFLOW', 'Workflow Progress', <Notifications color="action" />)}
                 {renderCategoryPreferences('COMMUNICATION', 'Communication Alerts', <Email color="action" />)}
+              </Stack>
+            </CardContent>
+          </Card>
+
+          {/* Marketing Preferences - Separate Card for Compliance */}
+          <Card sx={{ border: '1px solid', borderColor: 'warning.300' }}>
+            <CardContent>
+              <Box display="flex" alignItems="center" gap={2} mb={2}>
+                <Campaign sx={{ color: 'warning.main' }} />
+                <Typography variant="h6" fontWeight="bold">
+                  Marketing & Promotions
+                </Typography>
+                <Chip label="Requires Consent" size="small" color="warning" variant="outlined" />
+              </Box>
+
+              <Alert severity="warning" icon={<Warning />} sx={{ mb: 3 }}>
+                <Typography variant="body2">
+                  <strong>Philippines DPA Compliance:</strong> Marketing communications require explicit consent.
+                  These settings are OFF by default. Users can withdraw consent at any time.
+                  Only enable if you have obtained explicit consent for marketing communications.
+                </Typography>
+              </Alert>
+
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} flexWrap="wrap" useFlexGap>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={formData.marketing_email ?? false}
+                      onChange={(e) => handleFieldChange('marketing_email', e.target.checked)}
+                      disabled={!formData.email_enabled}
+                    />
+                  }
+                  label={
+                    <Box display="flex" alignItems="center" gap={1}>
+                      <Email fontSize="small" />
+                      <Typography variant="body2">Marketing Email</Typography>
+                    </Box>
+                  }
+                />
+
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={formData.marketing_sms ?? false}
+                      onChange={(e) => handleFieldChange('marketing_sms', e.target.checked)}
+                      disabled={!formData.sms_enabled}
+                    />
+                  }
+                  label={
+                    <Box display="flex" alignItems="center" gap={1}>
+                      <Sms fontSize="small" />
+                      <Typography variant="body2">Marketing SMS</Typography>
+                    </Box>
+                  }
+                />
+
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={formData.marketing_in_app ?? true}
+                      onChange={(e) => handleFieldChange('marketing_in_app', e.target.checked)}
+                      disabled={!formData.in_app_enabled}
+                    />
+                  }
+                  label={
+                    <Box display="flex" alignItems="center" gap={1}>
+                      <Notifications fontSize="small" />
+                      <Typography variant="body2">Marketing In-App</Typography>
+                    </Box>
+                  }
+                />
+
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={formData.marketing_push ?? false}
+                      onChange={(e) => handleFieldChange('marketing_push', e.target.checked)}
+                      disabled={!formData.push_enabled}
+                    />
+                  }
+                  label={
+                    <Box display="flex" alignItems="center" gap={1}>
+                      <PhoneIphone fontSize="small" />
+                      <Typography variant="body2">Marketing Push</Typography>
+                    </Box>
+                  }
+                />
               </Stack>
             </CardContent>
           </Card>

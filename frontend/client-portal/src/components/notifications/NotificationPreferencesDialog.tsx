@@ -42,6 +42,8 @@ import {
   Description as ContractIcon,
   AccountTree as WorkflowIcon,
   Campaign as CampaignIcon,
+  PhoneIphone as PushIcon,
+  Warning as WarningIcon,
 } from '@mui/icons-material';
 import { TimePicker } from '@mui/x-date-pickers/TimePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -104,40 +106,58 @@ export const NotificationPreferencesDialog: React.FC<
   useEffect(() => {
     if (preferences) {
       setFormData({
+        // Global toggles
         email_enabled: preferences.email_enabled,
         sms_enabled: preferences.sms_enabled,
         in_app_enabled: preferences.in_app_enabled,
+        push_enabled: preferences.push_enabled,
         quiet_hours_enabled: preferences.quiet_hours_enabled,
         digest_frequency: preferences.digest_frequency,
-        // Category preferences
+        // System category
         system_email: preferences.system_email,
         system_sms: preferences.system_sms,
         system_in_app: preferences.system_in_app,
+        system_push: preferences.system_push,
+        // Event category
         event_email: preferences.event_email,
         event_sms: preferences.event_sms,
         event_in_app: preferences.event_in_app,
+        event_push: preferences.event_push,
+        // Task category
         task_email: preferences.task_email,
         task_sms: preferences.task_sms,
         task_in_app: preferences.task_in_app,
+        task_push: preferences.task_push,
+        // Payment category
         payment_email: preferences.payment_email,
         payment_sms: preferences.payment_sms,
         payment_in_app: preferences.payment_in_app,
+        payment_push: preferences.payment_push,
+        // Client category
         client_email: preferences.client_email,
         client_sms: preferences.client_sms,
         client_in_app: preferences.client_in_app,
+        client_push: preferences.client_push,
+        // Contract category
         contract_email: preferences.contract_email,
         contract_sms: preferences.contract_sms,
         contract_in_app: preferences.contract_in_app,
+        contract_push: preferences.contract_push,
+        // Workflow category
         workflow_email: preferences.workflow_email,
         workflow_sms: preferences.workflow_sms,
         workflow_in_app: preferences.workflow_in_app,
+        workflow_push: preferences.workflow_push,
+        // Communication category
         communication_email: preferences.communication_email,
         communication_sms: preferences.communication_sms,
         communication_in_app: preferences.communication_in_app,
-        // Marketing preferences
+        communication_push: preferences.communication_push,
+        // Marketing preferences (explicit consent required)
         marketing_email: preferences.marketing_email,
         marketing_sms: preferences.marketing_sms,
         marketing_in_app: preferences.marketing_in_app,
+        marketing_push: preferences.marketing_push,
       });
 
       // Parse quiet hours times
@@ -215,11 +235,13 @@ export const NotificationPreferencesDialog: React.FC<
 
   const renderCategoryToggle = (
     categoryKey: string,
-    label: string
+    label: string,
+    isMarketing: boolean = false
   ) => {
     const emailKey = `${categoryKey}_email` as keyof UpdateNotificationPreferenceData;
     const smsKey = `${categoryKey}_sms` as keyof UpdateNotificationPreferenceData;
     const inAppKey = `${categoryKey}_in_app` as keyof UpdateNotificationPreferenceData;
+    const pushKey = `${categoryKey}_push` as keyof UpdateNotificationPreferenceData;
 
     return (
       <Box
@@ -228,13 +250,22 @@ export const NotificationPreferencesDialog: React.FC<
           alignItems: 'center',
           justifyContent: 'space-between',
           py: 1.5,
+          ...(isMarketing && {
+            bgcolor: 'warning.50',
+            mx: -2,
+            px: 2,
+            borderRadius: 1,
+          }),
         }}
       >
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           {getCategoryIcon(categoryKey.toUpperCase())}
           <Typography variant="body2">{label}</Typography>
+          {isMarketing && (
+            <Chip label="Consent" size="small" color="warning" variant="outlined" sx={{ ml: 0.5, height: 20 }} />
+          )}
         </Box>
-        <Box sx={{ display: 'flex', gap: 2 }}>
+        <Box sx={{ display: 'flex', gap: 1 }}>
           <FormControlLabel
             control={
               <Switch
@@ -271,6 +302,19 @@ export const NotificationPreferencesDialog: React.FC<
               />
             }
             label={<InAppIcon fontSize="small" color={formData[inAppKey] ? 'primary' : 'disabled'} />}
+            labelPlacement="top"
+            sx={{ mx: 0 }}
+          />
+          <FormControlLabel
+            control={
+              <Switch
+                size="small"
+                checked={Boolean(formData[pushKey])}
+                onChange={() => handleToggle(pushKey)}
+                disabled={!formData.push_enabled}
+              />
+            }
+            label={<PushIcon fontSize="small" color={formData[pushKey] ? 'primary' : 'disabled'} />}
             labelPlacement="top"
             sx={{ mx: 0 }}
           />
@@ -363,6 +407,13 @@ export const NotificationPreferencesDialog: React.FC<
                   onClick={() => handleToggle('in_app_enabled')}
                   variant={formData.in_app_enabled ? 'filled' : 'outlined'}
                 />
+                <Chip
+                  icon={<PushIcon />}
+                  label="Push"
+                  color={formData.push_enabled ? 'info' : 'default'}
+                  onClick={() => handleToggle('push_enabled')}
+                  variant={formData.push_enabled ? 'filled' : 'outlined'}
+                />
               </Box>
             </Box>
 
@@ -381,7 +432,7 @@ export const NotificationPreferencesDialog: React.FC<
                     display: 'flex',
                     justifyContent: 'flex-end',
                     mb: 1,
-                    gap: 2,
+                    gap: 1,
                   }}
                 >
                   <Typography
@@ -405,9 +456,16 @@ export const NotificationPreferencesDialog: React.FC<
                   >
                     In-App
                   </Typography>
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{ width: 40, textAlign: 'center' }}
+                  >
+                    Push
+                  </Typography>
                 </Box>
                 <Divider sx={{ mb: 1 }} />
-                {NOTIFICATION_CATEGORIES.map((category) => (
+                {NOTIFICATION_CATEGORIES.filter(c => c.value !== 'MARKETING').map((category) => (
                   <React.Fragment key={category.value}>
                     {renderCategoryToggle(
                       category.value.toLowerCase(),
@@ -416,6 +474,19 @@ export const NotificationPreferencesDialog: React.FC<
                     <Divider />
                   </React.Fragment>
                 ))}
+
+                {/* Marketing Category with Compliance Notice */}
+                <Alert
+                  severity="warning"
+                  icon={<WarningIcon />}
+                  sx={{ mt: 2, mb: 1 }}
+                >
+                  <Typography variant="caption">
+                    <strong>Marketing Communications:</strong> These require your explicit consent.
+                    You can withdraw consent at any time.
+                  </Typography>
+                </Alert>
+                {renderCategoryToggle('marketing', 'Marketing & Promotions', true)}
               </AccordionDetails>
             </Accordion>
 
