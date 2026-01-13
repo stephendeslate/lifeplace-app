@@ -6,7 +6,7 @@
  * Matches client-portal EventInvoices patterns.
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import {
   StyleSheet,
   Text,
@@ -31,7 +31,7 @@ import { theme } from '@/theme';
 import { useEventInvoices } from '@/hooks/useFinancial';
 import { paymentsApi } from '@/apis/payments.api';
 import { Skeleton, EmptyState, Card, Badge, Button, PDFViewerModal } from '@/components/common';
-import { InvoiceDetailsModal } from '@/components/payments';
+import { InvoiceDetailsModal, InvoicePaymentModal } from '@/components/payments';
 import { formatCurrency, formatCardDate } from '@/utils/formatting';
 import { useAuthStore } from '@/stores/authStore';
 import type { Invoice } from '@/apis/payments.api';
@@ -43,6 +43,10 @@ export interface InvoicesTabProps {
 export function InvoicesTab({ eventId }: InvoicesTabProps) {
   const { data: invoices, isLoading, refetch, isRefetching } = useEventInvoices(eventId);
   const { accessToken } = useAuthStore();
+
+  // Payment modal state
+  const [paymentModalVisible, setPaymentModalVisible] = useState(false);
+  const [paymentInvoice, setPaymentInvoice] = useState<Invoice | null>(null);
 
   // PDF viewer state
   const [pdfViewerVisible, setPdfViewerVisible] = useState(false);
@@ -66,16 +70,31 @@ export function InvoicesTab({ eventId }: InvoicesTabProps) {
     return invoices.filter((inv) => isInvoiceOverdue(inv)).length;
   }, [invoices]);
 
-  const handlePayNow = async (invoice: Invoice) => {
-    if (!invoice.can_pay_online || !invoice.payment_url) return;
+  // Handle Pay Now - open payment modal
+  const handlePayNow = useCallback((invoice: Invoice) => {
+    if (!invoice.can_pay_online) {
+      Alert.alert(
+        'Payment Not Available',
+        'Online payment is not available for this invoice. Please contact us for payment options.'
+      );
+      return;
+    }
 
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    try {
-      await Linking.openURL(invoice.payment_url);
-    } catch (error) {
-      Alert.alert('Error', 'Failed to open payment page. Please try again.');
-    }
-  };
+    setPaymentInvoice(invoice);
+    setPaymentModalVisible(true);
+  }, []);
+
+  // Handle payment success - refresh data
+  const handlePaymentSuccess = useCallback(() => {
+    refetch();
+  }, [refetch]);
+
+  // Close payment modal
+  const handleClosePaymentModal = useCallback(() => {
+    setPaymentModalVisible(false);
+    setPaymentInvoice(null);
+  }, []);
 
   const handleViewPdf = (invoice: Invoice) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -161,15 +180,13 @@ export function InvoicesTab({ eventId }: InvoicesTabProps) {
     );
   }
 
-  if (!invoices || invoices.length === 0) {
-    return (
-      <EmptyState
-        icon="document"
-        title="No Invoices"
-        description="Invoices for this event will appear here."
-      />
-    );
-  }
+  const renderEmptyState = () => (
+    <EmptyState
+      icon="document"
+      title="No Invoices"
+      description="Invoices for this event will appear here. Pull down to refresh."
+    />
+  );
 
   const renderItem = ({ item: invoice }: { item: Invoice }) => {
     const statusConfig = getStatusConfig(invoice);
@@ -316,10 +333,14 @@ export function InvoicesTab({ eventId }: InvoicesTabProps) {
       )}
 
       <FlatList
-        data={invoices}
+        data={invoices ?? []}
         renderItem={renderItem}
         keyExtractor={(item) => item.id.toString()}
-        contentContainerStyle={styles.listContainer}
+        contentContainerStyle={[
+          styles.listContainer,
+          (!invoices || invoices.length === 0) && styles.emptyListContainer,
+        ]}
+        ListEmptyComponent={renderEmptyState}
         refreshControl={
           <RefreshControl
             refreshing={isRefetching}
@@ -348,6 +369,16 @@ export function InvoicesTab({ eventId }: InvoicesTabProps) {
         onClose={handleCloseDetails}
         invoice={detailsInvoice}
       />
+
+      {/* Invoice Payment Modal */}
+      {paymentInvoice && (
+        <InvoicePaymentModal
+          visible={paymentModalVisible}
+          onClose={handleClosePaymentModal}
+          invoice={paymentInvoice}
+          onPaymentSuccess={handlePaymentSuccess}
+        />
+      )}
     </View>
   );
 }
@@ -380,6 +411,10 @@ const styles = StyleSheet.create({
   },
   listContainer: {
     padding: theme.spacing.md,
+  },
+  emptyListContainer: {
+    flexGrow: 1,
+    justifyContent: 'center',
   },
   overdueAlert: {
     flexDirection: 'row',

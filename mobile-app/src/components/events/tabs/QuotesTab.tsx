@@ -77,7 +77,7 @@ export function QuotesTab({ eventId }: QuotesTabProps) {
           text: 'Accept',
           onPress: () => {
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-            acceptQuote.mutate(quote.id);
+            acceptQuote.mutate({ quoteId: quote.id, eventId });
           },
         },
       ]
@@ -94,7 +94,7 @@ export function QuotesTab({ eventId }: QuotesTabProps) {
     if (!selectedQuoteId) return;
 
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-    rejectQuote.mutate({ quoteId: selectedQuoteId, reason: rejectReason });
+    rejectQuote.mutate({ quoteId: selectedQuoteId, eventId, reason: rejectReason });
     setRejectModalVisible(false);
     setSelectedQuoteId(null);
     setRejectReason('');
@@ -152,15 +152,13 @@ export function QuotesTab({ eventId }: QuotesTabProps) {
     );
   }
 
-  if (!quotes || quotes.length === 0) {
-    return (
-      <EmptyState
-        icon="document"
-        title="No Quotes"
-        description="Quotes for this event will appear here."
-      />
-    );
-  }
+  const renderEmptyState = () => (
+    <EmptyState
+      icon="document"
+      title="No Quotes"
+      description="Quotes for this event will appear here. Pull down to refresh."
+    />
+  );
 
   const renderLineItem = (item: QuoteLineItem, currency: string) => {
     const isDiscount = parseFloat(item.total_price) < 0;
@@ -353,10 +351,14 @@ export function QuotesTab({ eventId }: QuotesTabProps) {
   return (
     <View style={styles.flex}>
       <FlatList
-        data={quotes}
+        data={quotes ?? []}
         renderItem={renderItem}
         keyExtractor={(item) => item.id.toString()}
-        contentContainerStyle={styles.listContainer}
+        contentContainerStyle={[
+          styles.listContainer,
+          (!quotes || quotes.length === 0) && styles.emptyListContainer,
+        ]}
+        ListEmptyComponent={renderEmptyState}
         refreshControl={
           <RefreshControl
             refreshing={isRefetching}
@@ -428,6 +430,10 @@ const styles = StyleSheet.create({
   },
   listContainer: {
     padding: theme.spacing.md,
+  },
+  emptyListContainer: {
+    flexGrow: 1,
+    justifyContent: 'center',
   },
   quoteCard: {
     marginBottom: theme.spacing.md,

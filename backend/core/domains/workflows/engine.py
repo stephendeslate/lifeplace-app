@@ -141,26 +141,45 @@ class WorkflowEngine:
 
         # Check if current stage is waiting for this specific trigger
         # If so, execute automation but don't progress yet
+        # Also check other stages in the workflow that might have the trigger configured
         if trigger_type:
-            if trigger_type == 'PAYMENT_RECEIVED' and current_stage.trigger_on_payment_received:
-                logger.info(f"Current stage '{current_stage.name}' triggered by payment - executing automation")
-                current_stage._execute_automation(event)
-                return []  # Stay on current stage
+            # Helper to find and execute stage with specific trigger
+            def find_and_execute_triggered_stage(trigger_field):
+                """Find a stage with the trigger and execute its automation"""
+                # First check current stage
+                if getattr(current_stage, trigger_field, False):
+                    logger.info(f"Current stage '{current_stage.name}' triggered by {trigger_type} - executing automation")
+                    current_stage._execute_automation(event)
+                    return True
 
-            if trigger_type == 'QUOTE_ACCEPTED' and current_stage.trigger_on_quote_accepted:
-                logger.info(f"Current stage '{current_stage.name}' triggered by quote acceptance - executing automation")
-                current_stage._execute_automation(event)
-                return []  # Stay on current stage
+                # Search for any stage in this workflow with the trigger
+                triggered_stage = WorkflowStage.objects.filter(
+                    template=event.workflow_template,
+                    **{trigger_field: True}
+                ).first()
 
-            if trigger_type == 'CONTRACT_SIGNED' and current_stage.trigger_on_contract_signed:
-                logger.info(f"Current stage '{current_stage.name}' triggered by contract signing - executing automation")
-                current_stage._execute_automation(event)
-                return []  # Stay on current stage
+                if triggered_stage:
+                    logger.info(f"Stage '{triggered_stage.name}' triggered by {trigger_type} - executing automation")
+                    triggered_stage._execute_automation(event)
+                    return True
 
-            if trigger_type == 'QUOTE_SENT' and current_stage.trigger_on_quote_sent:
-                logger.info(f"Current stage '{current_stage.name}' triggered by quote sent - executing automation")
-                current_stage._execute_automation(event)
-                return []  # Stay on current stage
+                return False
+
+            if trigger_type == 'PAYMENT_RECEIVED':
+                if find_and_execute_triggered_stage('trigger_on_payment_received'):
+                    return []  # Stay on current stage
+
+            if trigger_type == 'QUOTE_ACCEPTED':
+                if find_and_execute_triggered_stage('trigger_on_quote_accepted'):
+                    return []  # Stay on current stage
+
+            if trigger_type == 'CONTRACT_SIGNED':
+                if find_and_execute_triggered_stage('trigger_on_contract_signed'):
+                    return []  # Stay on current stage
+
+            if trigger_type == 'QUOTE_SENT':
+                if find_and_execute_triggered_stage('trigger_on_quote_sent'):
+                    return []  # Stay on current stage
 
         # Normal sequential flow: next stage in the same category
         next_order = current_stage.order + 1

@@ -57,6 +57,8 @@ export default function QuoteDetailScreen() {
 
   // Handle accept quote
   const handleAccept = useCallback(() => {
+    if (!quote) return;
+
     Alert.alert(
       'Accept Quote',
       'Are you sure you want to accept this quote? This will create an invoice and contract for your event.',
@@ -65,26 +67,31 @@ export default function QuoteDetailScreen() {
         {
           text: 'Accept',
           onPress: () => {
-            acceptMutation.mutate(quoteId, {
-              onSuccess: () => {
-                Alert.alert(
-                  'Quote Accepted',
-                  'Great! Your invoice and contract have been created. Check your Action Center for next steps.',
-                  [{ text: 'OK', onPress: () => router.back() }]
-                );
-              },
-            });
+            acceptMutation.mutate(
+              { quoteId, eventId: quote.event },
+              {
+                onSuccess: () => {
+                  Alert.alert(
+                    'Quote Accepted',
+                    'Great! Your invoice and contract have been created. Check your Action Center for next steps.',
+                    [{ text: 'OK', onPress: () => router.back() }]
+                  );
+                },
+              }
+            );
           },
         },
       ]
     );
-  }, [quoteId, acceptMutation, router]);
+  }, [quoteId, quote, acceptMutation, router]);
 
   // Handle reject quote
   const handleReject = useCallback(
     (reason: string) => {
+      if (!quote) return;
+
       rejectMutation.mutate(
-        { quoteId, reason },
+        { quoteId, eventId: quote.event, reason },
         {
           onSuccess: () => {
             setShowRejectModal(false);
@@ -95,7 +102,7 @@ export default function QuoteDetailScreen() {
         }
       );
     },
-    [quoteId, rejectMutation, router]
+    [quoteId, quote, rejectMutation, router]
   );
 
   // Loading state

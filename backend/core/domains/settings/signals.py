@@ -274,141 +274,156 @@ Company Representative: _________________________ Date: _________
 
         if created:
             logger.info(f"✅ Created default WorkflowTemplate: {workflow_template.name}")
-
-            # Get communication templates for automation
-            booking_confirmation_template = CommunicationTemplate.objects.filter(
-                name='Booking Confirmation'
-            ).first()
-
-            # Create workflow stages
-            stages_data = [
-                # LEAD STAGE
-                {
-                    'name': 'Initial Inquiry',
-                    'stage': 'LEAD',
-                    'order': 1,
-                    'is_automated': True,
-                    'automation_type': 'EMAIL',
-                    'email_template': booking_confirmation_template,
-                    'trigger_on_event_created': True,
-                    'metadata': {
-                        'description': 'Send initial confirmation when event is created',
-                        'delay_hours': 0
-                    }
-                },
-                {
-                    'name': 'Quote Sent',
-                    'stage': 'LEAD',
-                    'order': 2,
-                    'is_automated': True,
-                    'automation_type': 'TASK',
-                    'task_description': 'Follow up on quote with client',
-                    'trigger_on_quote_sent': True,
-                    'metadata': {
-                        'task_priority': 'HIGH',
-                        'task_due_date': 'quote_sent_date_plus_3_days'
-                    }
-                },
-                {
-                    'name': 'Quote Accepted',
-                    'stage': 'LEAD',
-                    'order': 3,
-                    'is_automated': True,
-                    'automation_type': 'CONTRACT',
-                    'trigger_on_quote_accepted': True,
-                    'metadata': {
-                        'contract_template_id': contract_template.id if 'contract_template' in locals() else None,
-                        'signature_deadline_hours': 48
-                    }
-                },
-                # PRODUCTION STAGE
-                {
-                    'name': 'Contract Signed',
-                    'stage': 'PRODUCTION',
-                    'order': 1,
-                    'is_automated': True,
-                    'automation_type': 'NOTIFICATION',
-                    'trigger_on_contract_signed': True,
-                    'metadata': {
-                        'notification_title': 'Contract Signed',
-                        'notification_message': 'Client has signed the event contract'
-                    }
-                },
-                {
-                    'name': 'Payment Received',
-                    'stage': 'PRODUCTION',
-                    'order': 2,
-                    'is_automated': True,
-                    'automation_type': 'TASK',
-                    'task_description': 'Begin event preparation and vendor coordination',
-                    'trigger_on_payment_received': True,
-                    'metadata': {
-                        'task_priority': 'MEDIUM',
-                        'task_due_date': 'event_start_date'
-                    }
-                },
-                {
-                    'name': 'Event Preparation',
-                    'stage': 'PRODUCTION',
-                    'order': 3,
-                    'is_automated': True,
-                    'automation_type': 'TASK',
-                    'task_description': 'Finalize event details, confirm vendors, and prepare timeline',
-                    'metadata': {
-                        'task_priority': 'HIGH',
-                        'task_due_date': 'event_start_date_minus_7_days'
-                    }
-                },
-                # POST-PRODUCTION STAGE
-                {
-                    'name': 'Event Completed',
-                    'stage': 'POST_PRODUCTION',
-                    'order': 1,
-                    'is_automated': True,
-                    'automation_type': 'TASK',
-                    'task_description': 'Follow up with client for feedback and testimonial',
-                    'metadata': {
-                        'task_priority': 'LOW',
-                        'task_due_date': 'event_end_date_plus_3_days'
-                    }
-                },
-                {
-                    'name': 'Archive & Review',
-                    'stage': 'POST_PRODUCTION',
-                    'order': 2,
-                    'is_automated': False,
-                    'metadata': {
-                        'description': 'Archive event materials and conduct internal review'
-                    }
-                }
-            ]
-
-            for stage_data in stages_data:
-                stage, stage_created = WorkflowStage.objects.get_or_create(
-                    template=workflow_template,
-                    stage=stage_data['stage'],
-                    order=stage_data['order'],
-                    defaults={
-                        'name': stage_data['name'],
-                        'is_automated': stage_data.get('is_automated', False),
-                        'automation_type': stage_data.get('automation_type', ''),
-                        'task_description': stage_data.get('task_description', ''),
-                        'email_template': stage_data.get('email_template'),
-                        'trigger_on_event_created': stage_data.get('trigger_on_event_created', False),
-                        'trigger_on_quote_sent': stage_data.get('trigger_on_quote_sent', False),
-                        'trigger_on_quote_accepted': stage_data.get('trigger_on_quote_accepted', False),
-                        'trigger_on_contract_signed': stage_data.get('trigger_on_contract_signed', False),
-                        'trigger_on_payment_received': stage_data.get('trigger_on_payment_received', False),
-                        'metadata': stage_data.get('metadata', {})
-                    }
-                )
-
-                if stage_created:
-                    logger.info(f"  ✅ Created workflow stage: {stage.stage} - {stage.name}")
-
-            logger.info(f"✅ Created {len(stages_data)} workflow stages for default workflow")
         else:
-            logger.info("⏭️  Default WorkflowTemplate already exists, skipping")
+            logger.info(f"⏭️  Default WorkflowTemplate already exists, checking stages...")
+
+        # Get communication templates for automation
+        booking_confirmation_template = CommunicationTemplate.objects.filter(
+            name='Booking Confirmation'
+        ).first()
+
+        # Define workflow stages - always process to ensure stages exist and are updated
+        stages_data = [
+            # LEAD STAGE
+            {
+                'name': 'Initial Inquiry',
+                'stage': 'LEAD',
+                'order': 1,
+                'is_automated': True,
+                'automation_type': 'EMAIL',
+                'email_template': booking_confirmation_template,
+                'trigger_on_event_created': True,
+                'metadata': {
+                    'description': 'Send initial confirmation when event is created',
+                    'delay_hours': 0
+                }
+            },
+            {
+                'name': 'Quote Sent',
+                'stage': 'LEAD',
+                'order': 2,
+                'is_automated': True,
+                'automation_type': 'TASK',
+                'task_description': 'Follow up on quote with client',
+                'trigger_on_quote_sent': True,
+                'metadata': {
+                    'task_priority': 'HIGH',
+                    'task_due_date': 'quote_sent_date_plus_3_days'
+                }
+            },
+            {
+                'name': 'Quote Accepted',
+                'stage': 'LEAD',
+                'order': 3,
+                'is_automated': True,
+                'automation_type': 'CONTRACT',
+                'trigger_on_quote_accepted': True,
+                'contract_template': contract_template,
+                'metadata': {
+                    'signature_deadline_hours': 48
+                }
+            },
+            # PRODUCTION STAGE
+            {
+                'name': 'Contract Signed',
+                'stage': 'PRODUCTION',
+                'order': 1,
+                'is_automated': True,
+                'automation_type': 'NOTIFICATION',
+                'trigger_on_contract_signed': True,
+                'metadata': {
+                    'notification_title': 'Contract Signed',
+                    'notification_message': 'Client has signed the event contract'
+                }
+            },
+            {
+                'name': 'Payment Received',
+                'stage': 'PRODUCTION',
+                'order': 2,
+                'is_automated': True,
+                'automation_type': 'TASK',
+                'task_description': 'Begin event preparation and vendor coordination',
+                'trigger_on_payment_received': True,
+                'metadata': {
+                    'task_priority': 'MEDIUM',
+                    'task_due_date': 'event_start_date'
+                }
+            },
+            {
+                'name': 'Event Preparation',
+                'stage': 'PRODUCTION',
+                'order': 3,
+                'is_automated': True,
+                'automation_type': 'TASK',
+                'task_description': 'Finalize event details, confirm vendors, and prepare timeline',
+                'metadata': {
+                    'task_priority': 'HIGH',
+                    'task_due_date': 'event_start_date_minus_7_days'
+                }
+            },
+            # POST-PRODUCTION STAGE
+            {
+                'name': 'Event Completed',
+                'stage': 'POST_PRODUCTION',
+                'order': 1,
+                'is_automated': True,
+                'automation_type': 'TASK',
+                'task_description': 'Follow up with client for feedback and testimonial',
+                'metadata': {
+                    'task_priority': 'LOW',
+                    'task_due_date': 'event_end_date_plus_3_days'
+                }
+            },
+            {
+                'name': 'Archive & Review',
+                'stage': 'POST_PRODUCTION',
+                'order': 2,
+                'is_automated': False,
+                'metadata': {
+                    'description': 'Archive event materials and conduct internal review'
+                }
+            }
+        ]
+
+        stages_created_count = 0
+        stages_updated_count = 0
+
+        for stage_data in stages_data:
+            stage, stage_created = WorkflowStage.objects.get_or_create(
+                template=workflow_template,
+                stage=stage_data['stage'],
+                order=stage_data['order'],
+                defaults={
+                    'name': stage_data['name'],
+                    'is_automated': stage_data.get('is_automated', False),
+                    'automation_type': stage_data.get('automation_type', ''),
+                    'task_description': stage_data.get('task_description', ''),
+                    'email_template': stage_data.get('email_template'),
+                    'contract_template': stage_data.get('contract_template'),
+                    'trigger_on_event_created': stage_data.get('trigger_on_event_created', False),
+                    'trigger_on_quote_sent': stage_data.get('trigger_on_quote_sent', False),
+                    'trigger_on_quote_accepted': stage_data.get('trigger_on_quote_accepted', False),
+                    'trigger_on_contract_signed': stage_data.get('trigger_on_contract_signed', False),
+                    'trigger_on_payment_received': stage_data.get('trigger_on_payment_received', False),
+                    'metadata': stage_data.get('metadata', {})
+                }
+            )
+
+            if stage_created:
+                stages_created_count += 1
+                logger.info(f"  ✅ Created workflow stage: {stage.stage} - {stage.name}")
+            else:
+                # For existing stages, update contract_template if it's specified but not set
+                if stage_data.get('contract_template') and not stage.contract_template:
+                    stage.contract_template = stage_data['contract_template']
+                    stage.save(update_fields=['contract_template'])
+                    stages_updated_count += 1
+                    logger.info(f"  🔄 Updated workflow stage '{stage.name}' with contract template")
+
+        if stages_created_count > 0:
+            logger.info(f"✅ Created {stages_created_count} workflow stages")
+        if stages_updated_count > 0:
+            logger.info(f"🔄 Updated {stages_updated_count} workflow stages with missing templates")
     except Exception as e:
         logger.error(f"❌ Failed to create WorkflowTemplate: {e}")
 

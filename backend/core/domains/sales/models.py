@@ -65,15 +65,19 @@ class EventQuote(BaseModel):
         if signature_data:
             self.signature_data = signature_data
 
-        # IMPORTANT: Update event BEFORE saving quote to ensure the signal handler
-        # can access event.accepted_quote for correct pricing in contract generation
+        # IMPORTANT: Save quote FIRST before updating event status.
+        # This ensures QUOTE_ACCEPTED signal fires while workflow is still at LEAD stage
+        # (which has trigger_on_quote_accepted=True for contract generation).
+        #
+        # Signal handlers use instance (quote) directly for pricing calculations,
+        # NOT event.accepted_quote, so this order is safe.
+        self.save()
+
+        # Now update event - triggers STATUS_CHANGE signal which advances workflow.
+        # This must happen AFTER quote.save() so contract automation fires correctly.
         self.event.status = 'CONFIRMED'
         self.event.accepted_quote = self
         self.event.save()
-
-        # Now save the quote - this triggers the post_save signal which creates
-        # contract and invoice. The signal can now access event.accepted_quote
-        self.save()
 
         # Record activity
         QuoteActivity.objects.create(

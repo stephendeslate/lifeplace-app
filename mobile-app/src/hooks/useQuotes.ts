@@ -5,7 +5,8 @@
  */
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { quotesApi, type Quote, type QuoteFilters } from '@/apis/quotes.api';
+import { quotesApi, type QuoteFilters } from '@/apis/quotes.api';
+import type { Quote } from '@/apis/quotes.api';
 import { useToast } from '@/contexts/ToastContext';
 import type { PendingQuote } from '@/types/dashboard.types';
 
@@ -78,32 +79,64 @@ export function useQuotes(filters?: QuoteFilters) {
 // =============================================================================
 
 /**
- * Accept a quote
+ * Accept a quote with optimistic updates
  */
 export function useAcceptQuote() {
   const queryClient = useQueryClient();
   const { showToast } = useToast();
 
   return useMutation({
-    mutationFn: (quoteId: number) => quotesApi.acceptQuote(quoteId),
-    onSuccess: (updatedQuote) => {
-      showToast('Quote accepted successfully', 'success');
+    mutationFn: ({ quoteId }: { quoteId: number; eventId: number }) =>
+      quotesApi.acceptQuote(quoteId),
 
-      // Update quote in cache
-      queryClient.setQueryData(quoteKeys.detail(updatedQuote.id), updatedQuote);
+    // Optimistic update - runs immediately when mutate is called
+    onMutate: async ({ quoteId, eventId }) => {
+      // Cancel any outgoing refetches to avoid overwriting optimistic update
+      await queryClient.cancelQueries({ queryKey: quoteKeys.event(eventId) });
 
-      // Invalidate pending quotes
-      queryClient.invalidateQueries({ queryKey: quoteKeys.pending() });
+      // Snapshot the previous value for rollback
+      const previousQuotes = queryClient.getQueryData<Quote[]>(quoteKeys.event(eventId));
 
-      // Invalidate event quotes
-      queryClient.invalidateQueries({
-        queryKey: quoteKeys.event(updatedQuote.event),
+      // Optimistically update the cache immediately
+      queryClient.setQueryData<Quote[]>(quoteKeys.event(eventId), (oldQuotes) => {
+        if (!oldQuotes) return oldQuotes;
+        return oldQuotes.map((q) =>
+          Number(q.id) === quoteId
+            ? { ...q, status: 'ACCEPTED' as const, accepted_at: new Date().toISOString() }
+            : q
+        );
       });
 
-      // Invalidate dashboard data
+      // Return context with the snapshot for rollback
+      return { previousQuotes, eventId };
+    },
+
+    onSuccess: (updatedQuote, _variables, context) => {
+      showToast('Quote accepted successfully', 'success');
+
+      const quoteId = Number(updatedQuote.id);
+      const eventId = context?.eventId ?? Number(updatedQuote.event);
+
+      // Update with actual server response
+      queryClient.setQueryData(quoteKeys.detail(quoteId), updatedQuote);
+      queryClient.setQueryData<Quote[]>(quoteKeys.event(eventId), (oldQuotes) => {
+        if (!oldQuotes) return oldQuotes;
+        return oldQuotes.map((q) =>
+          Number(q.id) === quoteId ? { ...q, ...updatedQuote } : q
+        );
+      });
+
+      // Invalidate related queries
+      queryClient.invalidateQueries({ queryKey: quoteKeys.pending() });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
     },
-    onError: (error: unknown) => {
+
+    onError: (error, _variables, context) => {
+      // Rollback to previous value on error
+      if (context?.previousQuotes && context?.eventId) {
+        queryClient.setQueryData(quoteKeys.event(context.eventId), context.previousQuotes);
+      }
+
       const err = error as { response?: { data?: { detail?: string; error?: string } } };
       const message =
         err.response?.data?.detail ||
@@ -111,43 +144,89 @@ export function useAcceptQuote() {
         'Failed to accept quote. Please try again.';
       showToast(message, 'error');
     },
+
+    onSettled: (_data, _error, variables) => {
+      // Refetch to ensure cache is in sync with server
+      queryClient.invalidateQueries({ queryKey: quoteKeys.event(variables.eventId) });
+    },
   });
 }
 
 /**
- * Reject a quote
+ * Reject a quote with optimistic updates
  */
 export function useRejectQuote() {
   const queryClient = useQueryClient();
   const { showToast } = useToast();
 
   return useMutation({
-    mutationFn: ({ quoteId, reason }: { quoteId: number; reason: string }) =>
+    mutationFn: ({ quoteId, reason }: { quoteId: number; eventId: number; reason: string }) =>
       quotesApi.rejectQuote(quoteId, { reason }),
-    onSuccess: (updatedQuote) => {
-      showToast('Quote declined', 'info');
 
-      // Update quote in cache
-      queryClient.setQueryData(quoteKeys.detail(updatedQuote.id), updatedQuote);
+    // Optimistic update - runs immediately when mutate is called
+    onMutate: async ({ quoteId, eventId, reason }) => {
+      // Cancel any outgoing refetches to avoid overwriting optimistic update
+      await queryClient.cancelQueries({ queryKey: quoteKeys.event(eventId) });
 
-      // Invalidate pending quotes
-      queryClient.invalidateQueries({ queryKey: quoteKeys.pending() });
+      // Snapshot the previous value for rollback
+      const previousQuotes = queryClient.getQueryData<Quote[]>(quoteKeys.event(eventId));
 
-      // Invalidate event quotes
-      queryClient.invalidateQueries({
-        queryKey: quoteKeys.event(updatedQuote.event),
+      // Optimistically update the cache immediately
+      queryClient.setQueryData<Quote[]>(quoteKeys.event(eventId), (oldQuotes) => {
+        if (!oldQuotes) return oldQuotes;
+        return oldQuotes.map((q) =>
+          Number(q.id) === quoteId
+            ? {
+                ...q,
+                status: 'REJECTED' as const,
+                rejected_at: new Date().toISOString(),
+                rejection_reason: reason,
+              }
+            : q
+        );
       });
 
-      // Invalidate dashboard data
+      // Return context with the snapshot for rollback
+      return { previousQuotes, eventId };
+    },
+
+    onSuccess: (updatedQuote, _variables, context) => {
+      showToast('Quote declined', 'info');
+
+      const quoteId = Number(updatedQuote.id);
+      const eventId = context?.eventId ?? Number(updatedQuote.event);
+
+      // Update with actual server response
+      queryClient.setQueryData(quoteKeys.detail(quoteId), updatedQuote);
+      queryClient.setQueryData<Quote[]>(quoteKeys.event(eventId), (oldQuotes) => {
+        if (!oldQuotes) return oldQuotes;
+        return oldQuotes.map((q) =>
+          Number(q.id) === quoteId ? { ...q, ...updatedQuote } : q
+        );
+      });
+
+      // Invalidate related queries
+      queryClient.invalidateQueries({ queryKey: quoteKeys.pending() });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
     },
-    onError: (error: unknown) => {
+
+    onError: (error, _variables, context) => {
+      // Rollback to previous value on error
+      if (context?.previousQuotes && context?.eventId) {
+        queryClient.setQueryData(quoteKeys.event(context.eventId), context.previousQuotes);
+      }
+
       const err = error as { response?: { data?: { detail?: string; error?: string } } };
       const message =
         err.response?.data?.detail ||
         err.response?.data?.error ||
         'Failed to decline quote. Please try again.';
       showToast(message, 'error');
+    },
+
+    onSettled: (_data, _error, variables) => {
+      // Refetch to ensure cache is in sync with server
+      queryClient.invalidateQueries({ queryKey: quoteKeys.event(variables.eventId) });
     },
   });
 }
