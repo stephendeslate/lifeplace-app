@@ -307,6 +307,31 @@ export const paymentsApi = {
   },
 
   /**
+   * Pay an invoice with a saved payment method or new payment method token
+   */
+  payInvoice: async (
+    invoiceId: number,
+    paymentData: {
+      payment_method?: number; // Saved payment method ID
+      payment_method_id?: string; // Stripe payment method token (pm_xxx)
+      payment_type?: 'FULL' | 'DEPOSIT' | 'CUSTOM';
+      amount?: number; // For CUSTOM payment type
+      gateway_id?: number;
+      save_payment_method?: boolean;
+    }
+  ): Promise<{
+    success: boolean;
+    message?: string;
+    payment?: Payment;
+    invoice?: Invoice;
+    error?: string;
+    error_details?: unknown;
+  }> => {
+    const response = await api.post(`/payments/client/invoices/${invoiceId}/pay/`, paymentData);
+    return response.data;
+  },
+
+  /**
    * Download invoice as PDF
    */
   downloadInvoice: async (id: number): Promise<Blob> => {

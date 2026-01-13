@@ -135,15 +135,13 @@ export function ContractsTab({ eventId, onSignContract }: ContractsTabProps) {
     );
   }
 
-  if (!contracts || contracts.length === 0) {
-    return (
-      <EmptyState
-        icon="document"
-        title="No Contracts"
-        description="Contracts for this event will appear here when available."
-      />
-    );
-  }
+  const renderEmptyState = () => (
+    <EmptyState
+      icon="document"
+      title="No Contracts"
+      description="Contracts for this event will appear here when available. Pull down to refresh."
+    />
+  );
 
   const renderItem = ({ item: contract }: { item: Contract }) => {
     const progress = contract.signature_progress;
@@ -253,10 +251,14 @@ export function ContractsTab({ eventId, onSignContract }: ContractsTabProps) {
   return (
     <View style={styles.flex}>
       <FlatList
-        data={contracts}
+        data={contracts ?? []}
         renderItem={renderItem}
         keyExtractor={(item) => item.id.toString()}
-        contentContainerStyle={styles.listContainer}
+        contentContainerStyle={[
+          styles.listContainer,
+          (!contracts || contracts.length === 0) && styles.emptyListContainer,
+        ]}
+        ListEmptyComponent={renderEmptyState}
         refreshControl={
           <RefreshControl
             refreshing={isRefetching}
@@ -292,6 +294,10 @@ const styles = StyleSheet.create({
   },
   listContainer: {
     padding: theme.spacing.md,
+  },
+  emptyListContainer: {
+    flexGrow: 1,
+    justifyContent: 'center',
   },
   contractCard: {
     marginBottom: theme.spacing.md,

@@ -151,6 +151,52 @@ export function useCreatePaymentIntent() {
   });
 }
 
+/**
+ * Pay an invoice with a saved payment method or new card
+ */
+export function usePayInvoice() {
+  const queryClient = useQueryClient();
+  const { showToast } = useToast();
+
+  return useMutation({
+    mutationFn: ({
+      invoiceId,
+      paymentData,
+    }: {
+      invoiceId: number;
+      paymentData: {
+        payment_method?: number;
+        payment_method_id?: string;
+        payment_type?: 'FULL' | 'DEPOSIT' | 'CUSTOM';
+        amount?: number;
+        gateway_id?: number;
+        save_payment_method?: boolean;
+      };
+    }) => paymentsApi.payInvoice(invoiceId, paymentData),
+    onSuccess: (data, variables) => {
+      if (data.success) {
+        showToast('Payment successful!', 'success');
+
+        // Invalidate all relevant caches
+        queryClient.invalidateQueries({ queryKey: financialKeys.invoices() });
+        queryClient.invalidateQueries({ queryKey: financialKeys.summary() });
+        queryClient.invalidateQueries({ queryKey: financialKeys.overview() });
+        queryClient.invalidateQueries({ queryKey: financialKeys.overdue() });
+        queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      }
+    },
+    onError: (error: unknown) => {
+      const err = error as { response?: { data?: { detail?: string; error?: string; message?: string } } };
+      const message =
+        err.response?.data?.detail ||
+        err.response?.data?.error ||
+        err.response?.data?.message ||
+        'Payment failed. Please try again.';
+      showToast(message, 'error');
+    },
+  });
+}
+
 // =============================================================================
 // UTILITY FUNCTIONS
 // =============================================================================

@@ -1971,3 +1971,10 @@ DETAIL:  Failing row contains (259, 2025-09-10 01:22:12.901702+00, LOGIN_SUCCESS
 🔒 SECURITY 2026-01-10 02:48:13,403 INFO [LOGIN_SUCCESS] User john.test@gmail.com logged in successfully
 🔒 SECURITY 2026-01-10 03:17:32,932 INFO [LOGIN_SUCCESS] User john.test@gmail.com logged in successfully
 🔒 SECURITY 2026-01-12 15:16:39,527 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully
+🔒 SECURITY 2026-01-12 15:48:45,480 INFO [LOGIN_SUCCESS] User john.test@gmail.com logged in successfully
+🔒 SECURITY 2026-01-13 08:39:56,107 INFO [LOGIN_SUCCESS] User john.test@gmail.com logged in successfully
+🔒 SECURITY 2026-01-13 10:49:48,002 INFO [LOGIN_SUCCESS] User john.test@gmail.com logged in successfully
+🔒 SECURITY 2026-01-13 10:52:04,277 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully
+🔒 SECURITY 2026-01-13 12:55:18,395 INFO [LOGIN_SUCCESS] User john.test@gmail.com logged in successfully
+🔒 SECURITY 2026-01-13 12:56:57,179 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully
+🔒 SECURITY 2026-01-13 13:24:44,688 INFO [LOGIN_SUCCESS] User john.test@gmail.com logged in successfully
