@@ -47,7 +47,6 @@ import {
   Description as ContractIcon,
   Receipt as QuoteIcon,
   Payment as InvoiceIcon,
-  AccountBalance as PaymentIcon,
   Assignment as QuestionnaireIcon,
   Folder as FilesIcon,
   Note as NoteIcon,
@@ -82,7 +81,6 @@ import { EventQuestionnaires } from '../../components/events/EventQuestionnaires
 import { EventQuotes } from '../../components/events/EventQuotes';
 import { EventContracts } from '../../components/events/EventContracts';
 import { EventInvoices } from '../../components/events/EventInvoices';
-import { EventPaymentPlans } from '../../components/events/EventPaymentPlans';
 import { EventFiles } from '../../components/events/EventFiles';
 import { NotesList } from '../../components/notes';
 import {
@@ -624,24 +622,6 @@ export const EventProfile: React.FC = () => {
               icon: <ArrowBackIcon />,
               variant: 'outlined',
               tooltip: 'Back to Events',
-            } as HeaderAction,
-            {
-              label: 'Contract',
-              onClick: () => setTabValue(4),
-              icon: <ContractIcon />,
-              variant: 'outlined',
-            } as HeaderAction,
-            {
-              label: 'Invoice',
-              onClick: () => setTabValue(5),
-              icon: <InvoiceIcon />,
-              variant: 'outlined',
-            } as HeaderAction,
-            {
-              label: 'Message',
-              onClick: () => setTabValue(2),
-              icon: <EmailIcon />,
-              variant: 'outlined',
             } as HeaderAction,
             {
               label: 'More',
@@ -1779,11 +1759,6 @@ export const EventProfile: React.FC = () => {
               iconPosition="start"
             />
             <Tab
-              label="Payment Plans"
-              icon={<PaymentIcon />}
-              iconPosition="start"
-            />
-            <Tab
               label={`Questionnaires (${questionnairesCount})`}
               icon={<QuestionnaireIcon />}
               iconPosition="start"
@@ -1839,23 +1814,18 @@ export const EventProfile: React.FC = () => {
             <EventInvoices event={event} />
           </TabPanel>
 
-          {/* Payment Plans Tab */}
-          <TabPanel value={tabValue} index={5}>
-            <EventPaymentPlans event={event} />
-          </TabPanel>
-
           {/* Questionnaires Tab */}
-          <TabPanel value={tabValue} index={6}>
+          <TabPanel value={tabValue} index={5}>
             <EventQuestionnaires event={event} />
           </TabPanel>
 
           {/* Files Tab */}
-          <TabPanel value={tabValue} index={7}>
+          <TabPanel value={tabValue} index={6}>
             <EventFiles event={event} />
           </TabPanel>
 
           {/* Notes Tab */}
-          <TabPanel value={tabValue} index={8}>
+          <TabPanel value={tabValue} index={7}>
             <NotesList
               contentType="event"
               objectId={eventId}

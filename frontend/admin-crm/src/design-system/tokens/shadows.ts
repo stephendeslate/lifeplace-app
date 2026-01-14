@@ -31,61 +31,33 @@ export const shadowTokens = {
     error: '0 8px 32px rgba(239, 68, 68, 0.25)',
   },
 
-  // Interactive state shadows
-  interactive: {
-    // Hover states
-    hoverSoft: '0 6px 20px rgba(0, 0, 0, 0.15)',
-    hoverMedium: '0 8px 30px rgba(0, 0, 0, 0.2)',
-    hoverStrong: '0 12px 40px rgba(0, 0, 0, 0.25)',
-    
-    // Focus states
-    focus: '0 0 0 3px rgba(0, 135, 255, 0.3)',
-    focusError: '0 0 0 3px rgba(239, 68, 68, 0.3)',
-    focusSuccess: '0 0 0 3px rgba(16, 185, 129, 0.3)',
-    
-    // Active/pressed states
-    pressed: 'inset 0 2px 4px rgba(0, 0, 0, 0.1)',
-    active: '0 2px 8px rgba(0, 135, 255, 0.4)',
-  },
-
   // Component-specific shadows
   component: {
     // Cards
     card: '0 2px 8px rgba(0, 0, 0, 0.08)',
     cardHover: '0 4px 16px rgba(0, 0, 0, 0.12)',
-    cardPressed: '0 1px 4px rgba(0, 0, 0, 0.1)',
-    
+
     // Buttons
     button: '0 1px 3px rgba(0, 0, 0, 0.1)',
     buttonHover: '0 2px 6px rgba(0, 0, 0, 0.15)',
-    buttonPressed: 'inset 0 1px 2px rgba(0, 0, 0, 0.1)',
-    
+
     // Dropdowns and menus
     dropdown: '0 4px 12px rgba(0, 0, 0, 0.15)',
     popover: '0 8px 24px rgba(0, 0, 0, 0.2)',
-    tooltip: '0 2px 8px rgba(0, 0, 0, 0.15)',
-    
+
     // Navigation
     header: '0 1px 3px rgba(0, 0, 0, 0.1)',
     sidebar: '2px 0 8px rgba(0, 0, 0, 0.05)',
-    
+
     // Modals and overlays
     modal: '0 20px 60px rgba(0, 0, 0, 0.3)',
     drawer: '0 8px 24px rgba(0, 0, 0, 0.15)',
-    overlay: '0 0 0 100vmax rgba(0, 0, 0, 0.5)',
-    
+    tooltip: '0 4px 12px rgba(0, 0, 0, 0.2)',
+
     // Form elements
     input: 'inset 0 1px 2px rgba(0, 0, 0, 0.05)',
     inputFocus: '0 0 0 3px rgba(0, 135, 255, 0.1), inset 0 1px 2px rgba(0, 0, 0, 0.05)',
     inputError: '0 0 0 3px rgba(239, 68, 68, 0.1), inset 0 1px 2px rgba(0, 0, 0, 0.05)',
-  },
-
-  // Inner shadows for depth and texture
-  inner: {
-    subtle: 'inset 0 1px 0 rgba(255, 255, 255, 0.1)',
-    medium: 'inset 0 1px 0 rgba(255, 255, 255, 0.2), inset 0 -1px 0 rgba(0, 0, 0, 0.05)',
-    strong: 'inset 0 2px 4px rgba(0, 0, 0, 0.1)',
-    pressed: 'inset 0 2px 4px rgba(0, 0, 0, 0.15)',
   },
 } as const;
 
@@ -157,12 +129,7 @@ export const shadowsCssVariables = {
   '--shadow-button': shadowTokens.component.button,
   '--shadow-dropdown': shadowTokens.component.dropdown,
   '--shadow-modal': shadowTokens.component.modal,
-  
-  // Focus shadows
-  '--shadow-focus': shadowTokens.interactive.focus,
-  '--shadow-focus-error': shadowTokens.interactive.focusError,
-  '--shadow-focus-success': shadowTokens.interactive.focusSuccess,
-  
+
   // Backdrop filters
   '--backdrop-blur-light': backdropFilters.light,
   '--backdrop-blur-medium': backdropFilters.medium,
@@ -178,13 +145,12 @@ export const shadowsCssVariables = {
 // Type definitions
 export type ElevationLevel = keyof typeof shadowTokens.elevation;
 export type GlassShadow = keyof typeof shadowTokens.glass;
-export type InteractiveShadow = keyof typeof shadowTokens.interactive;
 export type ComponentShadow = keyof typeof shadowTokens.component;
 export type BackdropFilter = keyof typeof backdropFilters;
 export type BorderStyle = keyof typeof borders;
 
 // Helper functions
-export const getShadow = (type: 'elevation' | 'glass' | 'interactive' | 'component', scale: string): string => {
+export const getShadow = (type: 'elevation' | 'glass' | 'component', scale: string): string => {
   const shadowGroup = shadowTokens[type] as Record<string, string>;
   return shadowGroup[scale] || shadowTokens.elevation.none;
 };

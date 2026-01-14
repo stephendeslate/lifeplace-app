@@ -291,6 +291,11 @@ class EventContractViewSet(viewsets.ModelViewSet):
         if event_id:
             queryset = queryset.filter(event_id=event_id)
 
+        # Filter by client_id (for client profile page)
+        client_id = self.request.query_params.get('client_id')
+        if client_id:
+            queryset = queryset.filter(event__client_id=client_id)
+
         template = self.request.query_params.get('template')
         if template:
             queryset = queryset.filter(template_id=template)

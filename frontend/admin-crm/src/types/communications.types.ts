@@ -35,6 +35,10 @@ export interface CommunicationRecord {
   sent_by?: number;
   sent_by_name?: string;
   event?: number;
+  event_details?: {
+    id: number;
+    name: string;
+  };
   external_message_id?: string;
   delivery_status: 'PENDING' | 'SENT' | 'DELIVERED' | 'FAILED' | 'BOUNCED';
   sent_at?: string;

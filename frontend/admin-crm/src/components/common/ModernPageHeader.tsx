@@ -460,14 +460,6 @@ export const ModernPageHeader: React.FC<ModernPageHeaderProps> = ({
 };
 
 // Specialized header variants
-export const ModernDashboardHeader: React.FC<Omit<ModernPageHeaderProps, 'size' | 'gradient'>> = (props) => (
-  <ModernPageHeader {...props} size="large" gradient />
-);
-
-export const ModernSettingsHeader: React.FC<Omit<ModernPageHeaderProps, 'glass'>> = (props) => (
-  <ModernPageHeader {...props} glass={false} />
-);
-
 export const ModernOverviewHeader: React.FC<Omit<ModernPageHeaderProps, 'size'>> = (props) => (
   <ModernPageHeader {...props} size="medium" />
 );

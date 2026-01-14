@@ -272,23 +272,6 @@ export const ModernGlassCard: React.FC<Omit<ModernCardProps, 'variant'>> = (prop
   <ModernCard {...props} variant="glass" />
 );
 
-export const ModernElevatedCard: React.FC<Omit<ModernCardProps, 'variant'>> = (props) => (
-  <ModernCard {...props} variant="elevated" />
-);
-
-export const ModernOutlinedCard: React.FC<Omit<ModernCardProps, 'variant'>> = (props) => (
-  <ModernCard {...props} variant="outlined" />
-);
-
-export const ModernMinimalCard: React.FC<Omit<ModernCardProps, 'variant'>> = (props) => (
-  <ModernCard {...props} variant="minimal" />
-);
-
-// Interactive card variants
-export const ModernInteractiveCard: React.FC<Omit<ModernCardProps, 'interactive'>> = (props) => (
-  <ModernCard {...props} interactive />
-);
-
 // Metric card variant optimized for displaying metrics
 interface ModernMetricCardProps {
   title: string;

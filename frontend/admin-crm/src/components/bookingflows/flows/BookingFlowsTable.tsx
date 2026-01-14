@@ -307,9 +307,8 @@ export const BookingFlowsTable: React.FC<BookingFlowTableProps> = ({
     {
       label: 'View Analytics',
       icon: <AnalyticsIcon />,
-      onClick: (flow) => {
-        // Navigate to analytics - this would be handled by parent component
-        console.log(`Navigate to analytics for flow ${flow.id}`);
+      onClick: (_flow) => {
+        // TODO: Navigate to analytics - should be handled by parent component
       },
       color: 'default',
     },

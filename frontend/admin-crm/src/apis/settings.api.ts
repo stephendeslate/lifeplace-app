@@ -46,11 +46,9 @@ export const settingsApi = {
   getAdminUsers: async (): Promise<AdminUser[]> => {
     try {
       const response = await api.get<PaginatedResponse<AdminUser>>('/users/');
-      console.log('getAdminUsers response.data:', response.data);
       const users = Array.isArray(response.data.results) ? response.data.results : [];
       return users.filter((user: AdminUser) => user.role === 'ADMIN');
-    } catch (error) {
-      console.error('getAdminUsers error:', error);
+    } catch {
       return [];
     }
   },
@@ -75,10 +73,8 @@ export const settingsApi = {
   getInvitations: async (): Promise<AdminInvitation[]> => {
     try {
       const response = await api.get<PaginatedResponse<AdminInvitation>>('/users/invitations/');
-      console.log('getInvitations response.data:', response.data);
       return Array.isArray(response.data.results) ? response.data.results : [];
-    } catch (error) {
-      console.error('getInvitations error:', error);
+    } catch {
       return [];
     }
   },

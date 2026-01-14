@@ -128,12 +128,7 @@ export const PaymentsOverview: React.FC = () => {
   };
 
   const handleExport = async () => {
-    try {
-      // TODO: Implement export functionality once available in API
-      console.log('Export payments:', filters);
-    } catch (error) {
-      console.error('Export failed:', error);
-    }
+    // TODO: Implement export functionality once available in API
   };
 
   const handleFilterChange = (key: keyof PaymentFilters, value: string) => {

@@ -673,7 +673,58 @@ class Payment(BaseModel):
 
             return is_successful
         return False
-    
+
+    def send_reminder_notification(self):
+        """Send payment reminder notification to the client via email"""
+        if self.status not in ['PENDING', 'CREATED']:
+            return False
+
+        client = self.event.client
+        is_successful = False
+        template_used = None
+
+        try:
+            # Send reminder email via CommunicationService
+            from core.domains.communications.services import CommunicationService
+
+            comm_service = CommunicationService()
+            record = comm_service.send_communication(
+                template_name='Payment Reminder',
+                recipient=client.email,
+                client=client,
+                event=self.event,
+                payment=self,
+                skip_preference_check=False
+            )
+
+            is_successful = record is not None and record.delivery_status == 'SENT'
+
+            if record and record.id:
+                # Get the template used
+                from core.domains.communications.models import CommunicationTemplate
+                try:
+                    template_used = CommunicationTemplate.objects.get(name='Payment Reminder')
+                except CommunicationTemplate.DoesNotExist:
+                    pass
+
+            logger.info(f"Payment reminder email sent for payment {self.payment_number}")
+
+        except Exception as e:
+            logger.error(f"Failed to send payment reminder email for {self.payment_number}: {e}")
+            is_successful = False
+
+        # Create notification record
+        PaymentNotification.objects.create(
+            payment=self,
+            notification_type='PAYMENT_REMINDER',
+            sent_at=timezone.now(),
+            sent_to=client.email,
+            is_successful=is_successful,
+            template_used=template_used
+        )
+
+        return is_successful
+
     def format_amount_with_currency(self, user=None):
         """
         Format the payment amount with appropriate currency symbol and formatting

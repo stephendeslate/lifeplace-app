@@ -25,7 +25,6 @@ import {
   Switch,
   FormControlLabel,
   Alert,
-  Fade,
   alpha,
   Badge,
 } from '@mui/material';
@@ -831,69 +830,67 @@ export const EnterpriseEventsCalendar: React.FC = () => {
 
       {/* Availability Stats */}
       {settings.showAvailabilityStats && availabilityStats && (
-        <Fade in={!!availabilityStats}>
-          <ModernCard variant="glass" size="medium" sx={{ mb: 3 }}>
-              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={3} alignItems="center">
-                <Box>
-                  <Typography variant="h6" color="primary">
-                    Availability Overview
+        <ModernCard variant="glass" size="medium" sx={{ mb: 3 }}>
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={3} alignItems="center">
+              <Box>
+                <Typography variant="h6" color="primary">
+                  Availability Overview
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {availabilityStats.totalDaysChecked} days analyzed
+                </Typography>
+              </Box>
+
+              <Stack direction="row" spacing={3} divider={<Divider orientation="vertical" flexItem />}>
+                <Stack alignItems="center" spacing={0.5}>
+                  <Typography variant="h5" color="success.main">
+                    {Math.round(availabilityStats.availabilityRate)}%
                   </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    {availabilityStats.totalDaysChecked} days analyzed
+                  <Typography variant="caption" color="text.secondary">
+                    Available
                   </Typography>
-                </Box>
-                
-                <Stack direction="row" spacing={3} divider={<Divider orientation="vertical" flexItem />}>
-                  <Stack alignItems="center" spacing={0.5}>
-                    <Typography variant="h5" color="success.main">
-                      {Math.round(availabilityStats.availabilityRate)}%
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      Available
-                    </Typography>
-                  </Stack>
-                  
-                  <Stack alignItems="center" spacing={0.5}>
-                    <Typography variant="h5" color="warning.main">
-                      {availabilityStats.partiallyBookedDays}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      Partial
-                    </Typography>
-                  </Stack>
-                  
-                  <Stack alignItems="center" spacing={0.5}>
-                    <Typography variant="h5" color="error.main">
-                      {availabilityStats.fullyBookedDays}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      Booked
-                    </Typography>
-                  </Stack>
-                  
-                  {availabilityStats.blockedDays > 0 && (
-                    <Stack alignItems="center" spacing={0.5}>
-                      <Typography variant="h5" color="grey.600">
-                        {availabilityStats.blockedDays}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        Blocked
-                      </Typography>
-                    </Stack>
-                  )}
                 </Stack>
 
-                <Button
-                  variant="outlined"
-                  size="small"
-                  startIcon={<SettingsIcon />}
-                  onClick={() => setSettingsOpen(true)}
-                >
-                  Settings
-                </Button>
+                <Stack alignItems="center" spacing={0.5}>
+                  <Typography variant="h5" color="warning.main">
+                    {availabilityStats.partiallyBookedDays}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    Partial
+                  </Typography>
+                </Stack>
+
+                <Stack alignItems="center" spacing={0.5}>
+                  <Typography variant="h5" color="error.main">
+                    {availabilityStats.fullyBookedDays}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    Booked
+                  </Typography>
+                </Stack>
+
+                {availabilityStats.blockedDays > 0 && (
+                  <Stack alignItems="center" spacing={0.5}>
+                    <Typography variant="h5" color="grey.600">
+                      {availabilityStats.blockedDays}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      Blocked
+                    </Typography>
+                  </Stack>
+                )}
               </Stack>
-          </ModernCard>
-        </Fade>
+
+              <Button
+                variant="outlined"
+                size="small"
+                startIcon={<SettingsIcon />}
+                onClick={() => setSettingsOpen(true)}
+              >
+                Settings
+              </Button>
+            </Stack>
+        </ModernCard>
       )}
 
       {/* Availability Error Alert */}

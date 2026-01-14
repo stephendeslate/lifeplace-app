@@ -709,6 +709,55 @@ export const useInvoices = (filters?: InvoiceFilters) => {
   };
 };
 
+export const useSendInvoice = () => {
+  const queryClient = useQueryClient();
+  const { showSuccess, showError } = useToastActions();
+
+  return useMutation({
+    mutationFn: (invoiceId: number) => paymentsApi.sendInvoice(invoiceId),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['invoices'] });
+      showSuccess('Invoice Sent', data.detail);
+    },
+    onError: (error: unknown) => {
+      const message = (error && typeof error === 'object' && 'response' in error)
+        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to send invoice'
+        : 'Failed to send invoice';
+      showError('Send Failed', message);
+    },
+  });
+};
+
+export const useDownloadInvoicePdf = () => {
+  const { showSuccess, showError } = useToastActions();
+
+  return useMutation({
+    mutationFn: async (invoiceId: number) => {
+      const blob = await paymentsApi.downloadInvoicePdf(invoiceId);
+      return { blob, invoiceId };
+    },
+    onSuccess: ({ blob, invoiceId }) => {
+      // Create a download link and trigger download
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `invoice-${invoiceId}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      showSuccess('Download Started', 'Invoice PDF download has started.');
+    },
+    onError: (error: unknown) => {
+      const message = (error && typeof error === 'object' && 'response' in error)
+        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to download invoice PDF'
+        : 'Failed to download invoice PDF';
+      showError('Download Failed', message);
+    },
+  });
+};
+
 /**
  * Payment Transactions Hooks
  */
@@ -963,6 +1012,36 @@ export const usePaymentManagement = (paymentId: number) => {
     },
   });
 
+  const sendReminderMutation = useMutation({
+    mutationFn: () => paymentsApi.sendReminder(paymentId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.payment(paymentId) });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.paymentNotifications({ payment: paymentId }) });
+      showSuccess('Reminder Sent', 'Payment reminder has been sent to the client successfully.');
+    },
+    onError: (error: unknown) => {
+      const message = (error && typeof error === 'object' && 'response' in error)
+        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to send reminder'
+        : 'Failed to send reminder';
+      showError('Send Failed', message);
+    },
+  });
+
+  const deletePaymentMutation = useMutation({
+    mutationFn: () => paymentsApi.deletePayment(paymentId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['payments'] });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.payment(paymentId) });
+      showSuccess('Payment Deleted', 'Payment has been deleted successfully.');
+    },
+    onError: (error: unknown) => {
+      const message = (error && typeof error === 'object' && 'response' in error)
+        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to delete payment'
+        : 'Failed to delete payment';
+      showError('Delete Failed', message);
+    },
+  });
+
   const createRefundMutation = useMutation({
     mutationFn: (data: CreateRefundData) => paymentsApi.createRefund(data),
     onSuccess: () => {
@@ -1002,12 +1081,16 @@ export const usePaymentManagement = (paymentId: number) => {
     isUpdatingPayment: updatePaymentMutation.isPending,
     isProcessingPayment: processPaymentMutation.isPending,
     isSendingReceipt: sendReceiptMutation.isPending,
+    isSendingReminder: sendReminderMutation.isPending,
+    isDeletingPayment: deletePaymentMutation.isPending,
     isCreatingRefund: createRefundMutation.isPending,
 
     // Actions
     updatePayment: updatePaymentMutation.mutate,
     processPayment: processPaymentMutation.mutate,
     sendReceipt: sendReceiptMutation.mutate,
+    sendReminder: sendReminderMutation.mutate,
+    deletePayment: deletePaymentMutation.mutate,
     createRefund: createRefundMutation.mutate,
 
     // Refetch functions
