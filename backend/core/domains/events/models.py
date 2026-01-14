@@ -1,4 +1,6 @@
 # backend/core/domains/events/models.py
+import uuid
+
 from core.utils.models import BaseModel
 from django.contrib.contenttypes.models import ContentType
 from django.core.cache import cache
@@ -792,3 +794,76 @@ class EventDateReminder(BaseModel):
 
     def __str__(self):
         return f"Reminder for Event {self.event_id} - {self.days_before} days before"
+
+
+class DateReservation(BaseModel):
+    """
+    Temporary date reservation for payment processing window.
+
+    Used to prevent race conditions during the booking completion flow.
+    When a client clicks "Complete Booking", a reservation is created that
+    temporarily holds the date for 5 minutes while payment is processed.
+
+    This implements pessimistic locking to ensure only one client can
+    successfully book a date, even if multiple clients are in the payment
+    flow simultaneously.
+    """
+    STATUS_CHOICES = [
+        ('PENDING', 'Pending Payment'),
+        ('CONFIRMED', 'Confirmed'),
+        ('RELEASED', 'Released'),
+        ('EXPIRED', 'Expired'),
+    ]
+
+    token = models.UUIDField(
+        default=uuid.uuid4,
+        unique=True,
+        db_index=True,
+        help_text="Unique token for identifying this reservation"
+    )
+    target_date = models.DateField(
+        db_index=True,
+        help_text="The date being reserved"
+    )
+    booking_session_id = models.CharField(
+        max_length=255,
+        db_index=True,
+        help_text="The booking session that created this reservation"
+    )
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default='PENDING',
+        help_text="Current status of the reservation"
+    )
+    expires_at = models.DateTimeField(
+        help_text="When this reservation expires (5 minutes from creation)"
+    )
+    confirmed_event_id = models.IntegerField(
+        null=True,
+        blank=True,
+        help_text="The event ID if this reservation was confirmed"
+    )
+
+    class Meta:
+        verbose_name = 'Date Reservation'
+        verbose_name_plural = 'Date Reservations'
+        indexes = [
+            models.Index(fields=['target_date', 'status']),
+            models.Index(fields=['booking_session_id']),
+            models.Index(fields=['status', 'expires_at']),
+        ]
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Reservation {self.token} for {self.target_date} ({self.status})"
+
+    @property
+    def is_expired(self):
+        """Check if this reservation has expired"""
+        return timezone.now() >= self.expires_at
+
+    @property
+    def is_active(self):
+        """Check if this reservation is still active (pending and not expired)"""
+        return self.status == 'PENDING' and not self.is_expired

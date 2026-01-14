@@ -5,7 +5,7 @@ import logging
 
 from core.utils.models import BaseModel
 from core.utils.encryption import EncryptedJSONField
-from django.db import models
+from django.db import models, transaction
 from django.utils import timezone
 from django.core.exceptions import ValidationError
 
@@ -849,13 +849,17 @@ class PaymentMethod(BaseModel):
     
     def save(self, *args, **kwargs):
         # If this method is set as default, unset other defaults for this user
+        # Use atomic transaction to prevent race conditions when setting defaults
         if self.is_default:
-            PaymentMethod.objects.filter(
-                user=self.user,
-                is_default=True
-            ).exclude(pk=self.pk).update(is_default=False)
-        super().save(*args, **kwargs)
-    
+            with transaction.atomic():
+                PaymentMethod.objects.filter(
+                    user=self.user,
+                    is_default=True
+                ).exclude(pk=self.pk).update(is_default=False)
+                super().save(*args, **kwargs)
+        else:
+            super().save(*args, **kwargs)
+
     class Meta:
         ordering = ['-is_default', '-created_at']
 
@@ -1234,11 +1238,23 @@ class PaymentInstallment(BaseModel):
         return (timezone.now().date() - self.due_date).days
 
     def apply_late_fee(self, fee_amount):
-        """Apply late fee to this installment"""
-        if self.late_fee_amount == 0:  # Only apply once
-            self.late_fee_amount = fee_amount
-            self.late_fee_applied_date = timezone.now().date()
-            self.save(update_fields=['late_fee_amount', 'late_fee_applied_date'])
+        """Apply late fee to this installment.
+
+        Uses atomic transaction with row locking to prevent race conditions
+        where late fee could be applied multiple times concurrently.
+        """
+        with transaction.atomic():
+            # Re-fetch with lock to prevent concurrent late fee applications
+            locked_installment = Installment.objects.select_for_update().get(pk=self.pk)
+
+            if locked_installment.late_fee_amount == 0:  # Only apply once
+                locked_installment.late_fee_amount = fee_amount
+                locked_installment.late_fee_applied_date = timezone.now().date()
+                locked_installment.save(update_fields=['late_fee_amount', 'late_fee_applied_date'])
+
+                # Sync self with locked instance
+                self.late_fee_amount = locked_installment.late_fee_amount
+                self.late_fee_applied_date = locked_installment.late_fee_applied_date
 
     def mark_as_paid(self, payment_amount=None):
         """Mark installment as paid and update status"""
@@ -1289,9 +1305,13 @@ class TaxRate(BaseModel):
     
     def save(self, *args, **kwargs):
         # If this rate is set as default, unset other defaults
+        # Use atomic transaction to prevent race conditions when setting defaults
         if self.is_default:
-            TaxRate.objects.filter(is_default=True).exclude(pk=self.pk).update(is_default=False)
-        super().save(*args, **kwargs)
+            with transaction.atomic():
+                TaxRate.objects.filter(is_default=True).exclude(pk=self.pk).update(is_default=False)
+                super().save(*args, **kwargs)
+        else:
+            super().save(*args, **kwargs)
 
 
 class Refund(BaseModel):
@@ -1397,7 +1417,10 @@ class Invoice(BaseModel):
         return Decimal('0.00') < paid < self.total_amount
 
     def mark_as_paid(self):
-        """Mark invoice as paid or partially paid based on actual payments
+        """Mark invoice as paid or partially paid based on actual payments.
+
+        Uses atomic transaction with row locking to prevent race conditions
+        when multiple payments complete concurrently.
 
         This method intelligently determines the correct invoice status by:
         1. Calculating total paid amount from related completed payments
@@ -1405,24 +1428,32 @@ class Invoice(BaseModel):
         3. Setting status to PARTIALLY_PAID if partially paid
         4. Keeping status as ISSUED if no payments made
         """
-        paid = self.paid_amount
+        with transaction.atomic():
+            # Re-fetch with lock to prevent concurrent status updates
+            locked_invoice = Invoice.objects.select_for_update().get(pk=self.pk)
 
-        # Determine correct status based on payment amount
-        if paid >= self.total_amount:
-            # Fully paid
-            self.status = 'PAID'
-        elif paid > Decimal('0.00'):
-            # Partially paid
-            self.status = 'PARTIALLY_PAID'
-        elif self.status != 'ISSUED':
-            # No payment, but not yet issued
-            # Keep current status (DRAFT, VOID, CANCELLED, etc.)
-            pass
+            # Calculate paid amount from locked invoice
+            paid = locked_invoice.paid_amount
 
-        self.save(update_fields=['status'])
+            # Determine correct status based on payment amount
+            if paid >= locked_invoice.total_amount:
+                # Fully paid
+                locked_invoice.status = 'PAID'
+            elif paid > Decimal('0.00'):
+                # Partially paid
+                locked_invoice.status = 'PARTIALLY_PAID'
+            elif locked_invoice.status != 'ISSUED':
+                # No payment, but not yet issued
+                # Keep current status (DRAFT, VOID, CANCELLED, etc.)
+                pass
 
-        # Update event's payment status
-        self.event.update_payment_status()
+            locked_invoice.save(update_fields=['status'])
+
+            # Sync self with locked instance
+            self.status = locked_invoice.status
+
+            # Update event's payment status
+            locked_invoice.event.update_payment_status()
     
     def issue(self):
         """Issue the invoice to the client"""

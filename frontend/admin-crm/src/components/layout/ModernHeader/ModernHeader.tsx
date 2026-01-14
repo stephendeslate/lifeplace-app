@@ -47,6 +47,7 @@ import { useLayout } from '../../../contexts/LayoutContext';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useToastActions } from '../../../contexts/ToastContext';
 import { useTheme as useAppTheme } from '../../../contexts/ThemeContext';
+import { useBranding } from '../../../contexts/BrandingContext';
 import { NotificationBadge } from '../../notifications/NotificationBadge';
 import { tokens } from '../../../design-system';
 import { createGlassEffect, glassPresets } from '../../../design-system/utils/glassmorphism';
@@ -76,12 +77,24 @@ export const ModernHeader: React.FC = () => {
   const authContext = useAuth();
   const toastContext = useToastActions();
   const appTheme = useAppTheme();
-  
-  const { 
+  const branding = useBranding();
+
+  const {
     headerHeight = 64
   } = layoutContext || {};
   const { user, logout } = authContext || {};
   const { showInfo } = toastContext || {};
+
+  // Brand colors from company settings (with fallbacks to design system)
+  const defaultGradient = `linear-gradient(135deg, ${tokens.color.primary[500]} 0%, ${tokens.color.primary[600]} 100%)`;
+  const defaultGradientHover = `linear-gradient(135deg, ${tokens.color.primary[600]} 0%, ${tokens.color.primary[700]} 100%)`;
+  const primaryColor = branding?.colors?.primary || tokens.color.primary[500];
+  const r = parseInt(primaryColor.slice(1, 3), 16);
+  const g = parseInt(primaryColor.slice(3, 5), 16);
+  const b = parseInt(primaryColor.slice(5, 7), 16);
+  const brandGradient = branding?.colors?.primaryGradient || defaultGradient;
+  const brandGradientHover = branding?.colors?.primaryGradientHover || defaultGradientHover;
+  const brandSubtle = `linear-gradient(135deg, rgba(${r}, ${g}, ${b}, 0.1) 0%, rgba(${r}, ${g}, ${b}, 0.05) 100%)`;
   
   const [userMenuAnchor, setUserMenuAnchor] = useState<null | HTMLElement>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -261,7 +274,7 @@ export const ModernHeader: React.FC = () => {
                 component="div"
                 sx={{
                   fontWeight: 700,
-                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  background: brandGradient,
                   backgroundClip: 'text',
                   WebkitBackgroundClip: 'text',
                   color: 'transparent',
@@ -296,12 +309,12 @@ export const ModernHeader: React.FC = () => {
                         borderRadius: tokens.spacing.radius.lg,
                         position: 'relative',
                         transition: createTransition(['all'], 'fast'),
-                        background: isActive 
-                          ? 'linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(99, 102, 241, 0.05) 100%)'
+                        background: isActive
+                          ? brandSubtle
                           : 'transparent',
                         '&:hover': {
                           background: isActive
-                            ? 'linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(99, 102, 241, 0.08) 100%)'
+                            ? brandGradientHover
                             : 'rgba(0, 0, 0, 0.04)',
                           transform: 'translateY(-1px)',
                         },
@@ -367,7 +380,7 @@ export const ModernHeader: React.FC = () => {
                       height: 42,
                       fontSize: '0.875rem',
                       fontWeight: 600,
-                      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                      background: brandGradient,
                       border: `2px solid rgba(255, 255, 255, 0.9)`,
                       transition: createTransition(['all'], 'fast'),
                       boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
@@ -415,7 +428,7 @@ export const ModernHeader: React.FC = () => {
                 sx={{ 
                   px: 2.5, 
                   py: 2.5,
-                  background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.05) 0%, rgba(99, 102, 241, 0.02) 100%)',
+                  background: brandSubtle,
                 }}
               >
                 <Box display="flex" alignItems="center" gap={2}>
@@ -423,7 +436,7 @@ export const ModernHeader: React.FC = () => {
                     sx={{
                       width: 52,
                       height: 52,
-                      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                      background: brandGradient,
                       fontWeight: 600,
                       fontSize: '1rem',
                       boxShadow: '0 4px 12px rgba(99, 102, 241, 0.2)',
@@ -465,7 +478,7 @@ export const ModernHeader: React.FC = () => {
                           mt: 0.5,
                           height: 20,
                           fontSize: '0.7rem',
-                          background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(99, 102, 241, 0.05) 100%)',
+                          background: brandSubtle,
                           color: tokens.color.primary[700],
                           border: 'none',
                         }}
@@ -486,7 +499,7 @@ export const ModernHeader: React.FC = () => {
                     borderRadius: tokens.spacing.radius.lg,
                     transition: createTransition(['all'], 'fast'),
                     '&:hover': {
-                      background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.08) 0%, rgba(99, 102, 241, 0.04) 100%)',
+                      background: brandSubtle,
                       transform: 'translateX(4px)',
                     }
                   }}
@@ -505,7 +518,7 @@ export const ModernHeader: React.FC = () => {
                     borderRadius: tokens.spacing.radius.lg,
                     transition: createTransition(['all'], 'fast'),
                     '&:hover': {
-                      background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.08) 0%, rgba(99, 102, 241, 0.04) 100%)',
+                      background: brandSubtle,
                       transform: 'translateX(4px)',
                     }
                   }}
@@ -597,12 +610,12 @@ export const ModernHeader: React.FC = () => {
                         borderRadius: tokens.spacing.radius.lg,
                         py: 1.5,
                         transition: createTransition(['all'], 'fast'),
-                        background: isActive 
-                          ? 'linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(99, 102, 241, 0.05) 100%)'
+                        background: isActive
+                          ? brandSubtle
                           : 'transparent',
                         '&:hover': {
                           background: isActive
-                            ? 'linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(99, 102, 241, 0.08) 100%)'
+                            ? brandGradientHover
                             : 'rgba(0, 0, 0, 0.04)',
                         },
                       }}

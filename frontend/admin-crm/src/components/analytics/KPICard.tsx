@@ -4,6 +4,7 @@ import { Box, Paper, Typography, Skeleton } from '@mui/material';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import TrendingDownIcon from '@mui/icons-material/TrendingDown';
 import TrendingFlatIcon from '@mui/icons-material/TrendingFlat';
+import { tokens, createGlassColor } from '../../design-system';
 
 interface KPICardProps {
   title: string;
@@ -17,12 +18,12 @@ interface KPICardProps {
 }
 
 const colorMap = {
-  primary: { bg: 'rgba(33, 150, 243, 0.1)', text: '#2196f3' },
-  secondary: { bg: 'rgba(156, 39, 176, 0.1)', text: '#9c27b0' },
-  success: { bg: 'rgba(76, 175, 80, 0.1)', text: '#4caf50' },
-  warning: { bg: 'rgba(255, 152, 0, 0.1)', text: '#ff9800' },
-  error: { bg: 'rgba(244, 67, 54, 0.1)', text: '#f44336' },
-  info: { bg: 'rgba(0, 188, 212, 0.1)', text: '#00bcd4' },
+  primary: { bg: createGlassColor(tokens.color.primary[500], 0.1), text: tokens.color.primary[500] },
+  secondary: { bg: createGlassColor(tokens.color.secondary[500], 0.1), text: tokens.color.secondary[500] },
+  success: { bg: createGlassColor(tokens.color.success[500], 0.1), text: tokens.color.success[500] },
+  warning: { bg: createGlassColor(tokens.color.warning[500], 0.1), text: tokens.color.warning[500] },
+  error: { bg: createGlassColor(tokens.color.error[500], 0.1), text: tokens.color.error[500] },
+  info: { bg: createGlassColor(tokens.color.info[500], 0.1), text: tokens.color.info[500] },
 };
 
 export const KPICard: React.FC<KPICardProps> = ({
@@ -39,16 +40,16 @@ export const KPICard: React.FC<KPICardProps> = ({
 
   const getTrendIcon = () => {
     if (trend === undefined || trend === null) return null;
-    if (trend > 0) return <TrendingUpIcon sx={{ fontSize: 16, color: 'success.main' }} />;
-    if (trend < 0) return <TrendingDownIcon sx={{ fontSize: 16, color: 'error.main' }} />;
-    return <TrendingFlatIcon sx={{ fontSize: 16, color: 'text.secondary' }} />;
+    if (trend > 0) return <TrendingUpIcon sx={{ fontSize: 16, color: tokens.color.success[500] }} />;
+    if (trend < 0) return <TrendingDownIcon sx={{ fontSize: 16, color: tokens.color.error[500] }} />;
+    return <TrendingFlatIcon sx={{ fontSize: 16, color: tokens.color.neutral[500] }} />;
   };
 
   const getTrendColor = () => {
-    if (trend === undefined || trend === null) return 'text.secondary';
-    if (trend > 0) return 'success.main';
-    if (trend < 0) return 'error.main';
-    return 'text.secondary';
+    if (trend === undefined || trend === null) return tokens.color.neutral[500];
+    if (trend > 0) return tokens.color.success[500];
+    if (trend < 0) return tokens.color.error[500];
+    return tokens.color.neutral[500];
   };
 
   if (isLoading) {
@@ -89,7 +90,7 @@ export const KPICard: React.FC<KPICardProps> = ({
           <Box
             sx={{
               p: 1,
-              borderRadius: 1,
+              borderRadius: tokens.spacing.radius.sm,
               backgroundColor: colors.bg,
               color: colors.text,
               display: 'flex',

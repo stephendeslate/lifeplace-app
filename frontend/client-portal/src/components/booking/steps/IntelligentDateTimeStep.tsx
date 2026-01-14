@@ -22,6 +22,7 @@ import { GlassCard } from '../../../design-system/components/GlassCard';
 import { AnimatedElement } from '../../../design-system/components/AnimatedElement';
 import { EventAvailabilityCalendar } from '../../../design-system/visualizations/EventAvailabilityCalendar';
 import { useEventAvailability } from '../../../hooks/useEventAvailability';
+import { useAvailabilityWebSocket } from '../../../hooks/useAvailabilityWebSocket';
 import { VenuesApi } from '../../../apis/booking/venues.api';
 import type {
   DateTimeStepData,
@@ -128,6 +129,48 @@ export const IntelligentDateTimeStep: React.FC<IntelligentDateTimeStepProps> = (
     eventTypeId,
     enabled: true,
   });
+
+  // Get the selected date string for WebSocket monitoring
+  const selectedDateString = selectedDate ? format(selectedDate, 'yyyy-MM-dd') : undefined;
+
+  // State for showing alert when selected date becomes blocked
+  const [dateBlockedAlert, setDateBlockedAlert] = useState(false);
+
+  // Subscribe to real-time availability updates via WebSocket
+  const {
+    isConnected: wsConnected,
+    selectedDateBlocked,
+    clearBlockedDate,
+  } = useAvailabilityWebSocket({
+    enabled: true,
+    selectedDate: selectedDateString,
+    onDateBlocked: useCallback(
+      (blockedDate: string) => {
+        // Check if the blocked date matches our selected date
+        if (selectedDateString && blockedDate === selectedDateString) {
+          console.log('[DateTimeStep] Selected date was blocked by another user!');
+          setDateBlockedAlert(true);
+          // Clear the selection since the date is no longer available
+          setSelectedDate(null);
+          setSelectedEndDate(null);
+        }
+      },
+      [selectedDateString]
+    ),
+  });
+
+  // Handle clearing the blocked date alert
+  const handleClearBlockedAlert = useCallback(() => {
+    setDateBlockedAlert(false);
+    clearBlockedDate();
+  }, [clearBlockedDate]);
+
+  // Clear alert when user selects a new date
+  useEffect(() => {
+    if (selectedDate && dateBlockedAlert) {
+      handleClearBlockedAlert();
+    }
+  }, [selectedDate, dateBlockedAlert, handleClearBlockedAlert]);
 
   // Convert availability events to EventData format for calendar
   // Only show events with date_blocked=true as "booked"
@@ -253,7 +296,35 @@ export const IntelligentDateTimeStep: React.FC<IntelligentDateTimeStepProps> = (
 
         </Box>
       </AnimatedElement>
-      
+
+      {/* Alert when selected date becomes blocked */}
+      {dateBlockedAlert && (
+        <AnimatedElement animation="slideDown" delay={150}>
+          <Alert
+            severity="warning"
+            onClose={handleClearBlockedAlert}
+            sx={{ mb: 3 }}
+          >
+            <Typography variant="body1" fontWeight={500}>
+              Date No Longer Available
+            </Typography>
+            <Typography variant="body2">
+              The date you selected has just been booked by another customer.
+              Please select a different date.
+            </Typography>
+          </Alert>
+        </AnimatedElement>
+      )}
+
+      {/* WebSocket connection indicator (dev mode only) */}
+      {import.meta.env.DEV && (
+        <Box sx={{ mb: 2, textAlign: 'center' }}>
+          <Typography variant="caption" color={wsConnected ? 'success.main' : 'text.secondary'}>
+            {wsConnected ? 'Live updates connected' : 'Connecting to live updates...'}
+          </Typography>
+        </Box>
+      )}
+
       {/* Date Selection */}
       <AnimatedElement animation="slideUp" delay={200}>
         <GlassCard variant="light" intensity="medium">

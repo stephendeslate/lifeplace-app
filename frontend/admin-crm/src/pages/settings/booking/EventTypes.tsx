@@ -3,7 +3,7 @@
 
 import React from 'react';
 import { Description as EventTypeIcon } from '@mui/icons-material';
-import { SettingsPage, type SettingsPageConfig, type SettingsTableColumn } from '../../../components/common/settings';
+import { PermissionAwareSettingsPage, type SettingsPageConfig, type SettingsTableColumn } from '../../../components/common/settings';
 import { useEventTypes } from '../../../hooks/useEvents';
 import type { CreateEventTypeData, UpdateEventTypeData } from '../../../types/events.types';
 import type { ModernFormSection } from '../../../components/common/ModernForm';
@@ -196,8 +196,9 @@ export const EventTypes = () => {
   };
 
   return (
-    <SettingsPage
+    <PermissionAwareSettingsPage
       config={config}
+      requiredPermissions={['can_manage_booking_flows']}
       data={eventTypes}
       defaultValues={defaultEventType}
       isLoading={isLoadingEventTypes}

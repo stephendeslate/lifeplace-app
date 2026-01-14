@@ -88,6 +88,7 @@ def _check_and_process_downpayment_received(event, total_paid, total_invoiced):
     Check if payment meets downpayment threshold and process date blocking.
 
     This implements the first-to-pay-wins logic for ON_DOWNPAYMENT policy.
+    UPDATED: Now uses atomic version with row-level locking to prevent race conditions.
     """
     try:
         from core.domains.events.services.date_blocking_service import DateBlockingService
@@ -123,8 +124,25 @@ def _check_and_process_downpayment_received(event, total_paid, total_invoiced):
                 status='COMPLETED'
             ).order_by('-created_at').first()
 
-            # Process first-to-pay-wins logic
-            result = DateBlockingService.process_downpayment_received(event, latest_payment)
+            # Get reservation token from event's associated booking session if available
+            reservation_token = None
+            try:
+                from core.domains.bookingflow.models import BookingSession
+                # Find the booking session that created this event
+                session = BookingSession.objects.filter(created_event=event).first()
+                if session and session.booking_data:
+                    reservation_token = session.booking_data.get('_reservation_token')
+                    if reservation_token:
+                        logger.info(f"Found reservation_token {reservation_token} from booking session for event {event.id}")
+            except Exception as e:
+                logger.debug(f"Could not retrieve reservation token from booking session: {e}")
+
+            # Use ATOMIC version with row-level locking to prevent race conditions
+            result = DateBlockingService.atomic_process_downpayment_received(
+                event,
+                payment=latest_payment,
+                reservation_token=reservation_token
+            )
 
             if result['success']:
                 logger.info(
@@ -133,6 +151,10 @@ def _check_and_process_downpayment_received(event, total_paid, total_invoiced):
                 )
             else:
                 logger.warning(f"Date blocking failed for event {event.id}: {result['error']}")
+
+                # If blocking failed because date was already taken, trigger auto-refund
+                if result['error'] and 'already blocked' in result['error']:
+                    _trigger_auto_refund_for_race_condition(event, result['error'])
         else:
             logger.info(
                 f"Downpayment threshold NOT met for event {event.id}: "
@@ -143,6 +165,39 @@ def _check_and_process_downpayment_received(event, total_paid, total_invoiced):
         logger.error(f"Error checking downpayment for event {event.id}: {e}")
         import traceback
         logger.error(f"Traceback: {traceback.format_exc()}")
+
+
+def _trigger_auto_refund_for_race_condition(event, error_message: str):
+    """
+    Trigger auto-refund when a race condition causes booking to fail.
+
+    This is called when payment succeeded but date blocking failed because
+    another booking took the date first.
+    """
+    try:
+        from core.domains.payments.services.auto_refund_service import AutoRefundService
+
+        logger.warning(
+            f"Race condition detected for event {event.id}: {error_message}. "
+            f"Initiating auto-refund."
+        )
+
+        result = AutoRefundService.initiate_refund_for_race_condition(event)
+
+        if result['success']:
+            logger.info(
+                f"Auto-refund completed for event {event.id}: "
+                f"refunded {result['total_refunded']}"
+            )
+        else:
+            logger.error(
+                f"Auto-refund failed for event {event.id}: {result['error']}"
+            )
+
+    except ImportError:
+        logger.warning("AutoRefundService not available yet")
+    except Exception as e:
+        logger.error(f"Error triggering auto-refund for event {event.id}: {e}")
 
 
 # === PAYMENT CACHE INVALIDATION SIGNALS ===

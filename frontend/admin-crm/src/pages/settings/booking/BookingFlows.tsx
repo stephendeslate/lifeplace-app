@@ -4,7 +4,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { RouteSharp as BookingFlowIcon } from '@mui/icons-material';
-import { SettingsPage, type SettingsPageConfig, type SettingsTableColumn } from '../../../components/common/settings';
+import { PermissionAwareSettingsPage, type SettingsPageConfig, type SettingsTableColumn } from '../../../components/common/settings';
 import { useBookingFlows } from '../../../hooks/useBookingFlows';
 import { useEventTypes } from '../../../hooks/useEvents';
 import type { BookingFlow, CreateBookingFlowData, UpdateBookingFlowData } from '../../../types/bookingflows.types';
@@ -302,8 +302,9 @@ export const BookingFlows = () => {
   ];
 
   return (
-    <SettingsPage
+    <PermissionAwareSettingsPage
       config={config}
+      requiredPermissions={['can_manage_booking_flows']}
       data={bookingFlows}
       defaultValues={defaultBookingFlow}
       isLoading={isLoadingFlows}

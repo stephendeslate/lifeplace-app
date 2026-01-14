@@ -27,6 +27,7 @@ import { Save as SaveIcon, Visibility as PreviewIcon } from '@mui/icons-material
 import { useSupportedCurrencies } from '../../hooks/useCurrency';
 import { formatCurrency } from '../../utils/currency';
 import type { CurrencySettings, CurrencySettingsFormData } from '../../types/currency.types';
+import { tokens } from '../../design-system';
 
 interface CurrencySettingsFormProps {
   settings: CurrencySettings;
@@ -322,9 +323,9 @@ export const CurrencySettingsForm: React.FC<CurrencySettingsFormProps> = ({
             disabled={loading || !isDirty}
             startIcon={loading ? <CircularProgress size={20} /> : <SaveIcon />}
             sx={{
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              background: tokens.color.backgrounds.brandGradient,
               '&:hover': {
-                background: 'linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%)',
+                background: tokens.color.backgrounds.brandHover,
               },
             }}
           >

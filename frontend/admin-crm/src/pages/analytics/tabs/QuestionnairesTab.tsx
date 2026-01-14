@@ -3,7 +3,6 @@ import React, { useState } from 'react';
 import {
   Box,
   Typography,
-  Paper,
   Table,
   TableBody,
   TableCell,
@@ -11,15 +10,12 @@ import {
   TableHead,
   TableRow,
   Skeleton,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
   Chip,
   LinearProgress,
   Slider,
   Alert,
 } from '@mui/material';
+import { ModernCard } from '../../../components/common/ModernCard';
 import {
   BarChart,
   Bar,
@@ -40,15 +36,16 @@ import {
   useQuestionnaireProblemFields,
 } from '../../../hooks/useAnalytics';
 import type { DateRange } from '../../../types/analytics.types';
+import { tokens } from '../../../design-system';
 
 interface QuestionnairesTabProps {
   dateRange: DateRange;
 }
 
 const getCompletionColor = (rate: number): string => {
-  if (rate >= 80) return '#4caf50';
-  if (rate >= 60) return '#ff9800';
-  return '#f44336';
+  if (rate >= 80) return tokens.color.success[500];
+  if (rate >= 60) return tokens.color.warning[500];
+  return tokens.color.error[500];
 };
 
 export const QuestionnairesTab: React.FC<QuestionnairesTabProps> = ({ dateRange }) => {
@@ -118,11 +115,11 @@ export const QuestionnairesTab: React.FC<QuestionnairesTabProps> = ({ dateRange 
             />
           </Box>
         ) : (
-          <Paper sx={{ p: 3, textAlign: 'center' }}>
+          <ModernCard variant="glass" size="small" sx={{ textAlign: 'center' }}>
             <Typography color="text.secondary">
               No questionnaire data available for the selected period
             </Typography>
-          </Paper>
+          </ModernCard>
         )}
       </Box>
 
@@ -135,7 +132,7 @@ export const QuestionnairesTab: React.FC<QuestionnairesTabProps> = ({ dateRange 
           <Skeleton variant="rectangular" height={300} />
         ) : summary?.by_questionnaire && summary.by_questionnaire.length > 0 ? (
           <>
-            <Paper sx={{ p: 2, mb: 2 }}>
+            <ModernCard variant="glass" size="medium" sx={{ mb: 2 }}>
               <Box sx={{ width: '100%', height: 300 }}>
                 <ResponsiveContainer>
                   <BarChart
@@ -162,8 +159,9 @@ export const QuestionnairesTab: React.FC<QuestionnairesTabProps> = ({ dateRange 
                   </BarChart>
                 </ResponsiveContainer>
               </Box>
-            </Paper>
-            <TableContainer component={Paper}>
+            </ModernCard>
+            <ModernCard variant="glass" size="medium">
+              <TableContainer>
               <Table size="small">
                 <TableHead>
                   <TableRow>
@@ -218,7 +216,7 @@ export const QuestionnairesTab: React.FC<QuestionnairesTabProps> = ({ dateRange 
                               width: 60,
                               height: 8,
                               borderRadius: 4,
-                              bgcolor: '#eee',
+                              bgcolor: tokens.color.neutral[200],
                               '& .MuiLinearProgress-bar': {
                                 bgcolor: getCompletionColor(q.completion_rate),
                               },
@@ -231,17 +229,18 @@ export const QuestionnairesTab: React.FC<QuestionnairesTabProps> = ({ dateRange 
                   ))}
                 </TableBody>
               </Table>
-            </TableContainer>
+              </TableContainer>
+            </ModernCard>
             <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
               Click on a questionnaire row to view field-level completion details
             </Typography>
           </>
         ) : (
-          <Paper sx={{ p: 3, textAlign: 'center' }}>
+          <ModernCard variant="glass" size="small" sx={{ textAlign: 'center' }}>
             <Typography color="text.secondary">
               No questionnaire data available
             </Typography>
-          </Paper>
+          </ModernCard>
         )}
       </Box>
 
@@ -259,7 +258,7 @@ export const QuestionnairesTab: React.FC<QuestionnairesTabProps> = ({ dateRange 
           {heatmapLoading ? (
             <Skeleton variant="rectangular" height={300} />
           ) : heatmap && heatmap.length > 0 ? (
-            <Paper sx={{ p: 2 }}>
+            <ModernCard variant="glass" size="medium">
               <Box sx={{ width: '100%', height: Math.max(300, heatmap.length * 40) }}>
                 <ResponsiveContainer>
                   <BarChart
@@ -276,9 +275,9 @@ export const QuestionnairesTab: React.FC<QuestionnairesTabProps> = ({ dateRange 
                       width={170}
                     />
                     <Tooltip
-                      formatter={(value: number, name: string, props: any) => [
+                      formatter={(value: number, _name: string, props: { payload?: { response_count: number } }) => [
                         formatPercent(value),
-                        `${props.payload.response_count} responses`,
+                        `${props.payload?.response_count ?? 0} responses`,
                       ]}
                       labelFormatter={(label) => `Field: ${label}`}
                     />
@@ -331,13 +330,13 @@ export const QuestionnairesTab: React.FC<QuestionnairesTabProps> = ({ dateRange 
                   </TableBody>
                 </Table>
               </TableContainer>
-            </Paper>
+            </ModernCard>
           ) : (
-            <Paper sx={{ p: 3, textAlign: 'center' }}>
+            <ModernCard variant="glass" size="small" sx={{ textAlign: 'center' }}>
               <Typography color="text.secondary">
                 No field data available for this questionnaire
               </Typography>
-            </Paper>
+            </ModernCard>
           )}
         </Box>
       )}
@@ -380,57 +379,59 @@ export const QuestionnairesTab: React.FC<QuestionnairesTabProps> = ({ dateRange 
               {problemFields.length} field{problemFields.length !== 1 ? 's' : ''} found with completion
               rate below {threshold}%. Consider simplifying these fields or making them optional.
             </Alert>
-            <TableContainer component={Paper}>
-              <Table size="small">
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Questionnaire</TableCell>
-                    <TableCell>Field Name</TableCell>
-                    <TableCell>Type</TableCell>
-                    <TableCell align="center">Completion Rate</TableCell>
-                    <TableCell align="center">Gap from Threshold</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {problemFields.map((field, index) => (
-                    <TableRow key={index}>
-                      <TableCell>{field.questionnaire_name}</TableCell>
-                      <TableCell>
-                        <Box display="flex" alignItems="center" gap={1}>
-                          <WarningIcon fontSize="small" color="warning" />
-                          {field.field_name}
-                        </Box>
-                      </TableCell>
-                      <TableCell>
-                        <Chip label={field.field_type} size="small" variant="outlined" />
-                      </TableCell>
-                      <TableCell align="center">
-                        <Chip
-                          label={formatPercent(field.completion_rate)}
-                          size="small"
-                          color="error"
-                        />
-                      </TableCell>
-                      <TableCell align="center">
-                        <Typography variant="body2" color="error">
-                          -{formatPercent(field.gap_from_threshold)}
-                        </Typography>
-                      </TableCell>
+            <ModernCard variant="glass" size="medium">
+              <TableContainer>
+                <Table size="small">
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Questionnaire</TableCell>
+                      <TableCell>Field Name</TableCell>
+                      <TableCell>Type</TableCell>
+                      <TableCell align="center">Completion Rate</TableCell>
+                      <TableCell align="center">Gap from Threshold</TableCell>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
+                  </TableHead>
+                  <TableBody>
+                    {problemFields.map((field, index) => (
+                      <TableRow key={index}>
+                        <TableCell>{field.questionnaire_name}</TableCell>
+                        <TableCell>
+                          <Box display="flex" alignItems="center" gap={1}>
+                            <WarningIcon fontSize="small" color="warning" />
+                            {field.field_name}
+                          </Box>
+                        </TableCell>
+                        <TableCell>
+                          <Chip label={field.field_type} size="small" variant="outlined" />
+                        </TableCell>
+                        <TableCell align="center">
+                          <Chip
+                            label={formatPercent(field.completion_rate)}
+                            size="small"
+                            color="error"
+                          />
+                        </TableCell>
+                        <TableCell align="center">
+                          <Typography variant="body2" color="error">
+                            -{formatPercent(field.gap_from_threshold)}
+                          </Typography>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </ModernCard>
           </>
         ) : (
-          <Paper sx={{ p: 3, textAlign: 'center' }}>
+          <ModernCard variant="glass" size="small" sx={{ textAlign: 'center' }}>
             <Box display="flex" alignItems="center" justifyContent="center" gap={1}>
               <CheckCircleIcon color="success" />
               <Typography color="success.main">
                 No fields below the {threshold}% completion threshold
               </Typography>
             </Box>
-          </Paper>
+          </ModernCard>
         )}
       </Box>
     </Box>

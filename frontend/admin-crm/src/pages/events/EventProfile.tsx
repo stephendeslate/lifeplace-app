@@ -10,7 +10,6 @@ import {
   CardContent,
   Typography,
   Chip,
-  IconButton,
   Menu,
   MenuItem,
   ListItemIcon,
@@ -26,7 +25,6 @@ import {
   DialogTitle,
   Tab,
   Tabs,
-  Container,
   Fade,
   Grow,
   Tooltip,
@@ -75,6 +73,9 @@ import { formatCurrency } from '../../utils/currency';
 import { tokens } from '../../design-system';
 import { glassPresets } from '../../design-system/utils/glassmorphism';
 import { createTransition } from '../../design-system/utils/animations';
+import { ModernPageLayout } from '../../components/common/ModernPageLayout';
+import { ModernPageHeader, type HeaderAction } from '../../components/common/ModernPageHeader';
+import ModernLoadingStates from '../../components/common/ModernLoadingStates';
 import { EventForm } from '../../components/events/EventForm';
 import { EventCommunications } from '../../components/events/EventCommunications';
 import { EventQuestionnaires } from '../../components/events/EventQuestionnaires';
@@ -548,393 +549,178 @@ export const EventProfile: React.FC = () => {
 
   if (isLoading) {
     return (
-      <Box sx={{ 
-        minHeight: '100vh',
-        position: 'relative',
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        '&::before': {
-          content: '""',
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: `
-            radial-gradient(circle at 20% 20%, ${tokens.color.primary[500]}06 0%, transparent 50%),
-            radial-gradient(circle at 80% 80%, ${tokens.color.success[500]}06 0%, transparent 50%)
-          `,
-          pointerEvents: 'none',
-          zIndex: -1,
-        }
-      }}>
-        <CircularProgress size={40} sx={{ color: tokens.color.primary[600] }} />
-      </Box>
+      <ModernPageLayout backgroundPattern="default">
+        <ModernLoadingStates.ModernLoadingSpinner
+          size={40}
+          message="Loading event..."
+          variant="circular"
+          glass
+        />
+      </ModernPageLayout>
     );
   }
 
   if (error || !event) {
     return (
-      <Box sx={{ 
-        minHeight: '100vh',
-        position: 'relative',
-        '&::before': {
-          content: '""',
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: `
-            radial-gradient(circle at 20% 20%, ${tokens.color.error[500]}06 0%, transparent 50%),
-            radial-gradient(circle at 80% 80%, ${tokens.color.neutral[500]}06 0%, transparent 50%)
-          `,
-          pointerEvents: 'none',
-          zIndex: -1,
-        }
-      }}>
-        <Container maxWidth="xl" sx={{ py: { xs: 2, sm: 3, md: 4 } }}>
-          <Button
-            startIcon={<ArrowBackIcon />}
-            onClick={() => navigate('/events')}
-            sx={{
-              ...glassPresets.light,
-              borderRadius: tokens.spacing.radius.xl,
-              border: `1px solid ${tokens.color.neutral[500]}30`,
-              color: tokens.color.neutral[700],
-              fontWeight: 600,
-              mb: 3,
-              transition: createTransition(['transform', 'background'], 'fast'),
-              
-              '&:hover': {
-                ...glassPresets.medium,
-                transform: 'translateY(-1px)',
-              }
-            }}
-          >
-            Back to Events
-          </Button>
-          <Alert 
-            severity="error"
-            sx={{
+      <ModernPageLayout backgroundPattern="default">
+        <Button
+          startIcon={<ArrowBackIcon />}
+          onClick={() => navigate('/events')}
+          sx={{
+            ...glassPresets.light,
+            borderRadius: tokens.spacing.radius.xl,
+            border: `1px solid ${tokens.color.neutral[500]}30`,
+            color: tokens.color.neutral[700],
+            fontWeight: 600,
+            mb: 3,
+            transition: createTransition(['transform', 'background'], 'fast'),
+
+            '&:hover': {
               ...glassPresets.medium,
-              borderRadius: tokens.spacing.radius.xxl,
-              border: `1px solid ${tokens.color.error[500]}30`,
-              background: `linear-gradient(135deg, ${tokens.color.error[500]}08 0%, transparent 100%)`,
-            }}
-          >
-            {error ? 'Failed to load event information' : 'Event not found'}
-          </Alert>
-        </Container>
-      </Box>
+              transform: 'translateY(-1px)',
+            }
+          }}
+        >
+          Back to Events
+        </Button>
+        <Alert
+          severity="error"
+          sx={{
+            ...glassPresets.medium,
+            borderRadius: tokens.spacing.radius.xxl,
+            border: `1px solid ${tokens.color.error[500]}30`,
+            background: `linear-gradient(135deg, ${tokens.color.error[500]}08 0%, transparent 100%)`,
+          }}
+        >
+          {error ? 'Failed to load event information' : 'Event not found'}
+        </Alert>
+      </ModernPageLayout>
     );
   }
 
   return (
-    <Box sx={{ 
-      minHeight: '100vh',
-      position: 'relative',
-      '&::before': {
-        content: '""',
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        background: `
-          radial-gradient(circle at 20% 20%, ${tokens.color.primary[500]}06 0%, transparent 50%),
-          radial-gradient(circle at 80% 80%, ${tokens.color.success[500]}06 0%, transparent 50%),
-          radial-gradient(circle at 40% 60%, ${tokens.color.secondary[500]}04 0%, transparent 50%)
-        `,
-        pointerEvents: 'none',
-        zIndex: -1,
-      }
-    }}>
-      <Container maxWidth="xl" sx={{ py: { xs: 2, sm: 3, md: 4 } }}>
-        {/* Modern Header */}
-        <Fade in={isLoaded} timeout={500}>
-          <Box sx={{ mb: { xs: 3, md: 4 } }}>
-            <Box 
-              display="flex" 
-              justifyContent="space-between" 
-              alignItems="center" 
-              sx={{
-                ...glassPresets.light,
-                borderRadius: tokens.spacing.radius.xxl,
-                p: { xs: 3, md: 4 },
-                border: `1px solid ${tokens.color.borders.glass}`,
-                position: 'relative',
-                overflow: 'visible',
-                
-                '&::before': {
-                  content: '""',
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  background: `linear-gradient(135deg, ${tokens.color.primary[500]}08 0%, ${tokens.color.success[500]}08 100%)`,
-                  borderRadius: tokens.spacing.radius.xxl,
-                  pointerEvents: 'none',
-                }
-              }}
-            >
-              <Box display="flex" alignItems="center" gap={3} sx={{ position: 'relative', zIndex: 1 }}>
-                <Tooltip title="Back to Events">
-                  <IconButton 
-                    onClick={() => navigate('/events')}
-                    sx={{
-                      ...glassPresets.light,
-                      borderRadius: tokens.spacing.radius.full,
-                      width: 48,
-                      height: 48,
-                      color: tokens.color.primary[600],
-                      transition: createTransition(['transform', 'background'], 'fast'),
-                      
-                      '&:hover': {
-                        ...glassPresets.medium,
-                        transform: 'translateX(-2px)',
-                      }
-                    }}
-                  >
-                    <ArrowBackIcon />
-                  </IconButton>
-                </Tooltip>
-                
-                <Box>
-                  <Typography 
-                    variant="h3" 
-                    component="h1" 
-                    sx={{ 
-                      fontWeight: 700,
-                      background: tokens.color.backgrounds.primaryGradient,
-                      backgroundClip: 'text',
-                      WebkitBackgroundClip: 'text',
-                      color: 'transparent',
-                      mb: 0.5,
-                      lineHeight: 1.2,
-                    }}
-                  >
-                    {event.name || 'Untitled Event'}
-                  </Typography>
-                  <Typography 
-                    variant="h6" 
-                    sx={{ 
-                      color: tokens.color.neutral[600],
-                      fontWeight: 400,
-                    }}
-                  >
-                    {event.event_type_name || 'No event type'}
-                  </Typography>
-                </Box>
-              </Box>
+    <ModernPageLayout backgroundPattern="default">
+        {/* Modern Page Header */}
+        <ModernPageHeader
+          title={event.name || 'Untitled Event'}
+          subtitle={event.event_type_name || 'No event type'}
+          icon={<EventNoteIcon />}
+          status={{
+            label: EVENT_STATUSES.find(s => s.value === event.status)?.label || event.status,
+            color: getStatusColor(event.status) as 'primary' | 'secondary' | 'success' | 'warning' | 'error' | 'info',
+            variant: 'outlined',
+          }}
+          primaryAction={{
+            label: 'Edit',
+            onClick: handleEditEvent,
+            icon: <EditIcon />,
+            variant: 'contained',
+            color: 'primary',
+          }}
+          secondaryActions={[
+            {
+              label: 'Back to Events',
+              onClick: () => navigate('/events'),
+              icon: <ArrowBackIcon />,
+              variant: 'outlined',
+              tooltip: 'Back to Events',
+            } as HeaderAction,
+            {
+              label: 'Contract',
+              onClick: () => setTabValue(4),
+              icon: <ContractIcon />,
+              variant: 'outlined',
+            } as HeaderAction,
+            {
+              label: 'Invoice',
+              onClick: () => setTabValue(5),
+              icon: <InvoiceIcon />,
+              variant: 'outlined',
+            } as HeaderAction,
+            {
+              label: 'Message',
+              onClick: () => setTabValue(2),
+              icon: <EmailIcon />,
+              variant: 'outlined',
+            } as HeaderAction,
+            {
+              label: 'More',
+              onClick: handleMenuClick,
+              icon: <MoreVertIcon />,
+              variant: 'icon',
+              tooltip: 'More actions',
+            } as HeaderAction,
+          ]}
+        />
 
-              <Box display="flex" alignItems="center" gap={2} sx={{ position: 'relative', zIndex: 1 }}>
-                {/* Enhanced Status Chip */}
-                <Chip
-                  label={EVENT_STATUSES.find(s => s.value === event.status)?.label || event.status}
-                  sx={{
-                    ...glassPresets.light,
-                    background: `linear-gradient(135deg, ${tokens.color[getStatusColor(event.status) === 'success' ? 'success' : getStatusColor(event.status) === 'error' ? 'error' : getStatusColor(event.status) === 'warning' ? 'warning' : 'primary'][500]}20 0%, ${tokens.color[getStatusColor(event.status) === 'success' ? 'success' : getStatusColor(event.status) === 'error' ? 'error' : getStatusColor(event.status) === 'warning' ? 'warning' : 'primary'][600]}15 100%)`,
-                    color: tokens.color[getStatusColor(event.status) === 'success' ? 'success' : getStatusColor(event.status) === 'error' ? 'error' : getStatusColor(event.status) === 'warning' ? 'warning' : 'primary'][700],
-                    border: `1px solid ${tokens.color[getStatusColor(event.status) === 'success' ? 'success' : getStatusColor(event.status) === 'error' ? 'error' : getStatusColor(event.status) === 'warning' ? 'warning' : 'primary'][500]}30`,
-                    fontWeight: 600,
-                  }}
-                />
+        {/* More Actions Menu */}
+        <Menu
+          anchorEl={anchorEl}
+          open={Boolean(anchorEl)}
+          onClose={handleMenuClose}
+          PaperProps={{
+            sx: {
+              ...glassPresets.medium,
+              borderRadius: tokens.spacing.radius.xl,
+              border: `1px solid ${tokens.color.borders.glass}`,
+              mt: 1,
+            }
+          }}
+        >
+          <MenuItem
+            onClick={handleDeleteEvent}
+            sx={{
+              color: tokens.color.error[600],
+              borderRadius: tokens.spacing.radius.lg,
+              mx: 1,
+              transition: createTransition('background', 'fast'),
+              '&:hover': {
+                background: `${tokens.color.error[500]}10`,
+              }
+            }}
+          >
+            <ListItemIcon>
+              <DeleteIcon sx={{ color: tokens.color.error[600] }} />
+            </ListItemIcon>
+            <ListItemText>Delete Event</ListItemText>
+          </MenuItem>
 
-                {/* Direct Action Buttons */}
-                <Button
-                  variant="outlined"
-                  startIcon={<EditIcon />}
-                  onClick={handleEditEvent}
-                  sx={{
-                    borderColor: tokens.color.primary[500],
-                    color: tokens.color.primary[600],
-                    borderRadius: tokens.spacing.radius.lg,
-                    textTransform: 'none',
-                    fontWeight: 600,
-                    px: 2,
-                    py: 1,
-                    transition: createTransition(['background', 'border-color', 'transform'], 'fast'),
-                    '&:hover': {
-                      borderColor: tokens.color.primary[600],
-                      background: `${tokens.color.primary[500]}10`,
-                      transform: 'translateY(-1px)',
-                    }
-                  }}
-                >
-                  Edit
-                </Button>
+          <Divider sx={{ mx: 1, borderColor: `${tokens.color.borders.glass}` }} />
 
-                <Button
-                  variant="outlined"
-                  startIcon={<ContractIcon />}
-                  onClick={() => {
-                    // Open contract sending dialog
-                  }}
-                  sx={{
-                    borderColor: tokens.color.neutral[300],
-                    color: tokens.color.neutral[700],
-                    borderRadius: tokens.spacing.radius.lg,
-                    textTransform: 'none',
-                    fontWeight: 500,
-                    px: 2,
-                    py: 1,
-                    transition: createTransition(['background', 'border-color', 'transform'], 'fast'),
-                    '&:hover': {
-                      borderColor: tokens.color.primary[500],
-                      background: `${tokens.color.primary[500]}05`,
-                      transform: 'translateY(-1px)',
-                    }
-                  }}
-                >
-                  Contract
-                </Button>
+          <MenuItem
+            onClick={() => navigate(`/events/${event.id}/duplicate`)}
+            sx={{
+              borderRadius: tokens.spacing.radius.lg,
+              mx: 1,
+              transition: createTransition('background', 'fast'),
+              '&:hover': {
+                background: `${tokens.color.primary[500]}10`,
+              }
+            }}
+          >
+            <ListItemIcon>
+              <ContentCopyIcon sx={{ color: tokens.color.primary[600] }} />
+            </ListItemIcon>
+            <ListItemText>Duplicate Event</ListItemText>
+          </MenuItem>
 
-                <Button
-                  variant="outlined"
-                  startIcon={<InvoiceIcon />}
-                  onClick={() => {
-                    // Open invoice generation dialog
-                  }}
-                  sx={{
-                    borderColor: tokens.color.neutral[300],
-                    color: tokens.color.neutral[700],
-                    borderRadius: tokens.spacing.radius.lg,
-                    textTransform: 'none',
-                    fontWeight: 500,
-                    px: 2,
-                    py: 1,
-                    transition: createTransition(['background', 'border-color', 'transform'], 'fast'),
-                    '&:hover': {
-                      borderColor: tokens.color.success[500],
-                      background: `${tokens.color.success[500]}05`,
-                      transform: 'translateY(-1px)',
-                    }
-                  }}
-                >
-                  Invoice
-                </Button>
-
-                <Button
-                  variant="outlined"
-                  startIcon={<EmailIcon />}
-                  onClick={() => {
-                    // Open message dialog
-                  }}
-                  sx={{
-                    borderColor: tokens.color.neutral[300],
-                    color: tokens.color.neutral[700],
-                    borderRadius: tokens.spacing.radius.lg,
-                    textTransform: 'none',
-                    fontWeight: 500,
-                    px: 2,
-                    py: 1,
-                    transition: createTransition(['background', 'border-color', 'transform'], 'fast'),
-                    '&:hover': {
-                      borderColor: tokens.color.info[500],
-                      background: `${tokens.color.info[500]}05`,
-                      transform: 'translateY(-1px)',
-                    }
-                  }}
-                >
-                  Message
-                </Button>
-
-                {/* More Actions Menu for additional options */}
-                <Tooltip title="More actions">
-                  <IconButton 
-                    onClick={handleMenuClick}
-                    sx={{
-                      ...glassPresets.light,
-                      borderRadius: tokens.spacing.radius.full,
-                      width: 40,
-                      height: 40,
-                      color: tokens.color.neutral[600],
-                      transition: createTransition(['transform', 'background'], 'fast'),
-                      
-                      '&:hover': {
-                        ...glassPresets.medium,
-                        transform: 'rotate(90deg)',
-                      }
-                    }}
-                  >
-                    <MoreVertIcon />
-                  </IconButton>
-                </Tooltip>
-                
-                <Menu
-                  anchorEl={anchorEl}
-                  open={Boolean(anchorEl)}
-                  onClose={handleMenuClose}
-                  PaperProps={{
-                    sx: {
-                      ...glassPresets.medium,
-                      borderRadius: tokens.spacing.radius.xl,
-                      border: `1px solid ${tokens.color.borders.glass}`,
-                      mt: 1,
-                    }
-                  }}
-                >
-                  <MenuItem 
-                    onClick={handleDeleteEvent} 
-                    sx={{ 
-                      color: tokens.color.error[600],
-                      borderRadius: tokens.spacing.radius.lg,
-                      mx: 1,
-                      transition: createTransition('background', 'fast'),
-                      '&:hover': {
-                        background: `${tokens.color.error[500]}10`,
-                      }
-                    }}
-                  >
-                    <ListItemIcon>
-                      <DeleteIcon sx={{ color: tokens.color.error[600] }} />
-                    </ListItemIcon>
-                    <ListItemText>Delete Event</ListItemText>
-                  </MenuItem>
-                  
-                  <Divider sx={{ mx: 1, borderColor: `${tokens.color.borders.glass}` }} />
-                  
-                  <MenuItem 
-                    onClick={() => navigate(`/events/${event.id}/duplicate`)}
-                    sx={{
-                      borderRadius: tokens.spacing.radius.lg,
-                      mx: 1,
-                      transition: createTransition('background', 'fast'),
-                      '&:hover': {
-                        background: `${tokens.color.primary[500]}10`,
-                      }
-                    }}
-                  >
-                    <ListItemIcon>
-                      <ContentCopyIcon sx={{ color: tokens.color.primary[600] }} />
-                    </ListItemIcon>
-                    <ListItemText>Duplicate Event</ListItemText>
-                  </MenuItem>
-
-                  <MenuItem 
-                    onClick={() => navigate(`/events/${event.id}/export`)}
-                    sx={{
-                      borderRadius: tokens.spacing.radius.lg,
-                      mx: 1,
-                      transition: createTransition('background', 'fast'),
-                      '&:hover': {
-                        background: `${tokens.color.primary[500]}10`,
-                      }
-                    }}
-                  >
-                    <ListItemIcon>
-                      <DownloadIcon sx={{ color: tokens.color.primary[600] }} />
-                    </ListItemIcon>
-                    <ListItemText>Export Details</ListItemText>
-                  </MenuItem>
-                </Menu>
-              </Box>
-            </Box>
-          </Box>
-        </Fade>
+          <MenuItem
+            onClick={() => navigate(`/events/${event.id}/export`)}
+            sx={{
+              borderRadius: tokens.spacing.radius.lg,
+              mx: 1,
+              transition: createTransition('background', 'fast'),
+              '&:hover': {
+                background: `${tokens.color.primary[500]}10`,
+              }
+            }}
+          >
+            <ListItemIcon>
+              <DownloadIcon sx={{ color: tokens.color.primary[600] }} />
+            </ListItemIcon>
+            <ListItemText>Export Details</ListItemText>
+          </MenuItem>
+        </Menu>
 
         {/* Enhanced Event Overview Cards */}
         <Fade in={isLoaded} timeout={700}>
@@ -2461,7 +2247,6 @@ export const EventProfile: React.FC = () => {
           </DialogActions>
         </Dialog>
 
-      </Container>
-    </Box>
+    </ModernPageLayout>
   );
 };

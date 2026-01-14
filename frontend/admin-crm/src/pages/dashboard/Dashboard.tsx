@@ -14,7 +14,6 @@ import {
   Tooltip,
   Fade,
   Grow,
-  Container,
 } from '@mui/material';
 import {
   Dashboard as DashboardIcon,
@@ -45,6 +44,7 @@ import { tokens } from '../../design-system';
 import { glassPresets } from '../../design-system/utils/glassmorphism';
 import { createTransition } from '../../design-system/utils/animations';
 import { TasksSummaryWidget } from '../../components/dashboard/TasksSummaryWidget';
+import { ModernPageLayout } from '../../components/common/ModernPageLayout';
 
 export const Dashboard: React.FC = () => {
   const { user } = useAuth();
@@ -117,26 +117,7 @@ export const Dashboard: React.FC = () => {
   })();
 
   return (
-    <Box sx={{ 
-      minHeight: '100vh',
-      position: 'relative',
-      '&::before': {
-        content: '""',
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        background: `
-          radial-gradient(circle at 20% 20%, ${tokens.color.primary[500]}06 0%, transparent 50%),
-          radial-gradient(circle at 80% 80%, ${tokens.color.success[500]}06 0%, transparent 50%),
-          radial-gradient(circle at 40% 60%, ${tokens.color.secondary[500]}04 0%, transparent 50%)
-        `,
-        pointerEvents: 'none',
-        zIndex: -1,
-      }
-    }}>
-      <Container maxWidth="xl" sx={{ py: { xs: 2, sm: 3, md: 4 } }}>
+    <ModernPageLayout backgroundPattern="default">
         {/* Modern Welcome Header */}
         <Fade in={isLoaded} timeout={500}>
           <Box sx={{ mb: { xs: 3, md: 4 } }}>
@@ -980,7 +961,6 @@ export const Dashboard: React.FC = () => {
             </Box>
           </Box>
         </Grow>
-      </Container>
-    </Box>
+    </ModernPageLayout>
   );
 };

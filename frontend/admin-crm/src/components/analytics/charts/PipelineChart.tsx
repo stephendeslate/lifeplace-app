@@ -12,6 +12,7 @@ import {
   Cell,
 } from 'recharts';
 import type { ReservationPipeline } from '../../../types/analytics.types';
+import { tokens } from '../../../design-system';
 
 interface PipelineChartProps {
   data: ReservationPipeline[];
@@ -21,10 +22,10 @@ interface PipelineChartProps {
 }
 
 const statusColors: Record<string, string> = {
-  LEAD: '#ff9800',
-  CONFIRMED: '#2196f3',
-  COMPLETED: '#4caf50',
-  CANCELLED: '#f44336',
+  LEAD: tokens.color.warning[500],
+  CONFIRMED: tokens.color.primary[500],
+  COMPLETED: tokens.color.success[500],
+  CANCELLED: tokens.color.error[500],
 };
 
 export const PipelineChart: React.FC<PipelineChartProps> = ({
@@ -50,7 +51,7 @@ export const PipelineChart: React.FC<PipelineChartProps> = ({
       <Box sx={{ width: '100%', height }}>
         <ResponsiveContainer>
           <BarChart data={data} layout="vertical" margin={{ top: 5, right: 30, left: 80, bottom: 5 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#eee" horizontal={false} />
+            <CartesianGrid strokeDasharray="3 3" stroke={tokens.color.charts.grid} horizontal={false} />
             <XAxis type="number" tick={{ fontSize: 12 }} />
             <YAxis dataKey="label" type="category" tick={{ fontSize: 12 }} />
             <Tooltip
@@ -58,7 +59,7 @@ export const PipelineChart: React.FC<PipelineChartProps> = ({
             />
             <Bar dataKey="count" name="Bookings" radius={[0, 4, 4, 0]}>
               {data.map((entry) => (
-                <Cell key={entry.status} fill={statusColors[entry.status] || '#9e9e9e'} />
+                <Cell key={entry.status} fill={statusColors[entry.status] || tokens.color.neutral[400]} />
               ))}
             </Bar>
           </BarChart>

@@ -21,7 +21,7 @@ import {
   CircularProgress,
   Alert,
 } from '@mui/material';
-import type { SelectChangeEvent } from '@mui/material';
+import type { SelectChangeEvent } from '@mui/material/Select';
 import {
   Save as SaveIcon,
   Cancel as CancelIcon,

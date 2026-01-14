@@ -1,12 +1,13 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
-import type { 
-  SettingsContextValue, 
-  SettingsFavorite, 
+import type {
+  SettingsContextValue,
+  SettingsFavorite,
   SettingsRecentItem,
   SettingsLayoutMode,
   ThemeSettings,
-  KeyboardShortcut 
+  KeyboardShortcut
 } from '../types/enhanced-settings.types';
+import { tokens } from '../design-system';
 
 const STORAGE_KEYS = {
   FAVORITES: 'settings_favorites',
@@ -24,8 +25,8 @@ const defaultLayoutMode: SettingsLayoutMode = {
 
 const defaultTheme: ThemeSettings = {
   mode: 'light',
-  primaryColor: '#1976d2',
-  accentColor: '#9c27b0',
+  primaryColor: tokens.color.primary[500],
+  accentColor: tokens.color.secondary[500],
   fontScale: 1,
   animations: true,
   reducedMotion: false,

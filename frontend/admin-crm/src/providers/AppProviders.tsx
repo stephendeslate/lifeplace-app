@@ -13,6 +13,7 @@ import { AuthProvider } from '../contexts/AuthContext';
 import { ToastProvider } from '../contexts/ToastContext';
 import { LayoutProvider } from '../contexts/LayoutContext';
 import { ConfirmDialogProvider } from '../components/common/ConfirmDialog';
+import { BrandingProvider } from '../contexts/BrandingContext';
 
 
 interface AppProvidersProps {
@@ -46,11 +47,13 @@ const CoreApp: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return (
     <LayoutProvider>
       <ToastProvider>
-        <ConfirmDialogProvider>
-          {children}
-          {/* Only show React Query devtools in development */}
-          {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}
-        </ConfirmDialogProvider>
+        <BrandingProvider>
+          <ConfirmDialogProvider>
+            {children}
+            {/* Only show React Query devtools in development */}
+            {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}
+          </ConfirmDialogProvider>
+        </BrandingProvider>
       </ToastProvider>
     </LayoutProvider>
   );

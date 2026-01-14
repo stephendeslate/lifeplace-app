@@ -23,10 +23,15 @@ import {
   PersonAdd,
   Search as SearchIcon,
   Delete as DeleteIcon,
+  Security as SecurityIcon,
 } from '@mui/icons-material';
 import { useLayout } from '../../../contexts/LayoutContext';
-import { useAdminUsers } from '../../../hooks/useSettings';
+import { useAdminUsers, useAdminPermissions } from '../../../hooks/useSettings';
 import { useCommunications } from '../../../hooks/useCommunications';
+import { usePermissions } from '../../../hooks/usePermissions';
+import { PermissionEditor } from '../../../components/settings/PermissionEditor';
+import type { AdminPermissions } from '../../../types/permissions.types';
+import { FULL_ADMIN_PERMISSIONS } from '../../../types/permissions.types';
 
 // Modern Design System imports
 import { ModernSettingsLayout } from '../../../components/common/ModernPageLayout';
@@ -44,17 +49,26 @@ export const AdminUsers: React.FC = () => {
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [viewRecordsDialogOpen, setViewRecordsDialogOpen] = useState(false);
+  const [permissionsDialogOpen, setPermissionsDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
   const [selectedInvitation, setSelectedInvitation] = useState<AdminInvitation | null>(null);
   const [menuType, setMenuType] = useState<'user' | 'invitation'>('user');
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearchField, setShowSearchField] = useState(false);
 
+  // Permission editing state
+  const [editingPermissions, setEditingPermissions] = useState<AdminPermissions>(FULL_ADMIN_PERMISSIONS);
+
   const [inviteForm, setInviteForm] = useState<InviteAdminFormData>({
     email: '',
     first_name: '',
     last_name: '',
+    permissions: FULL_ADMIN_PERMISSIONS,
   });
+
+  // Get current user's permissions for UI visibility
+  const { hasPermission } = usePermissions();
+  const canManageAdmins = hasPermission('can_manage_admins');
 
   const {
     adminUsers,
@@ -67,7 +81,14 @@ export const AdminUsers: React.FC = () => {
     createInvitation,
     deleteInvitation,
     deleteAdminUser,
+    refetchAdminUsers,
   } = useAdminUsers();
+
+  // Permission management hook
+  const {
+    updatePermissions,
+    isUpdatingPermissions,
+  } = useAdminPermissions();
 
   const { useRecords } = useCommunications();
 
@@ -110,9 +131,31 @@ export const AdminUsers: React.FC = () => {
     createInvitation(inviteForm, {
       onSuccess: () => {
         setInviteDialogOpen(false);
-        setInviteForm({ email: '', first_name: '', last_name: '' });
+        setInviteForm({ email: '', first_name: '', last_name: '', permissions: FULL_ADMIN_PERMISSIONS });
       },
     });
+  };
+
+  const handleEditPermissionsClick = (user: AdminUser) => {
+    setSelectedUser(user);
+    // Initialize with user's current permissions or full admin if not set
+    setEditingPermissions(user.admin_permissions || FULL_ADMIN_PERMISSIONS);
+    setPermissionsDialogOpen(true);
+  };
+
+  const handleSavePermissions = () => {
+    if (!selectedUser) return;
+
+    updatePermissions(
+      { userId: selectedUser.id, permissions: editingPermissions },
+      {
+        onSuccess: () => {
+          setPermissionsDialogOpen(false);
+          setSelectedUser(null);
+          refetchAdminUsers();
+        },
+      }
+    );
   };
 
   const handleDeleteClick = (type: 'user' | 'invitation', item: AdminUser | AdminInvitation) => {
@@ -235,11 +278,34 @@ export const AdminUsers: React.FC = () => {
       ),
     },
     {
+      key: 'permission_level',
+      label: 'Permission Level',
+      render: (_, user) => {
+        const isFullAdmin = user.is_full_admin || !user.admin_permissions ||
+          Object.values(user.admin_permissions).every(v => v === true);
+        return (
+          <Chip
+            label={isFullAdmin ? 'Full Admin' : 'Limited Admin'}
+            size="small"
+            color={isFullAdmin ? 'primary' : 'default'}
+            variant={isFullAdmin ? 'filled' : 'outlined'}
+            sx={{
+              fontWeight: 600,
+              ...(isFullAdmin && {
+                background: `linear-gradient(135deg, ${tokens.color.primary[500]} 0%, ${tokens.color.primary[600]} 100%)`,
+                color: 'white',
+              }),
+            }}
+          />
+        );
+      },
+    },
+    {
       key: 'is_active',
       label: 'Status',
       render: (_, user) => (
-        <Chip 
-          label={user.is_active ? 'Active' : 'Inactive'} 
+        <Chip
+          label={user.is_active ? 'Active' : 'Inactive'}
           color={user.is_active ? 'success' : 'default'}
           size="small"
           sx={{
@@ -255,14 +321,25 @@ export const AdminUsers: React.FC = () => {
   ];
 
   // Table actions for Admin Users
-  const getAdminUsersActions = (): ModernTableAction<AdminUser>[] => [
-    {
-      label: 'Delete User',
-      icon: <DeleteIcon />,
-      onClick: (user) => handleDeleteClick('user', user),
-      color: 'error',
-    },
-  ];
+  const getAdminUsersActions = (): ModernTableAction<AdminUser>[] => {
+    // Only show actions if user has can_manage_admins permission
+    if (!canManageAdmins) return [];
+
+    return [
+      {
+        label: 'Edit Permissions',
+        icon: <SecurityIcon />,
+        onClick: (user) => handleEditPermissionsClick(user),
+        color: 'primary',
+      },
+      {
+        label: 'Delete User',
+        icon: <DeleteIcon />,
+        onClick: (user) => handleDeleteClick('user', user),
+        color: 'error',
+      },
+    ];
+  };
 
   // Table columns for Invitations
   const getInvitationsColumns = (): ModernTableColumn<AdminInvitation>[] => [
@@ -376,14 +453,19 @@ export const AdminUsers: React.FC = () => {
   ];
 
   // Table actions for Invitations
-  const getInvitationsActions = (): ModernTableAction<AdminInvitation>[] => [
-    {
-      label: 'Delete Invitation',
-      icon: <DeleteIcon />,
-      onClick: (invitation) => handleDeleteClick('invitation', invitation),
-      color: 'error',
-    },
-  ];
+  const getInvitationsActions = (): ModernTableAction<AdminInvitation>[] => {
+    // Only show actions if user has can_manage_admins permission
+    if (!canManageAdmins) return [];
+
+    return [
+      {
+        label: 'Delete Invitation',
+        icon: <DeleteIcon />,
+        onClick: (invitation) => handleDeleteClick('invitation', invitation),
+        color: 'error',
+      },
+    ];
+  };
 
   // Remove page-level loading - using form-level loading instead
 
@@ -401,7 +483,10 @@ export const AdminUsers: React.FC = () => {
     createRefreshAction(handleRefresh),
   ];
 
-  const primaryAction = createAddAction('Invite Admin', handleCreateNew, 'primary');
+  // Only show invite button if user has can_manage_admins permission
+  const primaryAction = canManageAdmins
+    ? createAddAction('Invite Admin', handleCreateNew, 'primary')
+    : undefined;
 
   return (
     <ModernSettingsLayout>
@@ -510,17 +595,20 @@ export const AdminUsers: React.FC = () => {
             <ModernEmptyState
               icon={AdminPanelSettings}
               title="No Admin Users Yet"
-              description="Start building your admin team by inviting other administrators to help manage your LifePlace account."
-              primaryAction={{
+              description={canManageAdmins
+                ? "Start building your admin team by inviting other administrators to help manage your LifePlace account."
+                : "No other admin users have been added yet. Contact a full admin to invite new users."
+              }
+              primaryAction={canManageAdmins ? {
                 label: 'Invite Your First Admin',
                 onClick: handleCreateNew,
                 icon: <PersonAdd />,
                 color: 'primary',
-              }}
-              tip={{
+              } : undefined}
+              tip={canManageAdmins ? {
                 text: 'Invited admins will receive an email with instructions to set up their account',
                 type: 'info',
-              }}
+              } : undefined}
               size="medium"
               illustration="gradient"
             />
@@ -717,10 +805,10 @@ export const AdminUsers: React.FC = () => {
           <PersonAdd sx={{ color: tokens.color.primary[600] }} />
           Invite Admin User
         </DialogTitle>
-        <DialogContent sx={{ p: 3 }}>
-          <Typography 
-            variant="body2" 
-            sx={{ 
+        <DialogContent sx={{ p: 4 }}>
+          <Typography
+            variant="body2"
+            sx={{
               color: tokens.color.neutral[600],
               mb: 3,
             }}
@@ -821,7 +909,29 @@ export const AdminUsers: React.FC = () => {
                   ),
                 }}
               />
-              
+
+              {/* Permission Editor */}
+              <Box sx={{ mt: 1 }}>
+                <Typography
+                  variant="subtitle2"
+                  sx={{
+                    mb: 1.5,
+                    color: tokens.color.neutral[700],
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1,
+                  }}
+                >
+                  <SecurityIcon sx={{ fontSize: '1rem', color: tokens.color.primary[600] }} />
+                  Permission Level
+                </Typography>
+                <PermissionEditor
+                  value={inviteForm.permissions || FULL_ADMIN_PERMISSIONS}
+                  onChange={(permissions) => setInviteForm(prev => ({ ...prev, permissions }))}
+                  disabled={isCreatingInvitation}
+                />
+              </Box>
+
               <ModernCard
                 variant="glass"
                 color="primary"
@@ -1135,6 +1245,101 @@ export const AdminUsers: React.FC = () => {
             }}
           >
             Close
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Edit Permissions Dialog */}
+      <Dialog
+        open={permissionsDialogOpen}
+        onClose={() => setPermissionsDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: {
+            ...glassPresets.medium,
+            borderRadius: tokens.spacing.radius.xxl,
+            border: `1px solid ${tokens.color.borders.glass}`,
+            background: 'rgba(255, 255, 255, 0.95)',
+            backdropFilter: 'blur(40px)',
+          },
+        }}
+      >
+        <DialogTitle
+          sx={{
+            background: `linear-gradient(135deg, ${tokens.color.primary[600]} 0%, ${tokens.color.primary[500]} 100%)`,
+            backgroundClip: 'text',
+            WebkitBackgroundClip: 'text',
+            color: 'transparent',
+            fontWeight: 700,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 2,
+          }}
+        >
+          <SecurityIcon sx={{ color: tokens.color.primary[600] }} />
+          Edit Permissions
+        </DialogTitle>
+        <DialogContent sx={{ p: 4, position: 'relative' }}>
+          {isUpdatingPermissions && (
+            <Box sx={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255, 255, 255, 0.8)', zIndex: 10, borderRadius: tokens.spacing.radius.lg }}>
+              <CircularProgress />
+            </Box>
+          )}
+          {selectedUser && (
+            <Box>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                Edit permissions for: <strong>{selectedUser.first_name} {selectedUser.last_name}</strong> ({selectedUser.email})
+              </Typography>
+
+              <PermissionEditor
+                value={editingPermissions}
+                onChange={setEditingPermissions}
+                disabled={isUpdatingPermissions}
+                defaultExpanded
+              />
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ p: 4, gap: 2, justifyContent: 'flex-end' }}>
+          <Button
+            onClick={() => setPermissionsDialogOpen(false)}
+            disabled={isUpdatingPermissions}
+            variant="outlined"
+            sx={{
+              ...glassPresets.light,
+              border: `1px solid ${tokens.color.neutral[300]}`,
+              borderRadius: tokens.spacing.radius.full,
+              px: 4,
+              py: 1.25,
+              color: tokens.color.neutral[600],
+              '&:hover': {
+                ...glassPresets.medium,
+                borderColor: tokens.color.neutral[400],
+              },
+            }}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handleSavePermissions}
+            variant="contained"
+            disabled={isUpdatingPermissions}
+            startIcon={isUpdatingPermissions ? <CircularProgress size={20} color="inherit" /> : <SecurityIcon />}
+            sx={{
+              background: `linear-gradient(135deg, ${tokens.color.primary[500]} 0%, ${tokens.color.primary[600]} 100%)`,
+              borderRadius: tokens.spacing.radius.full,
+              px: 4,
+              py: 1.25,
+              boxShadow: `0 8px 32px ${tokens.color.primary[500]}25`,
+              fontWeight: 600,
+              '&:hover': {
+                background: `linear-gradient(135deg, ${tokens.color.primary[600]} 0%, ${tokens.color.primary[700]} 100%)`,
+                boxShadow: `0 12px 40px ${tokens.color.primary[500]}35`,
+              },
+            }}
+          >
+            {isUpdatingPermissions ? 'Saving...' : 'Save Permissions'}
           </Button>
         </DialogActions>
       </Dialog>

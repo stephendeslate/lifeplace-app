@@ -3,7 +3,7 @@
 
 import React, { useState } from 'react';
 import { Description as ContractIcon, Preview as PreviewIcon } from '@mui/icons-material';
-import { SettingsPage, type SettingsPageConfig, type SettingsTableColumn } from '../../../components/common/settings';
+import { PermissionAwareSettingsPage, type SettingsPageConfig, type SettingsTableColumn } from '../../../components/common/settings';
 import { TemplatePreviewDialog, ModernDialog } from '../../../components/common';
 import { ContractTemplateForm } from '../../../components/contracts';
 import { useContractTemplates, useDeleteContractTemplate } from '../../../hooks/useContracts';
@@ -247,8 +247,9 @@ export const ContractTemplates = () => {
 
   return (
     <>
-      <SettingsPage
+      <PermissionAwareSettingsPage
         config={config}
+        requiredPermissions={['can_manage_templates']}
         data={contractTemplates}
         defaultValues={defaultContractTemplate}
         isLoading={isLoading}

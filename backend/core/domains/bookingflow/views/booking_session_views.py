@@ -446,11 +446,13 @@ class PublicBookingFlowViewSet(viewsets.ReadOnlyModelViewSet):
                 )
             
             completion_type = request.data.get('completion_type', 'payment')
+            reservation_token = request.data.get('reservation_token')
 
             # ENHANCED DEBUGGING: Log the incoming request data
             logger.info(f"🔥 PUBLIC COMPLETION ENDPOINT: session_uuid={session_uuid}")
             logger.info(f"🔥 REQUEST DATA: {request.data}")
             logger.info(f"🔥 EXTRACTED COMPLETION_TYPE: '{completion_type}'")
+            logger.info(f"🔥 RESERVATION_TOKEN: {reservation_token}")
 
             # Validate completion_type
             if completion_type not in ['payment', 'quote']:
@@ -459,7 +461,11 @@ class PublicBookingFlowViewSet(viewsets.ReadOnlyModelViewSet):
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
-            event = BookingSessionService.complete_booking(session_uuid, completion_type)
+            event = BookingSessionService.complete_booking(
+                session_uuid,
+                completion_type,
+                reservation_token=reservation_token
+            )
             
             from core.domains.events.serializers import EventSerializer
             response_message = "Booking completed successfully"
@@ -874,7 +880,157 @@ class PublicBookingFlowViewSet(viewsets.ReadOnlyModelViewSet):
     
     # NOTE: Step validation is now handled by BookingSessionService._validate_step_data()
     # This provides enhanced validation including authenticated user context
-    
+
+    @action(detail=False, methods=['post'], url_path='session/(?P<session_uuid>[^/]+)/validate-availability')
+    def validate_availability(self, request, session_uuid=None):
+        """
+        Validate date availability and create a temporary reservation.
+
+        This endpoint should be called BEFORE processing payment to ensure the date
+        is still available. It creates a 5-minute reservation window during which
+        the payment can be processed.
+
+        Request body:
+            None required - uses date from session data
+
+        Returns:
+            {
+                "available": true/false,
+                "reservation_token": "uuid" (if available),
+                "expires_at": "datetime" (if available),
+                "error": "string" (if not available)
+            }
+        """
+        try:
+            session = BookingSessionService.get_session_by_id(session_uuid)
+
+            # Extract the event date from booking data
+            booking_data = session.booking_data or {}
+            event_date = None
+
+            # Check root level first
+            if 'start_date' in booking_data:
+                event_date = booking_data.get('start_date')
+            else:
+                # Check in step data
+                for step_key, step_data in booking_data.items():
+                    if isinstance(step_data, dict) and 'start_date' in step_data:
+                        event_date = step_data.get('start_date')
+                        break
+
+            if not event_date:
+                return Response(
+                    {
+                        "available": False,
+                        "error": "No event date found in booking session"
+                    },
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            # Parse the date
+            from datetime import datetime
+            if isinstance(event_date, str):
+                try:
+                    # Handle ISO format with timezone
+                    date_obj = datetime.fromisoformat(event_date.replace('Z', '+00:00'))
+                    check_date = date_obj.date()
+                except ValueError:
+                    # Try simple date format
+                    check_date = datetime.strptime(event_date[:10], '%Y-%m-%d').date()
+            else:
+                check_date = event_date
+
+            # Use atomic availability service to validate and reserve
+            from core.domains.events.services import AtomicAvailabilityService
+
+            result = AtomicAvailabilityService.validate_and_reserve_date(
+                event_date=check_date,
+                booking_session_id=session_uuid
+            )
+
+            if result['available']:
+                return Response({
+                    "available": True,
+                    "reservation_token": result['reservation_token'],
+                    "expires_at": result['expires_at'].isoformat() if result['expires_at'] else None,
+                    "message": "Date is available. You have 5 minutes to complete payment."
+                })
+            else:
+                return Response({
+                    "available": False,
+                    "error": result['error'] or "Date is no longer available",
+                    "blocking_event_id": result.get('blocking_event_id')
+                })
+
+        except Exception as e:
+            logger.error(f"Error validating availability: {e}")
+            return Response(
+                {
+                    "available": False,
+                    "error": str(e)
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+    @action(detail=False, methods=['post'], url_path='session/(?P<session_uuid>[^/]+)/release-reservation')
+    def release_reservation(self, request, session_uuid=None):
+        """
+        Release a date reservation.
+
+        This endpoint should be called if:
+        1. Payment fails
+        2. User cancels during payment
+        3. Any error occurs after reservation was created
+
+        Request body:
+            {
+                "reservation_token": "uuid"
+            }
+
+        Returns:
+            {
+                "success": true/false,
+                "error": "string" (if failed)
+            }
+        """
+        try:
+            reservation_token = request.data.get('reservation_token')
+
+            if not reservation_token:
+                return Response(
+                    {
+                        "success": False,
+                        "error": "reservation_token is required"
+                    },
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            # Use atomic availability service to release
+            from core.domains.events.services import AtomicAvailabilityService
+
+            result = AtomicAvailabilityService.release_reservation(reservation_token)
+
+            if result['success']:
+                return Response({
+                    "success": True,
+                    "message": "Reservation released successfully"
+                })
+            else:
+                return Response({
+                    "success": False,
+                    "error": result['error']
+                })
+
+        except Exception as e:
+            logger.error(f"Error releasing reservation: {e}")
+            return Response(
+                {
+                    "success": False,
+                    "error": str(e)
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
     def _get_session_duration(self, booking_data):
         """Extract event duration from booking session data"""
         # Look for duration in various places in booking data

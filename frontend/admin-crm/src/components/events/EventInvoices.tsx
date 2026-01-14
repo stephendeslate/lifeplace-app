@@ -45,6 +45,7 @@ import { formatCurrency } from '../../utils/currency';
 import { useCurrencySettings } from '../../hooks/useCurrency';
 import { InvoiceDetailsDialog } from '../payments/InvoiceDetailsDialog';
 import { InvoiceCreateDialog } from './InvoiceCreateDialog';
+import { tokens } from '../../design-system';
 
 interface EventInvoicesProps {
   event: Event;
@@ -56,37 +57,37 @@ const getInvoiceStatusStyles = (status: InvoiceStatus, dueDate?: string) => {
   // Check if overdue first
   if (status === 'ISSUED' && dueDate && isPast(new Date(dueDate))) {
     return {
-      backgroundColor: '#ffebee',
-      color: '#c62828'
+      backgroundColor: tokens.color.eventStatus.overdue.bg,
+      color: tokens.color.eventStatus.overdue.text
     };
   }
 
   switch (status) {
     case 'DRAFT':
       return {
-        backgroundColor: '#e3f2fd',
-        color: '#1976d2'
+        backgroundColor: tokens.color.eventStatus.draft.bg,
+        color: tokens.color.eventStatus.draft.text
       };
     case 'ISSUED':
       return {
-        backgroundColor: '#e1f5fe',
-        color: '#0277bd'
+        backgroundColor: tokens.color.eventStatus.sent.bg,
+        color: tokens.color.eventStatus.sent.text
       };
     case 'PAID':
       return {
-        backgroundColor: '#e8f5e8',
-        color: '#2e7d32'
+        backgroundColor: tokens.color.eventStatus.paid.bg,
+        color: tokens.color.eventStatus.paid.text
       };
     case 'VOID':
     case 'CANCELLED':
       return {
-        backgroundColor: '#ffebee',
-        color: '#c62828'
+        backgroundColor: tokens.color.eventStatus.cancelled.bg,
+        color: tokens.color.eventStatus.cancelled.text
       };
     default:
       return {
-        backgroundColor: '#e3f2fd',
-        color: '#1976d2'
+        backgroundColor: tokens.color.eventStatus.draft.bg,
+        color: tokens.color.eventStatus.draft.text
       };
   }
 };

@@ -29,6 +29,7 @@ import {
   TrendingUp as TrendingUpIcon,
   AccountBalance as AccountBalanceIcon,
 } from '@mui/icons-material';
+import { tokens } from '../../design-system';
 import { format, isAfter, isBefore, addDays } from 'date-fns';
 import { useCurrentCurrency } from '../../hooks/useCurrency';
 import { formatCurrency } from '../../utils/currency';
@@ -189,9 +190,9 @@ const PaymentPlanSummaryCard: React.FC<{
             sx={{
               height: 6,
               borderRadius: 3,
-              backgroundColor: '#e0e0e0',
+              backgroundColor: tokens.color.neutral[300],
               '& .MuiLinearProgress-bar': {
-                backgroundColor: completionPercentage === 100 ? '#4caf50' : '#2196f3',
+                backgroundColor: completionPercentage === 100 ? tokens.color.success[500] : tokens.color.primary[500],
               },
             }}
           />

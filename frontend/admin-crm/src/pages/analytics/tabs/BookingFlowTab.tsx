@@ -3,7 +3,6 @@ import React, { useState } from 'react';
 import {
   Box,
   Typography,
-  Paper,
   Table,
   TableBody,
   TableCell,
@@ -18,6 +17,7 @@ import {
   Chip,
   LinearProgress,
 } from '@mui/material';
+import { ModernCard } from '../../../components/common/ModernCard';
 import {
   BarChart,
   Bar,
@@ -29,10 +29,6 @@ import {
   LineChart,
   Line,
   Legend,
-  FunnelChart,
-  Funnel,
-  Cell,
-  LabelList,
 } from 'recharts';
 
 import { KPICard } from '../../../components/analytics';
@@ -43,12 +39,11 @@ import {
   useBookingFlowTrends,
 } from '../../../hooks/useAnalytics';
 import type { DateRange } from '../../../types/analytics.types';
+import { tokens } from '../../../design-system';
 
 interface BookingFlowTabProps {
   dateRange: DateRange;
 }
-
-const FUNNEL_COLORS = ['#2196f3', '#4caf50', '#ff9800', '#f44336', '#9c27b0', '#00bcd4', '#795548', '#607d8b'];
 
 export const BookingFlowTab: React.FC<BookingFlowTabProps> = ({ dateRange }) => {
   const [selectedFlowId, setSelectedFlowId] = useState<string | undefined>(undefined);
@@ -154,7 +149,7 @@ export const BookingFlowTab: React.FC<BookingFlowTabProps> = ({ dateRange }) => 
         {funnelLoading ? (
           <Skeleton variant="rectangular" height={300} />
         ) : funnel && funnel.length > 0 ? (
-          <Paper sx={{ p: 2 }}>
+          <ModernCard variant="glass" size="medium">
             <Box sx={{ width: '100%', height: 350 }}>
               <ResponsiveContainer>
                 <BarChart
@@ -172,8 +167,8 @@ export const BookingFlowTab: React.FC<BookingFlowTabProps> = ({ dateRange }) => 
                     ]}
                   />
                   <Legend />
-                  <Bar dataKey="sessions_reached" name="Sessions Reached" fill="#2196f3" />
-                  <Bar dataKey="completion_rate" name="Completion %" fill="#4caf50" />
+                  <Bar dataKey="sessions_reached" name="Sessions Reached" fill={tokens.color.charts.series[0]} />
+                  <Bar dataKey="completion_rate" name="Completion %" fill={tokens.color.charts.series[1]} />
                 </BarChart>
               </ResponsiveContainer>
             </Box>
@@ -228,13 +223,13 @@ export const BookingFlowTab: React.FC<BookingFlowTabProps> = ({ dateRange }) => 
                 </TableBody>
               </Table>
             </TableContainer>
-          </Paper>
+          </ModernCard>
         ) : (
-          <Paper sx={{ p: 3, textAlign: 'center' }}>
+          <ModernCard variant="glass" size="small" sx={{ textAlign: 'center' }}>
             <Typography color="text.secondary">
               No funnel data available for the selected period
             </Typography>
-          </Paper>
+          </ModernCard>
         )}
       </Box>
 
@@ -246,7 +241,7 @@ export const BookingFlowTab: React.FC<BookingFlowTabProps> = ({ dateRange }) => 
         {abandonmentLoading ? (
           <Skeleton variant="rectangular" height={200} />
         ) : abandonment && abandonment.by_step?.length > 0 ? (
-          <Paper sx={{ p: 2 }}>
+          <ModernCard variant="glass" size="medium">
             <Box display="flex" alignItems="center" gap={2} mb={2}>
               <Typography variant="body1">
                 Total Abandoned Sessions: <strong>{abandonment.total_abandoned}</strong>
@@ -282,13 +277,13 @@ export const BookingFlowTab: React.FC<BookingFlowTabProps> = ({ dateRange }) => 
                 </TableBody>
               </Table>
             </TableContainer>
-          </Paper>
+          </ModernCard>
         ) : (
-          <Paper sx={{ p: 3, textAlign: 'center' }}>
+          <ModernCard variant="glass" size="small" sx={{ textAlign: 'center' }}>
             <Typography color="text.secondary">
               No abandonment data available for the selected period
             </Typography>
-          </Paper>
+          </ModernCard>
         )}
       </Box>
 
@@ -300,11 +295,11 @@ export const BookingFlowTab: React.FC<BookingFlowTabProps> = ({ dateRange }) => 
         {trendsLoading ? (
           <Skeleton variant="rectangular" height={300} />
         ) : trends && trends.length > 0 ? (
-          <Paper sx={{ p: 2 }}>
+          <ModernCard variant="glass" size="medium">
             <Box sx={{ width: '100%', height: 300 }}>
               <ResponsiveContainer>
                 <LineChart data={trends} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
+                  <CartesianGrid strokeDasharray="3 3" stroke={tokens.color.charts.grid} />
                   <XAxis
                     dataKey="date"
                     tick={{ fontSize: 12 }}
@@ -327,7 +322,7 @@ export const BookingFlowTab: React.FC<BookingFlowTabProps> = ({ dateRange }) => 
                     type="monotone"
                     dataKey="total_sessions"
                     name="Total Sessions"
-                    stroke="#2196f3"
+                    stroke={tokens.color.charts.series[0]}
                     strokeWidth={2}
                     dot={{ r: 3 }}
                   />
@@ -335,7 +330,7 @@ export const BookingFlowTab: React.FC<BookingFlowTabProps> = ({ dateRange }) => 
                     type="monotone"
                     dataKey="completed_sessions"
                     name="Completed"
-                    stroke="#4caf50"
+                    stroke={tokens.color.charts.series[1]}
                     strokeWidth={2}
                     dot={{ r: 3 }}
                   />
@@ -343,20 +338,20 @@ export const BookingFlowTab: React.FC<BookingFlowTabProps> = ({ dateRange }) => 
                     type="monotone"
                     dataKey="abandoned_sessions"
                     name="Abandoned"
-                    stroke="#f44336"
+                    stroke={tokens.color.charts.series[3]}
                     strokeWidth={2}
                     dot={{ r: 3 }}
                   />
                 </LineChart>
               </ResponsiveContainer>
             </Box>
-          </Paper>
+          </ModernCard>
         ) : (
-          <Paper sx={{ p: 3, textAlign: 'center' }}>
+          <ModernCard variant="glass" size="small" sx={{ textAlign: 'center' }}>
             <Typography color="text.secondary">
               No trend data available for the selected period
             </Typography>
-          </Paper>
+          </ModernCard>
         )}
       </Box>
 
@@ -368,8 +363,9 @@ export const BookingFlowTab: React.FC<BookingFlowTabProps> = ({ dateRange }) => 
         {performanceLoading ? (
           <Skeleton variant="rectangular" height={300} />
         ) : performance && performance.length > 0 ? (
-          <TableContainer component={Paper}>
-            <Table size="small">
+          <ModernCard variant="glass" size="medium">
+            <TableContainer>
+              <Table size="small">
               <TableHead>
                 <TableRow>
                   <TableCell>Flow Name</TableCell>
@@ -410,15 +406,16 @@ export const BookingFlowTab: React.FC<BookingFlowTabProps> = ({ dateRange }) => 
                     <TableCell align="right">{formatCurrency(flow.avg_revenue)}</TableCell>
                   </TableRow>
                 ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </ModernCard>
         ) : (
-          <Paper sx={{ p: 3, textAlign: 'center' }}>
+          <ModernCard variant="glass" size="small" sx={{ textAlign: 'center' }}>
             <Typography color="text.secondary">
               No booking flow performance data available
             </Typography>
-          </Paper>
+          </ModernCard>
         )}
       </Box>
     </Box>

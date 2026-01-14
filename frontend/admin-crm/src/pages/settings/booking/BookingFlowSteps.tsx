@@ -18,7 +18,7 @@ import {
   Button,
 } from '@mui/material';
 import {
-  SettingsPage,
+  PermissionAwareSettingsPage,
   type SettingsPageConfig,
   type SettingsTableColumn
 } from '../../../components/common/settings';
@@ -576,8 +576,9 @@ export const BookingFlowSteps: React.FC<BookingFlowStepsProps> = ({
           handleDelete={handleDelete}
         />
       ) : (
-        <SettingsPage
+        <PermissionAwareSettingsPage
           config={config}
+          requiredPermissions={['can_manage_booking_flows']}
           data={sortedSteps}
           defaultValues={defaultStepValues}
           isLoading={isLoadingSteps}

@@ -3,7 +3,7 @@
 
 import React from 'react';
 import { LocalOffer as DiscountIcon } from '@mui/icons-material';
-import { SettingsPage, type SettingsPageConfig, type SettingsTableColumn } from '../../../components/common/settings';
+import { PermissionAwareSettingsPage, type SettingsPageConfig, type SettingsTableColumn } from '../../../components/common/settings';
 import { useDiscounts } from '../../../hooks/useProducts';
 import type { Discount, CreateDiscountData, UpdateDiscountData } from '../../../types/products.types';
 import type { ModernFormSection } from '../../../components/common/ModernForm';
@@ -349,8 +349,9 @@ export const Discounts = () => {
   };
 
   return (
-    <SettingsPage
+    <PermissionAwareSettingsPage
       config={config}
+      requiredPermissions={['can_manage_financial_settings']}
       data={discounts}
       defaultValues={defaultDiscount}
       isLoading={isLoadingDiscounts}

@@ -3,7 +3,6 @@ import React from 'react';
 import {
   Box,
   Typography,
-  Paper,
   Table,
   TableBody,
   TableCell,
@@ -14,6 +13,7 @@ import {
   Skeleton,
   Chip,
 } from '@mui/material';
+import { ModernCard } from '../../../components/common/ModernCard';
 import DownloadIcon from '@mui/icons-material/Download';
 
 import { KPICard, LeadSourceChart } from '../../../components/analytics';
@@ -151,39 +151,41 @@ export const CustomersReportsTab: React.FC<CustomersReportsTabProps> = ({ dateRa
             {leadSourcesLoading ? (
               <Skeleton variant="rectangular" height={300} />
             ) : (
-              <TableContainer component={Paper} sx={{ height: 300, overflow: 'auto' }}>
-                <Table size="small" stickyHeader>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Source</TableCell>
-                      <TableCell align="right">Leads</TableCell>
-                      <TableCell align="right">Converted</TableCell>
-                      <TableCell align="right">Conv. Rate</TableCell>
-                      <TableCell align="right">Value</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {leadSources?.map((item, index) => (
-                      <TableRow key={index}>
-                        <TableCell>
-                          <Chip label={item.label} size="small" variant="outlined" />
-                        </TableCell>
-                        <TableCell align="right">{item.lead_count}</TableCell>
-                        <TableCell align="right">{item.converted_count}</TableCell>
-                        <TableCell align="right">{item.conversion_rate}%</TableCell>
-                        <TableCell align="right">{formatCurrency(item.total_value)}</TableCell>
-                      </TableRow>
-                    ))}
-                    {(!leadSources || leadSources.length === 0) && (
+              <ModernCard variant="glass" size="medium" sx={{ height: 300, overflow: 'auto' }}>
+                <TableContainer>
+                  <Table size="small" stickyHeader>
+                    <TableHead>
                       <TableRow>
-                        <TableCell colSpan={5} align="center">
-                          No lead source data available
-                        </TableCell>
+                        <TableCell>Source</TableCell>
+                        <TableCell align="right">Leads</TableCell>
+                        <TableCell align="right">Converted</TableCell>
+                        <TableCell align="right">Conv. Rate</TableCell>
+                        <TableCell align="right">Value</TableCell>
                       </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </TableContainer>
+                    </TableHead>
+                    <TableBody>
+                      {leadSources?.map((item, index) => (
+                        <TableRow key={index}>
+                          <TableCell>
+                            <Chip label={item.label} size="small" variant="outlined" />
+                          </TableCell>
+                          <TableCell align="right">{item.lead_count}</TableCell>
+                          <TableCell align="right">{item.converted_count}</TableCell>
+                          <TableCell align="right">{item.conversion_rate}%</TableCell>
+                          <TableCell align="right">{formatCurrency(item.total_value)}</TableCell>
+                        </TableRow>
+                      ))}
+                      {(!leadSources || leadSources.length === 0) && (
+                        <TableRow>
+                          <TableCell colSpan={5} align="center">
+                            No lead source data available
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              </ModernCard>
             )}
           </Box>
         </Box>
@@ -205,43 +207,45 @@ export const CustomersReportsTab: React.FC<CustomersReportsTabProps> = ({ dateRa
         {customersLoading ? (
           <Skeleton variant="rectangular" height={300} />
         ) : (
-          <TableContainer component={Paper}>
-            <Table size="small">
-              <TableHead>
-                <TableRow>
-                  <TableCell>Name</TableCell>
-                  <TableCell>Email</TableCell>
-                  <TableCell align="right">Total Events</TableCell>
-                  <TableCell align="right">Completed</TableCell>
-                  <TableCell align="right">Total Spent</TableCell>
-                  <TableCell>Member Since</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {customers?.map((customer) => (
-                  <TableRow key={customer.id}>
-                    <TableCell>{customer.full_name}</TableCell>
-                    <TableCell>{customer.email}</TableCell>
-                    <TableCell align="right">{customer.total_events}</TableCell>
-                    <TableCell align="right">{customer.completed_events}</TableCell>
-                    <TableCell align="right">{formatCurrency(customer.total_spent)}</TableCell>
-                    <TableCell>
-                      {customer.created_at
-                        ? new Date(customer.created_at).toLocaleDateString()
-                        : 'N/A'}
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {(!customers || customers.length === 0) && (
+          <ModernCard variant="glass" size="medium">
+            <TableContainer>
+              <Table size="small">
+                <TableHead>
                   <TableRow>
-                    <TableCell colSpan={6} align="center">
-                      No customers found
-                    </TableCell>
+                    <TableCell>Name</TableCell>
+                    <TableCell>Email</TableCell>
+                    <TableCell align="right">Total Events</TableCell>
+                    <TableCell align="right">Completed</TableCell>
+                    <TableCell align="right">Total Spent</TableCell>
+                    <TableCell>Member Since</TableCell>
                   </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </TableContainer>
+                </TableHead>
+                <TableBody>
+                  {customers?.map((customer) => (
+                    <TableRow key={customer.id}>
+                      <TableCell>{customer.full_name}</TableCell>
+                      <TableCell>{customer.email}</TableCell>
+                      <TableCell align="right">{customer.total_events}</TableCell>
+                      <TableCell align="right">{customer.completed_events}</TableCell>
+                      <TableCell align="right">{formatCurrency(customer.total_spent)}</TableCell>
+                      <TableCell>
+                        {customer.created_at
+                          ? new Date(customer.created_at).toLocaleDateString()
+                          : 'N/A'}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {(!customers || customers.length === 0) && (
+                    <TableRow>
+                      <TableCell colSpan={6} align="center">
+                        No customers found
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </ModernCard>
         )}
       </Box>
     </Box>

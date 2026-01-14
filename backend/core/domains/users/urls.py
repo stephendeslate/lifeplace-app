@@ -53,4 +53,8 @@ urlpatterns = [
 
     # Privacy Request Tracking
     path('me/privacy-requests/', views.PrivacyRequestListView.as_view(), name='privacy-requests'),
+
+    # Admin Permission Management
+    path('permissions/', views.AdminPermissionsPresetsView.as_view(), name='admin-permissions-presets'),
+    path('<int:user_id>/permissions/', views.UpdateAdminPermissionsView.as_view(), name='admin-permissions-update'),
 ]

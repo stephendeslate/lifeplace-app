@@ -110,26 +110,109 @@ export class BookingCoreApi {
   }
 
   /**
+   * Validate date availability and create a temporary reservation.
+   *
+   * IMPORTANT: This should be called BEFORE processing payment to prevent
+   * charging the customer for an unavailable date.
+   *
+   * The reservation is valid for 5 minutes, during which the payment
+   * should be processed.
+   *
+   * @param sessionId - The booking session UUID
+   * @returns Promise with availability status and reservation token
+   *
+   * @example
+   * const result = await BookingCoreApi.validateAvailability(sessionId);
+   * if (result.available) {
+   *   // Proceed with payment, pass reservation_token to completeBooking
+   *   await BookingCoreApi.completeBooking(sessionId, 'payment', result.reservation_token);
+   * } else {
+   *   // Show error, date is no longer available
+   *   showDateUnavailableModal(result.error);
+   * }
+   */
+  static async validateAvailability(sessionId: string): Promise<{
+    available: boolean;
+    reservation_token?: string;
+    expires_at?: string;
+    error?: string;
+    blocking_event_id?: number;
+    message?: string;
+  }> {
+    const response = await api.post<{
+      available: boolean;
+      reservation_token?: string;
+      expires_at?: string;
+      error?: string;
+      blocking_event_id?: number;
+      message?: string;
+    }>(`/bookingflow/public/flows/session/${sessionId}/validate-availability/`);
+    return response.data;
+  }
+
+  /**
+   * Release a date reservation.
+   *
+   * This should be called if:
+   * 1. Payment fails
+   * 2. User cancels during payment
+   * 3. Any error occurs after reservation was created
+   *
+   * @param sessionId - The booking session UUID
+   * @param reservationToken - The reservation token to release
+   * @returns Promise with success status
+   */
+  static async releaseReservation(
+    sessionId: string,
+    reservationToken: string
+  ): Promise<{ success: boolean; error?: string; message?: string }> {
+    const response = await api.post<{
+      success: boolean;
+      error?: string;
+      message?: string;
+    }>(`/bookingflow/public/flows/session/${sessionId}/release-reservation/`, {
+      reservation_token: reservationToken,
+    });
+    return response.data;
+  }
+
+  /**
    * Complete the booking and create event
    *
    * This is the primary completion method that should be used by all frontend components.
    *
    * @param sessionId - The booking session UUID
    * @param completionType - 'payment' for immediate payment processing, 'quote' for quote generation only
+   * @param reservationToken - Optional reservation token from validateAvailability
    * @returns Promise<BookingCompletionResult> - Contains event details and completion status
    *
    * @example
-   * // For immediate payment
-   * const result = await BookingCoreApi.completeBooking(sessionId, 'payment');
+   * // For immediate payment with pre-validation
+   * const validation = await BookingCoreApi.validateAvailability(sessionId);
+   * if (validation.available) {
+   *   const result = await BookingCoreApi.completeBooking(sessionId, 'payment', validation.reservation_token);
+   * }
    *
    * @example
-   * // For quote request
+   * // For quote request (no pre-validation needed)
    * const result = await BookingCoreApi.completeBooking(sessionId, 'quote');
    */
-  static async completeBooking(sessionId: string, completionType: 'payment' | 'quote' = 'payment'): Promise<BookingCompletionResult> {
-    const response = await api.post<BookingCompletionResult>(`/bookingflow/public/flows/session/${sessionId}/complete/`, {
-      completion_type: completionType
-    });
+  static async completeBooking(
+    sessionId: string,
+    completionType: 'payment' | 'quote' = 'payment',
+    reservationToken?: string
+  ): Promise<BookingCompletionResult> {
+    const payload: Record<string, unknown> = {
+      completion_type: completionType,
+    };
+    if (reservationToken) {
+      payload.reservation_token = reservationToken;
+    }
+
+    const response = await api.post<BookingCompletionResult>(
+      `/bookingflow/public/flows/session/${sessionId}/complete/`,
+      payload
+    );
     return response.data;
   }
 

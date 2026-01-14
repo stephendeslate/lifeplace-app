@@ -1,6 +1,6 @@
 // frontend/admin-crm/src/pages/analytics/AnalyticsDashboard.tsx
-import React from 'react';
-import { Box, Typography, Paper, Tabs, Tab, Divider } from '@mui/material';
+import React, { useEffect } from 'react';
+import { Box, Tabs, Tab, Divider } from '@mui/material';
 import AssessmentIcon from '@mui/icons-material/Assessment';
 import EventIcon from '@mui/icons-material/Event';
 import PeopleIcon from '@mui/icons-material/People';
@@ -13,6 +13,10 @@ import QuizIcon from '@mui/icons-material/Quiz';
 
 import { KPICard, DateRangeFilter } from '../../components/analytics';
 import { useDashboardKPIs, useDateRange } from '../../hooks/useAnalytics';
+import { useLayout } from '../../contexts/LayoutContext';
+import { ModernPageLayout } from '../../components/common/ModernPageLayout';
+import { ModernCard } from '../../components/common/ModernCard';
+import { ModernPageHeader } from '../../components/common/ModernPageHeader';
 import { SalesReportsTab } from './tabs/SalesReportsTab';
 import { EventsReportsTab } from './tabs/EventsReportsTab';
 import { CustomersReportsTab } from './tabs/CustomersReportsTab';
@@ -33,9 +37,15 @@ const TabPanel: React.FC<TabPanelProps> = ({ children, value, index }) => (
 );
 
 export const AnalyticsDashboard: React.FC = () => {
+  const { setBreadcrumbs } = useLayout();
   const { dateRange, setDateRange, presets } = useDateRange(30);
   const { data: kpis, isLoading: kpisLoading } = useDashboardKPIs(dateRange);
   const [activeTab, setActiveTab] = React.useState(0);
+
+  // Set breadcrumbs
+  useEffect(() => {
+    setBreadcrumbs([{ label: 'Analytics' }]);
+  }, [setBreadcrumbs]);
 
   const formatCurrency = (value: number) =>
     new Intl.NumberFormat('en-PH', {
@@ -46,15 +56,19 @@ export const AnalyticsDashboard: React.FC = () => {
     }).format(value);
 
   return (
-    <Box sx={{ p: 3 }}>
-      {/* Header */}
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3} flexWrap="wrap" gap={2}>
-        <Box display="flex" alignItems="center" gap={2}>
-          <AssessmentIcon sx={{ fontSize: 32, color: 'primary.main' }} />
-          <Typography variant="h4" fontWeight="bold">
-            Analytics Dashboard
-          </Typography>
-        </Box>
+    <ModernPageLayout backgroundPattern="default">
+      {/* Modern Header */}
+      <ModernPageHeader
+        title="Analytics Dashboard"
+        subtitle="Track performance metrics and insights"
+        icon={<AssessmentIcon />}
+        size="medium"
+        gradient
+        glass
+      />
+
+      {/* Date Range Filter */}
+      <Box display="flex" justifyContent="flex-end" mb={3}>
         <DateRangeFilter
           dateRange={dateRange}
           onChange={setDateRange}
@@ -154,7 +168,7 @@ export const AnalyticsDashboard: React.FC = () => {
       <Divider sx={{ mb: 3 }} />
 
       {/* Report Tabs */}
-      <Paper sx={{ mb: 3 }}>
+      <ModernCard variant="glass" size="medium" sx={{ mb: 3 }}>
         <Tabs
           value={activeTab}
           onChange={(_, newValue) => setActiveTab(newValue)}
@@ -198,7 +212,7 @@ export const AnalyticsDashboard: React.FC = () => {
             label="Questionnaires"
           />
         </Tabs>
-      </Paper>
+      </ModernCard>
 
       {/* Tab Content */}
       <TabPanel value={activeTab} index={0}>
@@ -219,7 +233,7 @@ export const AnalyticsDashboard: React.FC = () => {
       <TabPanel value={activeTab} index={5}>
         <QuestionnairesTab dateRange={dateRange} />
       </TabPanel>
-    </Box>
+    </ModernPageLayout>
   );
 };
 

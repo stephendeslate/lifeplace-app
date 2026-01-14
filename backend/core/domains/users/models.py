@@ -47,18 +47,25 @@ class User(AbstractUser):
     """User model with email-based authentication and role-based access"""
     username = None
     email = models.EmailField(_('email address'), unique=True)
-    
+
     ROLE_CHOICES = (
         ('CLIENT', 'Client'),
         ('ADMIN', 'Admin'),
     )
     role = models.CharField(max_length=10, choices=ROLE_CHOICES, default='CLIENT')
-    
+
+    # Granular admin permissions - only applies to ADMIN role users
+    admin_permissions = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text="Granular admin permissions stored as JSON. Only applies to ADMIN role users."
+    )
+
     objects = UserManager()
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = []
-    
+
     def get_full_name(self):
         """Return the first_name plus the last_name, with a space in between."""
         full_name = f"{self.first_name} {self.last_name}"
@@ -69,7 +76,59 @@ class User(AbstractUser):
         if self.first_name or self.last_name:
             return self.get_full_name()
         return self.email
-    
+
+    def has_admin_permission(self, permission_key: str) -> bool:
+        """
+        Check if user has a specific admin permission.
+
+        - Superusers always have all permissions.
+        - Non-admin users always return False.
+        - If admin_permissions is empty/None, treat as full admin (backward compatibility).
+        """
+        if self.is_superuser:
+            return True
+        if self.role != 'ADMIN':
+            return False
+
+        # If admin_permissions is empty or None, treat as full admin (backward compatibility)
+        if not self.admin_permissions:
+            return True
+
+        return self.admin_permissions.get(permission_key, False)
+
+    def get_all_permissions_dict(self) -> dict:
+        """
+        Return all admin permissions with their current values.
+        Useful for serialization to frontend.
+        """
+        from .permissions_constants import ADMIN_PERMISSIONS, FULL_ADMIN_PERMISSIONS
+
+        if self.is_superuser:
+            return FULL_ADMIN_PERMISSIONS.copy()
+        if self.role != 'ADMIN':
+            return {key: False for key in ADMIN_PERMISSIONS.keys()}
+
+        # If empty, return all True (backward compatibility for existing admins)
+        if not self.admin_permissions:
+            return FULL_ADMIN_PERMISSIONS.copy()
+
+        # Merge with defaults to ensure all keys exist
+        result = ADMIN_PERMISSIONS.copy()
+        result.update(self.admin_permissions)
+        return result
+
+    def is_full_admin(self) -> bool:
+        """Check if user has all admin permissions."""
+        from .permissions_constants import ADMIN_PERMISSIONS
+
+        if self.is_superuser:
+            return True
+        if self.role != 'ADMIN':
+            return False
+        if not self.admin_permissions:
+            return True  # backward compatibility
+        return all(self.admin_permissions.get(key, False) for key in ADMIN_PERMISSIONS.keys())
+
     def __str__(self):
         return self.email
 
@@ -126,6 +185,11 @@ class AdminInvitation(BaseModel):
     is_upgrade = models.BooleanField(
         default=False,
         help_text="True if this invitation is to upgrade an existing CLIENT to ADMIN"
+    )
+    permissions = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text="Admin permissions to assign when invitation is accepted"
     )
     expires_at = models.DateTimeField()
 

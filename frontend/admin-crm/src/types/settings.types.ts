@@ -1,6 +1,7 @@
 // frontend/admin-crm/src/types/settings.types.ts
 
 import type { SvgIconComponent } from '@mui/icons-material';
+import type { AdminPermissions } from './permissions.types';
 
 export interface SettingsNavigationItem {
   id: string;
@@ -44,6 +45,8 @@ export interface AdminUser {
     phone?: string;
     company?: string;
   };
+  admin_permissions?: AdminPermissions;
+  is_full_admin?: boolean;
 }
 
 export interface AdminInvitation {
@@ -55,12 +58,14 @@ export interface AdminInvitation {
   is_accepted: boolean;
   expires_at: string;
   created_at: string;
+  permissions?: AdminPermissions;
 }
 
 export interface InviteAdminFormData {
   email: string;
   first_name: string;
   last_name: string;
+  permissions?: AdminPermissions;
 }
 
 export interface AcceptInvitationFormData {

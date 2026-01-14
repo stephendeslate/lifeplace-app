@@ -165,6 +165,24 @@ export const PaymentsOverview: React.FC = () => {
     }
   };
 
+  // Helper to get token color for border styling
+  const getStatusBorderColor = (status: PaymentStatus): string => {
+    switch (status) {
+      case 'PENDING':
+        return tokens.color.warning[500];
+      case 'PROCESSING':
+        return tokens.color.info[500];
+      case 'COMPLETED':
+        return tokens.color.success[500];
+      case 'FAILED':
+        return tokens.color.error[500];
+      case 'REFUNDED':
+        return tokens.color.secondary[500];
+      default:
+        return tokens.color.primary[500];
+    }
+  };
+
   const getStatusIcon = (status: PaymentStatus) => {
     switch (status) {
       case 'CREATED':
@@ -517,7 +535,7 @@ export const PaymentsOverview: React.FC = () => {
                               variant="outlined"
                               sx={{
                                 ...glassPresets.light,
-                                border: `1px solid ${(tokens.color as Record<string, Record<string, string>>)[getStatusColor(payment.status) === 'default' ? 'primary' : getStatusColor(payment.status)][500]}30`,
+                                border: `1px solid ${getStatusBorderColor(payment.status)}30`,
                                 fontWeight: 600,
                               }}
                             />

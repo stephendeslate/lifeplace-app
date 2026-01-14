@@ -3,7 +3,6 @@ import React, { useState } from 'react';
 import {
   Box,
   Typography,
-  Paper,
   Table,
   TableBody,
   TableCell,
@@ -15,6 +14,7 @@ import {
   Button,
   Skeleton,
 } from '@mui/material';
+import { ModernCard } from '../../../components/common/ModernCard';
 import DownloadIcon from '@mui/icons-material/Download';
 
 import { KPICard, RevenueChart, PipelineChart } from '../../../components/analytics';
@@ -164,9 +164,10 @@ export const SalesReportsTab: React.FC<SalesReportsTabProps> = ({ dateRange }) =
         {revenueLoading ? (
           <Skeleton variant="rectangular" height={300} />
         ) : (
-          <TableContainer component={Paper}>
-            <Table size="small">
-              <TableHead>
+          <ModernCard variant="glass" size="medium">
+            <TableContainer>
+              <Table size="small">
+                <TableHead>
                 <TableRow>
                   <TableCell>Name</TableCell>
                   <TableCell>Category</TableCell>
@@ -194,9 +195,10 @@ export const SalesReportsTab: React.FC<SalesReportsTabProps> = ({ dateRange }) =
                     </TableCell>
                   </TableRow>
                 )}
-              </TableBody>
-            </Table>
-          </TableContainer>
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </ModernCard>
         )}
       </Box>
     </Box>

@@ -171,7 +171,7 @@ export const handleKeyboardActivation = (
 export const getFocusVisibleStyles = (theme?: { palette?: { primary?: { main?: string } } }) => ({
   '&:focus-visible': {
     outline: '2px solid',
-    outlineColor: theme?.palette?.primary?.main || '#1976d2',
+    outlineColor: theme?.palette?.primary?.main || '#0087ff',
     outlineOffset: '2px',
   }
 });

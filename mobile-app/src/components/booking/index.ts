@@ -18,6 +18,9 @@ export { EventTypeSelection } from './EventTypeSelection';
 export { EventTypeCard } from './EventTypeCard';
 export { EventTypeDetailModal } from './EventTypeDetailModal';
 
+// Date Availability (Race Condition Handling)
+export { DateUnavailableModal } from './DateUnavailableModal';
+
 // Step Components (6.9)
 export {
   IntroductionStep,

@@ -3,7 +3,7 @@
 
 import React from 'react';
 import { Category as CategoryIcon } from '@mui/icons-material';
-import { SettingsPage, type SettingsPageConfig, type SettingsTableColumn } from '../../../components/common/settings';
+import { PermissionAwareSettingsPage, type SettingsPageConfig, type SettingsTableColumn } from '../../../components/common/settings';
 import { useProductCategories } from '../../../hooks/useProducts';
 import type { ProductCategory, CreateCategoryData, UpdateCategoryData } from '../../../types/products.types';
 import type { ModernFormSection } from '../../../components/common/ModernForm';
@@ -259,8 +259,9 @@ export const Categories = () => {
   };
 
   return (
-    <SettingsPage
+    <PermissionAwareSettingsPage
       config={config}
+      requiredPermissions={['can_manage_financial_settings']}
       data={categories}
       defaultValues={defaultCategory}
       isLoading={isLoadingCategories}

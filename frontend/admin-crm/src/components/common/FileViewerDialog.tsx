@@ -27,6 +27,7 @@ import {
   Image as ImageIcon,
   Description as DocIcon,
 } from '@mui/icons-material';
+import { tokens } from '../../design-system';
 
 export interface ViewableFile {
   id: number;
@@ -53,10 +54,10 @@ const formatFileSize = (bytes: number): string => {
 };
 
 const getFileIcon = (mimeType: string): React.ReactNode => {
-  if (mimeType?.includes('pdf')) return <PdfIcon sx={{ fontSize: 64, color: '#d32f2f' }} />;
-  if (mimeType?.includes('image')) return <ImageIcon sx={{ fontSize: 64, color: '#1976d2' }} />;
-  if (mimeType?.includes('word') || mimeType?.includes('document')) return <DocIcon sx={{ fontSize: 64, color: '#1565c0' }} />;
-  return <FileIcon sx={{ fontSize: 64, color: '#757575' }} />;
+  if (mimeType?.includes('pdf')) return <PdfIcon sx={{ fontSize: 64, color: tokens.color.error[600] }} />;
+  if (mimeType?.includes('image')) return <ImageIcon sx={{ fontSize: 64, color: tokens.color.primary[600] }} />;
+  if (mimeType?.includes('word') || mimeType?.includes('document')) return <DocIcon sx={{ fontSize: 64, color: tokens.color.primary[700] }} />;
+  return <FileIcon sx={{ fontSize: 64, color: tokens.color.neutral[500] }} />;
 };
 
 const canPreviewInline = (mimeType: string): 'image' | 'pdf' | false => {

@@ -4,7 +4,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AccountTree as WorkflowIcon } from '@mui/icons-material';
-import { SettingsPage, type SettingsPageConfig, type SettingsTableColumn } from '../../../components/common/settings';
+import { PermissionAwareSettingsPage, type SettingsPageConfig, type SettingsTableColumn } from '../../../components/common/settings';
 import { useWorkflowTemplates } from '../../../hooks/useWorkflows';
 import { useEventTypes } from '../../../hooks/useEvents';
 import type { WorkflowTemplate, CreateWorkflowTemplateData, UpdateWorkflowTemplateData } from '../../../types/workflows.types';
@@ -221,8 +221,9 @@ export const WorkflowTemplates = () => {
   };
 
   return (
-    <SettingsPage
+    <PermissionAwareSettingsPage
       config={config}
+      requiredPermissions={['can_manage_workflows']}
       data={templates}
       defaultValues={defaultWorkflowTemplate}
       isLoading={isLoadingTemplates}

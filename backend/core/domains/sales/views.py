@@ -4,6 +4,7 @@ from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from django.db import transaction
 from django.http import Http404, HttpResponse
 from django.utils import timezone
 
@@ -738,13 +739,26 @@ class QuoteOptionViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'])
     def select(self, request, pk=None):
-        """Select this option (deselects others)"""
+        """Select this option (deselects others).
+
+        Uses atomic transaction to prevent race conditions where
+        multiple options could end up selected simultaneously.
+        """
         try:
             option = self.get_object()
-            # Deselect all other options for this quote
-            QuoteOption.objects.filter(quote=option.quote).update(is_selected=False)
-            option.is_selected = True
-            option.save()
+
+            with transaction.atomic():
+                # Lock the quote to prevent concurrent option selections
+                quote = EventQuote.objects.select_for_update().get(pk=option.quote_id)
+
+                # Deselect all options for this quote
+                QuoteOption.objects.filter(quote=quote).update(is_selected=False)
+
+                # Re-fetch the option within the transaction and select it
+                option = QuoteOption.objects.select_for_update().get(pk=option.pk)
+                option.is_selected = True
+                option.save()
+
             serializer = self.get_serializer(option)
             return Response(serializer.data)
         except Exception as e:

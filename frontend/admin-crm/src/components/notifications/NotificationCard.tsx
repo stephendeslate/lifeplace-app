@@ -31,6 +31,7 @@ import {
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import type { Notification } from '../../types/notifications.types';
+import { tokens } from '../../design-system';
 
 interface NotificationCardProps {
   notification: Notification;
@@ -121,15 +122,15 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
 
   const getCategoryColor = (category: string) => {
     switch (category) {
-      case 'SYSTEM': return '#757575';
-      case 'EVENT': return '#1976d2';
-      case 'TASK': return '#388e3c';
-      case 'PAYMENT': return '#f57c00';
-      case 'CLIENT': return '#7b1fa2';
-      case 'CONTRACT': return '#d32f2f';
-      case 'WORKFLOW': return '#0288d1';
-      case 'COMMUNICATION': return '#5d4037';
-      default: return '#757575';
+      case 'SYSTEM': return tokens.color.notification.system;
+      case 'EVENT': return tokens.color.notification.event;
+      case 'TASK': return tokens.color.notification.task;
+      case 'PAYMENT': return tokens.color.notification.payment;
+      case 'CLIENT': return tokens.color.notification.client;
+      case 'CONTRACT': return tokens.color.notification.contract;
+      case 'WORKFLOW': return tokens.color.notification.workflow;
+      case 'COMMUNICATION': return tokens.color.notification.communication;
+      default: return tokens.color.notification.system;
     }
   };
 
@@ -161,35 +162,35 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
         
         // Priority-based styling
         ...(notification.notification_type_details?.priority === 'URGENT' && {
-          borderLeft: `6px solid #d32f2f`,
-          bgcolor: notification.is_read ? 'error.50' : '#ffebee',
-          border: '2px solid #d32f2f',
-          boxShadow: '0 0 0 2px rgba(211, 47, 47, 0.1)',
+          borderLeft: `6px solid ${tokens.color.error[600]}`,
+          bgcolor: notification.is_read ? 'error.50' : tokens.color.error[50],
+          border: `2px solid ${tokens.color.error[600]}`,
+          boxShadow: `0 0 0 2px ${tokens.color.error[100]}`,
         }),
-        
+
         ...(notification.notification_type_details?.priority === 'HIGH' && {
-          borderLeft: `5px solid #f57c00`,
-          bgcolor: notification.is_read ? 'warning.50' : '#fff3e0',
+          borderLeft: `5px solid ${tokens.color.warning[600]}`,
+          bgcolor: notification.is_read ? 'warning.50' : tokens.color.warning[50],
         }),
-        
+
         // Read/Unread styling
-        ...(notification.is_read 
-          ? { 
+        ...(notification.is_read
+          ? {
               opacity: 0.75,
               filter: 'grayscale(0.2)'
             }
-          : { 
+          : {
               border: notification.notification_type_details?.priority !== 'URGENT' ? '1px solid' : undefined,
               borderColor: notification.notification_type_details?.priority !== 'URGENT' ? 'primary.light' : undefined,
-              bgcolor: notification.notification_type_details?.priority === 'URGENT' 
-                ? '#ffebee' 
+              bgcolor: notification.notification_type_details?.priority === 'URGENT'
+                ? tokens.color.error[50]
                 : notification.notification_type_details?.priority === 'HIGH'
-                ? '#fff3e0'
+                ? tokens.color.warning[50]
                 : 'primary.50',
-              boxShadow: notification.notification_type_details?.priority === 'URGENT' 
-                ? '0 4px 20px rgba(211, 47, 47, 0.15)' 
+              boxShadow: notification.notification_type_details?.priority === 'URGENT'
+                ? `0 4px 20px ${tokens.color.error[100]}`
                 : notification.notification_type_details?.priority === 'HIGH'
-                ? '0 2px 12px rgba(245, 124, 0, 0.1)'
+                ? `0 2px 12px ${tokens.color.warning[100]}`
                 : theme.shadows[2]
             }
         ),

@@ -2,7 +2,7 @@
 from decimal import Decimal
 
 from core.utils.models import BaseModel
-from django.db import models
+from django.db import models, transaction
 from django.utils import timezone
 
 
@@ -47,63 +47,94 @@ class EventQuote(BaseModel):
     def accept(self, signature_data=None):
         """Mark quote as accepted and create contract/invoice if needed.
 
+        Uses atomic transaction with row locking to prevent race conditions
+        where multiple concurrent requests could accept the same quote.
+
         Raises:
             ValueError: If quote cannot be accepted (wrong status or expired)
         """
-        # Validate quote can be accepted
-        if self.status != 'SENT':
-            raise ValueError(f"Cannot accept quote with status '{self.status}'. Quote must be in SENT status.")
+        with transaction.atomic():
+            # Re-fetch with row lock to prevent race conditions
+            # This ensures only one request can proceed with acceptance
+            locked_quote = EventQuote.objects.select_for_update().get(pk=self.pk)
 
-        # Check if quote has expired
-        if self.valid_until and self.valid_until < timezone.now().date():
-            raise ValueError(
-                f"Cannot accept expired quote. This quote expired on {self.valid_until}."
+            # Validate quote can be accepted (using locked instance)
+            if locked_quote.status != 'SENT':
+                raise ValueError(f"Cannot accept quote with status '{locked_quote.status}'. Quote must be in SENT status.")
+
+            # Check if quote has expired
+            if locked_quote.valid_until and locked_quote.valid_until < timezone.now().date():
+                raise ValueError(
+                    f"Cannot accept expired quote. This quote expired on {locked_quote.valid_until}."
+                )
+
+            # Update the locked instance
+            locked_quote.status = 'ACCEPTED'
+            locked_quote.accepted_at = timezone.now()
+            if signature_data:
+                locked_quote.signature_data = signature_data
+
+            # IMPORTANT: Save quote FIRST before updating event status.
+            # This ensures QUOTE_ACCEPTED signal fires while workflow is still at LEAD stage
+            # (which has trigger_on_quote_accepted=True for contract generation).
+            #
+            # Signal handlers use instance (quote) directly for pricing calculations,
+            # NOT event.accepted_quote, so this order is safe.
+            locked_quote.save()
+
+            # Now update event - triggers STATUS_CHANGE signal which advances workflow.
+            # This must happen AFTER quote.save() so contract automation fires correctly.
+            locked_quote.event.status = 'CONFIRMED'
+            locked_quote.event.accepted_quote = locked_quote
+            locked_quote.event.save()
+
+            # Record activity
+            QuoteActivity.objects.create(
+                quote=locked_quote,
+                action='ACCEPTED',
+                action_by=locked_quote.event.client,
+                notes=f"Quote accepted by {locked_quote.event.client}"
             )
 
-        self.status = 'ACCEPTED'
-        self.accepted_at = timezone.now()
-        if signature_data:
-            self.signature_data = signature_data
-
-        # IMPORTANT: Save quote FIRST before updating event status.
-        # This ensures QUOTE_ACCEPTED signal fires while workflow is still at LEAD stage
-        # (which has trigger_on_quote_accepted=True for contract generation).
-        #
-        # Signal handlers use instance (quote) directly for pricing calculations,
-        # NOT event.accepted_quote, so this order is safe.
-        self.save()
-
-        # Now update event - triggers STATUS_CHANGE signal which advances workflow.
-        # This must happen AFTER quote.save() so contract automation fires correctly.
-        self.event.status = 'CONFIRMED'
-        self.event.accepted_quote = self
-        self.event.save()
-
-        # Record activity
-        QuoteActivity.objects.create(
-            quote=self,
-            action='ACCEPTED',
-            action_by=self.event.client,
-            notes=f"Quote accepted by {self.event.client}"
-        )
+            # Sync self with locked_quote for consistency
+            self.status = locked_quote.status
+            self.accepted_at = locked_quote.accepted_at
+            self.signature_data = locked_quote.signature_data
 
         # Contract and invoice creation is handled via signals (handle_quote_acceptance)
         
     def reject(self, reason=None):
-        """Mark quote as rejected"""
-        self.status = 'REJECTED'
-        self.rejected_at = timezone.now()
-        if reason:
-            self.rejection_reason = reason
-        self.save()
-        
-        # Record activity
-        QuoteActivity.objects.create(
-            quote=self,
-            action='REJECTED',
-            action_by=self.event.client,
-            notes=f"Quote rejected: {reason}"
-        )
+        """Mark quote as rejected.
+
+        Uses atomic transaction with row locking to prevent race conditions
+        where accept and reject could be called concurrently.
+        """
+        with transaction.atomic():
+            # Re-fetch with row lock to prevent race conditions
+            locked_quote = EventQuote.objects.select_for_update().get(pk=self.pk)
+
+            # Only allow rejection of SENT quotes
+            if locked_quote.status != 'SENT':
+                raise ValueError(f"Cannot reject quote with status '{locked_quote.status}'. Quote must be in SENT status.")
+
+            locked_quote.status = 'REJECTED'
+            locked_quote.rejected_at = timezone.now()
+            if reason:
+                locked_quote.rejection_reason = reason
+            locked_quote.save()
+
+            # Record activity
+            QuoteActivity.objects.create(
+                quote=locked_quote,
+                action='REJECTED',
+                action_by=locked_quote.event.client,
+                notes=f"Quote rejected: {reason}"
+            )
+
+            # Sync self with locked_quote for consistency
+            self.status = locked_quote.status
+            self.rejected_at = locked_quote.rejected_at
+            self.rejection_reason = locked_quote.rejection_reason
     
     def send_to_client(self, user=None):
         """Mark quote as sent, send email notification, and trigger workflow"""

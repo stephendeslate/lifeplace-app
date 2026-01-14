@@ -42,6 +42,7 @@ import type {
 import { useBookingFlowAnalytics, useBookingSessions } from '../../../hooks/useBookingFlows';
 import { formatCurrency } from '../../../utils/currency';
 import { useCurrencySettings } from '../../../hooks/useCurrency';
+import { tokens } from '../../../design-system';
 
 interface SessionAnalyticsProps {
   flow: BookingFlowDetail;
@@ -258,9 +259,9 @@ export const SessionAnalytics: React.FC<SessionAnalyticsProps> = ({ flow }) => {
   }));
 
   const sessionStatusData = [
-    { name: 'Completed', value: metrics.completedBookings, color: '#4caf50' },
-    { name: 'Abandoned', value: metrics.abandonedSessions, color: '#f44336' },
-    { name: 'In Progress', value: Math.max(0, metrics.totalSessions - metrics.completedBookings - metrics.abandonedSessions), color: '#ff9800' },
+    { name: 'Completed', value: metrics.completedBookings, color: tokens.color.success[500] },
+    { name: 'Abandoned', value: metrics.abandonedSessions, color: tokens.color.error[500] },
+    { name: 'In Progress', value: Math.max(0, metrics.totalSessions - metrics.completedBookings - metrics.abandonedSessions), color: tokens.color.warning[500] },
   ];
 
   const formatDuration = (seconds: number): string => {
@@ -466,12 +467,12 @@ export const SessionAnalytics: React.FC<SessionAnalyticsProps> = ({ flow }) => {
                       <XAxis dataKey="date" />
                       <YAxis />
                       <RechartsTooltip />
-                      <Line 
-                        type="monotone" 
-                        dataKey={selectedMetric} 
-                        stroke="#8884d8" 
+                      <Line
+                        type="monotone"
+                        dataKey={selectedMetric}
+                        stroke={tokens.color.charts.series[0]}
                         strokeWidth={2}
-                        dot={{ fill: '#8884d8' }}
+                        dot={{ fill: tokens.color.charts.series[0] }}
                       />
                     </LineChart>
                   </ResponsiveContainer>
@@ -542,7 +543,7 @@ export const SessionAnalytics: React.FC<SessionAnalyticsProps> = ({ flow }) => {
                   <RechartsTooltip
                     formatter={(value: number) => [`${value}%`, 'Completion Rate']}
                   />
-                  <Bar dataKey="completionRate" fill="#8884d8" />
+                  <Bar dataKey="completionRate" fill={tokens.color.charts.series[0]} />
                 </BarChart>
               </ResponsiveContainer>
             </Box>

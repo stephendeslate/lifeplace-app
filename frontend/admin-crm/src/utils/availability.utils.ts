@@ -1,34 +1,35 @@
 // frontend/admin-crm/src/utils/availability.utils.ts
 
-import type { 
-  AvailabilityStatus, 
+import type {
+  AvailabilityStatus,
   DateAvailabilityInfo,
   AvailabilityIndicator,
   EventConflict
 } from '../types/availability.types';
+import { tokens } from '../design-system';
 
 /**
  * Utility functions for availability system
  */
 export class AvailabilityUtils {
-  
+
   /**
    * Get color theme for availability status
    */
   static getStatusColor(status: AvailabilityStatus): string {
     switch (status) {
       case 'available':
-        return '#4caf50'; // green
+        return tokens.color.success[500];
       case 'partially_booked':
-        return '#ff9800'; // orange
+        return tokens.color.warning[500];
       case 'fully_booked':
-        return '#f44336'; // red
+        return tokens.color.error[500];
       case 'blocked':
-        return '#9e9e9e'; // gray
+        return tokens.color.neutral[500];
       case 'outside_range':
-        return '#e0e0e0'; // light gray
+        return tokens.color.neutral[300];
       default:
-        return '#bdbdbd';
+        return tokens.color.neutral[400];
     }
   }
 

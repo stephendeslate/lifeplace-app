@@ -11,7 +11,10 @@ export { SettingsFormDialog } from './SettingsFormDialog';
 export type { SettingsFormDialogProps } from './SettingsFormDialog';
 
 export { SettingsPage } from './SettingsPage';
-export type { 
-  SettingsPageProps, 
-  SettingsPageConfig 
+export type {
+  SettingsPageProps,
+  SettingsPageConfig
 } from './SettingsPage';
+
+export { PermissionAwareSettingsPage } from './PermissionAwareSettingsPage';
+export type { PermissionAwareSettingsPageProps } from './PermissionAwareSettingsPage';

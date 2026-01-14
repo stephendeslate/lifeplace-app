@@ -3,7 +3,7 @@
 
 import React from 'react';
 import { Inventory as ProductIcon } from '@mui/icons-material';
-import { SettingsPage, type SettingsPageConfig, type SettingsTableColumn } from '../../../components/common/settings';
+import { PermissionAwareSettingsPage, type SettingsPageConfig, type SettingsTableColumn } from '../../../components/common/settings';
 import { useProducts, useProductCategories } from '../../../hooks/useProducts';
 import type { ProductOption, CreateProductData, UpdateProductData } from '../../../types/products.types';
 import type { ModernFormSection } from '../../../components/common/ModernForm';
@@ -318,8 +318,9 @@ export const Products = () => {
   };
 
   return (
-    <SettingsPage
+    <PermissionAwareSettingsPage
       config={config}
+      requiredPermissions={['can_manage_financial_settings']}
       data={products}
       defaultValues={defaultProduct}
       isLoading={isLoadingProducts}

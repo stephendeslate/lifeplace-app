@@ -21,7 +21,7 @@ import {
   ModernSettingsLayout,
 } from '../../../components/common';
 import { ModernForm, type ModernFormSection } from '../../../components/common/ModernForm';
-import { SettingsPage, type SettingsPageConfig, type SettingsTableColumn } from '../../../components/common/settings';
+import { PermissionAwareSettingsPage, type SettingsPageConfig, type SettingsTableColumn } from '../../../components/common/settings';
 
 import { useVIPSettings, useVIPTiers, useVIPBenefits } from '../../../hooks/useVIP';
 import type {
@@ -482,8 +482,9 @@ const TiersTab = () => {
   };
 
   return (
-    <SettingsPage
+    <PermissionAwareSettingsPage
       config={config}
+      requiredPermissions={['can_manage_financial_settings']}
       data={tiers}
       defaultValues={defaultTier}
       isLoading={isLoadingTiers}
@@ -739,8 +740,9 @@ const BenefitsTab = () => {
   };
 
   return (
-    <SettingsPage
+    <PermissionAwareSettingsPage
       config={config}
+      requiredPermissions={['can_manage_financial_settings']}
       data={benefits}
       defaultValues={defaultBenefit}
       isLoading={isLoadingBenefits}
