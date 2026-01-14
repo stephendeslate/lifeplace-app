@@ -28,6 +28,8 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  TextField,
+  CircularProgress,
 } from '@mui/material';
 import {
   ArrowBack as ArrowBackIcon,
@@ -38,7 +40,6 @@ import {
   Send as SendIcon,
   Payment as PaymentIcon,
   Event as EventIcon,
-  Schedule as ScheduleIcon,
   Description as ContractIcon,
   Assignment as QuestionnaireIcon,
   Note as NoteIcon,
@@ -102,7 +103,10 @@ export const PaymentProfile: React.FC = () => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  
+  const [refundDialogOpen, setRefundDialogOpen] = useState(false);
+  const [refundAmount, setRefundAmount] = useState('');
+  const [refundReason, setRefundReason] = useState('');
+
   // Hooks
   const paymentId = parseInt(id || '0');
   const {
@@ -110,14 +114,17 @@ export const PaymentProfile: React.FC = () => {
     isLoadingPayment,
     invoice,
     isLoadingInvoice,
-    paymentPlan,
-    isLoadingPaymentPlan,
     updatePayment,
     isUpdatingPayment,
     processPayment,
     isProcessingPayment,
     sendReceipt,
     isSendingReceipt,
+    sendReminder,
+    deletePayment,
+    isDeletingPayment,
+    createRefund,
+    isCreatingRefund,
     refetchPayment,
   } = usePaymentManagement(paymentId);
 
@@ -150,11 +157,40 @@ export const PaymentProfile: React.FC = () => {
     handleMenuClose();
   }, [sendReceipt, handleMenuClose]);
 
+  const handleSendReminder = useCallback(() => {
+    sendReminder();
+    handleMenuClose();
+  }, [sendReminder, handleMenuClose]);
+
+  const handleOpenRefundDialog = useCallback(() => {
+    if (payment) {
+      setRefundAmount(payment.amount);
+      setRefundReason('');
+    }
+    setRefundDialogOpen(true);
+    handleMenuClose();
+  }, [payment, handleMenuClose]);
+
+  const handleCreateRefund = useCallback(() => {
+    if (!payment || !refundAmount) return;
+    createRefund({
+      payment: payment.id,
+      amount: refundAmount,
+      reason: refundReason || 'Refund requested',
+    }, {
+      onSuccess: () => {
+        setRefundDialogOpen(false);
+        setRefundAmount('');
+        setRefundReason('');
+        refetchPayment();
+      }
+    });
+  }, [payment, refundAmount, refundReason, createRefund, refetchPayment]);
+
   // Enhanced components data
   const quickActions: QuickAction[] = useMemo(() => {
     if (!payment) return [];
-    return createPaymentActions(payment.id, payment.status, (actionType: string, paymentId: number) => {
-      console.log('Quick action:', actionType, 'for payment:', paymentId);
+    return createPaymentActions(payment.id, payment.status, (actionType: string, _paymentId: number) => {
       switch (actionType) {
         case 'process-payment':
           handleProcessPayment();
@@ -163,17 +199,17 @@ export const PaymentProfile: React.FC = () => {
           handleSendReceipt();
           break;
         case 'send-reminder':
-          // Send payment reminder functionality
+          handleSendReminder();
           break;
         case 'create-refund':
-          // Open refund creation dialog
+          handleOpenRefundDialog();
           break;
         case 'add-note':
           setTabValue(5); // Switch to notes tab
           break;
       }
     });
-  }, [payment, handleProcessPayment, handleSendReceipt]);
+  }, [payment, handleProcessPayment, handleSendReceipt, handleSendReminder, handleOpenRefundDialog]);
 
   const relatedEntities = useMemo(() => {
     const entities = [];
@@ -268,9 +304,12 @@ export const PaymentProfile: React.FC = () => {
   };
 
   const handleDelete = () => {
-    // Note: Delete functionality would need to be implemented in the hook
-    setDeleteDialogOpen(false);
-    navigate('/payments');
+    deletePayment(undefined, {
+      onSuccess: () => {
+        setDeleteDialogOpen(false);
+        navigate('/payments');
+      }
+    });
   };
 
   const getStatusColor = (status: PaymentStatus): 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning' => {
@@ -404,7 +443,7 @@ export const PaymentProfile: React.FC = () => {
           createRefreshAction(() => refetchPayment()),
           {
             label: 'More Options',
-            onClick: () => {},
+            onClick: (e) => setAnchorEl(e?.currentTarget ?? null),
             icon: <MoreVertIcon />,
             variant: 'icon',
           }
@@ -921,17 +960,12 @@ export const PaymentProfile: React.FC = () => {
               }
             }}
           >
-            <Tab 
+            <Tab
               label={`Activity (${activityItems.length})`}
-              icon={<EventIcon />} 
+              icon={<EventIcon />}
               iconPosition="start"
             />
-            <Tab 
-              label="Payment Schedule" 
-              icon={<ScheduleIcon />} 
-              iconPosition="start"
-            />
-            <Tab 
+            <Tab
               label="Invoice Details" 
               icon={<ReceiptIcon />} 
               iconPosition="start"
@@ -969,140 +1003,8 @@ export const PaymentProfile: React.FC = () => {
             />
           </TabPanel>
 
-          {/* Payment Schedule Tab */}
-          <TabPanel value={tabValue} index={1}>
-            {isLoadingPaymentPlan ? (
-              <Box display="flex" justifyContent="center" p={4}>
-                <ModernLoadingSpinner
-                  size={32}
-                  message="Loading payment plan..."
-                  variant="circular"
-                />
-              </Box>
-            ) : paymentPlan ? (
-              <Box>
-                <Typography variant="h6" gutterBottom>
-                  Payment Plan for {payment.event_details?.name}
-                </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                  Total Amount: {formatPaymentAmount(paymentPlan.total_amount)} • 
-                  Down Payment: {formatPaymentAmount(paymentPlan.down_payment_amount)} • 
-                  {paymentPlan.number_of_installments} installments
-                </Typography>
-
-                <TableContainer 
-                  component={Paper} 
-                  sx={{
-                    ...glassPresets.light,
-                    border: `1px solid ${tokens.color.borders.glass}`,
-                    borderRadius: tokens.spacing.radius.lg,
-                    overflow: 'hidden',
-                  }}
-                >
-                  <Table>
-                    <TableHead>
-                      <TableRow
-                        sx={{
-                          backgroundColor: `${tokens.color.primary[500]}10`,
-                          '& .MuiTableCell-root': {
-                            fontWeight: 600,
-                            color: tokens.color.primary[700],
-                            borderBottom: `1px solid ${tokens.color.borders.glass}`,
-                          }
-                        }}
-                      >
-                        <TableCell>Installment</TableCell>
-                        <TableCell>Amount</TableCell>
-                        <TableCell>Due Date</TableCell>
-                        <TableCell>Status</TableCell>
-                        <TableCell>Description</TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {paymentPlan.installments.map((installment, index) => {
-                        const installmentDaysRemaining = getDaysRemaining(installment.due_date);
-                        return (
-                          <TableRow 
-                            key={installment.id}
-                            sx={{
-                              backgroundColor: index % 2 === 0 ? 'transparent' : `${tokens.color.neutral[500]}05`,
-                              '& .MuiTableCell-root': {
-                                borderBottom: `1px solid ${tokens.color.borders.glass}`,
-                                py: 2,
-                              }
-                            }}
-                          >
-                            <TableCell>
-                              <Typography variant="body1" fontWeight="600">
-                                #{installment.installment_number}
-                              </Typography>
-                            </TableCell>
-                            <TableCell>
-                              <Typography variant="body1" fontWeight="600">
-                                {formatPaymentAmount(installment.amount)}
-                              </Typography>
-                            </TableCell>
-                            <TableCell>
-                              <Box>
-                                <Typography variant="body2" fontWeight="medium">
-                                  {new Date(installment.due_date).toLocaleDateString()}
-                                </Typography>
-                                <Chip
-                                  label={installmentDaysRemaining.text}
-                                  size="small"
-                                  sx={{ 
-                                    mt: 0.5,
-                                    backgroundColor: installmentDaysRemaining.severity === 'overdue' ? tokens.color.error[100] : 
-                                                     installmentDaysRemaining.severity === 'today' ? tokens.color.warning[100] :
-                                                     installmentDaysRemaining.severity === 'soon' ? tokens.color.warning[100] : tokens.color.success[100],
-                                    color: installmentDaysRemaining.severity === 'overdue' ? tokens.color.error[700] :
-                                           installmentDaysRemaining.severity === 'today' ? tokens.color.warning[700] :
-                                           installmentDaysRemaining.severity === 'soon' ? tokens.color.warning[700] : tokens.color.success[700],
-                                    fontSize: '0.75rem',
-                                    fontWeight: 600,
-                                  }}
-                                />
-                              </Box>
-                            </TableCell>
-                            <TableCell>
-                              <Chip
-                                label={installment.status_display}
-                                size="small"
-                                sx={{
-                                  backgroundColor: installment.status === 'PAID' ? tokens.color.success[100] : 
-                                                   installment.status === 'OVERDUE' ? tokens.color.error[100] : tokens.color.warning[100],
-                                  color: installment.status === 'PAID' ? tokens.color.success[800] : 
-                                         installment.status === 'OVERDUE' ? tokens.color.error[800] : tokens.color.warning[800],
-                                  fontWeight: 600,
-                                }}
-                              />
-                            </TableCell>
-                            <TableCell>
-                              <Typography variant="body2" color="text.secondary">
-                                {installment.description}
-                              </Typography>
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
-              </Box>
-            ) : (
-              <ModernEmptyState
-                icon={ScheduleIcon}
-                title="Single Payment"
-                description="This is a standalone payment not part of a payment plan. No installments or payment schedule is configured."
-                size="small"
-                illustration="minimal"
-                sx={{ py: 4 }}
-              />
-            )}
-          </TabPanel>
-
           {/* Invoice Details Tab */}
-          <TabPanel value={tabValue} index={2}>
+          <TabPanel value={tabValue} index={1}>
             {isLoadingInvoice ? (
               <Box display="flex" justifyContent="center" p={4}>
                 <ModernLoadingSpinner
@@ -1267,7 +1169,7 @@ export const PaymentProfile: React.FC = () => {
           </TabPanel>
 
           {/* Contracts Tab - placeholder */}
-          <TabPanel value={tabValue} index={3}>
+          <TabPanel value={tabValue} index={2}>
             <ModernEmptyState
               icon={ContractIcon}
               title="Contracts Coming Soon"
@@ -1281,9 +1183,9 @@ export const PaymentProfile: React.FC = () => {
               sx={{ py: 4 }}
             />
           </TabPanel>
-          
+
           {/* Questionnaires Tab - placeholder */}
-          <TabPanel value={tabValue} index={4}>
+          <TabPanel value={tabValue} index={3}>
             <ModernEmptyState
               icon={QuestionnaireIcon}
               title="Questionnaires Coming Soon"
@@ -1297,9 +1199,9 @@ export const PaymentProfile: React.FC = () => {
               sx={{ py: 4 }}
             />
           </TabPanel>
-          
+
           {/* Notes Tab */}
-          <TabPanel value={tabValue} index={5}>
+          <TabPanel value={tabValue} index={4}>
             <NotesList
               contentType="payment"
               objectId={paymentId}
@@ -1384,8 +1286,9 @@ export const PaymentProfile: React.FC = () => {
           </DialogContentText>
         </DialogContent>
         <DialogActions sx={{ p: 3, pt: 0, gap: 2 }}>
-          <Button 
+          <Button
             onClick={() => setDeleteDialogOpen(false)}
+            disabled={isDeletingPayment}
             sx={{
               borderRadius: tokens.spacing.radius.full,
               fontWeight: 600,
@@ -1393,16 +1296,17 @@ export const PaymentProfile: React.FC = () => {
           >
             Cancel
           </Button>
-          <Button 
+          <Button
             onClick={handleDelete}
-            color="error" 
+            color="error"
             variant="contained"
+            disabled={isDeletingPayment}
             sx={{
               borderRadius: tokens.spacing.radius.full,
               fontWeight: 600,
               background: `linear-gradient(135deg, ${tokens.color.error[500]}, ${tokens.color.error[600]})`,
               boxShadow: `0 4px 12px ${tokens.color.error[500]}40`,
-              
+
               '&:hover': {
                 background: `linear-gradient(135deg, ${tokens.color.error[600]}, ${tokens.color.error[700]})`,
                 transform: 'translateY(-1px)',
@@ -1410,7 +1314,106 @@ export const PaymentProfile: React.FC = () => {
               }
             }}
           >
-            Delete
+            {isDeletingPayment ? <CircularProgress size={20} color="inherit" /> : 'Delete'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Refund Dialog */}
+      <Dialog
+        open={refundDialogOpen}
+        onClose={() => !isCreatingRefund && setRefundDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: {
+            ...glassPresets.medium,
+            border: `1px solid ${tokens.color.borders.glass}`,
+            borderRadius: tokens.spacing.radius.xl,
+            backdropFilter: 'blur(20px)',
+          }
+        }}
+      >
+        <DialogTitle
+          sx={{
+            background: `linear-gradient(135deg, ${tokens.color.warning[500]}10, ${tokens.color.error[500]}10)`,
+            borderBottom: `1px solid ${tokens.color.borders.glass}`,
+            fontSize: '1.25rem',
+            fontWeight: 600,
+            color: tokens.color.warning[700],
+          }}
+        >
+          Create Refund
+        </DialogTitle>
+        <DialogContent sx={{ p: 3 }}>
+          <Stack spacing={3} sx={{ mt: 1 }}>
+            <DialogContentText
+              sx={{
+                fontSize: '0.95rem',
+                color: tokens.color.neutral[600],
+                lineHeight: 1.6,
+              }}
+            >
+              Create a refund for payment <strong>{payment.payment_number}</strong>.
+              The original payment amount was {formatPaymentAmount(payment.amount)}.
+            </DialogContentText>
+
+            <TextField
+              label="Refund Amount"
+              type="number"
+              value={refundAmount}
+              onChange={(e) => setRefundAmount(e.target.value)}
+              fullWidth
+              required
+              inputProps={{
+                min: 0,
+                max: parseFloat(payment.amount),
+                step: 0.01
+              }}
+              helperText={`Maximum refund amount: ${formatPaymentAmount(payment.amount)}`}
+            />
+
+            <TextField
+              label="Reason for Refund"
+              value={refundReason}
+              onChange={(e) => setRefundReason(e.target.value)}
+              fullWidth
+              multiline
+              rows={3}
+              placeholder="Enter the reason for this refund..."
+            />
+          </Stack>
+        </DialogContent>
+        <DialogActions sx={{ p: 3, pt: 0, gap: 2 }}>
+          <Button
+            onClick={() => setRefundDialogOpen(false)}
+            disabled={isCreatingRefund}
+            sx={{
+              borderRadius: tokens.spacing.radius.full,
+              fontWeight: 600,
+            }}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handleCreateRefund}
+            color="warning"
+            variant="contained"
+            disabled={isCreatingRefund || !refundAmount || parseFloat(refundAmount) <= 0}
+            sx={{
+              borderRadius: tokens.spacing.radius.full,
+              fontWeight: 600,
+              background: `linear-gradient(135deg, ${tokens.color.warning[500]}, ${tokens.color.warning[600]})`,
+              boxShadow: `0 4px 12px ${tokens.color.warning[500]}40`,
+
+              '&:hover': {
+                background: `linear-gradient(135deg, ${tokens.color.warning[600]}, ${tokens.color.warning[700]})`,
+                transform: 'translateY(-1px)',
+                boxShadow: `0 6px 16px ${tokens.color.warning[500]}50`,
+              }
+            }}
+          >
+            {isCreatingRefund ? <CircularProgress size={20} color="inherit" /> : 'Create Refund'}
           </Button>
         </DialogActions>
       </Dialog>

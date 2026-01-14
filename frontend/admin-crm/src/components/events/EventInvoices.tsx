@@ -358,14 +358,14 @@ export const EventInvoices: React.FC<EventInvoicesProps> = ({ event }) => {
             <ListItemText>Record Payment</ListItemText>
           </MenuItem>
         )}
-        <MenuItem onClick={() => console.log('Download PDF')}>
+        <MenuItem onClick={() => { /* TODO: Implement PDF download */ }}>
           <ListItemIcon>
             <DownloadIcon fontSize="small" />
           </ListItemIcon>
           <ListItemText>Download PDF</ListItemText>
         </MenuItem>
         {selectedInvoice?.status === 'DRAFT' && (
-          <MenuItem onClick={() => console.log('Send invoice')}>
+          <MenuItem onClick={() => { /* TODO: Implement send invoice */ }}>
             <ListItemIcon>
               <SendIcon fontSize="small" />
             </ListItemIcon>

@@ -18,7 +18,7 @@ export { animationTokens, getDuration, getEasing, getTransition };
 export type { ColorToken, PrimaryColorVariant, GlassVariant, BackgroundVariant, NotificationCategory, EventStatusType, ChartSeriesIndex } from './colors';
 export type { FontFamily, FontWeight, FontSize, TypographyStyle } from './typography';
 export type { SpaceScale, SemanticSpacing, RadiusScale, ContainerSize, ZIndexLevel, Breakpoint } from './spacing';
-export type { ElevationLevel, GlassShadow, InteractiveShadow, ComponentShadow, BackdropFilter } from './shadows';
+export type { ElevationLevel, GlassShadow, ComponentShadow, BackdropFilter } from './shadows';
 export type { EasingFunction, Duration, AnimationPattern, TransitionPreset } from './animations';
 
 // Rename conflicting exports

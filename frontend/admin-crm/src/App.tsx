@@ -35,9 +35,6 @@ import { LegalDocumentsPage } from './pages/settings/legal';
 import { PaymentsOverview, PaymentProfile } from './pages/payments';
 // FunnelAnalytics removed - functionality now in AnalyticsDashboard
 
-// Messaging imports
-import { MessagesOverview } from './pages/messages/MessagesOverview';
-
 // Protected Route Component
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated, isLoading } = useAuth();
@@ -286,17 +283,6 @@ const AppRouter: React.FC = () => {
           </ProtectedRoute>
         }
       />
-
-      {/* Messages Routes */}
-      <Route
-        path="/messages"
-        element={
-          <ProtectedRoute>
-            <MessagesOverview />
-          </ProtectedRoute>
-        }
-      />
-
 
       {/* Records Route */}
       <Route

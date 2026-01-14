@@ -63,39 +63,6 @@ export interface CurrencySettingsFormData {
   compactFormat: boolean;
 }
 
-// UI Component prop types for currency
-export interface CurrencyDisplayProps {
-  amount: string | number;
-  currency?: string;
-  options?: CurrencyFormattingOptions;
-  className?: string;
-}
-
-export interface CurrencyInputProps {
-  value: string | number;
-  currency?: string;
-  onChange: (value: string) => void;
-  onCurrencyChange?: (currency: string) => void;
-  placeholder?: string;
-  disabled?: boolean;
-  error?: boolean;
-  helperText?: string;
-  allowCurrencySelection?: boolean;
-  label?: string;
-  fullWidth?: boolean;
-  size?: 'small' | 'medium';
-}
-
-export interface CurrencySelectProps {
-  value: string;
-  onChange: (currency: string) => void;
-  currencies?: string[];
-  disabled?: boolean;
-  size?: 'small' | 'medium';
-  variant?: 'standard' | 'outlined' | 'filled';
-  fullWidth?: boolean;
-}
-
 // Supported currency codes (aligned with backend)
 export type SupportedCurrency = 'PHP' | 'USD' | 'EUR' | 'SGD' | 'HKD';
 
@@ -107,49 +74,3 @@ export interface CurrencyValidationResult {
   error?: string;
   formatted?: string;
 }
-
-// Currency formatting presets
-export interface CurrencyPreset {
-  name: string;
-  description: string;
-  settings: Partial<CurrencySettings>;
-}
-
-export const CURRENCY_PRESETS: Record<string, CurrencyPreset> = {
-  philippine: {
-    name: 'Philippine Business',
-    description: 'Optimized for Philippine peso with no decimal places',
-    settings: {
-      defaultCurrency: 'PHP',
-      enabledCurrencies: ['PHP'],
-      displayFormat: 'symbol',
-      decimalPlaces: 0,
-      thousandsSeparator: ',',
-      decimalSeparator: '.',
-    },
-  },
-  international: {
-    name: 'International',
-    description: 'Multi-currency setup with standard formatting',
-    settings: {
-      defaultCurrency: 'USD',
-      enabledCurrencies: ['USD', 'EUR', 'PHP', 'SGD'],
-      displayFormat: 'both',
-      decimalPlaces: 2,
-      thousandsSeparator: ',',
-      decimalSeparator: '.',
-    },
-  },
-  asian: {
-    name: 'Asian Markets',
-    description: 'Focus on Asian currencies',
-    settings: {
-      defaultCurrency: 'USD',
-      enabledCurrencies: ['USD', 'PHP', 'SGD', 'HKD'],
-      displayFormat: 'symbol',
-      decimalPlaces: 2,
-      thousandsSeparator: ',',
-      decimalSeparator: '.',
-    },
-  },
-} as const;

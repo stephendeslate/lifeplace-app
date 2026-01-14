@@ -111,10 +111,6 @@ export const ModernPageLayout: React.FC<ModernPageLayoutProps> = ({
 };
 
 // Specialized layout variants for common use cases
-export const ModernDashboardLayout: React.FC<Omit<ModernPageLayoutProps, 'backgroundPattern'>> = (props) => (
-  <ModernPageLayout {...props} backgroundPattern="default" />
-);
-
 export const ModernSettingsLayout: React.FC<Omit<ModernPageLayoutProps, 'backgroundPattern'>> = (props) => {
   return (
     <Box 

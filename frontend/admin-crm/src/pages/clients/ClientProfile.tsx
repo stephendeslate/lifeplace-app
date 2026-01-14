@@ -48,7 +48,6 @@ import {
   Schedule as ScheduleIcon,
   Add as AddIcon,
   Message as MessageIcon,
-  AccountBalance as PaymentIcon,
   Person as PersonIcon,
   TrendingUp as TrendingUpIcon,
 } from '@mui/icons-material';
@@ -57,7 +56,6 @@ import { useClients } from '../../hooks/useClients';
 import { useCommunications } from '../../hooks/useCommunications';
 import { useQuotesForClient } from '../../hooks/useSales';
 import type { UpdateClientData } from '../../types/clients.types';
-import type { Event } from '../../types/events.types';
 import { useContractsForClient } from '../../hooks/useContracts';
 import { useInvoicesForClient } from '../../hooks/usePayments';
 import { getClientStatusSummary } from '../../utils/clientStatus';
@@ -65,9 +63,8 @@ import { ClientForm } from '../../components/clients/ClientForm';
 import { ClientQuotes } from '../../components/clients/ClientQuotes';
 import { ClientContracts } from '../../components/clients/ClientContracts';
 import { ClientInvoices } from '../../components/clients/ClientInvoices';
-import { ClientPaymentPlans } from '../../components/clients/ClientPaymentPlans';
 import { NotesList } from '../../components/notes';
-import { EventCommunications } from '../../components/events/EventCommunications';
+import { ClientCommunications } from '../../components/clients/ClientCommunications';
 import {
   ActivityTimeline,
   FinancialSummary,
@@ -181,8 +178,8 @@ export const ClientProfile: React.FC = () => {
 
   const quickActions: QuickAction[] = useMemo(() => {
     if (!client) return [];
-    return createClientActions(client.id, (actionType: string, clientId: number) => {
-      console.log('Quick action:', actionType, 'for client:', clientId);
+    const clientPhone = client.profile?.phone;
+    return createClientActions(client.id, (actionType: string, _clientId: number) => {
       switch (actionType) {
         case 'create-event':
           navigate(`/events/new?client=${clientId}`);
@@ -197,11 +194,19 @@ export const ClientProfile: React.FC = () => {
           handleSendInvitation();
           break;
         case 'add-note':
-          setTabValue(7); // Switch to notes tab
+          setTabValue(6); // Switch to notes tab
+          break;
+        case 'call-client':
+          if (clientPhone) {
+            window.location.href = `tel:${clientPhone}`;
+          }
+          break;
+        case 'create-invoice':
+          navigate(`/invoices/new?client=${clientId}`);
           break;
       }
-    });
-  }, [client, navigate, handleSendInvitation]);
+    }, clientPhone);
+  }, [client, navigate, handleSendInvitation, clientId]);
 
   const relatedEvents = useMemo(() => {
     return events.map(event => createEventReference(event));
@@ -209,7 +214,7 @@ export const ClientProfile: React.FC = () => {
 
   const activityItems: ActivityItem[] = useMemo(() => {
     const items: ActivityItem[] = [];
-    
+
     // Add communications as activities
     communications.forEach(comm => {
       items.push({
@@ -241,6 +246,60 @@ export const ClientProfile: React.FC = () => {
       });
     });
 
+    // Add quote activities
+    quotes.forEach(quote => {
+      items.push({
+        id: `quote-${quote.id}`,
+        type: 'note',
+        title: `Quote ${quote.status === 'ACCEPTED' ? 'Accepted' : quote.status === 'SENT' ? 'Sent' : 'Created'}`,
+        description: `Quote for ${quote.event_details?.name || 'event'} - ${formatClientAmount(quote.total_amount)}`,
+        timestamp: quote.updated_at || quote.created_at,
+        status: quote.status === 'ACCEPTED' ? 'completed' : quote.status === 'SENT' ? 'in_progress' : 'pending',
+        relatedEntity: {
+          type: 'quote' as 'event',
+          id: quote.id,
+          name: `Quote #${quote.id}`
+        },
+        user: { name: 'System' },
+      });
+    });
+
+    // Add contract activities
+    contracts.forEach(contract => {
+      items.push({
+        id: `contract-${contract.id}`,
+        type: 'contract',
+        title: `Contract ${contract.status === 'SIGNED' ? 'Signed' : contract.status === 'SENT' ? 'Sent' : 'Created'}`,
+        description: `Contract for ${contract.event_details?.name || 'event'} - ${contract.status_display || contract.status}`,
+        timestamp: contract.updated_at || contract.created_at,
+        status: contract.status === 'SIGNED' ? 'completed' : contract.status === 'SENT' ? 'in_progress' : 'pending',
+        relatedEntity: {
+          type: 'contract' as 'event',
+          id: contract.id,
+          name: `Contract #${contract.id}`
+        },
+        user: { name: 'System' },
+      });
+    });
+
+    // Add invoice activities
+    invoices.forEach(invoice => {
+      items.push({
+        id: `invoice-${invoice.id}`,
+        type: 'payment',
+        title: `Invoice ${invoice.status === 'PAID' ? 'Paid' : invoice.status === 'ISSUED' ? 'Issued' : 'Created'}`,
+        description: `Invoice ${invoice.invoice_id} - ${formatClientAmount(invoice.total_amount)}`,
+        timestamp: invoice.updated_at || invoice.created_at,
+        status: invoice.status === 'PAID' ? 'completed' : invoice.status === 'ISSUED' ? 'in_progress' : 'pending',
+        relatedEntity: {
+          type: 'invoice' as 'event',
+          id: invoice.id,
+          name: invoice.invoice_id
+        },
+        user: { name: 'System' },
+      });
+    });
+
     // Add client registration activity
     if (client) {
       items.push({
@@ -255,7 +314,7 @@ export const ClientProfile: React.FC = () => {
     }
 
     return items.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-  }, [communications, events, client]);
+  }, [communications, events, client, quotes, contracts, invoices, formatClientAmount]);
 
   useEffect(() => {
     if (client) {
@@ -383,6 +442,12 @@ export const ClientProfile: React.FC = () => {
             onClick: () => setTabValue(2),
             icon: <MessageIcon />,
             variant: 'outlined',
+          },
+          {
+            label: 'More Options',
+            onClick: (e) => setAnchorEl(e?.currentTarget ?? null),
+            icon: <MoreVertIcon />,
+            variant: 'icon',
           }
         ]}
         status={{
@@ -406,23 +471,6 @@ export const ClientProfile: React.FC = () => {
         ]}
         size="medium"
       />
-
-      {/* More Options Button */}
-      <Box sx={{ position: 'absolute', top: 24, right: 24 }}>
-        <Button
-          variant="outlined"
-          onClick={(e) => setAnchorEl(e.currentTarget)}
-          sx={{
-            minWidth: 'auto',
-            p: 1.5,
-            borderRadius: tokens.spacing.radius.full,
-            ...glassPresets.light,
-            border: `1px solid ${tokens.color.borders.glass}`,
-          }}
-        >
-          <MoreVertIcon />
-        </Button>
-      </Box>
 
       {/* More Actions Menu */}
       <Menu
@@ -894,11 +942,6 @@ export const ClientProfile: React.FC = () => {
               iconPosition="start"
             />
             <Tab
-              label="Payment Plans"
-              icon={<PaymentIcon />}
-              iconPosition="start"
-            />
-            <Tab
               label="Notes"
               icon={<NoteIcon />}
               iconPosition="start"
@@ -1044,12 +1087,7 @@ export const ClientProfile: React.FC = () => {
 
           {/* Communications Tab */}
           <TabPanel value={tabValue} index={2}>
-            <EventCommunications
-              event={{ id: 0, name: '', client: clientId } as Event}
-              clientId={clientId}
-              clientEmail={client.email}
-              clientName={`${client.first_name} ${client.last_name}`}
-            />
+            <ClientCommunications client={client} />
           </TabPanel>
 
           {/* Quotes Tab */}
@@ -1067,13 +1105,8 @@ export const ClientProfile: React.FC = () => {
             <ClientInvoices client={client} />
           </TabPanel>
 
-          {/* Payment Plans Tab */}
-          <TabPanel value={tabValue} index={6}>
-            <ClientPaymentPlans client={client} />
-          </TabPanel>
-
           {/* Notes Tab */}
-          <TabPanel value={tabValue} index={7}>
+          <TabPanel value={tabValue} index={6}>
             <NotesList
               contentType="client"
               objectId={clientId}

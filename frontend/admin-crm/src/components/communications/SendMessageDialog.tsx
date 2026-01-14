@@ -242,15 +242,13 @@ export const SendMessageDialog: React.FC<SendMessageDialogProps> = ({
       client_id: client.id,
       event_id: eventId,
       custom_subject: formData.subject,  // Make sure this field is included
-      custom_body: formData.body,        // Make sure this field is included
+      custom_body: formData.body,
       context_data: {
         ...formData.variables,
         custom_subject: formData.subject,
         custom_body: formData.body
       }
     };
-
-    console.log('Sending message with data:', sendData); // Debug log
 
     sendMessage(sendData, {
       onSuccess: () => {

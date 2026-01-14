@@ -4,7 +4,6 @@
 // Layout Components
 export {
   ModernPageLayout,
-  ModernDashboardLayout,
   ModernSettingsLayout,
   ModernOverviewLayout,
 } from './ModernPageLayout';
@@ -13,10 +12,6 @@ export {
 export {
   ModernCard,
   ModernGlassCard,
-  ModernElevatedCard,
-  ModernOutlinedCard,
-  ModernMinimalCard,
-  ModernInteractiveCard,
   ModernMetricCard,
 } from './ModernCard';
 
@@ -32,8 +27,6 @@ export {
 // Header Components
 export {
   ModernPageHeader,
-  ModernDashboardHeader,
-  ModernSettingsHeader,
   ModernOverviewHeader,
   createRefreshAction,
   createFilterAction,
@@ -68,33 +61,26 @@ export const modernDesignSystem = {
   // Component categories
   layouts: [
     'ModernPageLayout',
-    'ModernDashboardLayout', 
     'ModernSettingsLayout',
     'ModernOverviewLayout',
   ],
-  
+
   cards: [
     'ModernCard',
     'ModernGlassCard',
-    'ModernElevatedCard', 
-    'ModernOutlinedCard',
-    'ModernMinimalCard',
-    'ModernInteractiveCard',
     'ModernMetricCard',
   ],
-  
+
   emptyStates: [
     'ModernEmptyState',
     'ModernNoDataState',
     'ModernErrorState',
-    'ModernSearchEmptyState', 
+    'ModernSearchEmptyState',
     'ModernLoadingState',
   ],
-  
+
   headers: [
     'ModernPageHeader',
-    'ModernDashboardHeader',
-    'ModernSettingsHeader',
     'ModernOverviewHeader',
   ],
   
@@ -121,19 +107,19 @@ export const modernDesignSystem = {
   // Usage patterns
   patterns: {
     dashboardPage: {
-      layout: 'ModernDashboardLayout',
-      header: 'ModernDashboardHeader', 
+      layout: 'ModernPageLayout',
+      header: 'ModernPageHeader',
       cards: 'ModernMetricCard',
       loading: 'ModernPageLoadingSkeleton',
     },
-    
+
     settingsPage: {
       layout: 'ModernSettingsLayout',
-      header: 'ModernSettingsHeader',
-      cards: 'ModernOutlinedCard', 
+      header: 'ModernPageHeader',
+      cards: 'ModernCard',
       loading: 'ModernCardSkeleton',
     },
-    
+
     overviewPage: {
       layout: 'ModernOverviewLayout',
       header: 'ModernOverviewHeader',
@@ -141,12 +127,12 @@ export const modernDesignSystem = {
       emptyState: 'ModernEmptyState',
       loading: 'ModernTableSkeleton',
     },
-    
+
     listPage: {
       layout: 'ModernPageLayout',
       header: 'ModernPageHeader',
       cards: 'ModernCard',
-      emptyState: 'ModernNoDataState', 
+      emptyState: 'ModernNoDataState',
       loading: 'ModernListSkeleton',
     },
   },

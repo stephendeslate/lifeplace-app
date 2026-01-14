@@ -331,16 +331,15 @@ export type ChartSeriesIndex = 0 | 1 | 2 | 3 | 4 | 5;
 export const getColor = (path: string): string => {
   const keys = path.split('.');
   let value: unknown = colorTokens;
-  
+
   for (const key of keys) {
     if (value && typeof value === 'object' && key in value) {
       value = (value as Record<string, unknown>)[key];
     } else {
-      console.warn(`Color token "${path}" not found`);
       return colorTokens.neutral[500];
     }
   }
-  
+
   return typeof value === 'string' ? value : colorTokens.neutral[500];
 };
 

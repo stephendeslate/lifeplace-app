@@ -75,8 +75,6 @@ export const CategoryFormDialog: React.FC<CategoryFormDialogProps> = ({
     if (open && !initialized) {
       if (editingCategory) {
         const initialParent = editingCategory.parent?.toString() || '';
-        console.log('Editing category:', editingCategory);
-        
         setFormData({
           name: editingCategory.name || '',
           description: editingCategory.description || '',

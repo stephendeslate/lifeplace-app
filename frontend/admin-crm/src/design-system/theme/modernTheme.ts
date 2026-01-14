@@ -1,12 +1,10 @@
 // Modern MUI Theme with Glassmorphism Design System
 // Integrating modern design tokens with Material-UI
-// WIP: Shared design system temporarily disabled for deployment
 
 import { createTheme } from '@mui/material/styles';
 import type { ThemeOptions, Components } from '@mui/material/styles';
-// import { designTokens as sharedTokens } from '@shared/design-system';
 
-// Temporary fallback tokens until shared package is fully integrated
+// Design system tokens
 const fallbackTokens = {
   colors: {
     brand: {

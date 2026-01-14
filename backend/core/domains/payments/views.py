@@ -256,7 +256,23 @@ class PaymentViewSet(viewsets.ModelViewSet):
                 return Response({"detail": "Receipt sent successfully"})
             else:
                 return Response(
-                    {"detail": "Receipt could not be sent"}, 
+                    {"detail": "Receipt could not be sent"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+        except Exception as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=True, methods=['post'])
+    def send_reminder(self, request, pk=None):
+        """Send payment reminder to client"""
+        try:
+            payment = self.get_object()
+            success = payment.send_reminder_notification()
+            if success:
+                return Response({"detail": "Reminder sent successfully"})
+            else:
+                return Response(
+                    {"detail": "Reminder could not be sent. Payment may already be completed or cancelled."},
                     status=status.HTTP_400_BAD_REQUEST
                 )
         except Exception as e:
@@ -782,8 +798,84 @@ class InvoiceViewSet(viewsets.ModelViewSet):
         # Cache the invoice detail
         payments_cache_service.cache_invoice_detail(invoice.id, serializer.data)
         logger.info(f"Invoice detail for {invoice_id} cached after database query")
-        
+
         return Response(serializer.data)
+
+    @action(detail=True, methods=['post'])
+    def send_invoice(self, request, pk=None):
+        """Send invoice to client via email"""
+        from core.domains.communications.services import CommunicationService
+
+        try:
+            invoice = self.get_object()
+
+            # Update status to ISSUED if it's a draft
+            if invoice.status == 'DRAFT':
+                invoice.status = 'ISSUED'
+                invoice.save(update_fields=['status'])
+
+            # Send invoice email via CommunicationService
+            comm_service = CommunicationService()
+            record = comm_service.send_communication(
+                template_name='Invoice Issued',
+                recipient=invoice.client.email,
+                client=invoice.client,
+                event=invoice.event,
+                context_data={
+                    'invoice_id': invoice.invoice_id,
+                    'invoice_total': str(invoice.total_amount),
+                    'invoice_currency': invoice.currency,
+                    'due_date': invoice.due_date.strftime("%B %d, %Y"),
+                },
+                skip_preference_check=True  # Invoices are transactional
+            )
+
+            if record:
+                # Invalidate cache
+                payments_cache_service.invalidate_invoice_cache(invoice.id)
+
+                return Response({
+                    "detail": "Invoice sent successfully",
+                    "status": invoice.status
+                })
+            else:
+                return Response(
+                    {"detail": "Failed to send invoice. Please check email configuration."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+        except Exception as e:
+            logger.error(f"Error sending invoice {pk}: {str(e)}")
+            return Response(
+                {"detail": str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+    @action(detail=True, methods=['get'])
+    def download_pdf(self, request, pk=None):
+        """Download invoice as PDF"""
+        from django.http import HttpResponse
+        from .pdf_service import PaymentReceiptPDFService
+
+        try:
+            invoice = self.get_object()
+
+            # Generate PDF
+            pdf_buffer = PaymentReceiptPDFService.generate_invoice_receipt_pdf(invoice)
+
+            # Create response with PDF
+            response = HttpResponse(
+                pdf_buffer.getvalue(),
+                content_type='application/pdf'
+            )
+            response['Content-Disposition'] = f'attachment; filename="invoice-{invoice.invoice_id}.pdf"'
+
+            return response
+        except Exception as e:
+            logger.error(f"Error generating PDF for invoice {pk}: {str(e)}")
+            return Response(
+                {"detail": f"Failed to generate PDF: {str(e)}"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
 
 class PaymentTransactionViewSet(viewsets.ModelViewSet):

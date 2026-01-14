@@ -30,7 +30,7 @@ import {
   GetApp as DownloadIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
-import { useContractsForClient } from '../../hooks/useContracts';
+import { useContractsForClient, useSendContract, useDownloadContractPdf } from '../../hooks/useContracts';
 import type { EventContract } from '../../types/contracts.types';
 import type { Client } from '../../types/clients.types';
 import { formatCurrency } from '../../utils/currency';
@@ -47,6 +47,8 @@ export const ClientContracts: React.FC<ClientContractsProps> = ({ client }) => {
   const { settings: currencySettings } = useCurrencySettings();
 
   const { data: contracts = [], isLoading } = useContractsForClient(client.id);
+  const { mutate: sendContract, isPending: isSendingContract } = useSendContract();
+  const { mutate: downloadPdf, isPending: isDownloadingPdf } = useDownloadContractPdf();
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, contract: EventContract) => {
     setAnchorEl(event.currentTarget);
@@ -68,6 +70,16 @@ export const ClientContracts: React.FC<ClientContractsProps> = ({ client }) => {
 
   const handleCreateContract = () => {
     navigate(`/contracts/new?client=${client.id}`);
+  };
+
+  const handleSendForSignature = (contract: EventContract) => {
+    sendContract(contract.id);
+    handleMenuClose();
+  };
+
+  const handleDownloadPdf = (contract: EventContract) => {
+    downloadPdf(contract.id);
+    handleMenuClose();
   };
 
   const formatContractAmount = (amount: string | number | null, contractCurrency?: string) => {
@@ -227,18 +239,28 @@ export const ClientContracts: React.FC<ClientContractsProps> = ({ client }) => {
           </MenuItem>
         )}
         {selectedContract?.status === 'DRAFT' && (
-          <MenuItem onClick={handleMenuClose}>
+          <MenuItem
+            onClick={() => selectedContract && handleSendForSignature(selectedContract)}
+            disabled={isSendingContract}
+          >
             <ListItemIcon>
               <SendIcon fontSize="small" />
             </ListItemIcon>
-            <ListItemText>Send for Signature</ListItemText>
+            <ListItemText>
+              {isSendingContract ? 'Sending...' : 'Send for Signature'}
+            </ListItemText>
           </MenuItem>
         )}
-        <MenuItem onClick={handleMenuClose}>
+        <MenuItem
+          onClick={() => selectedContract && handleDownloadPdf(selectedContract)}
+          disabled={isDownloadingPdf}
+        >
           <ListItemIcon>
             <DownloadIcon fontSize="small" />
           </ListItemIcon>
-          <ListItemText>Download PDF</ListItemText>
+          <ListItemText>
+            {isDownloadingPdf ? 'Downloading...' : 'Download PDF'}
+          </ListItemText>
         </MenuItem>
       </Menu>
     </Box>
