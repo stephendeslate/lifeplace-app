@@ -10,7 +10,7 @@ import { useNavigate } from 'react-router-dom';
 import { useLayout } from '../../contexts/LayoutContext';
 import { settingsNavigationConfig } from '../../config/settings-navigation';
 import { SmartCard, SmartCardSkeleton } from '../../components/settings/SmartCard';
-import { ModernPageLayout, ModernCard } from '../../components/common';
+import { ModernCard } from '../../components/common';
 import { tokens } from '../../design-system';
 import { glassPresets } from '../../design-system/utils/glassmorphism';
 
@@ -36,14 +36,7 @@ export const EnhancedSettings: React.FC = () => {
   const filteredGroups = settingsNavigationConfig;
 
   return (
-    <ModernPageLayout 
-      backgroundPattern="minimal"
-      sx={{
-        // Fix sidebar overlap by ensuring proper z-index and positioning
-        position: 'relative',
-        zIndex: 1,
-      }}
-    >
+    <Box>
       {/* Clean Header Section */}
       <ModernCard
         animation="none"
@@ -204,6 +197,6 @@ export const EnhancedSettings: React.FC = () => {
           </Typography>
         </ModernCard>
       )}
-    </ModernPageLayout>
+    </Box>
   );
 };
