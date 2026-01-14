@@ -429,17 +429,18 @@ class BookingSessionService:
     
     
     @staticmethod
-    def complete_booking(session_id, completion_type='payment'):
+    def complete_booking(session_id, completion_type='payment', reservation_token=None):
         """Complete the booking and create event with payment processing or quote generation
 
         Args:
             session_id: The booking session ID
             completion_type: 'payment' for immediate payment, 'quote' for quote request
+            reservation_token: Optional reservation token from pre-payment availability validation
         """
         # ENHANCED DEBUGGING: Log the received completion type with timestamp
         import time
         completion_attempt_time = time.time()
-        logger.info(f"🔥 COMPLETE_BOOKING CALLED: session_id={session_id}, completion_type='{completion_type}', attempt_time={completion_attempt_time}")
+        logger.info(f"🔥 COMPLETE_BOOKING CALLED: session_id={session_id}, completion_type='{completion_type}', reservation_token={reservation_token}, attempt_time={completion_attempt_time}")
 
         # ENHANCED SAFEGUARD: Use atomic transaction with row-level locking to prevent race conditions
         with transaction.atomic():
@@ -541,6 +542,12 @@ class BookingSessionService:
             # ENHANCED ATOMIC PROTECTION: Mark session as being completed to prevent concurrent access
             session.is_completed = True
             session.completed_at = datetime.now()
+
+            # Store the reservation token in booking_data for payment signal processing
+            if reservation_token:
+                session.booking_data['_reservation_token'] = reservation_token
+                logger.info(f"🔥 Stored reservation_token in booking_data for later use: {reservation_token}")
+
             session.save()
             logger.info(f"🔥 COMPLETION_LOCK: Session {session_id} marked as completed at {session.completed_at}")
 

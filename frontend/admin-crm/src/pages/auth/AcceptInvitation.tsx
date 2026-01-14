@@ -3,8 +3,6 @@
 import React, { useState, useEffect } from 'react';
 import {
   Box,
-  Card,
-  CardContent,
   Typography,
   TextField,
   Button,
@@ -15,6 +13,8 @@ import {
   IconButton,
   Divider,
 } from '@mui/material';
+import { tokens } from '../../design-system';
+import { glassPresets } from '../../design-system/utils/glassmorphism';
 import {
   Visibility,
   VisibilityOff,
@@ -186,11 +186,19 @@ export const AcceptInvitation: React.FC = () => {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: 'grey.50',
+          background: `linear-gradient(135deg, ${tokens.color.neutral[50]} 0%, ${tokens.color.primary[50]}40 100%)`,
         }}
       >
-        <Box sx={{ textAlign: 'center' }}>
-          <CircularProgress size={48} sx={{ mb: 2 }} />
+        <Box
+          sx={{
+            textAlign: 'center',
+            ...glassPresets.medium,
+            p: 4,
+            borderRadius: tokens.spacing.radius.xxl,
+            border: `1px solid ${tokens.color.borders.glass}`,
+          }}
+        >
+          <CircularProgress size={48} sx={{ mb: 2, color: tokens.color.primary[500] }} />
           <Typography variant="body1" color="text.secondary">
             Loading invitation details...
           </Typography>
@@ -208,29 +216,53 @@ export const AcceptInvitation: React.FC = () => {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: 'grey.50',
+          background: `linear-gradient(135deg, ${tokens.color.neutral[50]} 0%, ${tokens.color.error[50]}40 100%)`,
           px: 2,
         }}
       >
-        <Card sx={{ maxWidth: 500, width: '100%' }}>
-          <CardContent sx={{ p: 4, textAlign: 'center' }}>
-            <Alert severity="error" sx={{ mb: 3 }}>
-              <Typography variant="h6" gutterBottom>
-                Invalid Invitation
-              </Typography>
-              <Typography variant="body2">
-                {error}
-              </Typography>
-            </Alert>
-            <Button
-              variant="contained"
-              onClick={() => navigate('/login')}
-              sx={{ mt: 2 }}
-            >
-              Go to Login
-            </Button>
-          </CardContent>
-        </Card>
+        <Box
+          sx={{
+            maxWidth: 500,
+            width: '100%',
+            ...glassPresets.medium,
+            p: 4,
+            borderRadius: tokens.spacing.radius.xxl,
+            border: `1px solid ${tokens.color.error[200]}40`,
+            textAlign: 'center',
+          }}
+        >
+          <Alert
+            severity="error"
+            sx={{
+              mb: 3,
+              ...glassPresets.light,
+              border: `1px solid ${tokens.color.error[300]}30`,
+              borderRadius: tokens.spacing.radius.lg,
+            }}
+          >
+            <Typography variant="h6" gutterBottom>
+              Invalid Invitation
+            </Typography>
+            <Typography variant="body2">
+              {error}
+            </Typography>
+          </Alert>
+          <Button
+            variant="contained"
+            onClick={() => navigate('/login')}
+            sx={{
+              mt: 2,
+              background: `linear-gradient(135deg, ${tokens.color.primary[500]} 0%, ${tokens.color.primary[600]} 100%)`,
+              borderRadius: tokens.spacing.radius.full,
+              px: 4,
+              '&:hover': {
+                background: `linear-gradient(135deg, ${tokens.color.primary[600]} 0%, ${tokens.color.primary[700]} 100%)`,
+              },
+            }}
+          >
+            Go to Login
+          </Button>
+        </Box>
       </Box>
     );
   }
@@ -243,12 +275,21 @@ export const AcceptInvitation: React.FC = () => {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: 'grey.50',
+        background: `linear-gradient(135deg, ${tokens.color.neutral[50]} 0%, ${tokens.color.primary[50]}40 100%)`,
         px: 2,
       }}
     >
-      <Card sx={{ maxWidth: 500, width: '100%' }}>
-        <CardContent sx={{ p: 4 }}>
+      <Box
+        sx={{
+          maxWidth: 500,
+          width: '100%',
+          ...glassPresets.medium,
+          p: 4,
+          borderRadius: tokens.spacing.radius.xxl,
+          border: `1px solid ${tokens.color.borders.glass}`,
+          boxShadow: tokens.shadow.glass.elevated,
+        }}
+      >
           {/* Header */}
           <Box sx={{ textAlign: 'center', mb: 4 }}>
             <AdminPanelSettings 
@@ -389,8 +430,7 @@ export const AcceptInvitation: React.FC = () => {
               By creating an account, you agree to our terms of service and privacy policy.
             </Typography>
           </Box>
-        </CardContent>
-      </Card>
+      </Box>
     </Box>
   );
 };

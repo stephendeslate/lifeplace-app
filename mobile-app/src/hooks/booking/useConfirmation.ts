@@ -231,6 +231,15 @@ export function useInvalidateConfirmations() {
 export type CompletionStatus = 'pending' | 'processing' | 'completed' | 'failed';
 
 /**
+ * Date unavailability info for race condition handling
+ */
+export interface DateUnavailableInfo {
+  unavailable: boolean;
+  error: string | null;
+  blockedDate?: string;
+}
+
+/**
  * Unified hook for managing confirmation step and booking completion.
  * Handles both payment and quote completion types.
  *
@@ -250,6 +259,13 @@ export function useConfirmationManager(
   const [error, setError] = useState<string | null>(null);
   const [completionResult, setCompletionResult] = useState<BookingCompletionResult | null>(null);
   const [completionStatus, setCompletionStatus] = useState<CompletionStatus>('pending');
+
+  // Date availability state (race condition prevention)
+  const [dateUnavailable, setDateUnavailable] = useState<DateUnavailableInfo>({
+    unavailable: false,
+    error: null,
+  });
+  const [reservationToken, setReservationToken] = useState<string | null>(null);
 
   // Fetch booking details
   const {
@@ -300,11 +316,58 @@ export function useConfirmationManager(
       setCompletionStatus('processing');
       setError(null);
 
+      // Clear any previous date unavailable state
+      setDateUnavailable({ unavailable: false, error: null });
+
+      let currentReservationToken: string | undefined;
+
       try {
         // Use provided type or default to quote
         const completionType = providedCompletionType || 'quote';
 
-        const result = await BookingCoreAPI.completeBooking(sessionId, completionType);
+        // CRITICAL: For payment completions, validate date availability BEFORE charging
+        // This prevents charging customers for dates that are no longer available
+        if (completionType === 'payment') {
+          try {
+            const validation = await BookingCoreAPI.validateAvailability(sessionId);
+
+            if (!validation.available) {
+              // Date is no longer available - show error without charging
+              setDateUnavailable({
+                unavailable: true,
+                error: validation.error || 'The selected date is no longer available.',
+              });
+              setCompletionStatus('failed');
+              setCompleting(false);
+              // Don't show toast - let the UI handle with DateUnavailableModal
+              return false;
+            }
+
+            // Store reservation token for completion
+            currentReservationToken = validation.reservation_token;
+            setReservationToken(validation.reservation_token || null);
+          } catch (validationErr) {
+            // If validation fails, we should NOT proceed with payment
+            const validationError = validationErr as { response?: { data?: { detail?: string; error?: string } } };
+            const errorMessage =
+              validationError.response?.data?.error ||
+              validationError.response?.data?.detail ||
+              'Unable to verify date availability. Please try again.';
+
+            setError(errorMessage);
+            setCompletionStatus('failed');
+            showToast(errorMessage, 'error');
+            setCompleting(false);
+            return false;
+          }
+        }
+
+        // Complete the booking (with reservation token if payment type)
+        const result = await BookingCoreAPI.completeBooking(
+          sessionId,
+          completionType,
+          currentReservationToken
+        );
         setCompletionResult(result);
         setCompletionStatus('completed');
 
@@ -336,8 +399,34 @@ export function useConfirmationManager(
 
         return true;
       } catch (err) {
-        const errorObj = err as { response?: { data?: { detail?: string } } };
-        const errorMessage = errorObj.response?.data?.detail || 'Failed to complete booking';
+        // Release reservation if we have one and completion failed
+        if (currentReservationToken) {
+          try {
+            await BookingCoreAPI.releaseReservation(sessionId, currentReservationToken);
+          } catch {
+            // Silently fail - reservation will expire anyway
+          }
+          setReservationToken(null);
+        }
+
+        const errorObj = err as { response?: { data?: { detail?: string; error?: string } } };
+        const errorMessage =
+          errorObj.response?.data?.error ||
+          errorObj.response?.data?.detail ||
+          'Failed to complete booking';
+
+        // Check if error indicates date unavailability (backup catch)
+        if (
+          errorMessage.includes('no longer available') ||
+          errorMessage.includes('DATE_NO_LONGER_AVAILABLE') ||
+          errorMessage.includes('date has been booked')
+        ) {
+          setDateUnavailable({
+            unavailable: true,
+            error: errorMessage,
+          });
+        }
+
         setError(errorMessage);
         setCompletionStatus('failed');
         showToast(errorMessage, 'error');
@@ -408,11 +497,19 @@ export function useConfirmationManager(
     setError(null);
   }, []);
 
+  // Clear date unavailable state (for DateUnavailableModal dismiss)
+  const clearDateUnavailable = useCallback(() => {
+    setDateUnavailable({ unavailable: false, error: null });
+    setReservationToken(null);
+  }, []);
+
   // Reset completion state
   const resetCompletion = useCallback(() => {
     setCompletionResult(null);
     setCompletionStatus('pending');
     setError(null);
+    setDateUnavailable({ unavailable: false, error: null });
+    setReservationToken(null);
   }, []);
 
   return {
@@ -428,6 +525,7 @@ export function useConfirmationManager(
     completeBooking,
     getCompletionType,
     clearError,
+    clearDateUnavailable,
     resetCompletion,
     refetchDetails,
 
@@ -436,6 +534,10 @@ export function useConfirmationManager(
     completing,
     error,
     completionStatus,
+
+    // Date availability state (race condition prevention)
+    dateUnavailable,
+    reservationToken,
 
     // Status flags
     isCompleted,

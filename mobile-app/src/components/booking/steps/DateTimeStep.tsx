@@ -13,13 +13,15 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
-import { Calendar, Clock, Info, Check, Warning, CheckCircle } from 'phosphor-react-native';
+import { Calendar, Clock, Info, Check, Warning, CheckCircle, WifiHigh, WifiSlash } from 'phosphor-react-native';
 import { colors, spacing, typeScale, layout, shadows } from '@/theme';
 import { useBookingContext } from '@/contexts/BookingContext';
 import { formatDateForPicker, getTimezoneNotice } from '@/utils/timezone';
 import { format, addDays, isBefore, startOfDay, parseISO, differenceInDays } from 'date-fns';
 import { useEventAvailability } from '@/hooks/useEventAvailability';
+import { useAvailabilityWebSocket } from '@/hooks/useAvailabilityWebSocket';
 import { VenuesAPI } from '@/apis/booking';
 import type { StepComponentProps } from '../StepRenderer';
 import type { DateTimeStepData, DateTimeStepConfiguration, VenuePublic } from '@/types/booking';
@@ -76,6 +78,45 @@ export function DateTimeStep({
     eventTypeId,
     enabled: true,
   });
+
+  // WebSocket for real-time availability updates
+  const selectedDateString = selectedDate ? formatDateForPicker(selectedDate) : undefined;
+  const {
+    isConnected: wsConnected,
+    selectedDateBlocked,
+    blockedDate: wsBlockedDate,
+    clearBlockedDate,
+    isOnline,
+  } = useAvailabilityWebSocket({
+    enabled: true,
+    selectedDate: selectedDateString,
+    onDateBlocked: (blockedDate, eventId) => {
+      // If the currently selected date was blocked by another user, clear selection
+      if (selectedDateString && blockedDate === selectedDateString) {
+        console.log('[DateTimeStep] Selected date blocked via WebSocket:', blockedDate);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+        setDateBlockedAlert(true);
+        setSelectedDate(null);
+        setSelectedEndDate(null);
+        // Clear the data
+        onDataChange({
+          start_date: undefined,
+          end_date: undefined,
+          venue_id: venue?.id,
+        });
+      }
+    },
+  });
+
+  // State for date blocked alert
+  const [dateBlockedAlert, setDateBlockedAlert] = useState(false);
+
+  // Clear blocked alert when cleared via WebSocket hook
+  useEffect(() => {
+    if (!selectedDateBlocked) {
+      setDateBlockedAlert(false);
+    }
+  }, [selectedDateBlocked]);
 
   // Combine config blocked dates with API blocked dates
   const allBlockedDates = useMemo(() => {
@@ -281,6 +322,37 @@ export function DateTimeStep({
         <Info size={16} color={colors.tertiary.teal} />
         <Text style={styles.timezoneText}>{timezoneNotice}</Text>
       </View>
+
+      {/* Date Blocked Alert */}
+      {dateBlockedAlert && (
+        <TouchableOpacity
+          style={styles.dateBlockedAlert}
+          onPress={() => {
+            setDateBlockedAlert(false);
+            clearBlockedDate();
+          }}
+          activeOpacity={0.8}
+        >
+          <Warning size={20} color={colors.semantic.warning} weight="bold" />
+          <View style={styles.dateBlockedAlertContent}>
+            <Text style={styles.dateBlockedAlertTitle}>Date No Longer Available</Text>
+            <Text style={styles.dateBlockedAlertText}>
+              Another customer just booked this date. Please select a different date.
+            </Text>
+          </View>
+          <Text style={styles.dateBlockedAlertDismiss}>Tap to dismiss</Text>
+        </TouchableOpacity>
+      )}
+
+      {/* Connection Status Indicator */}
+      {!isOnline && (
+        <View style={styles.offlineNotice}>
+          <WifiSlash size={16} color={colors.semantic.error} />
+          <Text style={styles.offlineText}>
+            You're offline. Real-time updates unavailable.
+          </Text>
+        </View>
+      )}
 
       {/* Loading indicator for availability */}
       {availabilityLoading && (
@@ -746,6 +818,50 @@ const styles = StyleSheet.create({
   errorText: {
     ...typeScale.labelSmall,
     color: colors.semantic.error,
+  },
+  // Date Blocked Alert Styles
+  dateBlockedAlert: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.sm,
+    backgroundColor: colors.semantic.warning + '15',
+    borderWidth: 1,
+    borderColor: colors.semantic.warning + '40',
+    borderRadius: layout.borderRadius.md,
+    padding: spacing.md,
+    marginBottom: spacing.lg,
+  },
+  dateBlockedAlertContent: {
+    flex: 1,
+    gap: spacing.xxs,
+  },
+  dateBlockedAlertTitle: {
+    ...typeScale.labelMedium,
+    color: colors.semantic.warning,
+    fontWeight: '600',
+  },
+  dateBlockedAlertText: {
+    ...typeScale.bodySmall,
+    color: colors.neutral.darkGray,
+  },
+  dateBlockedAlertDismiss: {
+    ...typeScale.labelSmall,
+    color: colors.neutral.gray,
+  },
+  // Offline Notice Styles
+  offlineNotice: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    backgroundColor: colors.semantic.error + '10',
+    padding: spacing.sm,
+    borderRadius: layout.borderRadius.sm,
+    marginBottom: spacing.md,
+  },
+  offlineText: {
+    ...typeScale.labelSmall,
+    color: colors.semantic.error,
+    flex: 1,
   },
 });
 

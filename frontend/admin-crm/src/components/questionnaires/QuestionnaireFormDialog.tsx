@@ -54,7 +54,13 @@ const defaultFieldData: QuestionnaireFieldFormData = {
   required: false,
   order: 1,
   options: [],
+  description: '',
+  placeholder: '',
   is_guest_count: false,
+  show_conditions: {},
+  max_file_size_mb: 10,
+  allowed_file_types: [],
+  max_files: 1,
 };
 
 export const QuestionnaireFormDialog: React.FC<QuestionnaireFormDialogProps> = ({
@@ -91,7 +97,13 @@ export const QuestionnaireFormDialog: React.FC<QuestionnaireFormDialogProps> = (
             required: field.required,
             order: field.order || index + 1,
             options: field.options || [],
+            description: field.description || '',
+            placeholder: field.placeholder || '',
             is_guest_count: field.is_guest_count || false,
+            show_conditions: field.show_conditions || {},
+            max_file_size_mb: field.max_file_size_mb || 10,
+            allowed_file_types: field.allowed_file_types || [],
+            max_files: field.max_files || 1,
           })) || [],
         });
       } else {

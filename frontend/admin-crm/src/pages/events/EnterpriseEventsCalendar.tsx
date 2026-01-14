@@ -4,8 +4,6 @@ import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import {
   Box,
   Button,
-  Card,
-  CardContent,
   Chip,
   Dialog,
   DialogContent,
@@ -20,7 +18,6 @@ import {
   Stack,
   TextField,
   Typography,
-  CircularProgress,
   Divider,
   Tooltip,
   useTheme,
@@ -73,6 +70,10 @@ import { useNavigate } from 'react-router-dom';
 
 import { useLayout } from '../../contexts/LayoutContext';
 import { useEvents, useEventTypes } from '../../hooks/useEvents';
+import { ModernPageLayout } from '../../components/common/ModernPageLayout';
+import { ModernCard } from '../../components/common/ModernCard';
+import { ModernPageHeader, type HeaderAction } from '../../components/common/ModernPageHeader';
+import ModernLoadingStates from '../../components/common/ModernLoadingStates';
 import { useCalendarAvailability, useAvailabilityCache } from '../../hooks/useAvailability';
 import { EventForm } from '../../components/events/EventForm';
 import { AvailabilityIndicator, AvailabilityBadge } from '../../components/availability/AvailabilityIndicator';
@@ -505,7 +506,7 @@ export const EnterpriseEventsCalendar: React.FC = () => {
     }
 
     return (
-      <Card elevation={2}>
+      <ModernCard variant="glass" size="large">
         <Box sx={{ p: 2 }}>
           {/* Calendar Header */}
           <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 1, mb: 2 }}>
@@ -640,14 +641,14 @@ export const EnterpriseEventsCalendar: React.FC = () => {
             </Box>
           ))}
         </Box>
-      </Card>
+      </ModernCard>
     );
   };
 
   // Enhanced week view renderer
   const renderEnhancedWeekView = () => {
     return (
-      <Card elevation={2}>
+      <ModernCard variant="glass" size="large">
         <Box sx={{ p: 2 }}>
           {/* Week Header */}
           <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 1, mb: 2 }}>
@@ -769,66 +770,69 @@ export const EnterpriseEventsCalendar: React.FC = () => {
             })}
           </Box>
         </Box>
-      </Card>
+      </ModernCard>
     );
   };
+
+  // Build header actions
+  const primaryAction: HeaderAction = {
+    icon: <AddIcon />,
+    label: 'Add Event',
+    onClick: () => setCreateDialogOpen(true),
+    variant: 'contained',
+  };
+
+  const secondaryActions: HeaderAction[] = [
+    {
+      icon: <RefreshIcon />,
+      label: isLoadingAvailability ? 'Refreshing...' : 'Refresh',
+      onClick: handleRefresh,
+      variant: 'outlined',
+      disabled: isLoadingAvailability,
+    },
+    {
+      icon: <ExportIcon />,
+      label: 'Export',
+      onClick: handleExport,
+      variant: 'outlined',
+    },
+  ];
 
   // Loading state
   if (isLoadingEvents && !events.length) {
     return (
-      <Box display="flex" justifyContent="center" p={4}>
-        <CircularProgress />
-      </Box>
+      <ModernPageLayout backgroundPattern="default">
+        <ModernLoadingStates.ModernLoadingSpinner
+          size={40}
+          message="Loading calendar..."
+          variant="circular"
+          glass
+        />
+      </ModernPageLayout>
     );
   }
 
   return (
-    <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
-      {/* Header */}
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3} flexWrap="wrap" gap={2}>
-        <Box>
-          <Typography variant="h4" fontWeight="bold">
-            Calendar
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            {view === 'month' 
-              ? format(currentDate, 'MMMM yyyy')
-              : `Week of ${format(startOfWeekDate(currentDate), 'MMM d')} - ${format(endOfWeekDate(currentDate), 'MMM d, yyyy')}`
-            }
-          </Typography>
-        </Box>
-        
-        <Stack direction="row" spacing={2} flexWrap="wrap">
-          <Button
-            variant="outlined"
-            startIcon={<RefreshIcon />}
-            onClick={handleRefresh}
-            disabled={isLoadingAvailability}
-          >
-            {isLoadingAvailability ? 'Refreshing...' : 'Refresh'}
-          </Button>
-          <Button
-            variant="outlined"
-            startIcon={<ExportIcon />}
-            onClick={handleExport}
-          >
-            Export
-          </Button>
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={() => setCreateDialogOpen(true)}
-          >
-            Add Event
-          </Button>
-        </Stack>
-      </Box>
+    <ModernPageLayout backgroundPattern="default">
+      {/* Modern Header */}
+      <ModernPageHeader
+        title="Calendar"
+        subtitle={view === 'month'
+          ? format(currentDate, 'MMMM yyyy')
+          : `Week of ${format(startOfWeekDate(currentDate), 'MMM d')} - ${format(endOfWeekDate(currentDate), 'MMM d, yyyy')}`
+        }
+        icon={<EventIcon />}
+        primaryAction={primaryAction}
+        secondaryActions={secondaryActions}
+        size="medium"
+        gradient
+        glass
+      />
 
       {/* Availability Stats */}
       {settings.showAvailabilityStats && availabilityStats && (
         <Fade in={!!availabilityStats}>
-          <Card sx={{ mb: 3 }}>
-            <CardContent>
+          <ModernCard variant="glass" size="medium" sx={{ mb: 3 }}>
               <Stack direction={{ xs: 'column', sm: 'row' }} spacing={3} alignItems="center">
                 <Box>
                   <Typography variant="h6" color="primary">
@@ -878,7 +882,7 @@ export const EnterpriseEventsCalendar: React.FC = () => {
                     </Stack>
                   )}
                 </Stack>
-                
+
                 <Button
                   variant="outlined"
                   size="small"
@@ -888,8 +892,7 @@ export const EnterpriseEventsCalendar: React.FC = () => {
                   Settings
                 </Button>
               </Stack>
-            </CardContent>
-          </Card>
+          </ModernCard>
         </Fade>
       )}
 
@@ -904,8 +907,7 @@ export const EnterpriseEventsCalendar: React.FC = () => {
       )}
 
       {/* Calendar Controls */}
-      <Card sx={{ mb: 3 }}>
-        <CardContent>
+      <ModernCard variant="glass" size="medium" sx={{ mb: 3 }}>
           <Stack 
             direction={{ xs: 'column', sm: 'row' }} 
             spacing={2} 
@@ -1052,15 +1054,13 @@ export const EnterpriseEventsCalendar: React.FC = () => {
               </Stack>
             </>
           )}
-        </CardContent>
-      </Card>
+      </ModernCard>
 
       {/* Calendar View */}
       {view === 'month' ? renderEnhancedMonthView() : renderEnhancedWeekView()}
 
       {/* Legend */}
-      <Card sx={{ mt: 3 }}>
-        <CardContent>
+      <ModernCard variant="glass" size="medium" sx={{ mt: 3 }}>
           <Stack direction={{ xs: 'column', md: 'row' }} spacing={3}>
             <Box>
               <Typography variant="subtitle2" gutterBottom>
@@ -1101,8 +1101,7 @@ export const EnterpriseEventsCalendar: React.FC = () => {
               </Box>
             )}
           </Stack>
-        </CardContent>
-      </Card>
+      </ModernCard>
 
       {/* Action Menu */}
       <Menu
@@ -1245,7 +1244,7 @@ export const EnterpriseEventsCalendar: React.FC = () => {
           </Stack>
         </DialogContent>
       </Dialog>
-    </Box>
+    </ModernPageLayout>
   );
 };
 

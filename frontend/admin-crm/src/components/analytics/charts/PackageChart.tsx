@@ -11,6 +11,7 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import type { PackagePerformance } from '../../../types/analytics.types';
+import { tokens } from '../../../design-system';
 
 interface PackageChartProps {
   data: PackagePerformance[];
@@ -48,7 +49,7 @@ export const PackageChart: React.FC<PackageChartProps> = ({
       <Box sx={{ width: '100%', height }}>
         <ResponsiveContainer>
           <BarChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 60 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
+            <CartesianGrid strokeDasharray="3 3" stroke={tokens.color.charts.grid} />
             <XAxis
               dataKey="shortName"
               tick={{ fontSize: 11 }}
@@ -75,7 +76,7 @@ export const PackageChart: React.FC<PackageChartProps> = ({
                 return item?.name || label;
               }}
             />
-            <Bar dataKey="booking_count" name="Bookings" fill="#2196f3" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="booking_count" name="Bookings" fill={tokens.color.charts.series[0]} radius={[4, 4, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </Box>

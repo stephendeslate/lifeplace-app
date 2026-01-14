@@ -164,6 +164,7 @@ export {
   useConfirmationManager,
   confirmationKeys,
   type CompletionStatus,
+  type DateUnavailableInfo,
 } from './useConfirmation';
 
 // Pricing

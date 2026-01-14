@@ -89,6 +89,12 @@ app.conf.update(
             'schedule': 15 * 60,  # Every 15 minutes (was 5 min - saves 192 task executions/day)
             'options': {'queue': 'analytics'}
         },
+        # Date reservation cleanup (race condition prevention)
+        'cleanup-expired-reservations': {
+            'task': 'core.domains.events.tasks.cleanup_expired_reservations',
+            'schedule': 60,  # Every minute
+            'options': {'queue': 'events'}
+        },
         # Event deadline tasks
         'daily-deadline-sweep': {
             'task': 'core.domains.events.tasks.daily_deadline_sweep',

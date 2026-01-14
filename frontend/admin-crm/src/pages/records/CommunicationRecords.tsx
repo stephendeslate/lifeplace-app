@@ -4,15 +4,12 @@ import React, { useEffect, useState } from 'react';
 import {
   Box,
   Typography,
-  Card,
-  CardContent,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
   TableRow,
-  Paper,
   Chip,
   IconButton,
   TextField,
@@ -25,7 +22,6 @@ import {
   Tooltip,
   Button,
   Stack,
-  CircularProgress,
   Divider,
 } from '@mui/material';
 import {
@@ -42,6 +38,10 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { useLayout } from '../../contexts/LayoutContext';
 import { useCommunications } from '../../hooks/useCommunications';
+import { ModernPageLayout } from '../../components/common/ModernPageLayout';
+import { ModernCard } from '../../components/common/ModernCard';
+import { ModernPageHeader } from '../../components/common/ModernPageHeader';
+import ModernLoadingStates from '../../components/common/ModernLoadingStates';
 import type { CommunicationFilters } from '../../types/communications.types';
 
 export const CommunicationRecords: React.FC = () => {
@@ -129,12 +129,12 @@ export const CommunicationRecords: React.FC = () => {
 
   // Empty state when no records exist at all
   const renderNoRecordsState = () => (
-    <Paper 
-      elevation={0} 
-      sx={{ 
-        p: 6, 
+    <ModernCard
+      variant="glass"
+      size="large"
+      sx={{
+        p: 6,
         textAlign: 'center',
-        bgcolor: 'grey.50',
         border: '2px dashed',
         borderColor: 'grey.300'
       }}
@@ -189,12 +189,12 @@ export const CommunicationRecords: React.FC = () => {
       <Typography variant="body2" color="text.secondary">
         💡 <strong>Tip:</strong> Admin invitations and other system emails will automatically appear here once sent
       </Typography>
-    </Paper>
+    </ModernCard>
   );
 
   // Empty state when filters return no results
   const renderNoResultsState = () => (
-    <Paper elevation={0} sx={{ p: 4, textAlign: 'center', bgcolor: 'grey.50' }}>
+    <ModernCard variant="glass" size="medium" sx={{ p: 4, textAlign: 'center' }}>
       <SearchOffIcon sx={{ fontSize: 48, color: 'grey.400', mb: 2 }} />
       <Typography variant="h6" fontWeight="bold" gutterBottom>
         No Records Match Your Filters
@@ -205,33 +205,38 @@ export const CommunicationRecords: React.FC = () => {
       <Button variant="outlined" onClick={handleClearFilters}>
         Clear All Filters
       </Button>
-    </Paper>
+    </ModernCard>
   );
 
   if (isLoading) {
     return (
-      <Box display="flex" justifyContent="center" p={4}>
-        <CircularProgress />
-      </Box>
+      <ModernPageLayout backgroundPattern="default">
+        <ModernLoadingStates.ModernLoadingSpinner
+          size={40}
+          message="Loading records..."
+          variant="circular"
+          glass
+        />
+      </ModernPageLayout>
     );
   }
 
   // Show appropriate empty state
   if (!records || records.length === 0) {
     return (
-      <Box>
-        {/* Header */}
-        <Box sx={{ mb: 4 }}>
-          <Typography variant="h4" component="h1" fontWeight="bold" gutterBottom>
-            Communication Records
-          </Typography>
-          <Typography variant="subtitle1" color="text.secondary">
-            View and manage all communication history and analytics
-          </Typography>
-        </Box>
+      <ModernPageLayout backgroundPattern="default">
+        {/* Modern Header */}
+        <ModernPageHeader
+          title="Communication Records"
+          subtitle="View and manage all communication history and analytics"
+          icon={<HistoryIcon />}
+          size="medium"
+          gradient
+          glass
+        />
 
         {hasActiveFilters ? renderNoResultsState() : renderNoRecordsState()}
-      </Box>
+      </ModernPageLayout>
     );
   }
 
@@ -242,54 +247,47 @@ export const CommunicationRecords: React.FC = () => {
   );
 
   return (
-    <Box>
-      {/* Header */}
-      <Box sx={{ mb: 4 }}>
-        <Typography variant="h4" component="h1" fontWeight="bold" gutterBottom>
-          Communication Records
-        </Typography>
-        <Typography variant="subtitle1" color="text.secondary">
-          View and manage all communication history and analytics
-        </Typography>
-      </Box>
+    <ModernPageLayout backgroundPattern="default">
+      {/* Modern Header */}
+      <ModernPageHeader
+        title="Communication Records"
+        subtitle="View and manage all communication history and analytics"
+        icon={<HistoryIcon />}
+        size="medium"
+        gradient
+        glass
+      />
 
       {/* Statistics Cards */}
       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mb: 4 }}>
-        <Card sx={{ minWidth: 200, flex: 1 }}>
-          <CardContent>
-            <Typography color="text.secondary" gutterBottom variant="body2">
-              Total Communications
-            </Typography>
-            <Typography variant="h4" component="div" color="primary">
-              {totalCommunications}
-            </Typography>
-          </CardContent>
-        </Card>
-        <Card sx={{ minWidth: 200, flex: 1 }}>
-          <CardContent>
-            <Typography color="text.secondary" gutterBottom variant="body2">
-              Delivered Today
-            </Typography>
-            <Typography variant="h4" component="div" color="success.main">
-              {deliveredToday}
-            </Typography>
-          </CardContent>
-        </Card>
-        <Card sx={{ minWidth: 200, flex: 1 }}>
-          <CardContent>
-            <Typography color="text.secondary" gutterBottom variant="body2">
-              Email Open Rate
-            </Typography>
-            <Typography variant="h4" component="div" color="info.main">
-              {readRate}%
-            </Typography>
-          </CardContent>
-        </Card>
+        <ModernCard variant="glass" size="small" sx={{ minWidth: 200, flex: 1 }}>
+          <Typography color="text.secondary" gutterBottom variant="body2">
+            Total Communications
+          </Typography>
+          <Typography variant="h4" component="div" color="primary">
+            {totalCommunications}
+          </Typography>
+        </ModernCard>
+        <ModernCard variant="glass" size="small" sx={{ minWidth: 200, flex: 1 }}>
+          <Typography color="text.secondary" gutterBottom variant="body2">
+            Delivered Today
+          </Typography>
+          <Typography variant="h4" component="div" color="success.main">
+            {deliveredToday}
+          </Typography>
+        </ModernCard>
+        <ModernCard variant="glass" size="small" sx={{ minWidth: 200, flex: 1 }}>
+          <Typography color="text.secondary" gutterBottom variant="body2">
+            Email Open Rate
+          </Typography>
+          <Typography variant="h4" component="div" color="info.main">
+            {readRate}%
+          </Typography>
+        </ModernCard>
       </Box>
 
       {/* Filters */}
-      <Card sx={{ mb: 3 }}>
-        <CardContent>
+      <ModernCard variant="glass" size="medium" sx={{ mb: 3 }}>
           <Stack
             direction={{ xs: 'column', md: 'row' }}
             spacing={2}
@@ -356,12 +354,11 @@ export const CommunicationRecords: React.FC = () => {
               Export
             </Button>
           </Stack>
-        </CardContent>
-      </Card>
+      </ModernCard>
 
       {/* Records Table */}
-      <Card>
-        <TableContainer component={Paper}>
+      <ModernCard variant="glass" size="large">
+        <TableContainer>
           <Table>
             <TableHead>
               <TableRow>
@@ -468,7 +465,7 @@ export const CommunicationRecords: React.FC = () => {
           onPageChange={handleChangePage}
           onRowsPerPageChange={handleChangeRowsPerPage}
         />
-      </Card>
-    </Box>
+      </ModernCard>
+    </ModernPageLayout>
   );
 };

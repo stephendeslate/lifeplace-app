@@ -14,14 +14,25 @@ class UserProfileSerializer(serializers.ModelSerializer):
 
 class UserSerializer(serializers.ModelSerializer):
     profile = UserProfileSerializer(required=False)
-    
+    admin_permissions = serializers.SerializerMethodField()
+    is_full_admin = serializers.SerializerMethodField()
+
     class Meta:
         model = User
-        fields = ['id', 'email', 'first_name', 'last_name', 'is_active', 'role', 'profile', 'date_joined']
-        read_only_fields = ['id', 'is_active', 'date_joined']
+        fields = ['id', 'email', 'first_name', 'last_name', 'is_active', 'role',
+                  'profile', 'date_joined', 'admin_permissions', 'is_full_admin']
+        read_only_fields = ['id', 'is_active', 'date_joined', 'admin_permissions', 'is_full_admin']
         extra_kwargs = {
             'password': {'write_only': True}
         }
+
+    def get_admin_permissions(self, obj):
+        """Return all admin permissions with current values."""
+        return obj.get_all_permissions_dict()
+
+    def get_is_full_admin(self, obj):
+        """Return whether user is a full admin."""
+        return obj.is_full_admin()
 
     def create(self, validated_data):
         profile_data = validated_data.pop('profile', None)
@@ -95,15 +106,29 @@ class UserCreateSerializer(UserSerializer):
         return super().create(validated_data)
 
 
+class AdminPermissionsSerializer(serializers.Serializer):
+    """Serializer for admin permissions - used for creating/updating permissions."""
+    can_manage_company_settings = serializers.BooleanField(required=False, default=False)
+    can_manage_admins = serializers.BooleanField(required=False, default=False)
+    can_manage_financial_settings = serializers.BooleanField(required=False, default=False)
+    can_manage_payment_gateways = serializers.BooleanField(required=False, default=False)
+    can_manage_workflows = serializers.BooleanField(required=False, default=False)
+    can_manage_booking_flows = serializers.BooleanField(required=False, default=False)
+    can_manage_templates = serializers.BooleanField(required=False, default=False)
+    can_export_data = serializers.BooleanField(required=False, default=False)
+    can_delete_records = serializers.BooleanField(required=False, default=False)
+
+
 class AdminInvitationSerializer(serializers.ModelSerializer):
     invited_by = serializers.StringRelatedField(read_only=True)
-    
+    permissions = serializers.JSONField(required=False, default=dict)
+
     class Meta:
         model = AdminInvitation
-        fields = ['id', 'email', 'first_name', 'last_name', 'invited_by', 
-                  'is_accepted', 'expires_at', 'created_at']
+        fields = ['id', 'email', 'first_name', 'last_name', 'invited_by',
+                  'is_accepted', 'expires_at', 'created_at', 'permissions']
         read_only_fields = ['id', 'invited_by', 'is_accepted', 'expires_at', 'created_at']
-        
+
     def validate_email(self, value):
         """
         Validate email for admin invitation

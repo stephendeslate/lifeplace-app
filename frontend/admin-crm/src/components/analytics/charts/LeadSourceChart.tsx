@@ -10,6 +10,7 @@ import {
   Tooltip,
 } from 'recharts';
 import type { LeadSource } from '../../../types/analytics.types';
+import { tokens } from '../../../design-system';
 
 interface LeadSourceChartProps {
   data: LeadSource[];
@@ -17,8 +18,6 @@ interface LeadSourceChartProps {
   title?: string;
   height?: number;
 }
-
-const COLORS = ['#2196f3', '#4caf50', '#ff9800', '#9c27b0', '#f44336', '#00bcd4'];
 
 export const LeadSourceChart: React.FC<LeadSourceChartProps> = ({
   data,
@@ -56,12 +55,12 @@ export const LeadSourceChart: React.FC<LeadSourceChartProps> = ({
               cy="50%"
               labelLine={false}
               outerRadius={80}
-              fill="#8884d8"
+              fill={tokens.color.charts.series[0]}
               dataKey="value"
               label={({ name, percent }) => `${name} (${((percent ?? 0) * 100).toFixed(0)}%)`}
             >
               {chartData.map((_, index) => (
-                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                <Cell key={`cell-${index}`} fill={tokens.color.charts.series[index % tokens.color.charts.series.length]} />
               ))}
             </Pie>
             <Tooltip

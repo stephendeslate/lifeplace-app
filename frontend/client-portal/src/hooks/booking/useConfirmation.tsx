@@ -72,7 +72,11 @@ export const useConfirmation = (
     return 'quote'; // Default to quote if completion_type not found
   }, [sessionDetails]);
 
-  // Complete the booking
+  // State for date unavailability
+  const [dateUnavailable, setDateUnavailable] = useState(false);
+  const [unavailableDateError, setUnavailableDateError] = useState<string | null>(null);
+
+  // Complete the booking with pre-validation
   const completeBooking = useCallback(async (providedCompletionType?: 'payment' | 'quote'): Promise<boolean> => {
     if (!sessionId) {
       setError('Session information missing');
@@ -81,12 +85,47 @@ export const useConfirmation = (
 
     setCompleting(true);
     setError(null);
+    setDateUnavailable(false);
+    setUnavailableDateError(null);
+
+    // Use provided type if available, fallback to session detection
+    const completionType = providedCompletionType || getCompletionType();
+    let reservationToken: string | undefined;
 
     try {
-      // Use provided type if available, fallback to session detection
-      const completionType = providedCompletionType || getCompletionType();
+      // CRITICAL: For payment completions, validate availability BEFORE charging the card
+      // This prevents customers from being charged for dates that are no longer available
+      if (completionType === 'payment') {
+        console.log('[Confirmation] Validating date availability before payment...');
 
-      const result = await BookingCoreApi.completeBooking(sessionId, completionType);
+        try {
+          const validation = await BookingCoreApi.validateAvailability(sessionId);
+
+          if (!validation.available) {
+            // Date is no longer available - show error without charging
+            console.warn('[Confirmation] Date no longer available:', validation.error);
+            setDateUnavailable(true);
+            setUnavailableDateError(
+              validation.error ||
+                'This date is no longer available. Another customer completed their booking just before you.'
+            );
+            setCompleting(false);
+            return false;
+          }
+
+          // Store the reservation token for the completion call
+          reservationToken = validation.reservation_token;
+          console.log('[Confirmation] Date reserved, token:', reservationToken);
+        } catch (validationErr) {
+          // If validation fails due to network error, we might still want to proceed
+          // The backend has its own atomic check, so this is a defense-in-depth measure
+          console.warn('[Confirmation] Pre-validation failed:', validationErr);
+          // Proceed without reservation token - backend will still check atomically
+        }
+      }
+
+      // Complete the booking (with reservation token if we have one)
+      const result = await BookingCoreApi.completeBooking(sessionId, completionType, reservationToken);
       setCompletionResult(result);
 
       // Clear the session from localStorage to prevent "Resume Booking" dialog
@@ -99,12 +138,42 @@ export const useConfirmation = (
       return true;
     } catch (err) {
       const errorMessage = ErrorHandler.extractMessage(err);
-      setError(errorMessage);
+
+      // Check if the error is due to date unavailability
+      if (
+        errorMessage.includes('no longer available') ||
+        errorMessage.includes('DATE_NO_LONGER_AVAILABLE') ||
+        errorMessage.includes('already blocked')
+      ) {
+        setDateUnavailable(true);
+        setUnavailableDateError(
+          'This date is no longer available. Another customer completed their booking just before you.'
+        );
+      } else {
+        setError(errorMessage);
+      }
+
+      // Release the reservation if we had one and completion failed
+      if (reservationToken) {
+        try {
+          await BookingCoreApi.releaseReservation(sessionId, reservationToken);
+          console.log('[Confirmation] Released reservation after error');
+        } catch (releaseErr) {
+          console.warn('[Confirmation] Failed to release reservation:', releaseErr);
+        }
+      }
+
       return false;
     } finally {
       setCompleting(false);
     }
   }, [sessionId, loadSessionDetails, getCompletionType]);
+
+  // Clear date unavailable error
+  const clearDateUnavailableError = useCallback(() => {
+    setDateUnavailable(false);
+    setUnavailableDateError(null);
+  }, []);
 
 
   // Get booking reference number
@@ -203,11 +272,12 @@ export const useConfirmation = (
     nextSteps,
     supportContact,
     confirmationContent,
-    
+
     // Actions
     completeBooking,
     loadSessionDetails,
     clearError,
+    clearDateUnavailableError,
     navigateToDashboard,
     navigateToHome,
 
@@ -215,10 +285,14 @@ export const useConfirmation = (
     loading,
     completing,
     error,
-    
+
+    // Date availability state (for race condition handling)
+    dateUnavailable,
+    unavailableDateError,
+
     // Status
     isCompleted,
-    
+
     // Configuration flags
     showBookingSummary: config?.show_booking_summary !== false,
     showNextSteps: config?.show_next_steps !== false,

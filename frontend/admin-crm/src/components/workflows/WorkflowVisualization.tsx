@@ -28,6 +28,7 @@ import {
   EventNote as EventIcon,
 } from '@mui/icons-material';
 import type { WorkflowVisualizationProps } from '../../types/workflows.types';
+import { tokens } from '../../design-system';
 
 export const WorkflowVisualization: React.FC<WorkflowVisualizationProps> = ({
   template,
@@ -47,12 +48,12 @@ export const WorkflowVisualization: React.FC<WorkflowVisualizationProps> = ({
 
   const getStageColor = (stage: string) => {
     const colors = {
-      LEAD: '#1976d2',
-      PRODUCTION: '#ed6c02',
-      POST_PRODUCTION: '#2e7d32',
+      LEAD: tokens.color.primary[600],
+      PRODUCTION: tokens.color.warning[600],
+      POST_PRODUCTION: tokens.color.success[700],
     };
 
-    return colors[stage as keyof typeof colors] || '#757575';
+    return colors[stage as keyof typeof colors] || tokens.color.neutral[500];
   };
 
   const getTriggerTimeDisplay = (triggerTime: string) => {

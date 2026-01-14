@@ -75,6 +75,8 @@ type BookingAction =
   | { type: 'SHOW_RECOVERY_PROMPT'; payload: boolean }
   | { type: 'SET_COMPLETION_RESULT'; payload: BookingCompletionResult | null }
   | { type: 'SET_UI_STATE'; payload: Partial<BookingUIState> }
+  | { type: 'SET_DATE_UNAVAILABLE'; payload: { unavailable: boolean; error: string | null } }
+  | { type: 'SET_RESERVATION_TOKEN'; payload: string | null }
   | { type: 'RESET' };
 
 // =============================================================================
@@ -219,6 +221,19 @@ function bookingReducer(state: BookingState, action: BookingAction): BookingStat
       return {
         ...state,
         ui: { ...state.ui, ...action.payload },
+      };
+
+    case 'SET_DATE_UNAVAILABLE':
+      return {
+        ...state,
+        dateUnavailable: action.payload.unavailable,
+        dateUnavailableError: action.payload.error,
+      };
+
+    case 'SET_RESERVATION_TOKEN':
+      return {
+        ...state,
+        reservationToken: action.payload,
       };
 
     case 'RESET':
@@ -616,17 +631,124 @@ export function BookingProvider({ children }: BookingProviderProps) {
   }, [nextStep]);
 
   // ===========================================================================
+  // DATE AVAILABILITY (Race Condition Prevention)
+  // ===========================================================================
+
+  /**
+   * Validate date availability and create a temporary reservation.
+   * Should be called BEFORE payment processing to prevent charging
+   * customers for unavailable dates.
+   */
+  const validateDateAvailability = useCallback(
+    async (): Promise<{ available: boolean; reservationToken?: string; error?: string }> => {
+      if (!state.sessionId) {
+        return { available: false, error: 'No active session' };
+      }
+
+      try {
+        console.log('[BookingContext] Validating date availability...');
+        const result = await BookingCoreAPI.validateAvailability(state.sessionId);
+
+        if (result.available && result.reservation_token) {
+          dispatch({ type: 'SET_RESERVATION_TOKEN', payload: result.reservation_token });
+          console.log('[BookingContext] Date reserved, token:', result.reservation_token);
+        } else {
+          dispatch({
+            type: 'SET_DATE_UNAVAILABLE',
+            payload: {
+              unavailable: true,
+              error: result.error || 'This date is no longer available.',
+            },
+          });
+          console.warn('[BookingContext] Date no longer available:', result.error);
+        }
+
+        return {
+          available: result.available,
+          reservationToken: result.reservation_token,
+          error: result.error,
+        };
+      } catch (error) {
+        console.warn('[BookingContext] Pre-validation failed:', error);
+        // Return available=true to allow proceeding - backend has its own atomic check
+        return { available: true, error: 'Validation failed, proceeding with backend check' };
+      }
+    },
+    [state.sessionId]
+  );
+
+  /**
+   * Clear date unavailable error state.
+   */
+  const clearDateUnavailableError = useCallback(() => {
+    dispatch({ type: 'SET_DATE_UNAVAILABLE', payload: { unavailable: false, error: null } });
+    dispatch({ type: 'SET_RESERVATION_TOKEN', payload: null });
+  }, []);
+
+  // ===========================================================================
   // COMPLETION
   // ===========================================================================
 
+  /**
+   * Complete the booking with pre-validation for payment completions.
+   *
+   * For payment completions, validates date availability BEFORE charging
+   * the customer's card to prevent charging for unavailable dates.
+   */
   const completeBooking = useCallback(
     async (completionType: 'payment' | 'quote' = 'payment'): Promise<BookingCompletionResult> => {
       if (!state.sessionId) throw new Error('No active session');
       if (!verifySessionNotExpired()) throw new Error('Session expired');
 
       dispatch({ type: 'SET_UI_STATE', payload: { isSubmitting: true } });
+      dispatch({ type: 'SET_DATE_UNAVAILABLE', payload: { unavailable: false, error: null } });
+
+      let reservationToken: string | undefined;
+
       try {
-        const result = await BookingCoreAPI.completeBooking(state.sessionId, completionType);
+        // CRITICAL: For payment completions, validate availability BEFORE charging
+        // This prevents customers from being charged for unavailable dates
+        if (completionType === 'payment') {
+          console.log('[BookingContext] Validating date availability before payment...');
+
+          try {
+            const validation = await BookingCoreAPI.validateAvailability(state.sessionId);
+
+            if (!validation.available) {
+              // Date is no longer available - show error without charging
+              console.warn('[BookingContext] Date no longer available:', validation.error);
+              dispatch({
+                type: 'SET_DATE_UNAVAILABLE',
+                payload: {
+                  unavailable: true,
+                  error:
+                    validation.error ||
+                    'This date is no longer available. Another customer completed their booking just before you.',
+                },
+              });
+              throw new Error('DATE_NO_LONGER_AVAILABLE');
+            }
+
+            // Store the reservation token for the completion call
+            reservationToken = validation.reservation_token;
+            dispatch({ type: 'SET_RESERVATION_TOKEN', payload: reservationToken || null });
+            console.log('[BookingContext] Date reserved, token:', reservationToken);
+          } catch (validationErr) {
+            // If it's our DATE_NO_LONGER_AVAILABLE error, rethrow
+            if (validationErr instanceof Error && validationErr.message === 'DATE_NO_LONGER_AVAILABLE') {
+              throw validationErr;
+            }
+            // For other errors, log but proceed - backend has atomic check
+            console.warn('[BookingContext] Pre-validation failed:', validationErr);
+          }
+        }
+
+        // Complete the booking (with reservation token if we have one)
+        const result = await BookingCoreAPI.completeBooking(
+          state.sessionId,
+          completionType,
+          reservationToken
+        );
 
         dispatch({ type: 'SET_COMPLETION_RESULT', payload: result });
 
@@ -638,7 +760,34 @@ export function BookingProvider({ children }: BookingProviderProps) {
         return result;
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Failed to complete booking';
-        dispatch({ type: 'SET_ERROR', payload: message });
+
+        // Check if the error is due to date unavailability
+        if (
+          message === 'DATE_NO_LONGER_AVAILABLE' ||
+          message.includes('no longer available') ||
+          message.includes('already blocked')
+        ) {
+          dispatch({
+            type: 'SET_DATE_UNAVAILABLE',
+            payload: {
+              unavailable: true,
+              error: 'This date is no longer available. Another customer completed their booking just before you.',
+            },
+          });
+        } else {
+          dispatch({ type: 'SET_ERROR', payload: message });
+        }
+
+        // Release the reservation if we had one and completion failed
+        if (reservationToken && state.sessionId) {
+          try {
+            await BookingCoreAPI.releaseReservation(state.sessionId, reservationToken);
+            console.log('[BookingContext] Released reservation after error');
+          } catch (releaseErr) {
+            console.warn('[BookingContext] Failed to release reservation:', releaseErr);
+          }
+        }
+
         throw error;
       } finally {
         dispatch({ type: 'SET_UI_STATE', payload: { isSubmitting: false } });
@@ -859,6 +1008,10 @@ export function BookingProvider({ children }: BookingProviderProps) {
       discardRecoverableSession,
       clearRecoverableSession,
 
+      // Date Availability (Race Condition Prevention)
+      validateDateAvailability,
+      clearDateUnavailableError,
+
       // Utilities
       resetBooking,
       clearErrors,
@@ -897,6 +1050,8 @@ export function BookingProvider({ children }: BookingProviderProps) {
       recoverSession,
       discardRecoverableSession,
       clearRecoverableSession,
+      validateDateAvailability,
+      clearDateUnavailableError,
       resetBooking,
       clearErrors,
       setError,

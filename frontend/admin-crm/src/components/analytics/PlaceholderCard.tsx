@@ -1,8 +1,9 @@
 // frontend/admin-crm/src/components/analytics/PlaceholderCard.tsx
 import React from 'react';
-import { Box, Paper, Typography, alpha } from '@mui/material';
+import { Box, Paper, Typography } from '@mui/material';
 import BuildIcon from '@mui/icons-material/Build';
 import type { PlaceholderResponse } from '../../types/analytics.types';
+import { tokens, createGlassColor } from '../../design-system';
 
 interface PlaceholderCardProps {
   title: string;
@@ -24,19 +25,19 @@ export const PlaceholderCard: React.FC<PlaceholderCardProps> = ({
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: (theme) => alpha(theme.palette.warning.main, 0.05),
-        border: (theme) => `1px dashed ${alpha(theme.palette.warning.main, 0.3)}`,
+        backgroundColor: createGlassColor(tokens.color.warning[500], 0.05),
+        border: `1px dashed ${createGlassColor(tokens.color.warning[500], 0.3)}`,
       }}
     >
       <Box
         sx={{
           p: 2,
-          borderRadius: '50%',
-          backgroundColor: (theme) => alpha(theme.palette.warning.main, 0.1),
+          borderRadius: tokens.spacing.radius.full,
+          backgroundColor: createGlassColor(tokens.color.warning[500], 0.1),
           mb: 2,
         }}
       >
-        <BuildIcon sx={{ fontSize: 32, color: 'warning.main' }} />
+        <BuildIcon sx={{ fontSize: 32, color: tokens.color.warning[500] }} />
       </Box>
 
       <Typography variant="h6" color="text.primary" gutterBottom>

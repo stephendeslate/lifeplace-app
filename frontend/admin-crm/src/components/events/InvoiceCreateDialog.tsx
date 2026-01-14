@@ -17,7 +17,7 @@ import {
   Stack,
   CircularProgress,
 } from '@mui/material';
-import type { SelectChangeEvent } from '@mui/material';
+import type { SelectChangeEvent } from '@mui/material/Select';
 import {
   Save as SaveIcon,
 } from '@mui/icons-material';

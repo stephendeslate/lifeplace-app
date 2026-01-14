@@ -30,6 +30,7 @@ import { usePaymentPlanSettings } from '../../../hooks/usePaymentPlanSettings';
 import { BookingSummaryCard } from '../shared/BookingSummaryCard';
 import { PaymentSummaryCard } from '../shared/PaymentSummaryCard';
 import { QuestionnaireSummaryCard } from '../shared/QuestionnaireSummaryCard';
+import { DateUnavailableModal } from '../DateUnavailableModal';
 import type {
   ConfirmationStepConfiguration,
   ConfirmationStepData,
@@ -117,10 +118,37 @@ export const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
     error,
     completionResult,
     bookingReference,
+    // Race condition handling
+    dateUnavailable,
+    unavailableDateError,
+    clearDateUnavailableError,
   } = useConfirmation(
     currentSession?.session_id,
     config
   );
+
+  // Get the selected date from session data for the unavailable modal
+  const selectedDate = useMemo(() => {
+    const dateTimeData = state.stepData.date_time;
+    if (!dateTimeData?.start_date) return null;
+    // Return just the date part in YYYY-MM-DD format
+    return dateTimeData.start_date.split('T')[0];
+  }, [state.stepData.date_time]);
+
+  // Handler for when user wants to select a new date
+  const handleSelectNewDate = useCallback(() => {
+    clearDateUnavailableError();
+    // Navigate back to the date/time step
+    // Find the date_time step ID from the current flow
+    const dateTimeStep = state.currentFlow?.steps?.find(
+      (step: { step_type: string }) => step.step_type === 'date_time'
+    );
+    if (dateTimeStep) {
+      // This would need to integrate with the navigation system
+      // For now, we'll just reload the page which will restart the flow
+      window.location.reload();
+    }
+  }, [clearDateUnavailableError, state.currentFlow?.steps]);
 
   // Computed values
   const isCompleted = useMemo(() =>
@@ -579,6 +607,15 @@ export const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
           Return Home
         </Button>
       </Box>
+
+      {/* Date Unavailable Modal - shown when race condition occurs */}
+      <DateUnavailableModal
+        open={dateUnavailable}
+        unavailableDate={selectedDate}
+        onSelectNewDate={handleSelectNewDate}
+        onClose={clearDateUnavailableError}
+        message={unavailableDateError || undefined}
+      />
     </Box>
   );
 };

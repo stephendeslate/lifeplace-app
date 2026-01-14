@@ -26,6 +26,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { useNotifications } from '../../hooks/useNotifications';
 import type { Notification } from '../../types/notifications.types';
+import { tokens } from '../../design-system';
 
 interface NotificationBadgeProps {
   showLabel?: boolean;
@@ -91,15 +92,15 @@ export const NotificationBadge: React.FC<NotificationBadgeProps> = ({
 
   const getCategoryColor = (category: string) => {
     switch (category) {
-      case 'SYSTEM': return '#757575';
-      case 'EVENT': return '#1976d2';
-      case 'TASK': return '#388e3c';
-      case 'PAYMENT': return '#f57c00';
-      case 'CLIENT': return '#7b1fa2';
-      case 'CONTRACT': return '#d32f2f';
-      case 'WORKFLOW': return '#0288d1';
-      case 'COMMUNICATION': return '#5d4037';
-      default: return '#757575';
+      case 'SYSTEM': return tokens.color.notification.system;
+      case 'EVENT': return tokens.color.notification.event;
+      case 'TASK': return tokens.color.notification.task;
+      case 'PAYMENT': return tokens.color.notification.payment;
+      case 'CLIENT': return tokens.color.notification.client;
+      case 'CONTRACT': return tokens.color.notification.contract;
+      case 'WORKFLOW': return tokens.color.notification.workflow;
+      case 'COMMUNICATION': return tokens.color.notification.communication;
+      default: return tokens.color.notification.system;
     }
   };
 

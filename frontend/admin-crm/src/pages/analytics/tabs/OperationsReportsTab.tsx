@@ -3,7 +3,6 @@ import React from 'react';
 import {
   Box,
   Typography,
-  Paper,
   Table,
   TableBody,
   TableCell,
@@ -13,6 +12,7 @@ import {
   Skeleton,
   LinearProgress,
 } from '@mui/material';
+import { ModernCard } from '../../../components/common/ModernCard';
 
 import { VenueChart, PlaceholderCard } from '../../../components/analytics';
 import { useVenueUsage, useCalendarUtilization } from '../../../hooks/useAnalytics';
@@ -49,41 +49,43 @@ export const OperationsReportsTab: React.FC<OperationsReportsTabProps> = ({ date
         <VenueChart data={venues || []} isLoading={venuesLoading} />
 
         {!venuesLoading && venues && venues.length > 0 && (
-          <TableContainer component={Paper} sx={{ mt: 2 }}>
-            <Table size="small">
-              <TableHead>
-                <TableRow>
-                  <TableCell>Venue</TableCell>
-                  <TableCell align="right">Bookings</TableCell>
-                  <TableCell align="right">Confirmed</TableCell>
-                  <TableCell align="right">Completed</TableCell>
-                  <TableCell align="right">Revenue</TableCell>
-                  <TableCell align="right">Utilization</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {venues.map((venue) => (
-                  <TableRow key={venue.venue_id}>
-                    <TableCell>
-                      <Typography variant="body2" fontWeight={500}>
-                        {venue.venue_name}
-                      </Typography>
-                      {venue.venue_code && (
-                        <Typography variant="caption" color="text.secondary">
-                          {venue.venue_code}
-                        </Typography>
-                      )}
-                    </TableCell>
-                    <TableCell align="right">{venue.booking_count}</TableCell>
-                    <TableCell align="right">{venue.confirmed_count}</TableCell>
-                    <TableCell align="right">{venue.completed_count}</TableCell>
-                    <TableCell align="right">{formatCurrency(venue.total_revenue)}</TableCell>
-                    <TableCell align="right">{venue.utilization_percentage}%</TableCell>
+          <ModernCard variant="glass" size="medium" sx={{ mt: 2 }}>
+            <TableContainer>
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Venue</TableCell>
+                    <TableCell align="right">Bookings</TableCell>
+                    <TableCell align="right">Confirmed</TableCell>
+                    <TableCell align="right">Completed</TableCell>
+                    <TableCell align="right">Revenue</TableCell>
+                    <TableCell align="right">Utilization</TableCell>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
+                </TableHead>
+                <TableBody>
+                  {venues.map((venue) => (
+                    <TableRow key={venue.venue_id}>
+                      <TableCell>
+                        <Typography variant="body2" fontWeight={500}>
+                          {venue.venue_name}
+                        </Typography>
+                        {venue.venue_code && (
+                          <Typography variant="caption" color="text.secondary">
+                            {venue.venue_code}
+                          </Typography>
+                        )}
+                      </TableCell>
+                      <TableCell align="right">{venue.booking_count}</TableCell>
+                      <TableCell align="right">{venue.confirmed_count}</TableCell>
+                      <TableCell align="right">{venue.completed_count}</TableCell>
+                      <TableCell align="right">{formatCurrency(venue.total_revenue)}</TableCell>
+                      <TableCell align="right">{venue.utilization_percentage}%</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </ModernCard>
         )}
       </Box>
 
@@ -95,7 +97,7 @@ export const OperationsReportsTab: React.FC<OperationsReportsTabProps> = ({ date
 
         <Box display="flex" gap={3} flexWrap="wrap">
           {/* By Month */}
-          <Paper sx={{ p: 2, flex: '1 1 400px', minWidth: 300 }}>
+          <ModernCard variant="glass" size="medium" sx={{ flex: '1 1 400px', minWidth: 300 }}>
             <Typography variant="subtitle2" mb={2}>
               Bookings by Month
             </Typography>
@@ -137,10 +139,10 @@ export const OperationsReportsTab: React.FC<OperationsReportsTabProps> = ({ date
                 )}
               </Box>
             )}
-          </Paper>
+          </ModernCard>
 
           {/* By Day of Week */}
-          <Paper sx={{ p: 2, flex: '1 1 400px', minWidth: 300 }}>
+          <ModernCard variant="glass" size="medium" sx={{ flex: '1 1 400px', minWidth: 300 }}>
             <Typography variant="subtitle2" mb={2}>
               Bookings by Day of Week
             </Typography>
@@ -182,7 +184,7 @@ export const OperationsReportsTab: React.FC<OperationsReportsTabProps> = ({ date
                 )}
               </Box>
             )}
-          </Paper>
+          </ModernCard>
         </Box>
       </Box>
 

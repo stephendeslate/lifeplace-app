@@ -25,7 +25,7 @@ import {
   Chip,
   OutlinedInput,
 } from '@mui/material';
-import type { SelectChangeEvent } from '@mui/material';
+import type { SelectChangeEvent } from '@mui/material/Select';
 import {
   EventNote as FlowIcon,
   Settings as ConfigIcon,

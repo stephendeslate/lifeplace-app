@@ -3,7 +3,6 @@ import React from 'react';
 import {
   Box,
   Typography,
-  Paper,
   Table,
   TableBody,
   TableCell,
@@ -14,6 +13,7 @@ import {
   Skeleton,
   LinearProgress,
 } from '@mui/material';
+import { ModernCard } from '../../../components/common/ModernCard';
 
 import { KPICard, PackageChart, PlaceholderCard } from '../../../components/analytics';
 import {
@@ -76,35 +76,37 @@ export const EventsReportsTab: React.FC<EventsReportsTabProps> = ({ dateRange })
         {attendanceLoading ? (
           <Skeleton variant="rectangular" height={200} />
         ) : (
-          <TableContainer component={Paper}>
-            <Table size="small">
-              <TableHead>
-                <TableRow>
-                  <TableCell>Package/Product</TableCell>
-                  <TableCell>Type</TableCell>
-                  <TableCell align="right">Events</TableCell>
-                  <TableCell align="right">Total Guests</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {attendance?.map((item, index) => (
-                  <TableRow key={index}>
-                    <TableCell>{item.name}</TableCell>
-                    <TableCell>{item.type}</TableCell>
-                    <TableCell align="right">{item.event_count}</TableCell>
-                    <TableCell align="right">{item.total_guests}</TableCell>
-                  </TableRow>
-                ))}
-                {(!attendance || attendance.length === 0) && (
+          <ModernCard variant="glass" size="medium">
+            <TableContainer>
+              <Table size="small">
+                <TableHead>
                   <TableRow>
-                    <TableCell colSpan={4} align="center">
-                      No attendance data available
-                    </TableCell>
+                    <TableCell>Package/Product</TableCell>
+                    <TableCell>Type</TableCell>
+                    <TableCell align="right">Events</TableCell>
+                    <TableCell align="right">Total Guests</TableCell>
                   </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </TableContainer>
+                </TableHead>
+                <TableBody>
+                  {attendance?.map((item, index) => (
+                    <TableRow key={index}>
+                      <TableCell>{item.name}</TableCell>
+                      <TableCell>{item.type}</TableCell>
+                      <TableCell align="right">{item.event_count}</TableCell>
+                      <TableCell align="right">{item.total_guests}</TableCell>
+                    </TableRow>
+                  ))}
+                  {(!attendance || attendance.length === 0) && (
+                    <TableRow>
+                      <TableCell colSpan={4} align="center">
+                        No attendance data available
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </ModernCard>
         )}
       </Box>
 
@@ -124,37 +126,39 @@ export const EventsReportsTab: React.FC<EventsReportsTabProps> = ({ dateRange })
         {eventTypesLoading ? (
           <Skeleton variant="rectangular" height={200} />
         ) : (
-          <TableContainer component={Paper}>
-            <Table size="small">
-              <TableHead>
-                <TableRow>
-                  <TableCell>Event Type</TableCell>
-                  <TableCell align="right">Total</TableCell>
-                  <TableCell align="right">Confirmed</TableCell>
-                  <TableCell align="right">Completed</TableCell>
-                  <TableCell align="right">Revenue</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {eventTypes?.map((item, index) => (
-                  <TableRow key={index}>
-                    <TableCell>{item.event_type}</TableCell>
-                    <TableCell align="right">{item.count}</TableCell>
-                    <TableCell align="right">{item.confirmed}</TableCell>
-                    <TableCell align="right">{item.completed}</TableCell>
-                    <TableCell align="right">{formatCurrency(item.revenue)}</TableCell>
-                  </TableRow>
-                ))}
-                {(!eventTypes || eventTypes.length === 0) && (
+          <ModernCard variant="glass" size="medium">
+            <TableContainer>
+              <Table size="small">
+                <TableHead>
                   <TableRow>
-                    <TableCell colSpan={5} align="center">
-                      No event type data available
-                    </TableCell>
+                    <TableCell>Event Type</TableCell>
+                    <TableCell align="right">Total</TableCell>
+                    <TableCell align="right">Confirmed</TableCell>
+                    <TableCell align="right">Completed</TableCell>
+                    <TableCell align="right">Revenue</TableCell>
                   </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </TableContainer>
+                </TableHead>
+                <TableBody>
+                  {eventTypes?.map((item, index) => (
+                    <TableRow key={index}>
+                      <TableCell>{item.event_type}</TableCell>
+                      <TableCell align="right">{item.count}</TableCell>
+                      <TableCell align="right">{item.confirmed}</TableCell>
+                      <TableCell align="right">{item.completed}</TableCell>
+                      <TableCell align="right">{formatCurrency(item.revenue)}</TableCell>
+                    </TableRow>
+                  ))}
+                  {(!eventTypes || eventTypes.length === 0) && (
+                    <TableRow>
+                      <TableCell colSpan={5} align="center">
+                        No event type data available
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </ModernCard>
         )}
       </Box>
 
@@ -178,7 +182,7 @@ export const EventsReportsTab: React.FC<EventsReportsTabProps> = ({ dateRange })
             isLoading={feedbackLoading}
             color="primary"
           />
-          <Paper sx={{ p: 2, flex: '1 1 180px', minWidth: 180 }}>
+          <ModernCard variant="glass" size="small" sx={{ flex: '1 1 180px', minWidth: 180 }}>
             <Typography variant="body2" color="text.secondary" mb={1}>
               Average Rating
             </Typography>
@@ -192,7 +196,7 @@ export const EventsReportsTab: React.FC<EventsReportsTabProps> = ({ dateRange })
                 <Rating value={feedback?.avg_rating ?? 0} precision={0.1} readOnly size="small" />
               </Box>
             )}
-          </Paper>
+          </ModernCard>
           <KPICard
             title="Satisfaction Rate"
             value={`${feedback?.satisfaction_rate ?? 0}%`}
@@ -203,7 +207,7 @@ export const EventsReportsTab: React.FC<EventsReportsTabProps> = ({ dateRange })
         </Box>
 
         {!feedbackLoading && feedback && feedback.total_feedback > 0 && (
-          <Paper sx={{ p: 2 }}>
+          <ModernCard variant="glass" size="medium">
             <Typography variant="subtitle2" mb={2}>
               Rating Distribution
             </Typography>
@@ -238,7 +242,7 @@ export const EventsReportsTab: React.FC<EventsReportsTabProps> = ({ dateRange })
                 </Box>
               );
             })}
-          </Paper>
+          </ModernCard>
         )}
       </Box>
 

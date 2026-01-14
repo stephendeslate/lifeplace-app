@@ -698,3 +698,67 @@ def schedule_event_date_reminders(self):
         f"{scheduled_count} scheduled, {skipped_count} skipped"
     )
     return {'scheduled': scheduled_count, 'skipped': skipped_count}
+
+
+# ============================================================
+# DATE RESERVATION CLEANUP TASKS (for race condition prevention)
+# ============================================================
+
+@shared_task(
+    bind=True,
+    max_retries=1,
+)
+def cleanup_expired_reservations(self):
+    """
+    Clean up expired date reservations.
+
+    Finds all DateReservation records that have expired (expires_at < now)
+    and marks them as EXPIRED. This frees up dates that were temporarily
+    reserved but never completed.
+
+    This task should run frequently (every 1-2 minutes) via Celery beat
+    to ensure reservations are released promptly.
+
+    Returns:
+        dict: {'expired_count': int, 'released_count': int}
+    """
+    from .services import AtomicAvailabilityService
+    from .services.websocket_service import AvailabilityWebSocketService
+    from .models import DateReservation
+    from django.utils import timezone
+
+    logger.info("Starting expired reservation cleanup")
+
+    try:
+        # Use the atomic service to clean up expired reservations
+        expired_count = AtomicAvailabilityService.cleanup_expired_reservations()
+
+        # Also find reservations that expired and broadcast availability
+        # This ensures the frontend is notified that dates are available again
+        recently_expired = DateReservation.objects.filter(
+            status='EXPIRED',
+            # Only broadcast for reservations expired in the last 5 minutes
+            expires_at__gte=timezone.now() - timezone.timedelta(minutes=5)
+        )
+
+        released_count = 0
+        for reservation in recently_expired:
+            try:
+                AvailabilityWebSocketService.broadcast_reservation_released(
+                    date=reservation.target_date,
+                    reason='EXPIRED'
+                )
+                released_count += 1
+            except Exception as e:
+                logger.warning(f"Failed to broadcast reservation release for {reservation.target_date}: {e}")
+
+        logger.info(
+            f"Expired reservation cleanup completed: "
+            f"{expired_count} expired, {released_count} broadcasts sent"
+        )
+
+        return {'expired_count': expired_count, 'released_count': released_count}
+
+    except Exception as e:
+        logger.error(f"Error in cleanup_expired_reservations: {e}")
+        return {'expired_count': 0, 'released_count': 0, 'error': str(e)}

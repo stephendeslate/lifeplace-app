@@ -3,7 +3,7 @@
 
 import React, { useState } from 'react';
 import { Email as CommunicationIcon, Preview as PreviewIcon } from '@mui/icons-material';
-import { SettingsPage, type SettingsPageConfig, type SettingsTableColumn } from '../../../components/common/settings';
+import { PermissionAwareSettingsPage, type SettingsPageConfig, type SettingsTableColumn } from '../../../components/common/settings';
 import { TemplatePreviewDialog, ModernDialog } from '../../../components/common';
 import { TemplateForm } from '../../../components/communications';
 import { useCommunications } from '../../../hooks/useCommunications';
@@ -249,8 +249,9 @@ export const CommunicationTemplates = () => {
 
   return (
     <>
-      <SettingsPage
+      <PermissionAwareSettingsPage
         config={config}
+        requiredPermissions={['can_manage_templates']}
         data={communicationTemplates}
         defaultValues={defaultCommunicationTemplate}
         isLoading={isLoading}

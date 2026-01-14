@@ -69,7 +69,7 @@ export const questionnairesApi = {
   },
 
   getValidationRules: async (): Promise<{ rules: Record<string, unknown>; field_types: string[] }> => {
-    const response = await api.get('/questionnaires/questionnaires/validation_rules/');
+    const response = await api.get<{ rules: Record<string, unknown>; field_types: string[] }>('/questionnaires/questionnaires/validation_rules/');
     return response.data;
   },
 

@@ -12,10 +12,10 @@ echo "=========================================="
 
 # Start Celery worker in background
 echo "📨 Starting Celery worker..."
-celery -A core worker --loglevel=info --queues=celery,communications,notifications,analytics &
+celery -A core worker --loglevel=info --queues=celery,communications,notifications,analytics,events,payments,contracts,sales &
 CELERY_WORKER_PID=$!
 echo "✅ Celery worker started (PID: $CELERY_WORKER_PID)"
-echo "   Listening on queues: celery, communications, notifications, analytics"
+echo "   Listening on queues: celery, communications, notifications, analytics, events, payments, contracts, sales"
 
 # Start Celery beat for periodic tasks in background
 echo "⏰ Starting Celery beat..."

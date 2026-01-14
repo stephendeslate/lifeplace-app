@@ -13,14 +13,12 @@ import { formatDistanceToNow } from 'date-fns';
 import type { PaymentGateway, GatewayHealth } from '../../types/payments.types';
 import {
   getGatewayPaymentMethods,
-  getHealthStatusColor,
   getHealthStatusLabel
 } from '../../types/payments.types';
 import ModernLoadingStates from '../common/ModernLoadingStates';
 import { ModernEmptyState } from '../common/ModernEmptyState';
 import ModernTable, { createStandardActions } from '../common/ModernTable';
 import type { ModernTableColumn, ModernTableAction } from '../common/ModernTable';
-import { tokens } from '../../design-system/tokens';
 
 // Health status icon mapping
 const HealthStatusIcon: React.FC<{ status: GatewayHealth['status'] }> = ({ status }) => {

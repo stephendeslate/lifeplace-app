@@ -3,7 +3,7 @@
 
 import React, { useState } from 'react';
 import { Quiz as QuestionnaireIcon, Edit as EditIcon, Visibility as PreviewIcon } from '@mui/icons-material';
-import { SettingsPage, type SettingsPageConfig, type SettingsTableColumn } from '../../../components/common/settings';
+import { PermissionAwareSettingsPage, type SettingsPageConfig, type SettingsTableColumn } from '../../../components/common/settings';
 import { useQuestionnaires } from '../../../hooks/useQuestionnaires';
 import { useEventTypes } from '../../../hooks/useEvents';
 import type { Questionnaire, CreateQuestionnaireData, UpdateQuestionnaireData } from '../../../types/questionnaires.types';
@@ -244,8 +244,9 @@ export const QuestionnaireTemplates = () => {
 
   return (
     <>
-      <SettingsPage
+      <PermissionAwareSettingsPage
         config={config}
+        requiredPermissions={['can_manage_templates']}
         data={questionnaires}
         defaultValues={defaultQuestionnaire}
         isLoading={isLoadingQuestionnaires}
@@ -262,7 +263,7 @@ export const QuestionnaireTemplates = () => {
             label: 'Preview',
             icon: React.createElement(PreviewIcon),
             onClick: handlePreview,
-            color: 'info',
+            color: 'secondary',
           },
           {
             label: 'Manage Questions',

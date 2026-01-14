@@ -153,6 +153,11 @@ export interface BookingState {
 
   // Completion
   completionResult: BookingCompletionResult | null;
+
+  // Date Availability (Race Condition Prevention)
+  dateUnavailable: boolean;
+  dateUnavailableError: string | null;
+  reservationToken: string | null;
 }
 
 /**
@@ -196,6 +201,10 @@ export interface BookingActions {
   recoverSession: (sessionId: string) => Promise<void>;
   discardRecoverableSession: () => Promise<void>;
   clearRecoverableSession: () => void;
+
+  // Date Availability (Race Condition Prevention)
+  validateDateAvailability: () => Promise<{ available: boolean; reservationToken?: string; error?: string }>;
+  clearDateUnavailableError: () => void;
 
   // Utilities
   resetBooking: () => void;
@@ -255,4 +264,8 @@ export const createInitialBookingState = (): BookingState => ({
   recoverableSession: null,
   showRecoveryPrompt: false,
   completionResult: null,
+  // Date Availability (Race Condition Prevention)
+  dateUnavailable: false,
+  dateUnavailableError: null,
+  reservationToken: null,
 });

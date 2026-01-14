@@ -44,6 +44,7 @@ import {
   XCircle,
   User,
 } from 'phosphor-react-native';
+import { DateUnavailableModal } from '../DateUnavailableModal';
 import { colors, spacing, typeScale, layout, shadows } from '@/theme';
 import { useBookingContext } from '@/contexts/BookingContext';
 import { formatCurrency } from '@/utils/currency';
@@ -104,7 +105,12 @@ export function ConfirmationStep({
     isCompleted,
     isQuoteCompletion,
     resetCompletion,
+    dateUnavailable,
+    clearDateUnavailable,
   } = useConfirmationManager(sessionId, configuration);
+
+  // Get booking context actions for navigation
+  const { actions } = useBookingContext();
 
   // Get payment plan settings for refund policy
   const { data: paymentSettings } = usePaymentPlanSettings();
@@ -256,45 +262,94 @@ export function ConfirmationStep({
     // Would integrate with expo-calendar in production
   };
 
+  // Handle navigation to date selection when date is unavailable
+  const handleSelectNewDate = async () => {
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    clearDateUnavailable();
+    resetCompletion();
+
+    // Navigate to the date_time step
+    // Find the index of the date_time step in the flow
+    const dateTimeStepIndex = state.currentFlow?.steps?.findIndex(
+      (s) => s.step_type === 'date_time'
+    );
+
+    if (dateTimeStepIndex !== undefined && dateTimeStepIndex >= 0) {
+      try {
+        await actions.goToStep(dateTimeStepIndex);
+      } catch (error) {
+        console.error('Failed to navigate to date step:', error);
+      }
+    }
+  };
+
+  // Handle closing the date unavailable modal without navigating
+  const handleCloseDateUnavailableModal = () => {
+    clearDateUnavailable();
+    setLocalStatus('pending');
+  };
+
+  // Render Date Unavailable Modal (Race Condition Prevention)
+  // This modal appears when another user booked the same date during checkout
+  const showDateUnavailableModal = dateUnavailable?.unavailable === true;
+
   // Render processing state
   if (localStatus === 'processing' || completing) {
     return (
-      <View style={styles.processingContainer}>
-        <ActivityIndicator size="large" color={colors.secondary.forest} />
-        <Text style={styles.processingTitle}>
-          Processing Your {isQuoteRequest ? 'Quote Request' : 'Booking'}...
-        </Text>
-        <Text style={styles.processingSubtitle}>
-          Please wait while we confirm your details.
-        </Text>
-      </View>
+      <>
+        <View style={styles.processingContainer}>
+          <ActivityIndicator size="large" color={colors.secondary.forest} />
+          <Text style={styles.processingTitle}>
+            Processing Your {isQuoteRequest ? 'Quote Request' : 'Booking'}...
+          </Text>
+          <Text style={styles.processingSubtitle}>
+            Please wait while we confirm your details.
+          </Text>
+        </View>
+        <DateUnavailableModal
+          visible={showDateUnavailableModal}
+          unavailableDate={eventDate}
+          onSelectNewDate={handleSelectNewDate}
+          onClose={handleCloseDateUnavailableModal}
+          message={dateUnavailable?.error || undefined}
+        />
+      </>
     );
   }
 
   // Render failed state
   if (localStatus === 'failed') {
     return (
-      <View style={styles.failedContainer}>
-        <View style={styles.failedIconContainer}>
-          <XCircle size={64} color={colors.semantic.error} weight="fill" />
-        </View>
-        <Text style={styles.failedTitle}>Something Went Wrong</Text>
-        <Text style={styles.failedMessage}>
-          There was an issue completing your {isQuoteRequest ? 'quote request' : 'booking'}.
-          Please try again or contact support.
-        </Text>
-        {(completionError || data.error_message) && (
-          <View style={styles.errorBox}>
-            <Warning size={18} color={colors.semantic.error} />
-            <Text style={styles.errorBoxText}>
-              {completionError || data.error_message}
-            </Text>
+      <>
+        <View style={styles.failedContainer}>
+          <View style={styles.failedIconContainer}>
+            <XCircle size={64} color={colors.semantic.error} weight="fill" />
           </View>
-        )}
-        <TouchableOpacity style={styles.retryButton} onPress={handleRetry}>
-          <Text style={styles.retryButtonText}>Try Again</Text>
-        </TouchableOpacity>
-      </View>
+          <Text style={styles.failedTitle}>Something Went Wrong</Text>
+          <Text style={styles.failedMessage}>
+            There was an issue completing your {isQuoteRequest ? 'quote request' : 'booking'}.
+            Please try again or contact support.
+          </Text>
+          {(completionError || data.error_message) && (
+            <View style={styles.errorBox}>
+              <Warning size={18} color={colors.semantic.error} />
+              <Text style={styles.errorBoxText}>
+                {completionError || data.error_message}
+              </Text>
+            </View>
+          )}
+          <TouchableOpacity style={styles.retryButton} onPress={handleRetry}>
+            <Text style={styles.retryButtonText}>Try Again</Text>
+          </TouchableOpacity>
+        </View>
+        <DateUnavailableModal
+          visible={showDateUnavailableModal}
+          unavailableDate={eventDate}
+          onSelectNewDate={handleSelectNewDate}
+          onClose={handleCloseDateUnavailableModal}
+          message={dateUnavailable?.error || undefined}
+        />
+      </>
     );
   }
 
@@ -469,6 +524,15 @@ export function ConfirmationStep({
             Confirm {isQuoteRequest ? 'Quote Request' : 'Booking'}
           </Text>
         </TouchableOpacity>
+
+        {/* Date Unavailable Modal */}
+        <DateUnavailableModal
+          visible={showDateUnavailableModal}
+          unavailableDate={eventDate}
+          onSelectNewDate={handleSelectNewDate}
+          onClose={handleCloseDateUnavailableModal}
+          message={dateUnavailable?.error || undefined}
+        />
       </ScrollView>
     );
   }

@@ -12,6 +12,7 @@ import {
   Legend,
 } from 'recharts';
 import type { BookingSummary } from '../../../types/analytics.types';
+import { tokens } from '../../../design-system';
 
 interface RevenueChartProps {
   data: BookingSummary[];
@@ -52,7 +53,7 @@ export const RevenueChart: React.FC<RevenueChartProps> = ({
       <Box sx={{ width: '100%', height }}>
         <ResponsiveContainer>
           <LineChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
+            <CartesianGrid strokeDasharray="3 3" stroke={tokens.color.charts.grid} />
             <XAxis dataKey="period" tick={{ fontSize: 12 }} />
             <YAxis tick={{ fontSize: 12 }} />
             <Tooltip
@@ -68,7 +69,7 @@ export const RevenueChart: React.FC<RevenueChartProps> = ({
               type="monotone"
               dataKey="total_revenue"
               name="Revenue"
-              stroke="#2196f3"
+              stroke={tokens.color.charts.series[0]}
               strokeWidth={2}
               dot={{ r: 4 }}
               activeDot={{ r: 6 }}

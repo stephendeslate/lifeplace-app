@@ -11,6 +11,7 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import type { VenueUsage } from '../../../types/analytics.types';
+import { tokens } from '../../../design-system';
 
 interface VenueChartProps {
   data: VenueUsage[];
@@ -42,7 +43,7 @@ export const VenueChart: React.FC<VenueChartProps> = ({
       <Box sx={{ width: '100%', height }}>
         <ResponsiveContainer>
           <BarChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
+            <CartesianGrid strokeDasharray="3 3" stroke={tokens.color.charts.grid} />
             <XAxis dataKey="venue_name" tick={{ fontSize: 12 }} />
             <YAxis tick={{ fontSize: 12 }} />
             <Tooltip
@@ -59,7 +60,7 @@ export const VenueChart: React.FC<VenueChartProps> = ({
                 return [value, name];
               }}
             />
-            <Bar dataKey="booking_count" name="Bookings" fill="#4caf50" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="booking_count" name="Bookings" fill={tokens.color.charts.series[1]} radius={[4, 4, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </Box>
