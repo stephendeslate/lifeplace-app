@@ -13,7 +13,7 @@ class CoreConfig(AppConfig):
         """
         Run startup tasks when Django is ready.
 
-        NOTE: Automatic migrations have been moved to Railway's Custom Start Command
+        NOTE: Automatic migrations have been moved to the deployment start command
         to avoid RuntimeWarnings about database access during app initialization.
 
         This hook now only runs lightweight initialization tasks.
