@@ -5,3 +5,7 @@ export_files.py
 export_concatenated_files.py
 export/
 export-concatenated/
+
+# Test coverage
+coverage/
+*.lcov
