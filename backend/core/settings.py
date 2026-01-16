@@ -240,9 +240,9 @@ CORS_ALLOW_METHODS = [
 
 # Production-specific settings
 if IS_PRODUCTION:
-    # Security settings - Railway handles SSL termination
-    SECURE_SSL_REDIRECT = False  # Railway handles SSL termination
-    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')  # Trust Railway's proxy
+    # Security settings - proxy handles SSL termination
+    SECURE_SSL_REDIRECT = False  # Proxy handles SSL termination
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')  # Trust proxy headers
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
     SECURE_BROWSER_XSS_FILTER = True
@@ -328,7 +328,7 @@ redis_parsed = urllib.parse.urlparse(REDIS_URL)
 CACHES = {
     'default': {
         'BACKEND': 'django_redis.cache.RedisCache',
-        'LOCATION': REDIS_URL + '/0',  # Use Redis database 0 (Railway only supports DB #0)
+        'LOCATION': REDIS_URL + '/0',  # Use Redis database 0
         'OPTIONS': {
             'CLIENT_CLASS': 'django_redis.client.DefaultClient',
             'CONNECTION_POOL_KWARGS': REDIS_CONNECTION_POOL_KWARGS,

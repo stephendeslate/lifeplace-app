@@ -4,7 +4,7 @@ Startup tasks that run when the Django application starts.
 NOTE: Automatic migrations have been REMOVED from this file to avoid
 RuntimeWarnings about database access during app initialization.
 
-Migrations now run explicitly via Railway's Custom Start Command:
+Migrations now run explicitly via deployment start command:
   python manage.py migrate --no-input && \
   python manage.py seed_default_settings && \
   gunicorn -c gunicorn.conf.py core.wsgi:application
@@ -22,7 +22,7 @@ def initialize():
     Run startup tasks when Django initializes.
 
     NOTE: This used to run automatic migrations, but that has been moved
-    to an explicit pre-start command in Railway to avoid RuntimeWarnings
+    to an explicit pre-start command in deployment to avoid RuntimeWarnings
     and ensure proper initialization order.
     """
     logger.info("Django application initialized successfully")
