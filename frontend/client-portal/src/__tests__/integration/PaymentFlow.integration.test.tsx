@@ -361,7 +361,7 @@ describe('Payment Flow Integration Tests', () => {
     });
 
     // Switch to Payment Plan tab
-    await waitFor(() => {
+    await waitFor(async () => {
       const paymentPlanTab = screen.getByText('Payment Plan');
       await user.click(paymentPlanTab);
     });
@@ -416,7 +416,7 @@ describe('Payment Flow Integration Tests', () => {
       await user.click(invoiceCard);
     }
 
-    await waitFor(() => {
+    await waitFor(async () => {
       const payButton = screen.getByText('Pay Now');
       await user.click(payButton);
     });
@@ -456,7 +456,7 @@ describe('Payment Flow Integration Tests', () => {
     renderWithProviders(<FinancialPortal />);
 
     // Navigate to payments tab
-    await waitFor(() => {
+    await waitFor(async () => {
       const paymentsTab = screen.getByText('Payments');
       await userEvent.setup().click(paymentsTab);
     });
@@ -484,12 +484,12 @@ describe('Payment Flow Integration Tests', () => {
     renderWithProviders(<FinancialPortal />);
 
     // Switch between tabs
-    await waitFor(() => {
+    await waitFor(async () => {
       const paymentsTab = screen.getByText('Payments');
       await user.click(paymentsTab);
     });
 
-    await waitFor(() => {
+    await waitFor(async () => {
       const invoicesTab = screen.getByText('Invoices');
       await user.click(invoicesTab);
     });

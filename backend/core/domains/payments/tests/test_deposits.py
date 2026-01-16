@@ -10,7 +10,7 @@ from django.contrib.auth import get_user_model
 from django.utils import timezone
 
 from core.domains.payments.models import (
-    Payment, PaymentGateway, PaymentMethod, PaymentPlan, PaymentInstallment
+    Payment, PaymentGateway, PaymentMethod
 )
 from core.domains.payments.services.payment_service import PaymentService
 from core.domains.payments.services.payment_gateway_service import PaymentGatewayService
@@ -237,52 +237,7 @@ class DepositPaymentProcessingTestCase(TestCase):
         self.event.save()
         
         self.assertEqual(self.event.status, 'CONFIRMED')
-    
-    def test_deposit_with_payment_plan_creation(self):
-        """Test creating payment plan after deposit payment"""
-        total_amount = Decimal('40000.00')
-        deposit_amount = Decimal('12000.00')  # 30% deposit
-        balance_amount = total_amount - deposit_amount  # ₱28,000 balance
-        
-        # Process deposit payment
-        deposit_payment = Payment.objects.create(
-            event=self.event,
-            payment_method=self.payment_method,
-            amount=deposit_amount,
-            currency='PHP',
-            payment_type='DEPOSIT'
-        )
-        
-        with patch('stripe.PaymentIntent.create'):
-            PaymentGatewayService.process_payment(deposit_payment)
-        
-        deposit_payment.status = 'COMPLETED'
-        deposit_payment.save()
-        
-        # Create payment plan for balance
-        payment_plan = PaymentPlan.objects.create(
-            event=self.event,
-            total_amount=total_amount,
-            down_payment_amount=deposit_amount,
-            installment_frequency='MONTHLY',
-            number_of_installments=2,  # 2 monthly payments
-            currency='PHP'
-        )
-        
-        # Generate installments for balance
-        payment_plan.generate_installments()
-        
-        # Verify payment plan
-        self.assertEqual(payment_plan.remaining_amount, balance_amount)
-        
-        installments = PaymentInstallment.objects.filter(payment_plan=payment_plan)
-        self.assertEqual(installments.count(), 2)
-        
-        # Each installment should be ₱14,000 (₱28,000 / 2)
-        expected_installment_amount = balance_amount / 2
-        for installment in installments:
-            self.assertEqual(installment.amount, expected_installment_amount)
-    
+
     def test_deposit_payment_failure_handling(self):
         """Test handling deposit payment failures"""
         deposit_payment = Payment.objects.create(
@@ -495,15 +450,7 @@ class BookingFlowDepositTestCase(TestCase):
         expected_deposit = total_with_tax * Decimal('0.30')
         
         self.assertEqual(deposit_payment.amount, expected_deposit)
-        
-        # Verify payment plan created for balance
-        payment_plans = PaymentPlan.objects.filter(event=event)
-        self.assertEqual(payment_plans.count(), 1)
-        
-        payment_plan = payment_plans.first()
-        self.assertEqual(payment_plan.down_payment_amount, expected_deposit)
-        self.assertEqual(payment_plan.total_amount, total_with_tax)
-    
+
     def test_deposit_vs_full_payment_option(self):
         """Test choosing between deposit and full payment"""
         payment_config = PaymentInfoStepConfiguration.objects.create(
@@ -574,43 +521,6 @@ class BookingFlowDepositTestCase(TestCase):
         
         self.assertEqual(deposit_payments.first().amount, expected_deposit)
         self.assertEqual(full_payments.first().amount, package_total_with_tax)
-    
-    def test_deposit_balance_due_date_calculation(self):
-        """Test calculation of balance due date"""
-        payment_config = PaymentInfoStepConfiguration.objects.create(
-            step=self.payment_step,
-            accept_deposit=True,
-            deposit_type='PERCENTAGE',
-            deposit_amount=Decimal('30.00'),
-            balance_due_days=45,  # 45 days before event
-            require_immediate_payment=False
-        )
-        
-        event_date = date.today() + timedelta(days=90)
-        event = Event.objects.create(
-            client=self.user,
-            event_type=self.event_type,
-            name='Balance Due Test Wedding',
-            start_date=event_date
-        )
-        
-        # Create payment plan with deposit
-        payment_plan = PaymentService.create_payment_plan_with_deposit(
-            event=event,
-            total_amount=Decimal('50000.00'),
-            deposit_amount=Decimal('15000.00'),
-            balance_due_date=event_date - timedelta(days=45)
-        )
-        
-        # Verify balance installment due date
-        balance_installment = PaymentInstallment.objects.get(
-            payment_plan=payment_plan,
-            installment_number=1
-        )
-        
-        expected_due_date = event_date - timedelta(days=45)
-        self.assertEqual(balance_installment.due_date, expected_due_date)
-        self.assertEqual(balance_installment.amount, Decimal('35000.00'))  # ₱50,000 - ₱15,000
     
     def test_deposit_refund_policy_integration(self):
         """Test deposit refund policy integration"""

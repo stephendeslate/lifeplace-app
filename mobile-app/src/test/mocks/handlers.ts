@@ -33,13 +33,33 @@ const API_URL = 'http://localhost:8000/api';
 // AUTH HANDLERS
 // =============================================================================
 
+// Helper to parse request body safely using clone to avoid consumption issues
+async function parseJsonBody<T>(request: Request): Promise<T | null> {
+  try {
+    // Clone the request to avoid consuming the body
+    const clonedRequest = request.clone();
+    return await clonedRequest.json() as T;
+  } catch {
+    try {
+      // Fallback: try reading as text and parsing
+      const text = await request.text();
+      if (text) {
+        return JSON.parse(text) as T;
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  }
+}
+
 export const authHandlers = [
   // Login
   http.post(`${API_URL}/users/login/`, async ({ request }) => {
-    const body = (await request.json()) as { email: string; password: string };
+    const body = await parseJsonBody<{ email: string; password: string }>(request);
 
     // Simulate invalid credentials
-    if (body.email === 'invalid@example.com') {
+    if (body?.email === 'invalid@example.com') {
       return HttpResponse.json(
         { detail: 'Invalid credentials' },
         { status: 401 }
@@ -54,10 +74,10 @@ export const authHandlers = [
 
   // Register
   http.post(`${API_URL}/users/register/`, async ({ request }) => {
-    const body = (await request.json()) as { email: string };
+    const body = await parseJsonBody<{ email: string }>(request);
 
     // Simulate email already exists
-    if (body.email === 'existing@example.com') {
+    if (body?.email === 'existing@example.com') {
       return HttpResponse.json(
         { email: ['A user with this email already exists.'] },
         { status: 400 }
@@ -114,9 +134,15 @@ export const authHandlers = [
     });
   }),
 
-  // Update profile
+  // Update profile (PATCH - partial update)
   http.patch(`${API_URL}/users/me/`, async ({ request }) => {
-    const updates = (await request.json()) as Partial<typeof mockUser>;
+    const updates = await parseJsonBody<Partial<typeof mockUser>>(request);
+    return HttpResponse.json({ ...mockUser, ...updates });
+  }),
+
+  // Update profile (PUT - full update)
+  http.put(`${API_URL}/users/me/`, async ({ request }) => {
+    const updates = await parseJsonBody<Partial<typeof mockUser>>(request);
     return HttpResponse.json({ ...mockUser, ...updates });
   }),
 ];
@@ -312,12 +338,17 @@ export const paymentsHandlers = [
     });
   }),
 
-  // Get invoices
+  // Get invoices (legacy endpoint)
   http.get(`${API_URL}/payments/invoices/`, () => {
     return HttpResponse.json(createPaginatedResponse(mockInvoices));
   }),
 
-  // Get single invoice
+  // Get client invoices (new client endpoint)
+  http.get(`${API_URL}/payments/client/invoices/`, () => {
+    return HttpResponse.json(createPaginatedResponse(mockInvoices));
+  }),
+
+  // Get single invoice (legacy)
   http.get(`${API_URL}/payments/invoices/:id/`, ({ params }) => {
     const id = Number(params.id);
     const invoice = mockInvoices.find((i) => i.id === id);
@@ -329,12 +360,56 @@ export const paymentsHandlers = [
     return HttpResponse.json(invoice);
   }),
 
-  // Get payments
+  // Get single client invoice
+  http.get(`${API_URL}/payments/client/invoices/:id/`, ({ params }) => {
+    const id = Number(params.id);
+    const invoice = mockInvoices.find((i) => i.id === id);
+
+    if (!invoice) {
+      return HttpResponse.json({ detail: 'Not found' }, { status: 404 });
+    }
+
+    return HttpResponse.json(invoice);
+  }),
+
+  // Get client payments
+  http.get(`${API_URL}/payments/client/payments/`, () => {
+    return HttpResponse.json(createPaginatedResponse([]));
+  }),
+
+  // Get single payment
+  http.get(`${API_URL}/payments/client/payments/:id/`, ({ params }) => {
+    const id = Number(params.id);
+    return HttpResponse.json({
+      id,
+      payment_number: `PAY-${id}`,
+      event: 1,
+      event_name: 'Test Event',
+      amount: '10000.00',
+      currency: 'PHP',
+      status: 'COMPLETED',
+      payment_method: 'STRIPE',
+      due_date: '2025-02-15',
+      paid_on: '2025-02-10',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    });
+  }),
+
+  // Get payments (legacy)
   http.get(`${API_URL}/payments/`, () => {
     return HttpResponse.json(createPaginatedResponse([]));
   }),
 
-  // Create payment intent for invoice
+  // Create payment intent for invoice (client endpoint)
+  http.post(`${API_URL}/payments/client/invoices/:id/create_payment_intent/`, () => {
+    return HttpResponse.json({
+      client_secret: 'pi_test_secret_key',
+      payment_intent_id: 'pi_test_123',
+    });
+  }),
+
+  // Create payment intent for invoice (legacy)
   http.post(`${API_URL}/payments/invoices/:id/create_payment_intent/`, () => {
     return HttpResponse.json({
       client_secret: 'pi_test_secret_key',
@@ -342,7 +417,108 @@ export const paymentsHandlers = [
     });
   }),
 
-  // Get payment methods
+  // Pay invoice
+  http.post(`${API_URL}/payments/client/invoices/:id/pay/`, () => {
+    return HttpResponse.json({
+      success: true,
+      message: 'Payment processed successfully',
+      payment: {
+        id: 1,
+        payment_number: 'PAY-001',
+        amount: '10000.00',
+        status: 'COMPLETED',
+      },
+    });
+  }),
+
+  // Download invoice PDF
+  http.get(`${API_URL}/payments/client/invoices/:id/download/`, () => {
+    return new HttpResponse(new Blob(['PDF content']), {
+      headers: { 'Content-Type': 'application/pdf' },
+    });
+  }),
+
+  // Get client payment methods
+  http.get(`${API_URL}/payments/client/payment-methods/`, () => {
+    return HttpResponse.json(createPaginatedResponse([
+      {
+        id: 1,
+        type: 'card',
+        card_brand: 'visa',
+        card_last4: '4242',
+        exp_month: 12,
+        exp_year: 2030,
+        is_default: true,
+      },
+    ]));
+  }),
+
+  // Get single payment method
+  http.get(`${API_URL}/payments/client/payment-methods/:id/`, ({ params }) => {
+    return HttpResponse.json({
+      id: Number(params.id),
+      type: 'card',
+      card_brand: 'visa',
+      card_last4: '4242',
+      exp_month: 12,
+      exp_year: 2030,
+      is_default: true,
+    });
+  }),
+
+  // Create payment method
+  http.post(`${API_URL}/payments/client/payment-methods/`, () => {
+    return HttpResponse.json({
+      id: 2,
+      type: 'card',
+      card_brand: 'mastercard',
+      card_last4: '5555',
+      exp_month: 6,
+      exp_year: 2028,
+      is_default: false,
+    });
+  }),
+
+  // Update payment method
+  http.patch(`${API_URL}/payments/client/payment-methods/:id/`, () => {
+    return HttpResponse.json({
+      id: 1,
+      type: 'card',
+      card_brand: 'visa',
+      card_last4: '4242',
+      exp_month: 12,
+      exp_year: 2030,
+      is_default: true,
+    });
+  }),
+
+  // Delete payment method
+  http.delete(`${API_URL}/payments/client/payment-methods/:id/`, () => {
+    return new HttpResponse(null, { status: 204 });
+  }),
+
+  // Set default payment method
+  http.post(`${API_URL}/payments/client/payment-methods/:id/set_default/`, ({ params }) => {
+    return HttpResponse.json({
+      id: Number(params.id),
+      type: 'card',
+      card_brand: 'visa',
+      card_last4: '4242',
+      exp_month: 12,
+      exp_year: 2030,
+      is_default: true,
+    });
+  }),
+
+  // Create Stripe setup intent
+  http.post(`${API_URL}/payments/client/payment-methods/setup_intent/`, () => {
+    return HttpResponse.json({
+      client_secret: 'seti_test_secret_key',
+      setup_intent_id: 'seti_test_123',
+    });
+  }),
+
+  // Get payment methods (legacy)
   http.get(`${API_URL}/payments/methods/`, () => {
     return HttpResponse.json([
       {
@@ -359,7 +535,7 @@ export const paymentsHandlers = [
     ]);
   }),
 
-  // Add payment method
+  // Add payment method (legacy)
   http.post(`${API_URL}/payments/methods/`, () => {
     return HttpResponse.json({
       id: 'pm_new',
@@ -374,9 +550,100 @@ export const paymentsHandlers = [
     });
   }),
 
-  // Delete payment method
+  // Delete payment method (legacy)
   http.delete(`${API_URL}/payments/methods/:id/`, () => {
     return HttpResponse.json({ detail: 'Payment method deleted' });
+  }),
+
+  // Payment plans
+  http.get(`${API_URL}/payments/client/payment-plans/`, () => {
+    return HttpResponse.json([
+      {
+        id: 1,
+        event_id: 1,
+        total_amount: '100000.00',
+        currency: 'PHP',
+        installments_count: 4,
+        installments: [
+          {
+            id: 1,
+            payment_plan_id: 1,
+            installment_number: 1,
+            amount: '25000.00',
+            due_date: '2025-02-15',
+            status: 'paid',
+            paid_at: '2025-02-10T10:00:00Z',
+          },
+          {
+            id: 2,
+            payment_plan_id: 1,
+            installment_number: 2,
+            amount: '25000.00',
+            due_date: '2025-03-15',
+            status: 'pending',
+          },
+        ],
+        created_at: new Date().toISOString(),
+      },
+    ]);
+  }),
+
+  // Get single payment plan
+  http.get(`${API_URL}/payments/client/payment-plans/:id/`, ({ params }) => {
+    return HttpResponse.json({
+      id: Number(params.id),
+      event_id: 1,
+      total_amount: '100000.00',
+      currency: 'PHP',
+      installments_count: 4,
+      installments: [
+        {
+          id: 1,
+          payment_plan_id: Number(params.id),
+          installment_number: 1,
+          amount: '25000.00',
+          due_date: '2025-02-15',
+          status: 'paid',
+          paid_at: '2025-02-10T10:00:00Z',
+        },
+      ],
+      created_at: new Date().toISOString(),
+    });
+  }),
+
+  // Get installments
+  http.get(`${API_URL}/payments/client/installments/`, () => {
+    return HttpResponse.json([
+      {
+        id: 1,
+        payment_plan_id: 1,
+        installment_number: 1,
+        amount: '25000.00',
+        due_date: '2025-02-15',
+        status: 'paid',
+        paid_at: '2025-02-10T10:00:00Z',
+      },
+      {
+        id: 2,
+        payment_plan_id: 1,
+        installment_number: 2,
+        amount: '25000.00',
+        due_date: '2025-03-15',
+        status: 'pending',
+      },
+    ]);
+  }),
+
+  // Pay installment
+  http.post(`${API_URL}/payments/client/installments/:id/pay/`, () => {
+    return HttpResponse.json({
+      success: true,
+      installment: {
+        id: 1,
+        status: 'paid',
+        paid_at: new Date().toISOString(),
+      },
+    });
   }),
 ];
 
@@ -385,13 +652,13 @@ export const paymentsHandlers = [
 // =============================================================================
 
 export const contractsHandlers = [
-  // Get contracts
-  http.get(`${API_URL}/contracts/`, () => {
+  // Get contracts (client endpoint)
+  http.get(`${API_URL}/contracts/client/contracts/`, () => {
     return HttpResponse.json(createPaginatedResponse(mockContracts));
   }),
 
-  // Get single contract
-  http.get(`${API_URL}/contracts/:id/`, ({ params }) => {
+  // Get single contract (client endpoint)
+  http.get(`${API_URL}/contracts/client/contracts/:id/`, ({ params }) => {
     const id = Number(params.id);
     const contract = mockContracts.find((c) => c.id === id);
 
@@ -402,8 +669,8 @@ export const contractsHandlers = [
     return HttpResponse.json(contract);
   }),
 
-  // Sign contract
-  http.post(`${API_URL}/contracts/:id/sign/`, () => {
+  // Sign contract (client endpoint)
+  http.post(`${API_URL}/contracts/client/contracts/:id/sign/`, () => {
     return HttpResponse.json({
       ...mockContracts[0],
       status: 'SIGNED',
@@ -411,15 +678,15 @@ export const contractsHandlers = [
     });
   }),
 
-  // Download contract PDF
-  http.get(`${API_URL}/contracts/:id/download/`, () => {
+  // Download contract PDF (client endpoint)
+  http.get(`${API_URL}/contracts/client/contracts/:id/download/`, () => {
     return new HttpResponse(new Blob(['PDF content']), {
       headers: { 'Content-Type': 'application/pdf' },
     });
   }),
 
-  // Get contract preview
-  http.get(`${API_URL}/contracts/:id/preview/`, () => {
+  // Get contract preview (client endpoint)
+  http.get(`${API_URL}/contracts/client/contracts/:id/preview/`, () => {
     return HttpResponse.json({
       content: '<h1>Contract Preview</h1><p>Contract content here...</p>',
     });
@@ -431,13 +698,13 @@ export const contractsHandlers = [
 // =============================================================================
 
 export const quotesHandlers = [
-  // Get quotes
-  http.get(`${API_URL}/quotes/`, () => {
+  // Get quotes (client endpoint)
+  http.get(`${API_URL}/sales/client/quotes/`, () => {
     return HttpResponse.json(createPaginatedResponse(mockQuotes));
   }),
 
-  // Get single quote
-  http.get(`${API_URL}/quotes/:id/`, ({ params }) => {
+  // Get single quote (client endpoint)
+  http.get(`${API_URL}/sales/client/quotes/:id/`, ({ params }) => {
     const id = Number(params.id);
     const quote = mockQuotes.find((q) => q.id === id);
 
@@ -448,16 +715,16 @@ export const quotesHandlers = [
     return HttpResponse.json(quote);
   }),
 
-  // Accept quote
-  http.post(`${API_URL}/quotes/:id/accept/`, () => {
+  // Accept quote (client endpoint)
+  http.post(`${API_URL}/sales/client/quotes/:id/accept/`, () => {
     return HttpResponse.json({
       ...mockQuotes[0],
       status: 'ACCEPTED',
     });
   }),
 
-  // Reject quote
-  http.post(`${API_URL}/quotes/:id/reject/`, () => {
+  // Reject quote (client endpoint)
+  http.post(`${API_URL}/sales/client/quotes/:id/reject/`, () => {
     return HttpResponse.json({
       ...mockQuotes[0],
       status: 'REJECTED',

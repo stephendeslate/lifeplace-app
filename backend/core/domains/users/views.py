@@ -299,9 +299,12 @@ class UserListCreateAPIView(generics.ListCreateAPIView):
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        
+
+        # Strip confirm_password as it's only used for validation
+        user_data = {k: v for k, v in serializer.validated_data.items() if k != 'confirm_password'}
+
         with transaction.atomic():
-            user = UserService.create_user(serializer.validated_data)
+            user = UserService.create_user(user_data)
         
         return Response(
             UserSerializer(user).data,
@@ -734,23 +737,24 @@ class DataAccessView(APIView):
 
 class DataExportView(APIView):
     """
-    GET /api/users/me/export/?format=json
+    GET /api/users/me/export/?export_format=json
     Right to Portability - Export personal data
     """
     permission_classes = [permissions.IsAuthenticated]
     throttle_classes = [DataExportThrottle]  # Limit to 1/day
 
     def get(self, request):
-        format = request.query_params.get('format', 'json')
+        # Use 'export_format' instead of 'format' to avoid DRF content negotiation conflict
+        export_format = request.query_params.get('export_format', 'json')
 
-        if format not in ['json', 'csv']:
+        if export_format not in ['json', 'csv']:
             return Response(
                 {"error": "Invalid format. Use 'json' or 'csv'"},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
         content, filename, content_type = DataSubjectRightsService.generate_data_export(
-            request.user, format
+            request.user, export_format
         )
 
         # Log the export request
@@ -760,7 +764,7 @@ class DataExportView(APIView):
             request_type='EXPORT',
             status='COMPLETED',
             processed_at=timezone.now(),
-            response_data={"format": format, "filename": filename}
+            response_data={"format": export_format, "filename": filename}
         )
 
         response = HttpResponse(content, content_type=content_type)

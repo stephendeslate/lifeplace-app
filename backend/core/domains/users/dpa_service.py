@@ -112,7 +112,7 @@ class DataSubjectRightsService:
 
         # Contracts
         contracts = EventContract.objects.filter(event__client=user).values(
-            'id', 'event_id', 'status', 'signed_at'
+            'id', 'event_id', 'status', 'fully_signed_at'
         )
         report["personal_data"]["contracts"] = list(contracts)
 
@@ -273,9 +273,9 @@ class DataSubjectRightsService:
         summary["deleted"].append("Notification preferences")
 
         # 3. Anonymize booking sessions
-        BookingSession.objects.filter(user=user).update(
-            user=None,
-            contact_info={}  # Clear PII
+        BookingSession.objects.filter(client=user).update(
+            client=None,
+            booking_data={}  # Clear PII
         )
         summary["anonymized"].append("Booking sessions")
 

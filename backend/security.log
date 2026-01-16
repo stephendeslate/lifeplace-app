@@ -1982,3 +1982,40 @@ DETAIL:  Failing row contains (259, 2025-09-10 01:22:12.901702+00, LOGIN_SUCCESS
 🔒 SECURITY 2026-01-13 15:40:20,814 INFO [LOGIN_SUCCESS] User john.test@gmail.com logged in successfully
 🔒 SECURITY 2026-01-14 03:27:33,091 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully
 🔒 SECURITY 2026-01-14 11:35:49,755 INFO [LOGIN_SUCCESS] User john.test@gmail.com logged in successfully
+🔒 SECURITY 2026-01-15 09:48:37,010 WARNING [ROLE_UPGRADE] User client@example.com upgraded from CLIENT to ADMIN
+🔒 SECURITY 2026-01-15 09:50:43,382 INFO [LOGIN_SUCCESS] User test@example.com logged in successfully
+🔒 SECURITY 2026-01-15 09:50:57,309 ERROR Failed to log security event: relation "security_events" does not exist
+LINE 1: INSERT INTO "security_events" ("timestamp", "event_type", "s...
+                    ^
+
+🔒 SECURITY 2026-01-15 09:50:57,309 INFO [LOGIN_SUCCESS] New client registration and auto-login: newclient@example.com (IP: 127.0.0.1, User: newclient@example.com)
+🔒 SECURITY 2026-01-15 09:50:58,220 ERROR Failed to log security event: relation "security_events" does not exist
+LINE 1: INSERT INTO "security_events" ("timestamp", "event_type", "s...
+                    ^
+
+🔒 SECURITY 2026-01-15 09:50:58,220 WARNING [LOGIN_FAILURE] Failed login attempt for test@example.com: Invalid credentials (IP: 127.0.0.1, User: anonymous)
+🔒 SECURITY 2026-01-15 09:50:58,399 ERROR Failed to log security event: relation "security_events" does not exist
+LINE 1: INSERT INTO "security_events" ("timestamp", "event_type", "s...
+                    ^
+
+🔒 SECURITY 2026-01-15 09:50:58,399 INFO [LOGIN_SUCCESS] User test@example.com logged in successfully (IP: 127.0.0.1, User: test@example.com)
+🔒 SECURITY 2026-01-15 09:50:58,571 ERROR Failed to log security event: relation "security_events" does not exist
+LINE 1: INSERT INTO "security_events" ("timestamp", "event_type", "s...
+                    ^
+
+🔒 SECURITY 2026-01-15 09:50:58,571 INFO [LOGIN_SUCCESS] User test@example.com logged in successfully (IP: 127.0.0.1, User: test@example.com)
+🔒 SECURITY 2026-01-15 09:50:58,660 ERROR Failed to log security event: relation "security_events" does not exist
+LINE 1: INSERT INTO "security_events" ("timestamp", "event_type", "s...
+                    ^
+
+🔒 SECURITY 2026-01-15 09:50:58,660 WARNING [LOGIN_FAILURE] Failed login attempt for nonexistent@example.com: Invalid credentials (IP: 127.0.0.1, User: anonymous)
+🔒 SECURITY 2026-01-15 09:50:58,832 ERROR Failed to log security event: relation "security_events" does not exist
+LINE 1: INSERT INTO "security_events" ("timestamp", "event_type", "s...
+                    ^
+
+🔒 SECURITY 2026-01-15 09:50:58,832 WARNING [LOGIN_FAILURE] Failed login attempt for test@example.com: Invalid credentials (IP: 127.0.0.1, User: anonymous)
+🔒 SECURITY 2026-01-15 09:51:07,398 ERROR Failed to log security event: relation "security_events" does not exist
+LINE 1: INSERT INTO "security_events" ("timestamp", "event_type", "s...
+                    ^
+
+🔒 SECURITY 2026-01-15 09:51:07,398 INFO [LOGIN_SUCCESS] User test@example.com logged in successfully (IP: 127.0.0.1, User: test@example.com)

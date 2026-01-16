@@ -13,7 +13,7 @@ from django.conf import settings
 
 from core.domains.payments.models import (
     Payment, PaymentGateway, PaymentTransaction, PaymentMethod,
-    Invoice, PaymentPlan, PaymentInstallment
+    Invoice
 )
 from core.domains.payments.services.payment_service import PaymentService
 from core.domains.payments.services.gateway_service import PaymentGatewayService
@@ -660,45 +660,8 @@ class DepositPaymentTestCase(TestCase):
             require_immediate_payment=False
         )
         config.allowed_gateways.add(self.gateway)
-        
+
         total_amount = Decimal('10000.00')
         deposit_amount = PaymentService.calculate_deposit_amount(config, total_amount)
-        
+
         self.assertEqual(deposit_amount, Decimal('1500.00'))  # Fixed amount
-    
-    def test_deposit_with_payment_plan(self):
-        """Test creating payment plan with deposit"""
-        config = PaymentInfoStepConfiguration.objects.create(
-            step=self.payment_step,
-            accept_deposit=True,
-            deposit_type='PERCENTAGE',
-            deposit_amount=Decimal('30.00'),
-            balance_due_days=30,
-            require_immediate_payment=False
-        )
-        
-        event = Event.objects.create(
-            client=self.user,
-            event_type=self.event_type,
-            name='Test Wedding',
-            start_date=date.today() + timedelta(days=60)
-        )
-        
-        total_amount = Decimal('10000.00')
-        deposit_amount = Decimal('3000.00')
-        
-        payment_plan = PaymentService.create_payment_plan_with_deposit(
-            event=event,
-            total_amount=total_amount,
-            deposit_amount=deposit_amount,
-            balance_due_date=event.event_date - timedelta(days=30)
-        )
-        
-        self.assertEqual(payment_plan.total_amount, total_amount)
-        self.assertEqual(payment_plan.down_payment_amount, deposit_amount)
-        self.assertEqual(payment_plan.remaining_amount, Decimal('7000.00'))
-        
-        # Check installments were created
-        installments = PaymentInstallment.objects.filter(payment_plan=payment_plan)
-        self.assertEqual(installments.count(), 1)  # Single balance payment
-        self.assertEqual(installments.first().amount, Decimal('7000.00'))

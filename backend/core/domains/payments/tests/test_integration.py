@@ -14,7 +14,7 @@ from django.db import transaction
 
 from core.domains.payments.models import (
     Payment, PaymentGateway, PaymentTransaction, PaymentMethod,
-    Invoice, InvoiceLineItem, PaymentPlan, PaymentInstallment
+    Invoice, InvoiceLineItem
 )
 from core.domains.payments.services.payment_service import PaymentService
 from core.domains.payments.services.payment_gateway_service import PaymentGatewayService
@@ -275,32 +275,12 @@ class CompletePaymentFlowTestCase(TestCase):
         # Step 8: Update event status after deposit
         event.status = 'CONFIRMED'  # Deposit payment confirms booking
         event.save()
-        
-        # Step 9: Create payment plan for remaining balance
+
+        # Step 9: Calculate remaining balance
         remaining_balance = invoice.total_amount - deposit_amount
         expected_balance = Decimal('33320.00')
         self.assertEqual(remaining_balance, expected_balance)
-        
-        payment_plan = PaymentPlan.objects.create(
-            event=event,
-            invoice=invoice,
-            total_amount=invoice.total_amount,
-            down_payment_amount=deposit_amount,
-            installment_frequency='MONTHLY',
-            number_of_installments=1,  # Single balance payment
-            currency='PHP'
-        )
-        
-        # Create installment for balance (due 30 days before event)
-        balance_due_date = event.event_date - timedelta(days=30)
-        balance_installment = PaymentInstallment.objects.create(
-            payment_plan=payment_plan,
-            installment_number=1,
-            amount=remaining_balance,
-            due_date=balance_due_date,
-            status='PENDING'
-        )
-        
+
         # Step 10: Process balance payment before event
         balance_payment = Payment.objects.create(
             event=event,
@@ -311,7 +291,7 @@ class CompletePaymentFlowTestCase(TestCase):
             payment_type='BALANCE',
             description='Final balance payment for wedding package'
         )
-        
+
         with patch('stripe.PaymentIntent.create') as mock_create:
             mock_intent = Mock()
             mock_intent.id = 'pi_test_balance_456'
@@ -319,43 +299,31 @@ class CompletePaymentFlowTestCase(TestCase):
             mock_intent.amount = int(remaining_balance * 100)
             mock_intent.currency = 'php'
             mock_create.return_value = mock_intent
-            
+
             result = PaymentGatewayService.process_payment(balance_payment)
             self.assertTrue(result['success'])
-        
+
         balance_payment.status = 'COMPLETED'
         balance_payment.completed_at = timezone.now()
         balance_payment.save()
-        
-        # Update installment status
-        balance_installment.status = 'PAID'
-        balance_installment.paid_at = timezone.now()
-        balance_installment.save()
-        
+
         # Step 11: Mark invoice as fully paid
         InvoiceService.mark_as_paid(invoice)
         invoice.refresh_from_db()
-        
+
         self.assertEqual(invoice.status, 'PAID')
         self.assertIsNotNone(invoice.paid_at)
-        
+
         # Step 12: Verify final state
         event.refresh_from_db()
         self.assertEqual(event.status, 'CONFIRMED')
-        
+
         # Verify total payments
         total_payments = Payment.objects.filter(event=event, status='COMPLETED')
         self.assertEqual(total_payments.count(), 2)  # Deposit + Balance
-        
+
         total_paid = sum(p.amount for p in total_payments)
         self.assertEqual(total_paid, invoice.total_amount)
-        
-        # Verify payment plan completion
-        payment_plan.refresh_from_db()
-        pending_installments = PaymentInstallment.objects.filter(
-            payment_plan=payment_plan, status='PENDING'
-        )
-        self.assertEqual(pending_installments.count(), 0)
     
     def test_direct_full_payment_flow(self):
         """Test direct full payment without deposit"""
@@ -539,102 +507,3 @@ class CompletePaymentFlowTestCase(TestCase):
         # Verify payment refunded amount
         payment.refresh_from_db()
         self.assertEqual(payment.refunded_amount, refund_amount)
-    
-    def test_installment_payment_plan_execution(self):
-        """Test complete installment payment plan execution"""
-        event = Event.objects.create(
-            client=self.client_user,
-            event_type=self.event_type,
-            name='Installment Wedding',
-            start_date=date.today() + timedelta(days=120)  # 4 months away
-        )
-        
-        # Create payment plan: ₱10,000 down, 3 monthly installments of ₱10,000 each
-        payment_plan = PaymentPlan.objects.create(
-            event=event,
-            total_amount=Decimal('40000.00'),
-            down_payment_amount=Decimal('10000.00'),
-            installment_frequency='MONTHLY',
-            number_of_installments=3,
-            currency='PHP'
-        )
-        
-        # Create installments
-        for i in range(3):
-            PaymentInstallment.objects.create(
-                payment_plan=payment_plan,
-                installment_number=i + 1,
-                amount=Decimal('10000.00'),
-                due_date=date.today() + timedelta(days=30 * (i + 1)),
-                status='PENDING'
-            )
-        
-        # Process down payment
-        down_payment = Payment.objects.create(
-            event=event,
-            payment_method=self.payment_method,
-            amount=payment_plan.down_payment_amount,
-            currency='PHP',
-            payment_type='DEPOSIT'
-        )
-        
-        with patch('stripe.PaymentIntent.create') as mock_create:
-            mock_intent = Mock()
-            mock_intent.id = 'pi_down_payment'
-            mock_intent.status = 'succeeded'
-            mock_intent.amount = 1000000  # ₱10,000
-            mock_create.return_value = mock_intent
-            
-            PaymentGatewayService.process_payment(down_payment)
-        
-        down_payment.status = 'COMPLETED'
-        down_payment.save()
-        
-        # Process first installment
-        first_installment = PaymentInstallment.objects.get(
-            payment_plan=payment_plan, installment_number=1
-        )
-        
-        installment_payment = Payment.objects.create(
-            event=event,
-            payment_method=self.payment_method,
-            amount=first_installment.amount,
-            currency='PHP',
-            payment_type='INSTALLMENT',
-            installment=first_installment
-        )
-        
-        with patch('stripe.PaymentIntent.create') as mock_create:
-            mock_intent = Mock()
-            mock_intent.id = 'pi_installment_1'
-            mock_intent.status = 'succeeded'
-            mock_intent.amount = 1000000  # ₱10,000
-            mock_create.return_value = mock_intent
-            
-            PaymentGatewayService.process_payment(installment_payment)
-        
-        installment_payment.status = 'COMPLETED'
-        installment_payment.save()
-        
-        # Update installment status
-        first_installment.status = 'PAID'
-        first_installment.paid_at = timezone.now()
-        first_installment.save()
-        
-        # Verify payment plan progress
-        paid_installments = PaymentInstallment.objects.filter(
-            payment_plan=payment_plan, status='PAID'
-        )
-        pending_installments = PaymentInstallment.objects.filter(
-            payment_plan=payment_plan, status='PENDING'
-        )
-        
-        self.assertEqual(paid_installments.count(), 1)
-        self.assertEqual(pending_installments.count(), 2)
-        
-        # Verify total payments so far
-        completed_payments = Payment.objects.filter(
-            event=event, status='COMPLETED'
-        )
-        total_paid = sum(p.amount for p in completed_payments)
-        self.assertEqual(total_paid, Decimal('20000.00'))  # Down + First installment

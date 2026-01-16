@@ -404,7 +404,6 @@ class BookingFlowStepViewSet(viewsets.ModelViewSet):
                 'require_immediate_payment': config.require_immediate_payment,
                 'accept_deposit': config.accept_deposit,
                 # REMOVED: 'deposit_amount', 'deposit_type' - frontend should read from PaymentSettings
-                'allow_payment_plans': config.allow_payment_plans,
                 'payment_terms': config.payment_terms
             })
             

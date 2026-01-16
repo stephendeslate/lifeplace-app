@@ -319,7 +319,6 @@ class InvoiceService:
     def process_invoice_payment(invoice, payment_data, user):
         """Process payment for an invoice (supports full and deposit payments)"""
         from .payment_service import PaymentService
-        from .payment_plan_service import PaymentPlanService
         from .gateway_service import PaymentGatewayService
         from .payment_orchestrator import PaymentOrchestrator, PaymentRequest
         from ..models import PaymentSettings, Payment
@@ -711,72 +710,3 @@ class InvoiceService:
                 'details': 'Payment intent creation encountered an error'
             }
 
-    @staticmethod
-    def setup_payment_plan_for_invoice(invoice, plan_data, user):
-        """Setup payment plan for an invoice"""
-        from .payment_plan_service import PaymentPlanService
-        from ..models import PaymentMethod
-
-        try:
-            # Validate invoice status
-            if invoice.status != 'ISSUED':
-                raise ValueError(f'Cannot create payment plan for invoice with status {invoice.get_status_display()}')
-
-            # Check if payment plan already exists
-            if hasattr(invoice.event, 'payment_plan'):
-                raise ValueError('A payment plan already exists for this event')
-
-            # Validate down payment amount doesn't exceed total
-            down_payment = plan_data.get('down_payment_amount', 0)
-            if down_payment >= invoice.total_amount:
-                raise ValueError('Down payment amount cannot exceed invoice total')
-
-            # Prepare payment plan data
-            payment_plan_data = {
-                'event': invoice.event.id,
-                'total_amount': str(invoice.total_amount),
-                'down_payment_amount': str(down_payment),
-                'down_payment_due_date': plan_data.get('down_payment_due_date', timezone.now().date()),
-                'number_of_installments': plan_data.get('number_of_installments', 3),
-                'frequency': plan_data.get('frequency', 'MONTHLY'),
-                'notes': plan_data.get('notes', f'Payment plan for invoice {invoice.invoice_id}'),
-                'quote': invoice.quote.id if invoice.quote else None
-            }
-
-            # Handle auto payment setup
-            if plan_data.get('auto_payment_enabled', False):
-                auto_payment_method_id = plan_data.get('auto_payment_method_id')
-                if auto_payment_method_id:
-                    try:
-                        payment_method = PaymentMethod.objects.get(
-                            id=auto_payment_method_id,
-                            user=invoice.client
-                        )
-                        payment_plan_data['auto_payment_enabled'] = True
-                        payment_plan_data['auto_payment_method'] = payment_method.id
-                    except PaymentMethod.DoesNotExist:
-                        raise ValueError('Invalid payment method for auto payments')
-
-            # Create payment plan using service
-            payment_plan = PaymentPlanService.create_payment_plan(payment_plan_data, user)
-
-            # Add to event timeline
-            EventTimeline.objects.create(
-                event=invoice.event,
-                action_type='SYSTEM_UPDATE',
-                description=f'Payment plan created for invoice {invoice.invoice_id}',
-                actor=user,
-                is_public=True,
-                action_data={
-                    'payment_plan_id': payment_plan.id,
-                    'invoice_id': invoice.id,
-                    'installments': payment_plan.number_of_installments,
-                    'total_amount': str(invoice.total_amount)
-                }
-            )
-
-            return payment_plan
-
-        except Exception as e:
-            logger.error(f"Payment plan setup failed for invoice {invoice.id}: {e}", exc_info=True)
-            raise

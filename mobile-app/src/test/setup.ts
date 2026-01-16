@@ -32,7 +32,17 @@ afterAll(() => server.close());
 afterEach(() => {
   cleanup();
   jest.clearAllMocks();
+  // Reset toast mocks
+  const { resetToastMocks } = require('@/contexts/__mocks__/ToastContext');
+  resetToastMocks();
 });
+
+// =============================================================================
+// CONTEXT MOCKS
+// =============================================================================
+
+// Mock ToastContext to avoid react-native-reanimated issues in tests
+jest.mock('@/contexts/ToastContext', () => require('@/contexts/__mocks__/ToastContext'));
 
 // =============================================================================
 // EXPO MODULE MOCKS
