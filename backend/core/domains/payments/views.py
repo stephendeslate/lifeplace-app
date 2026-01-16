@@ -14,10 +14,8 @@ from .models import (
     InvoiceTax,
     Payment,
     PaymentGateway,
-    PaymentInstallment,
     PaymentMethod,
     PaymentNotification,
-    PaymentPlan,
     PaymentSettings,
     PaymentTransaction,
     Refund,
@@ -29,10 +27,8 @@ from .serializers import (
     InvoiceTaxSerializer,
     PaymentGatewaySerializer,
     PaymentGatewayAdminSerializer,
-    PaymentInstallmentSerializer,
     PaymentMethodSerializer,
     PaymentNotificationSerializer,
-    PaymentPlanSerializer,
     PaymentSerializer,
     PaymentSettingsSerializer,
     PaymentTransactionSerializer,
@@ -44,7 +40,6 @@ from .services import (
     InvoiceService,
     PaymentGatewayService,
     PaymentMethodService,
-    PaymentPlanService,
     PaymentService,
     TaxRateService,
 )
@@ -612,114 +607,6 @@ class PaymentMethodViewSet(viewsets.ModelViewSet):
                 {"detail": str(e)},
                 status=status.HTTP_400_BAD_REQUEST
             )
-
-
-class PaymentPlanViewSet(viewsets.ModelViewSet):
-    """ViewSet for managing payment plans"""
-    queryset = PaymentPlan.objects.all()
-    serializer_class = PaymentPlanSerializer
-    permission_classes = [IsAuthenticated, IsAdmin]
-    
-    def get_queryset(self):
-        queryset = super().get_queryset().order_by('-created_at')
-        
-        # Apply filters
-        event_id = self.request.query_params.get('event', None)
-        
-        # Try cache for event-specific payment plans
-        if event_id:
-            cached_plans = payments_cache_service.get_cached_payment_plans_by_event(int(event_id))
-            if cached_plans is not None:
-                logger.debug(f"Payment plans for event {event_id} served from cache")
-                return queryset.filter(event_id=event_id)
-        
-        if event_id:
-            queryset = queryset.filter(event_id=event_id)
-        
-        return queryset
-    
-    def retrieve(self, request, *args, **kwargs):
-        """Retrieve payment plan with caching"""
-        plan_id = kwargs.get('pk')
-        
-        # Try to get from cache first
-        cached_plan = payments_cache_service.get_cached_payment_plan_detail(int(plan_id))
-        
-        if cached_plan is not None:
-            logger.debug(f"Payment plan detail for {plan_id} served from cache")
-            return Response(cached_plan)
-        
-        # Cache miss - get from database
-        plan = self.get_object()
-        serializer = self.get_serializer(plan)
-        
-        # Cache the payment plan detail
-        payments_cache_service.cache_payment_plan_detail(plan.id, serializer.data)
-        logger.info(f"Payment plan detail for {plan_id} cached after database query")
-        
-        return Response(serializer.data)
-    
-    def create(self, request, *args, **kwargs):
-        """Create a new payment plan"""
-        try:
-            plan = PaymentPlanService.create_payment_plan(request.data, request.user)
-            serializer = self.get_serializer(plan)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        except Exception as e:
-            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-    
-    def update(self, request, *args, **kwargs):
-        """Update a payment plan (limited fields)"""
-        try:
-            plan = PaymentPlanService.update_payment_plan(
-                kwargs.get('pk'), request.data, request.user
-            )
-            serializer = self.get_serializer(plan)
-            return Response(serializer.data)
-        except Exception as e:
-            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-
-
-class PaymentInstallmentViewSet(viewsets.ModelViewSet):
-    """ViewSet for managing payment installments"""
-    queryset = PaymentInstallment.objects.all()
-    serializer_class = PaymentInstallmentSerializer
-    permission_classes = [IsAuthenticated, IsAdmin]
-    
-    def get_queryset(self):
-        queryset = super().get_queryset().order_by('due_date')
-        
-        # Apply filters
-        payment_plan_id = self.request.query_params.get('payment_plan', None)
-        status = self.request.query_params.get('status', None)
-        due_date_start = self.request.query_params.get('due_date_start', None)
-        due_date_end = self.request.query_params.get('due_date_end', None)
-        
-        if payment_plan_id:
-            queryset = queryset.filter(payment_plan_id=payment_plan_id)
-        
-        if status:
-            queryset = queryset.filter(status=status)
-        
-        if due_date_start:
-            queryset = queryset.filter(due_date__gte=due_date_start)
-        
-        if due_date_end:
-            queryset = queryset.filter(due_date__lte=due_date_end)
-        
-        return queryset
-    
-    @action(detail=True, methods=['post'])
-    def create_payment(self, request, pk=None):
-        """Create a payment for this installment"""
-        try:
-            payment = PaymentPlanService.create_payment_from_installment(
-                pk, request.data, request.user
-            )
-            serializer = PaymentSerializer(payment)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        except Exception as e:
-            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class InvoiceViewSet(viewsets.ModelViewSet):

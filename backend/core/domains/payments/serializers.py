@@ -10,10 +10,8 @@ from .models import (
     InvoiceTax,
     Payment,
     PaymentGateway,
-    PaymentInstallment,
     PaymentMethod,
     PaymentNotification,
-    PaymentPlan,
     PaymentSettings,
     PaymentTransaction,
     Refund,
@@ -598,87 +596,6 @@ class InvoiceSerializer(serializers.ModelSerializer):
             return None
 
 
-class PaymentInstallmentSerializer(serializers.ModelSerializer):
-    payment_plan_details = serializers.SerializerMethodField(read_only=True)
-    status_display = serializers.CharField(source='get_status_display', read_only=True)
-    payment_details = serializers.SerializerMethodField(read_only=True)
-
-    # Calculated fields
-    paid_amount = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
-    remaining_amount = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
-    is_fully_paid = serializers.BooleanField(read_only=True)
-    days_overdue_count = serializers.IntegerField(read_only=True)
-
-    class Meta:
-        model = PaymentInstallment
-        fields = [
-            'id', 'payment_plan', 'payment_plan_details', 'amount', 'due_date',
-            'status', 'status_display', 'installment_number', 'description',
-            'payment_details', 'created_at', 'updated_at',
-            # New enhanced fields
-            'last_reminder_sent', 'reminder_count', 'late_fee_amount', 'late_fee_applied_date',
-            # Calculated fields
-            'paid_amount', 'remaining_amount', 'is_fully_paid', 'days_overdue_count',
-        ]
-        read_only_fields = [
-            'id', 'created_at', 'updated_at', 'paid_amount', 'remaining_amount',
-            'is_fully_paid', 'days_overdue_count'
-        ]
-    
-    def get_payment_plan_details(self, obj):
-        if obj.payment_plan:
-            return {
-                'id': obj.payment_plan.id,
-                'event_id': obj.payment_plan.event.id,
-                'total_amount': obj.payment_plan.total_amount
-            }
-        return None
-    
-    def get_payment_details(self, obj):
-        try:
-            payment = obj.payment.first()
-            if payment:
-                return BasicPaymentSerializer(payment).data
-        except Exception:
-            return None
-        return None
-
-
-class PaymentPlanSerializer(serializers.ModelSerializer):
-    event_details = EventSerializer(source='event', read_only=True)
-    quote_details = EventQuoteSerializer(source='quote', read_only=True)
-    installments = PaymentInstallmentSerializer(many=True, read_only=True)
-    auto_payment_method_details = PaymentMethodSerializer(source='auto_payment_method', read_only=True)
-
-    # Calculated fields
-    paid_amount = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
-    remaining_balance = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
-    is_overdue = serializers.BooleanField(read_only=True)
-    completion_percentage = serializers.DecimalField(max_digits=5, decimal_places=2, read_only=True)
-
-    # Display fields
-    status_display = serializers.CharField(source='get_status_display', read_only=True)
-
-    class Meta:
-        model = PaymentPlan
-        fields = [
-            'id', 'event', 'event_details', 'total_amount', 'down_payment_amount',
-            'currency', 'down_payment_due_date', 'number_of_installments', 'frequency',
-            'notes', 'quote', 'quote_details', 'installments', 'created_at', 'updated_at',
-            # New enhanced fields
-            'status', 'status_display', 'next_payment_date', 'final_payment_date',
-            'grace_period_days', 'terms_accepted', 'terms_accepted_at', 'terms_accepted_ip',
-            'auto_payment_enabled', 'auto_payment_method', 'auto_payment_method_details',
-            'created_from_booking_session',
-            # Calculated fields
-            'paid_amount', 'remaining_balance', 'is_overdue', 'completion_percentage',
-        ]
-        read_only_fields = [
-            'id', 'created_at', 'updated_at', 'paid_amount', 'remaining_balance',
-            'is_overdue', 'completion_percentage', 'status_display'
-        ]
-
-
 class RefundSerializer(serializers.ModelSerializer):
     payment_details = serializers.SerializerMethodField(read_only=True)
     refunded_by_details = UserSerializer(source='refunded_by', read_only=True)
@@ -729,7 +646,6 @@ class PaymentSerializer(serializers.ModelSerializer):
     status_display = serializers.CharField(source='get_status_display', read_only=True)
     quote_details = EventQuoteSerializer(source='quote', read_only=True)
     invoice_details = InvoiceSerializer(source='invoice', read_only=True)
-    installment_details = PaymentInstallmentSerializer(source='installment', read_only=True)
     transactions = PaymentTransactionSerializer(many=True, read_only=True)
     refunds = RefundSerializer(many=True, read_only=True)
     processed_by_details = UserSerializer(source='processed_by', read_only=True)
@@ -743,8 +659,8 @@ class PaymentSerializer(serializers.ModelSerializer):
             'notes', 'reference_number', 'is_manual', 'processed_by',
             'processed_by_details', 'receipt_number', 'receipt_generated_on',
             'receipt_sent', 'receipt_sent_on', 'receipt_pdf', 'quote',
-            'quote_details', 'invoice', 'invoice_details', 'installment',
-            'installment_details', 'transactions', 'refunds',
+            'quote_details', 'invoice', 'invoice_details',
+            'transactions', 'refunds',
             'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'payment_number', 'receipt_number', 'created_at', 'updated_at']
@@ -879,64 +795,6 @@ class PaymentIntentResponseSerializer(serializers.Serializer):
     next_action = serializers.DictField(required=False, help_text="Next action data for 3D Secure etc.")
     payment_id = serializers.IntegerField(help_text="Internal payment record ID")
     transaction_id = serializers.IntegerField(help_text="Internal transaction record ID")
-
-
-class PaymentPlanRequestSerializer(serializers.Serializer):
-    """Serializer for payment plan setup request"""
-    down_payment_amount = serializers.DecimalField(
-        max_digits=10,
-        decimal_places=2,
-        help_text="Down payment amount (optional, defaults to 0)"
-    )
-    down_payment_due_date = serializers.DateField(
-        required=False,
-        help_text="Due date for down payment (defaults to today)"
-    )
-    number_of_installments = serializers.IntegerField(
-        min_value=1,
-        max_value=12,
-        help_text="Number of installments (1-12)"
-    )
-    frequency = serializers.ChoiceField(
-        choices=[
-            ('WEEKLY', 'Weekly'),
-            ('BIWEEKLY', 'Bi-weekly'),
-            ('MONTHLY', 'Monthly'),
-        ],
-        default='MONTHLY',
-        help_text="Installment frequency"
-    )
-    auto_payment_enabled = serializers.BooleanField(
-        default=False,
-        help_text="Enable automatic payments"
-    )
-    auto_payment_method_id = serializers.IntegerField(
-        required=False,
-        help_text="Payment method ID for auto payments"
-    )
-    notes = serializers.CharField(
-        required=False,
-        allow_blank=True,
-        max_length=1000,
-        help_text="Additional notes for payment plan"
-    )
-
-    def validate_down_payment_amount(self, value):
-        """Validate down payment amount"""
-        if value < 0:
-            raise serializers.ValidationError("Down payment amount cannot be negative")
-        return value
-
-    def validate(self, data):
-        """Validate payment plan request"""
-        # If auto payment is enabled, require payment method
-        if data.get('auto_payment_enabled', False):
-            if not data.get('auto_payment_method_id'):
-                raise serializers.ValidationError(
-                    "auto_payment_method_id is required when auto_payment_enabled is True"
-                )
-
-        return data
 
 
 class SetupIntentResponseSerializer(serializers.Serializer):

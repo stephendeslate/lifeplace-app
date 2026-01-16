@@ -11,7 +11,7 @@ from django.utils import timezone
 
 from core.domains.payments.models import (
     Payment, PaymentGateway, PaymentTransaction, PaymentMethod,
-    Invoice, InvoiceLineItem, PaymentPlan, PaymentInstallment
+    Invoice, InvoiceLineItem
 )
 from core.domains.events.models import Event, EventType
 from core.domains.sales.models import EventQuote
@@ -304,128 +304,6 @@ class InvoiceModelTestCase(TestCase):
         self.assertEqual(invoice.tax_amount, quote.tax_amount)
         self.assertEqual(invoice.quote, quote)
         self.assertEqual(invoice.status, 'DRAFT')
-
-
-class PaymentPlanModelTestCase(TestCase):
-    """Test cases for PaymentPlan and PaymentInstallment models"""
-    
-    def setUp(self):
-        """Set up test data"""
-        self.user = User.objects.create_user(
-            email='client@test.com',
-            first_name='Test',
-            last_name='Client',
-            role='CLIENT'
-        )
-        
-        self.event_type = EventType.objects.create(name='Wedding')
-        self.event = Event.objects.create(
-            client=self.user,
-            event_type=self.event_type,
-            name='Test Wedding',
-            start_date=date.today() + timedelta(days=60)
-        )
-        
-        self.gateway = PaymentGateway.objects.create(
-            name='Stripe Test',
-            code='stripe',
-            is_active=True
-        )
-        
-        self.payment_method = PaymentMethod.objects.create(
-            gateway=self.gateway,
-            token='test_token_123'
-        )
-    
-    def test_payment_plan_creation(self):
-        """Test payment plan creation"""
-        plan = PaymentPlan.objects.create(
-            event=self.event,
-            total_amount=Decimal('10000.00'),
-            down_payment_amount=Decimal('3000.00'),
-            installment_frequency='MONTHLY',
-            number_of_installments=4,
-            currency='PHP'
-        )
-        
-        self.assertEqual(plan.total_amount, Decimal('10000.00'))
-        self.assertEqual(plan.down_payment_amount, Decimal('3000.00'))
-        self.assertEqual(plan.remaining_amount, Decimal('7000.00'))
-        self.assertEqual(plan.installment_frequency, 'MONTHLY')
-    
-    def test_installment_creation(self):
-        """Test payment installment creation"""
-        plan = PaymentPlan.objects.create(
-            event=self.event,
-            total_amount=Decimal('10000.00'),
-            down_payment_amount=Decimal('3000.00'),
-            installment_frequency='MONTHLY',
-            number_of_installments=4,
-            currency='PHP'
-        )
-        
-        installment = PaymentInstallment.objects.create(
-            payment_plan=plan,
-            installment_number=1,
-            amount=Decimal('1750.00'),
-            due_date=date.today() + timedelta(days=30),
-            status='PENDING'
-        )
-        
-        self.assertEqual(installment.amount, Decimal('1750.00'))
-        self.assertEqual(installment.installment_number, 1)
-        self.assertEqual(installment.status, 'PENDING')
-        self.assertFalse(installment.is_overdue)
-    
-    def test_installment_overdue_detection(self):
-        """Test overdue installment detection"""
-        plan = PaymentPlan.objects.create(
-            event=self.event,
-            total_amount=Decimal('10000.00'),
-            down_payment_amount=Decimal('3000.00'),
-            installment_frequency='MONTHLY',
-            number_of_installments=4,
-            currency='PHP'
-        )
-        
-        # Create overdue installment
-        overdue_installment = PaymentInstallment.objects.create(
-            payment_plan=plan,
-            installment_number=1,
-            amount=Decimal('1750.00'),
-            due_date=date.today() - timedelta(days=5),  # 5 days overdue
-            status='PENDING'
-        )
-        
-        self.assertTrue(overdue_installment.is_overdue)
-        self.assertEqual(overdue_installment.days_overdue, 5)
-    
-    def test_installment_auto_generation(self):
-        """Test automatic installment generation"""
-        plan = PaymentPlan.objects.create(
-            event=self.event,
-            total_amount=Decimal('12000.00'),
-            down_payment_amount=Decimal('3000.00'),
-            installment_frequency='MONTHLY',
-            number_of_installments=3,
-            currency='PHP'
-        )
-        
-        # Generate installments
-        plan.generate_installments()
-        
-        installments = PaymentInstallment.objects.filter(payment_plan=plan)
-        self.assertEqual(installments.count(), 3)
-        
-        # Check installment amounts (remaining 9000 / 3 = 3000 each)
-        for installment in installments:
-            self.assertEqual(installment.amount, Decimal('3000.00'))
-        
-        # Check due dates are spaced monthly
-        sorted_installments = installments.order_by('installment_number')
-        for i, installment in enumerate(sorted_installments):
-            expected_date = date.today() + timedelta(days=30 * (i + 1))
-            self.assertEqual(installment.due_date, expected_date)
 
 
 class PaymentTransactionModelTestCase(TestCase):

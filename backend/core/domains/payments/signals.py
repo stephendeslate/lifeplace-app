@@ -4,12 +4,10 @@ from django.dispatch import receiver
 import logging
 
 from .models import (
-    Payment, 
-    Invoice, 
-    InvoiceLineItem, 
+    Payment,
+    Invoice,
+    InvoiceLineItem,
     InvoiceTax,
-    PaymentPlan, 
-    PaymentInstallment,
     PaymentMethod,
     PaymentGateway,
     PaymentTransaction,
@@ -278,39 +276,6 @@ def invalidate_invoice_tax_caches(sender, instance, **kwargs):
         logger.info(f"Invalidated invoice caches for tax change: Invoice {instance.invoice.id}")
     except Exception as e:
         logger.error(f"Failed to invalidate invoice tax caches: {e}")
-
-
-@receiver([post_save, post_delete], sender=PaymentPlan)
-def invalidate_payment_plan_caches(sender, instance, **kwargs):
-    """Invalidate payment plan caches when plans are modified"""
-    try:
-        from .cache_service import payments_cache_service
-        payments_cache_service.invalidate_payment_plan_caches(
-            plan_id=instance.id,
-            event_id=getattr(instance.event, 'id', None) if instance.event else None
-        )
-        logger.info(f"Invalidated payment plan caches for: Plan {instance.id}")
-    except Exception as e:
-        logger.error(f"Failed to invalidate payment plan caches: {e}")
-
-
-@receiver([post_save, post_delete], sender=PaymentInstallment)
-def invalidate_installment_caches(sender, instance, **kwargs):
-    """Invalidate installment caches when installments are modified"""
-    try:
-        from .cache_service import payments_cache_service
-        payments_cache_service.invalidate_installment_caches(
-            installment_id=instance.id,
-            plan_id=instance.payment_plan.id
-        )
-        # Also invalidate parent payment plan cache
-        payments_cache_service.invalidate_payment_plan_caches(
-            plan_id=instance.payment_plan.id,
-            event_id=getattr(instance.payment_plan.event, 'id', None) if instance.payment_plan.event else None
-        )
-        logger.info(f"Invalidated installment caches for: Installment {instance.id}")
-    except Exception as e:
-        logger.error(f"Failed to invalidate installment caches: {e}")
 
 
 @receiver([post_save, post_delete], sender=PaymentMethod)

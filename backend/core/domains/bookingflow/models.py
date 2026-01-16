@@ -779,10 +779,6 @@ class PaymentInfoStepConfiguration(BaseModel):
         default=True,
         help_text="Show option to pay deposit (amount from PaymentSettings.default_deposit_percentage)"
     )
-    allow_payment_plans = models.BooleanField(
-        default=False,
-        help_text="Show payment plan option in UI"
-    )
     allow_quote_request = models.BooleanField(
         default=True,
         help_text="Allow users to request a quote instead of paying immediately"

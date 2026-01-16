@@ -291,7 +291,6 @@ class PaymentInfoStepConfigurationSerializer(serializers.ModelSerializer):
             # UI/UX flags ONLY
             'accept_full_payment',
             'accept_deposit',
-            'allow_payment_plans',
             'allow_quote_request',
             'require_immediate_payment',
             # UI text customization ONLY

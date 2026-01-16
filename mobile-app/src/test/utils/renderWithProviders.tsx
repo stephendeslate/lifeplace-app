@@ -11,6 +11,15 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import type { User, LoginCredentials, RegisterCredentials } from '@/types/auth.types';
+import {
+  ToastProvider,
+  mockShowToast,
+  mockHideToast,
+  resetToastMocks,
+} from '@/contexts/__mocks__/ToastContext';
+
+// Re-export toast mocks for test assertions
+export { mockShowToast, mockHideToast, resetToastMocks };
 
 // =============================================================================
 // AUTH CONTEXT MOCK
@@ -42,22 +51,6 @@ const defaultAuthContext: AuthContextValue = {
 };
 
 // =============================================================================
-// TOAST CONTEXT MOCK
-// =============================================================================
-
-interface ToastContextValue {
-  showToast: (message: string, type?: 'success' | 'error' | 'warning' | 'info', duration?: number) => void;
-  hideToast: (id: string) => void;
-}
-
-const ToastContext = React.createContext<ToastContextValue | undefined>(undefined);
-
-const defaultToastContext: ToastContextValue = {
-  showToast: jest.fn(),
-  hideToast: jest.fn(),
-};
-
-// =============================================================================
 // WRAPPER COMPONENT
 // =============================================================================
 
@@ -67,7 +60,6 @@ interface WrapperProps {
 
 interface CustomRenderOptions extends Omit<RenderOptions, 'wrapper'> {
   authContext?: Partial<AuthContextValue>;
-  toastContext?: Partial<ToastContextValue>;
   queryClient?: QueryClient;
   initialRoute?: string;
 }
@@ -107,13 +99,11 @@ export function renderWithProviders(
   ui: ReactElement,
   {
     authContext = {},
-    toastContext = {},
     queryClient = createTestQueryClient(),
     ...renderOptions
   }: CustomRenderOptions = {}
 ) {
   const mergedAuthContext = { ...defaultAuthContext, ...authContext };
-  const mergedToastContext = { ...defaultToastContext, ...toastContext };
 
   function Wrapper({ children }: WrapperProps) {
     return (
@@ -125,9 +115,9 @@ export function renderWithProviders(
           }}
         >
           <AuthContext.Provider value={mergedAuthContext}>
-            <ToastContext.Provider value={mergedToastContext}>
+            <ToastProvider>
               {children}
-            </ToastContext.Provider>
+            </ToastProvider>
           </AuthContext.Provider>
         </SafeAreaProvider>
       </QueryClientProvider>
@@ -139,7 +129,6 @@ export function renderWithProviders(
     queryClient,
     // Expose contexts for assertions
     authContext: mergedAuthContext,
-    toastContext: mergedToastContext,
   };
 }
 
@@ -157,17 +146,14 @@ export function renderWithProviders(
  */
 export function createHookWrapper(options: {
   authContext?: Partial<AuthContextValue>;
-  toastContext?: Partial<ToastContextValue>;
   queryClient?: QueryClient;
 } = {}) {
   const {
     authContext = {},
-    toastContext = {},
     queryClient = createTestQueryClient(),
   } = options;
 
   const mergedAuthContext = { ...defaultAuthContext, ...authContext };
-  const mergedToastContext = { ...defaultToastContext, ...toastContext };
 
   return function Wrapper({ children }: { children: ReactNode }) {
     return (
@@ -179,9 +165,9 @@ export function createHookWrapper(options: {
           }}
         >
           <AuthContext.Provider value={mergedAuthContext}>
-            <ToastContext.Provider value={mergedToastContext}>
+            <ToastProvider>
               {children}
-            </ToastContext.Provider>
+            </ToastProvider>
           </AuthContext.Provider>
         </SafeAreaProvider>
       </QueryClientProvider>

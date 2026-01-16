@@ -1,6 +1,6 @@
 """
 Redis caching service for Payments domain
-Handles payments, invoices, payment plans, refunds, gateways, and financial analytics
+Handles payments, invoices, refunds, gateways, and financial analytics
 """
 import json
 import logging
@@ -21,7 +21,7 @@ analytics_cache = caches['analytics']
 class PaymentsCacheService:
     """
     Centralized caching service for Payments domain
-    Handles payments, invoices, plans, transactions, and financial analytics
+    Handles payments, invoices, transactions, and financial analytics
     """
     
     def __init__(self):
@@ -42,11 +42,7 @@ class PaymentsCacheService:
     INVOICE_BY_EVENT_KEY = "payments:invoice:by_event:{event_id}"
     INVOICE_BY_CLIENT_KEY = "payments:invoice:by_client:{client_id}"
     INVOICE_BY_STATUS_KEY = "payments:invoice:by_status:{status}"
-    
-    PAYMENT_PLAN_KEY = "payments:plan:detail:{plan_id}"
-    PAYMENT_PLAN_BY_EVENT_KEY = "payments:plan:by_event:{event_id}"
-    PAYMENT_INSTALLMENTS_KEY = "payments:installments:{plan_id}"
-    
+
     PAYMENT_METHOD_LIST_KEY = "payments:methods:list:{user_id}"
     PAYMENT_METHOD_DETAIL_KEY = "payments:method:detail:{method_id}"
     PAYMENT_GATEWAY_LIST_KEY = "payments:gateways:list"
@@ -232,45 +228,7 @@ class PaymentsCacheService:
         """Get cached invoices by status"""
         key = self.INVOICE_BY_STATUS_KEY.format(status=status)
         return self.cache.get(key)
-    
-    # === PAYMENT PLAN CACHING ===
-    
-    def cache_payment_plan(self, plan_id: int, plan_data: Dict) -> str:
-        """Cache payment plan detail"""
-        key = self.PAYMENT_PLAN_KEY.format(plan_id=plan_id)
-        self.cache.set(key, plan_data, self.TIMEOUT_MEDIUM)
-        logger.debug(f"Cached payment plan: {key}")
-        return key
-    
-    def get_cached_payment_plan(self, plan_id: int) -> Optional[Dict]:
-        """Get cached payment plan"""
-        key = self.PAYMENT_PLAN_KEY.format(plan_id=plan_id)
-        return self.cache.get(key)
-    
-    def cache_payment_plan_by_event(self, event_id: int, plan_data: Dict) -> str:
-        """Cache payment plan for a specific event"""
-        key = self.PAYMENT_PLAN_BY_EVENT_KEY.format(event_id=event_id)
-        self.cache.set(key, plan_data, self.TIMEOUT_MEDIUM)
-        logger.debug(f"Cached payment plan by event: {key}")
-        return key
-    
-    def get_cached_payment_plan_by_event(self, event_id: int) -> Optional[Dict]:
-        """Get cached payment plan by event"""
-        key = self.PAYMENT_PLAN_BY_EVENT_KEY.format(event_id=event_id)
-        return self.cache.get(key)
-    
-    def cache_payment_installments(self, plan_id: int, installments_data: List[Dict]) -> str:
-        """Cache installments for a payment plan"""
-        key = self.PAYMENT_INSTALLMENTS_KEY.format(plan_id=plan_id)
-        self.cache.set(key, installments_data, self.TIMEOUT_MEDIUM)
-        logger.debug(f"Cached payment installments: {key}")
-        return key
-    
-    def get_cached_payment_installments(self, plan_id: int) -> Optional[List[Dict]]:
-        """Get cached payment installments"""
-        key = self.PAYMENT_INSTALLMENTS_KEY.format(plan_id=plan_id)
-        return self.cache.get(key)
-    
+
     # === PAYMENT METHOD & GATEWAY CACHING ===
     
     def cache_payment_methods(self, user_id: int, methods_data: List[Dict]) -> str:
@@ -539,16 +497,7 @@ class PaymentsCacheService:
         self.cache.delete_many(keys_to_delete)
         logger.info(f"Invalidated payment gateway caches for gateway_id: {gateway_id}")
     
-    def invalidate_installment_caches(self, installment_id: int, plan_id: int) -> None:
-        """Invalidate installment caches"""
-        keys_to_delete = [
-            self.PAYMENT_INSTALLMENTS_KEY.format(plan_id=plan_id),
-            f"payments:installment:detail:{installment_id}"
-        ]
-        self.cache.delete_many(keys_to_delete)
-        logger.info(f"Invalidated installment caches for installment_id: {installment_id}, plan_id: {plan_id}")
-    
-    def invalidate_payment_caches(self, payment_id: int = None, event_id: int = None, 
+    def invalidate_payment_caches(self, payment_id: int = None, event_id: int = None,
                                  client_id: int = None):
         """Invalidate payment-related caches"""
         patterns_to_invalidate = [
@@ -558,7 +507,7 @@ class PaymentsCacheService:
             self.PAYMENT_PENDING_KEY,
             f"payments:analytics:*"  # Payments affect financial analytics
         ]
-        
+
         if payment_id:
             patterns_to_invalidate.extend([
                 self.PAYMENT_DETAIL_KEY.format(payment_id=payment_id),
@@ -566,20 +515,19 @@ class PaymentsCacheService:
                 self.REFUND_BY_PAYMENT_KEY.format(payment_id=payment_id),
                 self.NOTIFICATION_BY_PAYMENT_KEY.format(payment_id=payment_id)
             ])
-        
+
         if event_id:
             patterns_to_invalidate.extend([
                 self.PAYMENT_BY_EVENT_KEY.format(event_id=event_id),
-                self.INVOICE_BY_EVENT_KEY.format(event_id=event_id),
-                self.PAYMENT_PLAN_BY_EVENT_KEY.format(event_id=event_id)
+                self.INVOICE_BY_EVENT_KEY.format(event_id=event_id)
             ])
-        
+
         if client_id:
             patterns_to_invalidate.extend([
                 self.PAYMENT_BY_CLIENT_KEY.format(client_id=client_id),
                 self.INVOICE_BY_CLIENT_KEY.format(client_id=client_id)
             ])
-        
+
         self._invalidate_cache_patterns(patterns_to_invalidate)
         logger.info(f"Invalidated payment caches for payment_id: {payment_id}, event_id: {event_id}")
     
@@ -609,24 +557,6 @@ class PaymentsCacheService:
         
         self._invalidate_cache_patterns(patterns_to_invalidate)
         logger.info(f"Invalidated invoice caches for invoice_id: {invoice_id}")
-    
-    def invalidate_payment_plan_caches(self, plan_id: int = None, event_id: int = None):
-        """Invalidate payment plan-related caches"""
-        patterns_to_invalidate = []
-        
-        if plan_id:
-            patterns_to_invalidate.extend([
-                self.PAYMENT_PLAN_KEY.format(plan_id=plan_id),
-                self.PAYMENT_INSTALLMENTS_KEY.format(plan_id=plan_id)
-            ])
-        
-        if event_id:
-            patterns_to_invalidate.append(
-                self.PAYMENT_PLAN_BY_EVENT_KEY.format(event_id=event_id)
-            )
-        
-        self._invalidate_cache_patterns(patterns_to_invalidate)
-        logger.info(f"Invalidated payment plan caches for plan_id: {plan_id}")
     
     def invalidate_transaction_caches(self, transaction_id: int = None, payment_id: int = None, gateway_id: int = None):
         """Invalidate transaction-related caches"""
@@ -834,7 +764,6 @@ class PaymentsCacheService:
                 'key_patterns': {
                     'payments': ['payments:list:*', 'payments:detail:*', 'payments:by_event:*'],
                     'invoices': ['payments:invoices:*', 'payments:invoice:*'],
-                    'plans': ['payments:plan:*', 'payments:installments:*'],
                     'methods': ['payments:methods:*', 'payments:gateways:*'],
                     'refunds': ['payments:refunds:*'],
                     'transactions': ['payments:transactions:*'],

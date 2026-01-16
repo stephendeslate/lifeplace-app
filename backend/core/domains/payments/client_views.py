@@ -15,20 +15,15 @@ from core.utils.pagination import StandardResultsSetPagination
 from .models import (
     Invoice,
     Payment,
-    PaymentInstallment,
     PaymentMethod,
-    PaymentPlan,
     Refund,
 )
 from .serializers import (
     InvoicePaymentRequestSerializer,
     InvoiceSerializer,
     PaymentIntentResponseSerializer,
-    PaymentPlanRequestSerializer,
     PaymentSerializer,
-    PaymentInstallmentSerializer,
     PaymentMethodSerializer,
-    PaymentPlanSerializer,
     RefundSerializer,
 )
 from .services import (
@@ -37,7 +32,6 @@ from .services import (
 )
 from .services.invoice_service import InvoiceService
 from .services.gateway_service import PaymentGatewayService
-from .services.payment_plan_service import PaymentPlanService
 from .pdf_service import PaymentReceiptPDFService
 
 logger = logging.getLogger(__name__)
@@ -450,150 +444,6 @@ class ClientInvoiceViewSet(viewsets.ReadOnlyModelViewSet):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
-    @action(detail=True, methods=['post'])
-    def setup_payment_plan(self, request, pk=None):
-        """Create payment plan for invoice"""
-        try:
-            invoice = self.get_object()
-
-            # Validate invoice can have payment plan
-            if invoice.status not in ['ISSUED']:
-                return Response(
-                    {"detail": f"Cannot create payment plan for invoice with status {invoice.get_status_display()}"},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-
-            # Check if payment plan already exists for this event
-            if hasattr(invoice.event, 'payment_plan'):
-                return Response(
-                    {"detail": "A payment plan already exists for this event"},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-
-            # Validate payment plan data
-            serializer = PaymentPlanRequestSerializer(data=request.data)
-            if not serializer.is_valid():
-                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-            plan_data = serializer.validated_data
-
-            try:
-                # Create payment plan using service
-                payment_plan = InvoiceService.setup_payment_plan_for_invoice(
-                    invoice, plan_data, request.user
-                )
-
-                return Response({
-                    'success': True,
-                    'message': 'Payment plan created successfully',
-                    'payment_plan': PaymentPlanSerializer(payment_plan).data,
-                    'invoice': InvoiceSerializer(invoice).data
-                }, status=status.HTTP_201_CREATED)
-
-            except Exception as e:
-                logger.error(f"Payment plan creation failed for invoice {pk}: {e}", exc_info=True)
-                return Response({
-                    'success': False,
-                    'message': 'Failed to create payment plan',
-                    'error': str(e)
-                }, status=status.HTTP_400_BAD_REQUEST)
-
-        except Invoice.DoesNotExist:
-            return Response(
-                {"detail": "Invoice not found"},
-                status=status.HTTP_404_NOT_FOUND
-            )
-        except Exception as e:
-            logger.error(f"Unexpected error creating payment plan for invoice {pk}: {e}", exc_info=True)
-            return Response(
-                {"detail": "An unexpected error occurred. Please try again later."},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
-
-
-class ClientPaymentPlanViewSet(viewsets.ReadOnlyModelViewSet):
-    """Client access to their payment plans"""
-    serializer_class = PaymentPlanSerializer
-    permission_classes = [IsAuthenticated, IsClientOwnerOrAdmin]
-    pagination_class = StandardResultsSetPagination
-
-    def get_queryset(self):
-        """Return payment plans for user's events"""
-        if not self.request.user.is_authenticated:
-            return PaymentPlan.objects.none()
-
-        # Admins see all payment plans
-        if self.request.user.role == 'ADMIN' or self.request.user.is_superuser:
-            queryset = PaymentPlan.objects.all()
-        else:
-            # Clients see only their payment plans
-            queryset = PaymentPlan.objects.filter(event__client=self.request.user)
-
-        return queryset.select_related(
-            'event',
-            'event__client',
-            'quote'
-        ).prefetch_related(
-            'installments',
-            'installments__payment'
-        )
-
-    @action(detail=True, methods=['post'])
-    def pay_installment(self, request, pk=None):
-        """Make a payment for a specific installment"""
-        try:
-            payment_plan = self.get_object()
-            installment_id = request.data.get('installment_id')
-            
-            if not installment_id:
-                return Response(
-                    {"detail": "installment_id is required"},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-            
-            # Get the installment
-            try:
-                installment = payment_plan.installments.get(id=installment_id)
-            except PaymentInstallment.DoesNotExist:
-                return Response(
-                    {"detail": "Installment not found"},
-                    status=status.HTTP_404_NOT_FOUND
-                )
-            
-            # Check if already paid
-            if installment.status == 'PAID':
-                return Response(
-                    {"detail": "Installment already paid"},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-            
-            # Create payment for installment
-            payment_data = {
-                'event': payment_plan.event.id,
-                'amount': str(installment.amount),
-                'currency': payment_plan.currency,
-                'due_date': installment.due_date,
-                'description': f"Payment for {installment.description}",
-                'installment': installment.id,
-                **request.data  # Include any additional payment data
-            }
-            
-            # Create payment using service
-            payment = PaymentService.create_payment(payment_data, request.user)
-            
-            return Response(
-                PaymentSerializer(payment).data,
-                status=status.HTTP_201_CREATED
-            )
-            
-        except Exception as e:
-            logger.error(f"Failed to create installment payment: {e}")
-            return Response(
-                {"detail": str(e)},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-
 class ClientPaymentMethodViewSet(viewsets.ModelViewSet):
     """Client management of their payment methods"""
     serializer_class = PaymentMethodSerializer
@@ -737,69 +587,3 @@ class ClientRefundViewSet(viewsets.ReadOnlyModelViewSet):
 
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
-
-
-class ClientPaymentInstallmentViewSet(viewsets.ReadOnlyModelViewSet):
-    """Client access to payment installments"""
-    serializer_class = PaymentInstallmentSerializer
-    permission_classes = [IsAuthenticated, IsClientOwnerOrAdmin]
-    pagination_class = StandardResultsSetPagination
-
-    def get_queryset(self):
-        """Return installments for user's payment plans"""
-        if not self.request.user.is_authenticated:
-            return PaymentInstallment.objects.none()
-
-        # Admins see all installments
-        if self.request.user.role == 'ADMIN' or self.request.user.is_superuser:
-            queryset = PaymentInstallment.objects.all()
-        else:
-            # Clients see only their installments
-            queryset = PaymentInstallment.objects.filter(
-                payment_plan__event__client=self.request.user
-            )
-
-        return queryset.select_related(
-            'payment_plan',
-            'payment_plan__event',
-            'payment_plan__event__client'
-        ).prefetch_related('payment')
-
-    @action(detail=True, methods=['post'])
-    def create_payment(self, request, pk=None):
-        """Create a payment for this installment"""
-        try:
-            installment = self.get_object()
-            
-            # Check if already paid
-            if installment.status == 'PAID':
-                return Response(
-                    {"detail": "Installment already paid"},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-            
-            # Create payment for installment
-            payment_data = {
-                'event': installment.payment_plan.event.id,
-                'amount': str(installment.amount),
-                'currency': installment.payment_plan.currency,
-                'due_date': installment.due_date,
-                'description': f"Payment for {installment.description}",
-                'installment': installment.id,
-                **request.data  # Include any additional payment data
-            }
-            
-            # Create payment using service
-            payment = PaymentService.create_payment(payment_data, request.user)
-            
-            return Response(
-                PaymentSerializer(payment).data,
-                status=status.HTTP_201_CREATED
-            )
-            
-        except Exception as e:
-            logger.error(f"Failed to create installment payment: {e}")
-            return Response(
-                {"detail": str(e)},
-                status=status.HTTP_400_BAD_REQUEST
-            )

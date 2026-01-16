@@ -17,8 +17,7 @@ from core.domains.payments.models import (
     Invoice,
     Payment,
     PaymentGateway,
-    PaymentMethod,
-    PaymentPlan
+    PaymentMethod
 )
 
 User = get_user_model()
@@ -302,55 +301,6 @@ class InvoicePaymentTestCase(TestCase):
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn('Cannot create payment intent', response.data['detail'])
-
-    @patch('core.domains.payments.services.invoice_service.InvoiceService.setup_payment_plan_for_invoice')
-    def test_setup_payment_plan_success(self, mock_setup_plan):
-        """Test successful payment plan setup"""
-        mock_payment_plan = PaymentPlan.objects.create(
-            event=self.event,
-            quote=self.quote,
-            total_amount=self.invoice.total_amount,
-            currency='PHP',
-            installment_count=3,
-            installment_frequency='MONTHLY'
-        )
-        mock_setup_plan.return_value = mock_payment_plan
-
-        self.client.force_authenticate(user=self.client_user)
-
-        url = reverse('client-invoice-setup-payment-plan', kwargs={'pk': self.invoice.id})
-        data = {
-            'installment_count': 3,
-            'installment_frequency': 'MONTHLY',
-            'first_installment_percentage': 33.33,
-            'start_date': '2025-11-01'
-        }
-
-        response = self.client.post(url, data, format='json')
-
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertTrue(response.data['success'])
-        self.assertIn('payment_plan', response.data)
-
-    def test_setup_payment_plan_invalid_status(self):
-        """Test payment plan setup fails for non-issued invoice"""
-        self.invoice.status = 'PAID'
-        self.invoice.save()
-
-        self.client.force_authenticate(user=self.client_user)
-
-        url = reverse('client-invoice-setup-payment-plan', kwargs={'pk': self.invoice.id})
-        data = {
-            'installment_count': 3,
-            'installment_frequency': 'MONTHLY',
-            'first_installment_percentage': 33.33,
-            'start_date': '2025-11-01'
-        }
-
-        response = self.client.post(url, data, format='json')
-
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn('Cannot create payment plan', response.data['detail'])
 
     def test_list_client_payments(self):
         """Test listing client payments"""
