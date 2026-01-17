@@ -1,8 +1,9 @@
 # LifePlace Pre-Production TODO List
 
 **Generated:** 2025-12-29
-**Last Updated:** 2026-01-16
-**Status:** Complete production roadmap for Backend, Admin-CRM, Client-Portal, and Mobile App
+**Last Updated:** 2026-01-17
+**Status:** Complete production roadmap - VERIFIED and AUDITED (Rev 2)
+**Audit Status:** Comprehensive security audit completed - additional critical issues identified in Rev 2
 **Target Platform:** Fly.io + Fly Postgres + Upstash + Cloudflare Pages
 
 ---
@@ -13,12 +14,12 @@ This document contains **everything required** to deploy LifePlace to production
 
 | System | Current State | Blocking Issues |
 |--------|--------------|-----------------|
-| Backend | 70% Ready | Debug code, cloud storage, external service setup |
-| Admin-CRM | 92% Ready | 3 TypeScript build errors |
-| Client-Portal | 65% Ready | 24 TypeScript errors, console debug code |
-| Mobile App | 70% Ready | Security placeholders, crash reporting |
+| Backend | 45% Ready | **CRITICAL auth bypasses (3)**, **unauthenticated product CRUD**, cloud storage deps, Dockerfile fix, debug code, security fixes |
+| Admin-CRM | 95% Ready | Dependency version mismatches only |
+| Client-Portal | 85% Ready | Console debug cleanup (203 statements) |
+| Mobile App | 65% Ready | Security placeholders, crash reporting, console cleanup (129 statements), test key exposure |
 
-**Estimated Total Time:** 26-44 hours (excluding external account setup and store review times)
+**Estimated Total Time:** 45-70 hours (excluding external account setup and store review times)
 
 ---
 
@@ -49,45 +50,78 @@ These accounts must be created before deployment:
 
 ## Phase 1: Backend Critical Fixes
 
-**Time:** 6-10 hours
+**Time:** 14-20 hours
 
-### P0-B0: SECURITY - Remove Exposed Secret Key (CRITICAL)
+### P0-B0: SECURITY - Fix Authorization Bypass in EventViewSet (CRITICAL)
 
-**Issue:** `.env.production` contains actual SECRET_KEY committed to repository.
+**Issue:** CLIENT users can access ANY other client's events, invoices, and financial data.
 
-**Action Required:**
-```bash
-# 1. Generate new SECRET_KEY
-python -c "import secrets; print(secrets.token_urlsafe(50))"
+**Severity:** CRITICAL - Complete data breach vulnerability
 
-# 2. Remove .env.production from git history
-git filter-branch --force --index-filter \
-  "git rm --cached --ignore-unmatch .env.production" \
-  --prune-empty --tag-name-filter cat -- --all
+**Files:**
+- `backend/core/domains/events/views/event_views.py` (Line 129)
+- `backend/core/utils/permissions.py` (Lines 26-32)
 
-# 3. Force push (coordinate with team)
-git push origin --force --all
+**Current Problem:**
+```python
+# event_views.py line 129
+class EventViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAdminOrClient]  # Only checks role, not ownership!
 
-# 4. Add .env.production to .gitignore
-echo ".env.production" >> .gitignore
+# permissions.py lines 26-32
+class IsAdminOrClient(permissions.BasePermission):
+    def has_permission(self, request, view):
+        return (request.user and request.user.is_authenticated and
+                (request.user.role == 'ADMIN' or request.user.role == 'CLIENT'))
+        # NO object-level permission check!
 ```
 
-**Never commit secrets to version control. Use Fly.io secrets for production.**
+**Impact:** A CLIENT user can:
+1. View ALL clients' events by passing `?client={other_user_id}`
+2. Update/delete other clients' events
+3. Access other clients' invoices, quotes, and financial data
 
-### P0-B1: Remove Debug Code (CRITICAL)
+**Fix Option 1 - Override get_queryset() (Recommended):**
+```python
+# In EventViewSet.get_queryset()
+def get_queryset(self):
+    user = self.request.user
 
-**75 print() statements must be removed:**
+    # If user is a CLIENT, force filter to only their events
+    if user.role == 'CLIENT':
+        client_id = user.id  # Force to their own ID, ignore query param
+    else:
+        # ADMIN can filter by any client
+        client_id = self.request.query_params.get('client')
+
+    # ... rest of queryset building
+```
+
+**Fix Option 2 - Add object-level permission:**
+```python
+# In EventViewSet
+def get_object(self):
+    obj = super().get_object()
+    # For CLIENT users, verify they own the event
+    if self.request.user.role == 'CLIENT' and obj.client_id != self.request.user.id:
+        raise PermissionDenied("You can only access your own events.")
+    return obj
+```
+
+### P0-B1: Remove Debug Code (HIGH)
+
+**15 print() statements must be removed:**
 
 | File | Issue | Action |
 |------|-------|--------|
-| `backend/core/domains/bookingflow/services/booking_session_service.py` | 75 `print()` statements | Remove all print statements |
+| `backend/core/domains/bookingflow/services/booking_session_service.py` | 15 `print()` statements | Remove all print statements |
 
 ```bash
 # Find all print statements
 grep -n "print(" backend/core/domains/bookingflow/services/booking_session_service.py
 ```
 
-### P0-B2: Fix Hardcoded URLs (CRITICAL)
+### P0-B2: Fix Hardcoded URLs (HIGH)
 
 **Hardcoded `https://lifeplacealfonso.com` in 5 locations:**
 
@@ -105,9 +139,9 @@ grep -n "print(" backend/core/domains/bookingflow/services/booking_session_servi
 'return_url': f"{os.getenv('CLIENT_FRONTEND_URL', 'https://book.lifeplace.com')}/booking/complete"
 ```
 
-### P0-B3: Add Cloud Storage (CRITICAL - Data Loss Without This)
+### P0-B3: Add Cloud Storage Dependencies (CRITICAL - Deployment Will Fail)
 
-**Current State:** Files stored locally at `backend/media/` - will be DELETED on every deployment.
+**Issue:** `django-storages` and `boto3` are NOT in requirements.txt. The R2 configuration in settings.py will crash on import.
 
 **Step 1: Add dependencies to `backend/requirements.txt`:**
 ```
@@ -141,7 +175,200 @@ if IS_PRODUCTION:
         MEDIA_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/'
 ```
 
-### P0-B4: Backend Environment Variables
+### P0-B4: Fix Dockerfile for WebSocket Support (CRITICAL)
+
+**Issue:** Dockerfile uses Gunicorn (WSGI only), but the app has WebSocket features via Django Channels that require ASGI.
+
+**File:** `backend/Dockerfile` (Line 37)
+
+**Current (broken for WebSockets):**
+```dockerfile
+CMD gunicorn core.wsgi:application --bind 0.0.0.0:$PORT ...
+```
+
+**Fix - Use Daphne for ASGI:**
+```dockerfile
+CMD daphne -b 0.0.0.0 -p $PORT core.asgi:application
+```
+
+**Or use Uvicorn:**
+```dockerfile
+CMD uvicorn core.asgi:application --host 0.0.0.0 --port $PORT --workers 2
+```
+
+**Also add to requirements.txt if not present:**
+```
+daphne==4.1.0
+# OR
+uvicorn[standard]==0.29.0
+```
+
+### P0-B5: Create fly.toml Configuration (REQUIRED)
+
+**Issue:** No fly.toml exists. Deployment configuration is missing.
+
+**Create `backend/fly.toml`:**
+```toml
+app = "lifeplace-api"
+primary_region = "sin"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  ENV = "production"
+  PORT = "8000"
+
+[http_service]
+  internal_port = 8000
+  force_https = true
+  auto_stop_machines = false
+  auto_start_machines = true
+  min_machines_running = 1
+
+[[http_service.checks]]
+  grace_period = "10s"
+  interval = "30s"
+  method = "GET"
+  path = "/api/health/"
+  timeout = "5s"
+
+[[vm]]
+  cpu_kind = "shared"
+  cpus = 1
+  memory_mb = 512
+```
+
+### P0-B6: SECURITY - Fix Empty Admin Permissions Escalation (HIGH)
+
+**Issue:** Any admin user with empty `admin_permissions` field has ALL permissions.
+
+**File:** `backend/core/domains/users/models.py` (Lines 93-95)
+
+**Current Code:**
+```python
+# If admin_permissions is empty or None, treat as full admin (backward compatibility)
+if not self.admin_permissions:
+    return True  # GRANTS ALL PERMISSIONS!
+```
+
+**Fix:** Remove the backward compatibility bypass or add explicit "full_admin" flag:
+```python
+def has_admin_permission(self, permission_key: str) -> bool:
+    if self.is_superuser:
+        return True
+    if self.role != 'ADMIN':
+        return False
+
+    # Only grant if explicitly set or is_full_admin is True
+    if self.is_full_admin:
+        return True
+
+    if not self.admin_permissions:
+        return False  # No permissions = no access
+
+    return self.admin_permissions.get(permission_key, False)
+```
+
+### P0-B7: SECURITY - Fix Privilege Escalation in UserSerializer (HIGH)
+
+**Issue:** The `role` field is writable in UserSerializer, allowing users to promote themselves to ADMIN.
+
+**File:** `backend/core/domains/users/serializers.py` (Lines 20-24)
+
+**Current Code:**
+```python
+class Meta:
+    model = User
+    fields = ['id', 'email', 'first_name', 'last_name', 'is_active', 'role',
+              'profile', 'date_joined', 'admin_permissions', 'is_full_admin']
+    read_only_fields = ['id', 'is_active', 'date_joined', 'admin_permissions', 'is_full_admin']
+```
+
+**Fix:** Add `'role'` and `'email'` to `read_only_fields`:
+```python
+read_only_fields = ['id', 'email', 'role', 'is_active', 'date_joined', 'admin_permissions', 'is_full_admin']
+```
+
+### P0-B8: SECURITY - Remove Sensitive Payment Data Logging (HIGH)
+
+**Issue:** Payment data including customer info and payment methods are being logged.
+
+**File:** `backend/core/domains/payments/services/gateway_service.py` (Lines 132-171, 266-309)
+
+**Examples of problematic logging:**
+```python
+logger.info(f"Stripe payment data: {payment_data}")  # Line 168
+logger.info(f"⏱️  Starting Stripe Customer.create API call for {user_email}")  # Line 270
+```
+
+**Action Required:**
+1. Remove or mask all payment-related logging
+2. Never log customer emails, payment method tokens, or card details
+3. Use IDs only for audit trails
+
+### P0-B9: SECURITY - Remove Dependency Confusion Package (CRITICAL)
+
+**Issue:** `requirements.txt` contains `rest-framework-simplejwt==0.0.2` which is a **dependency confusion proof-of-concept** package, NOT the legitimate JWT library.
+
+**File:** `backend/requirements.txt` (Line 61)
+
+**Action Required:**
+```bash
+# Remove this line from requirements.txt:
+rest-framework-simplejwt==0.0.2  # DEPENDENCY CONFUSION PoC - REMOVE
+
+# Keep only:
+djangorestframework_simplejwt==5.5.0  # This is the legitimate package
+```
+
+### P0-B10: Remove Dead Analytics Buffer Code (HIGH - Potential Crash)
+
+**Issue:** The `RedisAnalyticsBuffer` class imports `AnalyticsEvent` from a model that was **intentionally deleted**.
+
+**File:** `backend/core/domains/events/cache_service.py` (Lines 317-377)
+
+**Impact:** If anything ever calls `flush_buffer()`, it crashes with `ImportError`.
+
+**Fix:** Remove the dead code:
+1. Delete the `RedisAnalyticsBuffer` class from `cache_service.py` (lines 317-377)
+2. Delete the corresponding tests from `backend/core/domains/events/tests/test_cache_service.py`
+
+### P0-B11: SECURITY - Add File Upload Content Validation (MEDIUM)
+
+**Issue:** File uploads only validate extension, not actual content.
+
+**File:** `backend/core/domains/events/models.py` (Lines 721-726)
+
+**Add to `backend/core/utils/validators.py`:**
+```python
+import magic
+
+def validate_file_content(file):
+    """Validate file content matches extension using magic numbers."""
+    allowed_mimes = {
+        'pdf': 'application/pdf',
+        'doc': 'application/msword',
+        'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'jpg': 'image/jpeg',
+        'jpeg': 'image/jpeg',
+        'png': 'image/png',
+    }
+
+    mime = magic.from_buffer(file.read(2048), mime=True)
+    file.seek(0)  # Reset file pointer
+
+    ext = file.name.split('.')[-1].lower()
+    if ext in allowed_mimes and mime != allowed_mimes[ext]:
+        raise ValidationError(f"File content does not match extension")
+```
+
+**Add `python-magic` to `requirements.txt`:**
+```
+python-magic==0.4.27
+```
+
+### P0-B12: Backend Environment Variables
 
 **All required for production (set via `fly secrets set`):**
 
@@ -185,13 +412,134 @@ fly secrets set ADMIN_FRONTEND_URL="https://admin.yourdomain.com"
 fly secrets set CLIENT_FRONTEND_URL="https://book.yourdomain.com"
 ```
 
+### P0-B13: SECURITY - Fix Unauthenticated Product CRUD (CRITICAL)
+
+**Issue:** `ProductOptionViewSet` uses `AllowAny` permission, allowing ANY unauthenticated user to CREATE, UPDATE, and DELETE all products and packages.
+
+**Severity:** CRITICAL - Complete system compromise vulnerability
+
+**File:** `backend/core/domains/products/views.py` (Line 167)
+
+**Current Problem:**
+```python
+class ProductOptionViewSet(viewsets.ModelViewSet):
+    permission_classes = [AllowAny]  # Anyone can CREATE, UPDATE, DELETE products!
+
+    def create(self, request, *args, **kwargs):    # Line 247 - NO auth check
+    def update(self, request, *args, **kwargs):    # Line 261 - NO auth check
+    def destroy(self, request, *args, **kwargs):   # Line 277 - NO auth check
+```
+
+**Impact:** An unauthenticated attacker can:
+1. Create malicious products with arbitrary pricing
+2. Modify existing product prices and descriptions
+3. Delete all products from the system
+4. Inject malicious content via product descriptions
+
+**Fix - Restrict write operations to Admin only:**
+```python
+class ProductOptionViewSet(viewsets.ModelViewSet):
+    def get_permissions(self):
+        """Allow public read, but restrict write to admins."""
+        if self.action in ['list', 'retrieve', 'packages', 'addons']:
+            permission_classes = [AllowAny]
+        else:
+            permission_classes = [IsAdmin]
+        return [permission() for permission in permission_classes]
+```
+
+### P0-B14: SECURITY - Fix Mass Assignment in ClientCreateUpdateSerializer (HIGH)
+
+**Issue:** The `is_active` field is writable in `ClientCreateUpdateSerializer`, allowing users to disable/enable any client account.
+
+**Severity:** HIGH - Account manipulation vulnerability
+
+**File:** `backend/core/domains/clients/serializers.py` (Lines 60-64)
+
+**Current Problem:**
+```python
+class ClientCreateUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['id', 'email', 'first_name', 'last_name', 'profile', 'password', 'is_active']
+        read_only_fields = ['id']  # is_active is NOT read-only!
+```
+
+**Impact:** An authenticated user could potentially:
+1. Disable other client accounts by setting `is_active=False`
+2. Re-enable disabled accounts
+3. Lock users out of the system
+
+**Fix:** Add `is_active` to `read_only_fields`:
+```python
+read_only_fields = ['id', 'is_active']
+```
+
+### P0-B15: SECURITY - Fix Authorization Bypass in QuestionnaireViewSet (HIGH)
+
+**Issue:** `QuestionnaireViewSet` uses `IsAdminOrClient` permission but does NOT filter queryset by user ownership - same pattern as EventViewSet (P0-B0).
+
+**Severity:** HIGH - Information disclosure vulnerability
+
+**File:** `backend/core/domains/questionnaires/views.py` (Lines 24-44)
+
+**Current Problem:**
+```python
+class QuestionnaireViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAdminOrClient]  # Line 28
+
+    def get_queryset(self):
+        # No client-specific filtering - returns ALL questionnaires to any authenticated user
+        return QuestionnaireService.get_all_questionnaires(...)
+```
+
+**Impact:** Any authenticated CLIENT user can view ALL questionnaires in the system, not just those assigned to their events.
+
+**Fix - Filter queryset for CLIENT users:**
+```python
+def get_queryset(self):
+    user = self.request.user
+
+    # If user is a CLIENT, only show questionnaires for their events
+    if user.role == 'CLIENT':
+        return Questionnaire.objects.filter(
+            bookingflowstep__booking_flow__sessions__client=user
+        ).distinct()
+
+    # ADMIN can see all questionnaires
+    return QuestionnaireService.get_all_questionnaires(...)
+```
+
+### P0-B16: Fix Additional Hardcoded URLs (HIGH)
+
+**Issue:** Additional hardcoded `lifeplacealfonso.com` URLs found beyond those listed in P0-B2.
+
+**Additional Files to Fix:**
+
+| File | Lines | Fix |
+|------|-------|-----|
+| `backend/core/utils/pdf_branding.py` | 83-84 | Use `settings.SITE_URL` or env var |
+| `backend/core/domains/settings/models.py` | 517, 521, 581 | Change defaults to placeholder or env var |
+
+**pdf_branding.py Current:**
+```python
+DEFAULT_EMAIL = 'info@lifeplacealfonso.com'
+DEFAULT_WEBSITE = 'https://lifeplacealfonso.com'
+```
+
+**Fix:**
+```python
+DEFAULT_EMAIL = os.getenv('DEFAULT_COMPANY_EMAIL', 'info@yourdomain.com')
+DEFAULT_WEBSITE = os.getenv('DEFAULT_COMPANY_WEBSITE', 'https://yourdomain.com')
+```
+
 ---
 
 ## Phase 2: Database & Initial Data Setup
 
 **Time:** 2-3 hours
 
-### P0-B5: Create Fly Postgres & Run Migrations
+### P0-DB1: Create Fly Postgres & Run Migrations
 
 ```bash
 # Create Postgres cluster in Singapore
@@ -209,23 +557,13 @@ fly postgres attach lifeplace-db --app lifeplace-api
 fly ssh console -C "python manage.py migrate"
 ```
 
-**This automatically creates:**
-- CurrencySettings (PHP default)
-- PaymentSettings (50% deposit, 30 days before event)
-- ContractTemplate (Standard Event Contract)
-- WorkflowTemplate (8-stage default workflow)
-- 22 CommunicationTemplates (emails/SMS)
-- VIPSettings and Standard tier
-- Venues (Cabana, Havilah, etc.)
-- 5 BookingFlows (Wedding, Camps, Team Building, etc.)
-
-### P0-B6: Create Superuser
+### P0-DB2: Create Superuser
 
 ```bash
 fly ssh console -C "python manage.py createsuperuser"
 ```
 
-### P0-B7: Configure Stripe in Django Admin (CRITICAL)
+### P0-DB3: Configure Stripe in Django Admin (CRITICAL)
 
 **Payments will NOT work without this step.**
 
@@ -243,42 +581,12 @@ fly ssh console -C "python manage.py createsuperuser"
 ```
 6. Save
 
-### P0-B8: Create Products/Packages (NOT AUTO-SEEDED)
+### P0-DB4: Create Products/Packages (NOT AUTO-SEEDED)
 
 **At least one package must exist for bookings to work.**
 
 1. Go to Django Admin → Products → Product Options
-2. Create packages for each EventType:
-   - Wedding packages
-   - Camps & Retreats packages
-   - Team Building packages
-   - etc.
-
-Or load fixtures if available:
-```bash
-fly ssh console -C "python manage.py loaddata fixtures/products.json"
-```
-
-### P0-B9: Verify Data Setup
-
-```bash
-fly ssh console
-python manage.py shell
-```
-```python
-from core.domains.communications.models import CommunicationTemplate
-print(f"Templates: {CommunicationTemplate.objects.count()}")  # Should be 22
-
-from core.domains.bookingflow.models import BookingFlow
-print(f"Active flows: {BookingFlow.objects.filter(is_active=True).count()}")  # Should be 5
-
-from core.domains.payments.models import PaymentGateway
-pg = PaymentGateway.objects.filter(code='stripe').first()
-print(f"Stripe configured: {bool(pg and pg.config)}")  # Should be True
-
-from core.domains.products.models import ProductOption
-print(f"Products: {ProductOption.objects.count()}")  # Should be > 0
-```
+2. Create packages for each EventType
 
 ---
 
@@ -301,7 +609,7 @@ print(f"Products: {ProductOption.objects.count()}")  # Should be > 0
    - `charge.dispute.created`
 5. Click "Add endpoint"
 6. Copy the signing secret (starts with `whsec_`)
-7. Add to PaymentGateway config in Django admin (see P0-B7)
+7. Add to PaymentGateway config in Django admin
 
 ### P1-B2: Brevo Domain Verification
 
@@ -315,18 +623,11 @@ Add these DNS records:
 | TXT | `mail._domainkey` | *(Get from Brevo dashboard)* |
 | TXT | `_dmarc` | `v=DMARC1; p=none; rua=mailto:dmarc@yourdomain.com` |
 
-Also configure webhook:
-1. Brevo Dashboard → Settings → Webhooks
-2. Add endpoint: `https://api.yourdomain.com/api/communications/webhooks/brevo/`
-3. Copy secret to `BREVO_WEBHOOK_SECRET` via `fly secrets set`
-
 ### P1-B3: Cloudflare R2 Bucket Setup
 
 1. Cloudflare Dashboard → R2 → Create bucket
 2. Name: `lifeplace-media`
-3. Create API token:
-   - Permissions: Object Read & Write
-   - Specify bucket: `lifeplace-media`
+3. Create API token with Object Read & Write permissions
 4. Enable public access in bucket settings
 5. Copy credentials and set via `fly secrets set`
 
@@ -335,70 +636,66 @@ Also configure webhook:
 1. Upstash Console → Create Database
 2. Name: `lifeplace-redis`
 3. Region: Singapore (ap-southeast-1)
-4. TLS: Enabled (default)
+4. TLS: Enabled
 5. Copy the Redis URL (starts with `rediss://`)
 6. Set via `fly secrets set REDIS_URL="rediss://..."`
 
-### P1-B5: DNS Configuration
+### P1-B5: Implement Chargeback Handling (MEDIUM)
 
-| Type | Name | Value |
-|------|------|-------|
-| CNAME | `api` | `lifeplace-api.fly.dev` |
-| CNAME | `admin` | `lifeplace-admin.pages.dev` |
-| CNAME | `book` | `lifeplace-client.pages.dev` |
+**Issue:** Chargebacks/disputes are not tracked or processed.
+
+**File:** `backend/core/domains/payments/services/unified_webhook_processor.py` (Lines 359-362)
+
+**Required Implementation:**
+1. Create a `Dispute` model to track chargebacks
+2. Handle `charge.dispute.created` webhook event
+3. Send admin notification when dispute occurs
+
+### P1-B6: Implement Avatar Upload Endpoint (MEDIUM)
+
+**Issue:** Client-portal frontend calls `POST /users/me/avatar/` but this endpoint does not exist.
+
+**Frontend Code:** `frontend/client-portal/src/apis/auth.api.ts` (Lines 100-113)
+
+**Fix:** Add avatar upload endpoint to users views and URL routes.
 
 ---
 
 ## Phase 4: Frontend Fixes
 
-**Time:** 3-4 hours
+**Time:** 2-3 hours
 
-### P0-F1: Admin-CRM TypeScript Errors (3 errors - BUILD BLOCKED)
+### ~~P0-F1: Admin-CRM TypeScript Errors~~ (VERIFIED FIXED)
 
-| File | Line | Error | Fix |
-|------|------|-------|-----|
-| `frontend/admin-crm/src/test/utils/render.tsx` | 4 | RenderOptions must use type-only import | `import type { RenderOptions }` |
-| `frontend/admin-crm/src/test/utils/render.tsx` | 8 | MemoryRouterProps must use type-only import | `import type { MemoryRouterProps }` |
-| `frontend/admin-crm/src/test/mocks/handlers/events.handlers.ts` | 252 | end_date null type mismatch | Change to `end_date: null as string \| null` |
+**Status:** ✅ ALREADY FIXED - `npm run type-check` passes with 0 errors.
 
-```bash
-# Verify fix
-cd frontend/admin-crm
-npm run type-check
-npm run build
-```
+### ~~P0-F2: Client-Portal TypeScript Errors~~ (VERIFIED FIXED)
 
-### P0-F2: Client-Portal TypeScript Errors (24 errors - BUILD BLOCKED)
+**Status:** ✅ ALREADY FIXED - `npm run type-check` passes with 0 errors.
 
-**Major issues:**
+### P0-F3: Client-Portal Console Debug Cleanup (HIGH)
 
-| Category | Count | Fix |
-|----------|-------|-----|
-| BookingFlow missing `steps` property | 2 | Update BookingFlow type definition |
-| QuestionnaireFieldType missing values | 2 | Add 'textarea', 'radio' to type |
-| Test utility vi global issues | 7 | Fix vitest imports |
-| Mock data type mismatches | 8+ | Update mock types |
-| Unused variables | 5 | Remove or prefix with `_` |
-
-```bash
-# Find all errors
-cd frontend/client-portal
-npm run type-check
-```
-
-### P0-F3: Client-Portal Console Debug Cleanup
-
-**30+ console statements to remove/guard:**
-
-| File | Issue |
-|------|-------|
-| `frontend/client-portal/src/apis/contracts.api.ts` | 8+ console.log with debug emojis |
-| `frontend/client-portal/src/apis/financial.api.ts` | console.warn for WIP features |
-| `frontend/client-portal/src/apis/booking/core.api.ts` | console.warn for storage operations |
+**203 console statements across 58 files to remove/guard:**
 
 ```bash
 # Find all console statements
-grep -rn "console\." frontend/client-portal/src/apis/
+grep -rn "console\." frontend/client-portal/src/
+# Returns 203 occurrences across 58 files
+```
+
+**Key files with many console statements:**
+| File | Count |
+|------|-------|
+| `src/components/payments/UnifiedStripePaymentFlow.tsx` | 26 |
+| `src/services/PaymentFlowManager.ts` | 18 |
+| `src/hooks/useAvailabilityWebSocket.ts` | 13 |
+| `src/apis/financial.api.ts` | 11 |
+
+**Fix:** Remove console statements or wrap with environment check:
+```typescript
+if (import.meta.env.DEV) {
+  console.log('...');
+}
 ```
 
 ### P0-F4: Frontend Environment Variables
@@ -410,7 +707,6 @@ grep -rn "console\." frontend/client-portal/src/apis/
 VITE_API_URL=https://api.yourdomain.com
 VITE_STRIPE_PUBLIC_KEY=pk_live_xxxxx
 VITE_SENTRY_DSN=https://xxxxx@sentry.io/xxxxx
-VITE_GA_MEASUREMENT_ID=G-XXXXXXXXXX
 VITE_ENV=production
 ```
 
@@ -419,9 +715,58 @@ VITE_ENV=production
 VITE_API_URL=https://api.yourdomain.com
 VITE_STRIPE_PUBLIC_KEY=pk_live_xxxxx
 VITE_SENTRY_DSN=https://xxxxx@sentry.io/xxxxx
-VITE_GA_MEASUREMENT_ID=G-XXXXXXXXXX
 VITE_ENV=production
 ```
+
+---
+
+## Phase 4.5: Dependency Fixes
+
+**Time:** 1-2 hours
+
+### P1-D1: Fix TipTap Version Mismatch (Admin-CRM)
+
+**Issue:** Some TipTap extensions are v3.x while core is v2.x.
+
+**File:** `frontend/admin-crm/package.json`
+
+**Mismatched packages:**
+```json
+"@tiptap/extension-heading": "^3.3.1",  // Should be ^2.x
+"@tiptap/extension-image": "^3.3.0",    // Should be ^2.x
+"@tiptap/extension-table": "^3.3.0",    // Should be ^2.x
+```
+
+**Fix:**
+```bash
+cd frontend/admin-crm
+npm install @tiptap/extension-heading@^2.22.3 @tiptap/extension-image@^2.22.3 @tiptap/extension-table@^2.22.3
+```
+
+### P1-D2: Fix Signature Pad Version Mismatch
+
+**Issue:** Different major versions between frontend apps.
+
+| App | Version |
+|-----|---------|
+| admin-crm | `signature_pad: ^5.1.0` |
+| client-portal | `signature_pad: ^4.1.7` |
+
+**Fix:**
+```bash
+cd frontend/client-portal
+npm install signature_pad@^5.1.0
+```
+
+### P1-D3: Remove Deprecated MUI Styles (Admin-CRM)
+
+**Issue:** `@mui/styles` is deprecated in MUI v5+.
+
+**File:** `frontend/admin-crm/package.json`
+
+**Action:**
+1. Remove `@mui/styles` package
+2. Migrate any usages to `@emotion/styled` or `sx` prop
 
 ---
 
@@ -435,8 +780,8 @@ VITE_ENV=production
 |------|------|---------------|-----------------|
 | `mobile-app/src/utils/sslPinning.ts` | 54-56 | `sha256/AAAA...` | Replace with real API cert hash |
 | `mobile-app/src/utils/sslPinning.ts` | 62-64 | `sha256/BBBB...` | Replace with real backup cert hash |
-| `mobile-app/src/services/securityChecks.ts` | 72 | `YOUR_SIGNING_CERTIFICATE_HASH` | Get from Play Console |
-| `mobile-app/src/services/securityChecks.ts` | 77 | `YOUR_TEAM_ID` | Get from Apple Developer Portal |
+
+**Note:** The file `mobile-app/src/services/securityChecks.ts` does NOT exist. Remove references to it.
 
 **Generate SSL Certificate Hash:**
 ```bash
@@ -444,12 +789,6 @@ openssl s_client -connect api.yourdomain.com:443 2>/dev/null | \
   openssl x509 -pubkey -noout | \
   openssl pkey -pubin -outform der | \
   openssl dgst -sha256 -binary | base64
-```
-
-**Get Android Signing Hash:**
-```bash
-keytool -printcert -jarfile app.aab | grep SHA256 | head -1
-# Or from Play Console: Release > App signing
 ```
 
 ### P0-M2: Mobile Environment Variables
@@ -460,8 +799,6 @@ EXPO_PUBLIC_API_URL=https://api.yourdomain.com/api
 EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_live_xxxxx
 EXPO_PUBLIC_ENABLE_PUSH_NOTIFICATIONS=true
 EXPO_PUBLIC_ENABLE_ANALYTICS=true
-EXPO_PUBLIC_SESSION_TIMEOUT_MINUTES=30
-EXPO_PUBLIC_SESSION_WARNING_MINUTES=5
 ```
 
 ### P0-M3: Add Privacy Policy URL (App Store Requirement)
@@ -480,6 +817,35 @@ Add to `app.json`:
 }
 ```
 
+### P0-M4: Remove Test Stripe Key from .env (CRITICAL)
+
+**Issue:** Test Stripe key is committed to repository in `mobile-app/.env`.
+
+**File:** `mobile-app/.env` (Line 7)
+
+**Action Required:**
+1. Add `mobile-app/.env` to `.gitignore`
+2. Use EAS secrets for production builds:
+```bash
+eas secret:create --name EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY --value pk_live_xxxxx
+```
+
+### P0-M5: Fix Hardcoded Domain in Deep Linking (HIGH)
+
+**Issue:** Production domain is hardcoded instead of using environment variable.
+
+**File:** `mobile-app/src/utils/deepLinking.ts` (Line 40)
+
+**Current Code:**
+```typescript
+export const WEB_HOST = 'app.lifeplace.com';
+```
+
+**Fix:**
+```typescript
+export const WEB_HOST = process.env.EXPO_PUBLIC_WEB_HOST || 'app.lifeplace.com';
+```
+
 ### P1-M1: Crash Reporting Integration
 
 **Current State:** Only console.log stubs in `src/utils/crashReporting.ts`
@@ -490,51 +856,40 @@ cd mobile-app
 npx expo install @sentry/react-native
 ```
 
-**Update `src/utils/crashReporting.ts`:**
-```typescript
-import * as Sentry from '@sentry/react-native';
+### P1-M2: Guard Console Statements in Mobile App (HIGH)
 
-export const crashReporter = {
-  initialize: () => {
-    if (!__DEV__) {
-      Sentry.init({
-        dsn: process.env.EXPO_PUBLIC_SENTRY_DSN,
-        enableAutoSessionTracking: true,
-        sessionTrackingIntervalMillis: 30000,
-      });
-    }
-  },
-  captureException: (error: Error, context?: Record<string, unknown>) => {
-    if (!__DEV__) {
-      Sentry.captureException(error, { extra: context });
-    } else {
-      console.error('[CrashReporter]', error, context);
-    }
-  },
-  setUser: (userId: string | null) => {
-    Sentry.setUser(userId ? { id: userId } : null);
-  },
-  addBreadcrumb: (message: string, category?: string) => {
-    Sentry.addBreadcrumb({ message, category });
-  },
-};
-```
+**Issue:** 129 console statements across 33 files not guarded by `__DEV__`.
 
-### P1-M2: Push Notification Credentials
-
-**Required for production push notifications:**
-
-| Platform | Credential | How to Obtain |
-|----------|------------|---------------|
-| iOS | APNs Key (.p8 file) | Apple Developer Portal → Keys → Create with APNs |
-| Android | FCM Server Key | Firebase Console → Project Settings → Cloud Messaging |
-
-**Upload to EAS:**
 ```bash
-eas credentials
-# Select iOS → Push Notifications → Upload APNs Key
-# Select Android → Push Notifications → Upload FCM Server Key
+# Find all console statements
+grep -rn "console\." mobile-app/src/
+# Returns 129 occurrences across 33 files
 ```
+
+**Key files:**
+| File | Count |
+|------|-------|
+| `src/hooks/useAvailabilityWebSocket.ts` | 20 |
+| `src/contexts/BookingContext.tsx` | 14 |
+| `src/utils/bookingStorage.ts` | 12 |
+
+**Fix:** Wrap with `__DEV__` check or use the centralized logger.
+
+### P1-M3: Remove Duplicate Associated Domains (LOW)
+
+**File:** `mobile-app/app.json` (Lines 30-35)
+
+**Current:**
+```json
+"associatedDomains": [
+  "applinks:app.lifeplace.com",
+  "applinks:*.lifeplace.com",
+  "applinks:app.lifeplace.com",  // DUPLICATE
+  "applinks:*.lifeplace.com"     // DUPLICATE
+]
+```
+
+**Fix:** Remove duplicates.
 
 ---
 
@@ -544,197 +899,34 @@ eas credentials
 
 ### Backend Deployment (Fly.io)
 
-**Step 1: Install Fly CLI**
-```bash
-# macOS
-brew install flyctl
-
-# Linux
-curl -L https://fly.io/install.sh | sh
-```
-
-**Step 2: Create and Configure App**
 ```bash
 cd backend
 fly auth login
 fly apps create lifeplace-api --org personal
-```
-
-**Step 3: Create fly.toml**
-```toml
-app = "lifeplace-api"
-primary_region = "sin"
-
-[build]
-  dockerfile = "Dockerfile"
-
-[env]
-  ENV = "production"
-  PORT = "8000"
-
-[http_service]
-  internal_port = 8000
-  force_https = true
-  auto_stop_machines = false
-  auto_start_machines = true
-  min_machines_running = 1
-
-[[http_service.checks]]
-  grace_period = "10s"
-  interval = "30s"
-  method = "GET"
-  path = "/api/health/"
-  timeout = "5s"
-
-[[vm]]
-  cpu_kind = "shared"
-  cpus = 1
-  memory_mb = 512
-```
-
-**Step 4: Create Postgres**
-```bash
 fly postgres create --name lifeplace-db --region sin
 fly postgres attach lifeplace-db
-```
-
-**Step 5: Set Secrets**
-```bash
-fly secrets set SECRET_KEY="..."
-fly secrets set JWT_SIGNING_KEY="..."
-# ... all other secrets from Phase 1
-```
-
-**Step 6: Deploy**
-```bash
+# Set all secrets (see P0-B12)
 fly deploy
-```
-
-**Step 7: Run Migrations**
-```bash
 fly ssh console -C "python manage.py migrate"
 fly ssh console -C "python manage.py createsuperuser"
 ```
 
 ### Frontend Deployment (Cloudflare Pages)
 
-**Why Cloudflare Pages:**
-- Unlimited bandwidth (free forever)
-- Manila, Singapore, Hong Kong edge nodes = faster for PH users
-- Same dashboard as R2 storage
-
-**Admin CRM:**
-1. Cloudflare Dashboard → Pages → Create a project
-2. Connect to Git → Select repository
-3. Configure:
-   - Project name: `lifeplace-admin`
-   - Production branch: `main`
-   - Root directory: `frontend/admin-crm`
-   - Build command: `npm run build`
-   - Build output directory: `dist`
-4. Add environment variables:
-   ```
-   VITE_API_URL=https://api.yourdomain.com
-   VITE_STRIPE_PUBLIC_KEY=pk_live_xxxxx
-   VITE_ENV=production
-   ```
-
-**Client Portal:**
-1. Cloudflare Dashboard → Pages → Create a project
-2. Connect to Git → Select repository
-3. Configure:
-   - Project name: `lifeplace-client`
-   - Production branch: `main`
-   - Root directory: `frontend/client-portal`
-   - Build command: `npm run build`
-   - Build output directory: `dist`
-4. Add environment variables:
-   ```
-   VITE_API_URL=https://api.yourdomain.com
-   VITE_STRIPE_PUBLIC_KEY=pk_live_xxxxx
-   VITE_ENV=production
-   ```
-
-**Configure Custom Domains:**
-```
-Pages project → Custom domains → Add domain
-admin.yourdomain.com → lifeplace-admin
-book.yourdomain.com → lifeplace-client
-```
+1. Cloudflare Dashboard → Pages → Create project
+2. Connect to Git
+3. Configure build settings
+4. Add environment variables
+5. Deploy
 
 ### Mobile App Build
 
 ```bash
 cd mobile-app
-
-# Development build for testing
-eas build --profile development --platform all
-
-# Production build
 eas build --profile production --platform all
-
-# Submit to stores
 eas submit --platform ios
 eas submit --platform android
 ```
-
----
-
-## Phase 7: Philippines-Specific Considerations
-
-**Time:** 4-8 hours (if implementing local payment methods)
-
-### What's Already Configured for Philippines
-
-| Aspect | Status | Configuration |
-|--------|--------|---------------|
-| Currency (PHP) | Ready | PHP symbol, 0 decimals, PHP29 Stripe minimum |
-| Timezone | Ready | Asia/Manila (UTC+8) |
-| Phone Format | Ready | +63 XXX XXX XXXX |
-| DPA Compliance | Ready | Full data subject rights, consent, breach notification |
-| 3D Secure | Ready | Properly handles card authentication |
-| Stripe PHP | Ready | Correct minimum charge, webhook handling |
-
-### Payment Methods Gap (IMPORTANT)
-
-**Current State:** Only Stripe card payments (Visa, Mastercard, JCB)
-
-**Missing for Philippines Market:**
-- **GCash** - 76 million users, most popular e-wallet
-- **Maya** - 47 million users, second most popular
-- **Bank transfers** - Common for larger transactions
-
-**Options:**
-1. **Launch with cards only** - Target customers with credit/debit cards
-2. **Integrate Paymongo** - Supports GCash, Maya, bank transfers
-3. **Integrate Xendit** - Alternative local payment gateway
-
-**Decision Required:** Document whether GCash/Maya will be Phase 1 or Phase 2 feature.
-
----
-
-## Phase 8: App Store Submissions
-
-**Time:** 4-8 hours (plus review time)
-
-### Apple App Store Checklist
-
-- [ ] App Store Connect app created
-- [ ] Privacy policy URL added
-- [ ] Privacy nutrition labels completed
-- [ ] App screenshots uploaded (6.7", 6.5", 5.5" sizes)
-- [ ] App description, keywords, categories filled
-- [ ] APNs key configured in EAS
-- [ ] Submit for review
-
-### Google Play Store Checklist
-
-- [ ] Play Console app created
-- [ ] Data safety form completed
-- [ ] Privacy policy URL added
-- [ ] App screenshots and feature graphic uploaded
-- [ ] FCM key configured in EAS
-- [ ] Submit for review
 
 ---
 
@@ -742,115 +934,117 @@ eas submit --platform android
 
 ### Before Going Live
 
-**Backend:**
+**Backend - Critical Security:**
+- [ ] Authorization bypass in EventViewSet FIXED (P0-B0)
+- [ ] Role field is read-only in UserSerializer (P0-B7)
+- [ ] Empty admin_permissions bypass FIXED (P0-B6)
+- [ ] Sensitive payment data logging removed (P0-B8)
+- [ ] Dependency confusion package removed (P0-B9)
+- [ ] Dead analytics buffer code removed (P0-B10)
+- [ ] **Unauthenticated product CRUD FIXED (P0-B13)** ← NEW
+- [ ] **is_active field read-only in ClientCreateUpdateSerializer (P0-B14)** ← NEW
+- [ ] **Authorization bypass in QuestionnaireViewSet FIXED (P0-B15)** ← NEW
+- [ ] **Additional hardcoded URLs fixed (P0-B16)** ← NEW
+
+**Backend - Infrastructure:**
+- [ ] django-storages and boto3 added to requirements.txt (P0-B3)
+- [ ] Dockerfile uses Daphne/Uvicorn for ASGI (P0-B4)
+- [ ] fly.toml created (P0-B5)
 - [ ] All secrets set via `fly secrets set`
 - [ ] Migrations run successfully
-- [ ] 22 communication templates exist
-- [ ] 5 booking flows active
-- [ ] At least 1 product/package created
 - [ ] Stripe configured in Django admin
-- [ ] Stripe webhook registered and tested
-- [ ] Brevo domain verified
-- [ ] R2 bucket created and working
-- [ ] Health check responds at `/api/health/`
 - [ ] No print() statements in production code
 
 **Frontends:**
-- [ ] TypeScript compiles without errors (both apps)
 - [ ] .env.production has all required vars (both apps)
 - [ ] Build completes successfully (both apps)
-- [ ] No console.log in production code
-- [ ] API calls reach backend
+- [ ] Console statements removed/guarded (203 in client-portal)
+- [ ] TipTap versions aligned (P1-D1)
+- [ ] signature_pad versions aligned (P1-D2)
 
 **Mobile:**
 - [ ] SSL cert hashes replaced (not placeholder)
-- [ ] Security config values set (not placeholder)
-- [ ] Crash reporting integrated (Sentry)
-- [ ] Push credentials uploaded to EAS
+- [ ] Test Stripe key removed from .env (P0-M4)
+- [ ] Crash reporting integrated
 - [ ] Privacy policy URL in app.json
-- [ ] Production build created
-- [ ] Store listings ready
-
-**External Services:**
-- [ ] Stripe webhook receiving events
-- [ ] Brevo sending emails successfully
-- [ ] Push notifications delivering
-- [ ] File uploads going to R2
-- [ ] Sentry receiving errors
+- [ ] Console statements guarded (129 total)
+- [ ] Duplicate associated domains removed
 
 ---
 
 ## Quick Reference: All Blockers
 
-| Blocker | System | Type | Effort |
-|---------|--------|------|--------|
-| SECRET_KEY exposed in git | Backend | Security | 2 hr |
-| 75 print() statements | Backend | Code | 1 hr |
-| 5 hardcoded URLs | Backend | Code | 30 min |
-| Cloud storage not configured | Backend | Config | 2-4 hrs |
-| CORS env var not set | Backend | Config | 5 min |
-| Stripe not in Django admin | Backend | Config | 15 min |
-| Stripe webhook not registered | Backend | External | 15 min |
-| Brevo domain not verified | Backend | External | 24 hrs |
-| Products not created | Backend | Data | 1-2 hrs |
-| 3 TypeScript errors | Admin-CRM | Code | 15 min |
-| 24 TypeScript errors | Client-Portal | Code | 2-3 hrs |
-| 30+ console statements | Client-Portal | Code | 1 hr |
-| Stripe key missing in .env.production | Both Frontends | Config | 5 min |
-| SSL cert placeholders | Mobile | Config | 30 min |
-| Security config placeholders | Mobile | Config | 30 min |
-| Crash reporting placeholder | Mobile | Code | 2-4 hrs |
-| Push credentials not uploaded | Mobile | Config | 1 hr |
-| Privacy policy URL missing | Mobile | Config | 5 min |
-| Store listings not created | Mobile | External | 4-8 hrs |
+### Critical (P0) - Must Fix Before Launch
+
+| Blocker | System | Type | Effort | Ref |
+|---------|--------|------|--------|-----|
+| **Authorization bypass (CLIENT data leak)** | Backend | Security | 2 hrs | P0-B0 |
+| **Unauthenticated product CRUD** | Backend | Security | 1 hr | P0-B13 ← NEW |
+| **is_active writable (account manipulation)** | Backend | Security | 15 min | P0-B14 ← NEW |
+| **Authorization bypass in QuestionnaireViewSet** | Backend | Security | 1 hr | P0-B15 ← NEW |
+| Cloud storage dependencies missing | Backend | Config | 1 hr | P0-B3 |
+| Dockerfile uses Gunicorn (no WebSocket) | Backend | Config | 30 min | P0-B4 |
+| No fly.toml configuration | Backend | Config | 30 min | P0-B5 |
+| Empty admin_permissions = full admin | Backend | Security | 1 hr | P0-B6 |
+| Role field writable (privilege escalation) | Backend | Security | 15 min | P0-B7 |
+| Sensitive payment data logged | Backend | Security | 1 hr | P0-B8 |
+| Dependency confusion package | Backend | Security | 5 min | P0-B9 |
+| Dead analytics buffer code (crash) | Backend | Dead Code | 15 min | P0-B10 |
+| 15 print() statements | Backend | Code | 30 min | P0-B1 |
+| Hardcoded URLs (11 total locations) | Backend | Code | 1 hr | P0-B2, P0-B16 |
+| 203 console statements | Client-Portal | Code | 2 hrs | P0-F3 |
+| SSL cert placeholders | Mobile | Config | 30 min | P0-M1 |
+| Test Stripe key in .env | Mobile | Security | 15 min | P0-M4 |
+| Privacy policy URL missing | Mobile | Config | 5 min | P0-M3 |
+
+### High Priority (P1) - Should Fix Before Launch
+
+| Blocker | System | Type | Effort | Ref |
+|---------|--------|------|--------|-----|
+| File upload content validation | Backend | Security | 2 hrs | P0-B11 |
+| Avatar upload endpoint missing | Backend | Feature | 1 hr | P1-B6 |
+| Chargeback handling not implemented | Backend | Feature | 4 hrs | P1-B5 |
+| TipTap version mismatch | Admin-CRM | Dependency | 30 min | P1-D1 |
+| signature_pad version mismatch | Frontends | Dependency | 15 min | P1-D2 |
+| Hardcoded WEB_HOST domain | Mobile | Config | 15 min | P0-M5 |
+| 129 unguarded console statements | Mobile | Code | 2 hrs | P1-M2 |
+| Crash reporting placeholder | Mobile | Code | 2-4 hrs | P1-M1 |
 
 ---
 
 ## Estimated Time Summary
 
-| Phase | Time |
-|-------|------|
-| Phase 0: Account Setup | 2-4 hours |
-| Phase 1: Backend Fixes | 8-12 hours |
-| Phase 2: Database Setup | 2-3 hours |
-| Phase 3: External Services | 3-5 hours |
-| Phase 4: Frontend Fixes | 3-4 hours |
-| Phase 5: Mobile Fixes | 4-6 hours |
-| Phase 6: Build & Deploy | 2-4 hours |
-| Phase 7: Philippines Considerations | 0-8 hours |
-| Phase 8: Store Submissions | 4-8 hours |
-| **TOTAL** | **28-54 hours** |
-
-**Plus:**
-- Brevo domain verification: up to 24 hours
-- App Store review: 1-7 days
-- Play Store review: 1-3 days
+| Phase | Time | Notes |
+|-------|------|-------|
+| Phase 0: Account Setup | 2-4 hours | External accounts |
+| Phase 1: Backend Fixes | 14-20 hours | +4 hrs for new security issues (P0-B13, B14, B15, B16) |
+| Phase 2: Database Setup | 2-3 hours | |
+| Phase 3: External Services | 3-5 hours | |
+| Phase 4: Frontend Fixes | 2-3 hours | TypeScript already fixed, console cleanup |
+| Phase 4.5: Dependency Fixes | 1-2 hours | |
+| Phase 5: Mobile Fixes | 4-6 hours | |
+| Phase 6: Build & Deploy | 2-4 hours | |
+| **TOTAL** | **45-70 hours** | |
 
 ---
 
-## Monthly Operating Costs
+## Items Verified as Already Fixed
 
-| Service | Cost |
-|---------|------|
-| Fly.io API Machine | ~$5 |
-| Fly.io WebSocket Machine | ~$3 |
-| Fly.io Worker Machine | ~$5 |
-| Fly.io Beat Machine | ~$2 |
-| Fly Postgres | ~$7 |
-| Upstash Redis | ~$0-5 |
-| Cloudflare Pages (2 frontends) | $0 |
-| Brevo (Starter) | $0-9 |
-| Cloudflare R2 | ~$2-5 |
-| Sentry (Free) | $0 |
-| Apple Developer (annualized) | $8 |
-| Google Play (annualized) | $2 |
-| **Total** | **~$34-51/month** |
+The following items were in previous versions of this document but have been verified as already fixed:
 
-**Variable Costs:**
-- Stripe: 2.9% + $0.30 per transaction
-- SMS: ~$0.008-0.034 per message
+| Item | Status | Verification |
+|------|--------|--------------|
+| P0-F1: Admin-CRM TypeScript errors | ✅ FIXED | `npm run type-check` passes |
+| P0-F2: Client-Portal TypeScript errors | ✅ FIXED | `npm run type-check` passes |
+| P0-B3f: Webhook signature verification | ✅ IMPLEMENTED | Code at `webhooks.py:104-116` enforces in production |
+| P1-B8: Booking flow stale state bug | ✅ FIXED | Code comment at line 1093 explains fix |
+| P0-B0 (old): SECRET_KEY in git | ✅ NOT AN ISSUE | Backend `.env.production` does not exist |
+| securityChecks.ts placeholders | ✅ NOT AN ISSUE | File does not exist |
 
 ---
 
-*Last updated: 2026-01-16*
+*Last updated: 2026-01-17 (Rev 2)*
 *Target Platform: Fly.io + Fly Postgres + Upstash + Cloudflare Pages*
+*Security audit completed: 2026-01-17*
+*Verification audit completed: 2026-01-17*
+*Revision 2 audit: Added P0-B13, P0-B14, P0-B15, P0-B16 based on comprehensive code review*
