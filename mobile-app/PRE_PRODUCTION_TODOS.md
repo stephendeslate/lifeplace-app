@@ -50,6 +50,29 @@ These accounts must be created before deployment:
 
 **Time:** 6-10 hours
 
+### P0-B0: SECURITY - Remove Exposed Secret Key (CRITICAL)
+
+**Issue:** `.env.production` contains actual SECRET_KEY committed to repository.
+
+**Action Required:**
+```bash
+# 1. Generate new SECRET_KEY
+python -c "import secrets; print(secrets.token_urlsafe(50))"
+
+# 2. Remove .env.production from git history
+git filter-branch --force --index-filter \
+  "git rm --cached --ignore-unmatch .env.production" \
+  --prune-empty --tag-name-filter cat -- --all
+
+# 3. Force push (coordinate with team)
+git push origin --force --all
+
+# 4. Add .env.production to .gitignore
+echo ".env.production" >> .gitignore
+```
+
+**Never commit secrets to version control. Use environment variable injection in deployment.**
+
 ### P0-B1: Remove Debug Code (CRITICAL)
 
 **75 print() statements must be removed:**
@@ -566,7 +589,71 @@ eas submit --platform android
 
 ---
 
-## Phase 7: App Store Submissions
+## Phase 7: Philippines-Specific Considerations
+
+**Time:** 4-8 hours (if implementing local payment methods)
+
+### What's Already Configured for Philippines ✅
+
+| Aspect | Status | Configuration |
+|--------|--------|---------------|
+| Currency (PHP) | ✅ Ready | ₱ symbol, 0 decimals, ₱29 Stripe minimum |
+| Timezone | ✅ Ready | Asia/Manila (UTC+8) |
+| Phone Format | ✅ Ready | +63 XXX XXX XXXX |
+| DPA Compliance | ✅ Ready | Full data subject rights, consent, breach notification |
+| 3D Secure | ✅ Ready | Properly handles card authentication |
+| Stripe PHP | ✅ Ready | Correct minimum charge, webhook handling |
+
+### Payment Methods Gap (IMPORTANT)
+
+**Current State:** Only Stripe card payments (Visa, Mastercard, JCB)
+
+**Missing for Philippines Market:**
+- **GCash** - 76 million users, most popular e-wallet
+- **Maya** - 47 million users, second most popular
+- **Bank transfers** - Common for larger transactions
+
+**Options:**
+1. **Launch with cards only** - Target customers with credit/debit cards
+2. **Integrate Paymongo** - Supports GCash, Maya, bank transfers
+3. **Integrate Xendit** - Alternative local payment gateway
+
+**If implementing local e-wallets:**
+```bash
+# Paymongo integration (recommended for Philippines)
+pip install paymongo
+
+# Add to requirements.txt
+paymongo==1.0.0
+```
+
+**Decision Required:** Document whether GCash/Maya will be Phase 1 or Phase 2 feature.
+
+### PayPal Integration Status
+
+**Current State:** PayPal webhooks have 4 TODO items - NOT FULLY IMPLEMENTED
+
+**Options:**
+1. Complete PayPal implementation (4-8 hours)
+2. Disable PayPal as payment option (30 minutes)
+
+**If disabling PayPal:**
+- Remove from PaymentGateway options in Django admin
+- Remove from frontend payment method selector
+
+### Chargeback Handling
+
+**Current State:** Not implemented (TODO in webhook processor)
+
+**Impact:** Disputed payments require manual handling
+
+**Minimum for Launch:**
+- Monitor Stripe dashboard manually for disputes
+- Implement automated handling in Phase 2
+
+---
+
+## Phase 8: App Store Submissions
 
 **Time:** 4-8 hours (plus review time)
 
@@ -637,6 +724,7 @@ eas submit --platform android
 
 | Blocker | System | Type | Effort |
 |---------|--------|------|--------|
+| SECRET_KEY exposed in git | Backend | Security | 2 hr |
 | 75 print() statements | Backend | Code | 1 hr |
 | 5 hardcoded URLs | Backend | Code | 30 min |
 | Cloud storage not configured | Backend | Config | 2-4 hrs |
@@ -663,19 +751,22 @@ eas submit --platform android
 | Phase | Time |
 |-------|------|
 | Phase 0: Account Setup | 2-4 hours |
-| Phase 1: Backend Fixes | 6-10 hours |
+| Phase 1: Backend Fixes | 8-12 hours |
 | Phase 2: Database Setup | 2-3 hours |
 | Phase 3: External Services | 3-5 hours |
 | Phase 4: Frontend Fixes | 3-4 hours |
 | Phase 5: Mobile Fixes | 4-6 hours |
 | Phase 6: Build & Deploy | 2-4 hours |
-| Phase 7: Store Submissions | 4-8 hours |
-| **TOTAL** | **26-44 hours** |
+| Phase 7: Philippines Considerations | 0-8 hours |
+| Phase 8: Store Submissions | 4-8 hours |
+| **TOTAL** | **28-54 hours** |
 
 **Plus:**
 - Brevo domain verification: up to 24 hours
 - App Store review: 1-7 days
 - Play Store review: 1-3 days
+
+**Note on Phase 7:** Time depends on whether you implement GCash/Maya (add 4-8 hours) or launch with cards only (0 hours).
 
 ---
 
