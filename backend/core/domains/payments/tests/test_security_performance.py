@@ -22,7 +22,7 @@ from django.db import transaction, connections
 from core.domains.payments.models import (
     Payment, PaymentGateway, PaymentTransaction, PaymentMethod
 )
-from core.domains.payments.services.payment_gateway_service import PaymentGatewayService
+from core.domains.payments.services.gateway_service import PaymentGatewayService
 from core.domains.payments.services.payment_service import PaymentService
 from core.domains.events.models import Event, EventType
 
@@ -49,27 +49,31 @@ class PaymentSecurityTestCase(TestCase):
             start_date=date.today() + timedelta(days=30)
         )
         
-        self.gateway = PaymentGateway.objects.create(
-            name='Stripe Security Test',
+        self.gateway, _ = PaymentGateway.objects.get_or_create(
             code='stripe',
-            is_active=True,
-            config={
-                'publishable_key': 'pk_test_security',
-                'secret_key': 'sk_test_security',
-                'webhook_secret': 'whsec_security_test',
-                'test_mode': True
+            defaults={
+                'name': 'Stripe Security Test',
+                'is_active': True,
             }
         )
+        # Always update config to ensure test settings are applied
+        self.gateway.config = {
+            'publishable_key': 'pk_test_security',
+            'secret_key': 'sk_test_security',
+            'webhook_secret': 'whsec_security_test',
+            'test_mode': True
+        }
+        self.gateway.is_active = True
+        self.gateway.save()
     
     def test_payment_method_token_security(self):
         """Test that payment method tokens are properly secured"""
         # Create payment method with token
         payment_method = PaymentMethod.objects.create(
             gateway=self.gateway,
-            client=self.user,
-            token='pm_test_secure_token_123456789',
-            card_last_four='4242',
-            card_brand='visa',
+            user=self.user,
+            token_reference='pm_test_secure_token_123456789',
+            last_four='4242',
             card_exp_month=12,
             card_exp_year=2028
         )
@@ -80,9 +84,8 @@ class PaymentSecurityTestCase(TestCase):
         self.assertIsNone(getattr(payment_method, 'full_card_number', None))
         
         # Verify only safe data is stored
-        self.assertEqual(payment_method.card_last_four, '4242')
-        self.assertEqual(payment_method.card_brand, 'visa')
-        self.assertIsNotNone(payment_method.token)  # Token is safe to store
+        self.assertEqual(payment_method.last_four, '4242')
+        self.assertIsNotNone(payment_method.token_reference)  # Token is safe to store
     
     def test_gateway_config_encryption(self):
         """Test that gateway configurations are encrypted"""
@@ -111,8 +114,8 @@ class PaymentSecurityTestCase(TestCase):
         """Test payment amount validation and sanitization"""
         payment_method = PaymentMethod.objects.create(
             gateway=self.gateway,
-            client=self.user,
-            token='pm_amount_test'
+            user=self.user,
+            token_reference='pm_amount_test'
         )
         
         # Test valid amounts
@@ -155,8 +158,8 @@ class PaymentSecurityTestCase(TestCase):
         """Test SQL injection prevention in payment queries"""
         payment_method = PaymentMethod.objects.create(
             gateway=self.gateway,
-            client=self.user,
-            token='pm_sql_test'
+            user=self.user,
+            token_reference='pm_sql_test'
         )
         
         # Malicious input attempts
@@ -190,8 +193,8 @@ class PaymentSecurityTestCase(TestCase):
         """Test XSS prevention in payment-related data"""
         payment_method = PaymentMethod.objects.create(
             gateway=self.gateway,
-            client=self.user,
-            token='pm_xss_test'
+            user=self.user,
+            token_reference='pm_xss_test'
         )
         
         xss_payloads = [
@@ -280,13 +283,12 @@ class PaymentSecurityTestCase(TestCase):
         """Test PCI compliance in payment method handling"""
         # Simulate PCI-compliant token creation
         secure_token = f"pm_test_{secrets.token_urlsafe(32)}"
-        
+
         payment_method = PaymentMethod.objects.create(
             gateway=self.gateway,
-            client=self.user,
-            token=secure_token,
-            card_last_four='4242',
-            card_brand='visa',
+            user=self.user,
+            token_reference=secure_token,
+            last_four='4242',
             card_exp_month=12,
             card_exp_year=2028,
             cardholder_name='Test Customer'
@@ -302,23 +304,23 @@ class PaymentSecurityTestCase(TestCase):
         self.assertIsNone(getattr(payment_method, 'cvv', None))
         
         # 3. Only last 4 digits stored
-        self.assertEqual(len(payment_method.card_last_four), 4)
-        self.assertTrue(payment_method.card_last_four.isdigit())
+        self.assertEqual(len(payment_method.last_four), 4)
+        self.assertTrue(payment_method.last_four.isdigit())
         
         # 4. Expiry date stored safely (not sensitive)
         self.assertIsInstance(payment_method.card_exp_month, int)
         self.assertIsInstance(payment_method.card_exp_year, int)
         
         # 5. Token is used for transactions (not card data)
-        self.assertTrue(payment_method.token.startswith('pm_'))
-        self.assertGreater(len(payment_method.token), 20)
+        self.assertTrue(payment_method.token_reference.startswith('pm_'))
+        self.assertGreater(len(payment_method.token_reference), 20)
     
     def test_payment_audit_trail(self):
         """Test payment audit trail and logging"""
         payment_method = PaymentMethod.objects.create(
             gateway=self.gateway,
-            client=self.user,
-            token='pm_audit_test'
+            user=self.user,
+            token_reference='pm_audit_test'
         )
         
         payment = Payment.objects.create(
@@ -360,10 +362,9 @@ class PaymentSecurityTestCase(TestCase):
         # Mock payment method with sensitive data
         payment_method = PaymentMethod.objects.create(
             gateway=self.gateway,
-            client=self.user,
-            token='pm_test_sensitive_mask_12345',
-            card_last_four='4242',
-            card_brand='visa'
+            user=self.user,
+            token_reference='pm_test_sensitive_mask_12345',
+            last_four='4242'
         )
         
         # Get masked representation
@@ -396,7 +397,7 @@ class PaymentSecurityTestCase(TestCase):
         
         # Should not include full tokens or keys
         log_str = str(safe_payment_data)
-        self.assertNotIn(payment_method.token, log_str)
+        self.assertNotIn(payment_method.token_reference, log_str)
 
 
 class PaymentPerformanceTestCase(TransactionTestCase):
@@ -419,17 +420,22 @@ class PaymentPerformanceTestCase(TransactionTestCase):
             start_date=date.today() + timedelta(days=60)
         )
         
-        self.gateway = PaymentGateway.objects.create(
-            name='Performance Test Gateway',
+        self.gateway, _ = PaymentGateway.objects.get_or_create(
             code='stripe',
-            is_active=True,
-            config={'test_mode': True}
+            defaults={
+                'name': 'Performance Test Gateway',
+                'is_active': True,
+            }
         )
+        # Always update config to ensure test settings are applied
+        self.gateway.config = {'test_mode': True}
+        self.gateway.is_active = True
+        self.gateway.save()
         
         self.payment_method = PaymentMethod.objects.create(
             gateway=self.gateway,
-            client=self.user,
-            token='pm_performance_test'
+            user=self.user,
+            token_reference='pm_performance_test'
         )
     
     def test_concurrent_payment_processing_performance(self):

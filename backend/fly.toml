@@ -42,7 +42,8 @@ primary_region = "sin"
     timeout = "5s"
     grace_period = "10s"
     method = "GET"
-    path = "/api/health/"
+    # SECURITY FIX: Corrected health check path (was /api/health/, actual endpoint is /health/)
+    path = "/health/"
 
 # Machine configuration
 [[vm]]

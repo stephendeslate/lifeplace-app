@@ -32,6 +32,20 @@ class PasswordResetRateThrottle(AnonRateThrottle):
             self.rate = '5/hour'  # 5 password reset requests per hour per IP
 
 
+class PasswordResetConfirmRateThrottle(AnonRateThrottle):
+    """
+    SECURITY FIX: Rate limiting for password reset confirmation.
+    Stricter limit to prevent brute-force token attacks.
+    """
+
+    def __init__(self):
+        super().__init__()
+        if settings.DEBUG:
+            self.rate = '999999/hour'
+        else:
+            self.rate = '10/hour'  # 10 attempts per hour per IP to prevent token brute-force
+
+
 @api_view(['POST'])
 @permission_classes([AllowAny])
 @throttle_classes([PasswordResetRateThrottle])
@@ -150,11 +164,13 @@ The LifePlace Team
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
+@throttle_classes([PasswordResetConfirmRateThrottle])
 def confirm_password_reset(request, token_id):
     """
     Confirm password reset with token and new password
 
     Security features:
+    - Rate limiting (10 requests per hour per IP) - SECURITY FIX
     - Token validation (not used, not expired)
     - Password strength validation
     - Token invalidation after use
@@ -254,10 +270,14 @@ def confirm_password_reset(request, token_id):
 
 @api_view(['GET'])
 @permission_classes([AllowAny])
+@throttle_classes([PasswordResetConfirmRateThrottle])
 def validate_reset_token(request, token_id):
     """
     Validate a password reset token without using it
     Useful for frontend to check if token is valid before showing reset form
+
+    Security features:
+    - Rate limiting (10 requests per hour per IP) - SECURITY FIX
     """
     try:
         reset_token = PasswordResetToken.objects.select_related('user').get(id=token_id)

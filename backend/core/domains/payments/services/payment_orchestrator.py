@@ -661,8 +661,17 @@ class PaymentOrchestrator:
                     f'Gateway processing failed: {str(e)}',
                     f'{gateway_code}_error'
                 )
-            except:
-                pass  # Don't fail if state transition fails
+            except Exception as state_error:
+                # SECURITY FIX: Log state transition failures instead of silently ignoring
+                logger.error(
+                    f"Failed to transition payment {payment.id} to FAILED state: {state_error}",
+                    exc_info=True,
+                    extra={
+                        'payment_id': payment.id,
+                        'original_error': str(e),
+                        'state_transition_error': str(state_error)
+                    }
+                )
 
             return PaymentResponse(
                 success=False,

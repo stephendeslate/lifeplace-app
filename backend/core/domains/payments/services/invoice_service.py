@@ -59,10 +59,11 @@ class InvoiceService:
             quote_id = data.get('quote')
             if quote_id:
                 try:
-                    quote = EventQuote.objects.get(pk=quote_id)
+                    # PERFORMANCE FIX: Prefetch line_items to avoid N+1 query
+                    quote = EventQuote.objects.prefetch_related('line_items', 'line_items__product').get(pk=quote_id)
                     invoice.quote = quote
                     invoice.save()
-                    
+
                     # If it's from a quote, copy line items from quote
                     if hasattr(quote, 'line_items'):
                         for quote_item in quote.line_items.all():
@@ -226,6 +227,11 @@ class InvoiceService:
 
         if not quote or not quote.event:
             return None
+
+        # PERFORMANCE FIX: Ensure line_items are prefetched to avoid N+1 query
+        # Check if line_items are already prefetched; if not, refetch with prefetch
+        if not hasattr(quote, '_prefetched_objects_cache') or 'line_items' not in quote._prefetched_objects_cache:
+            quote = EventQuote.objects.prefetch_related('line_items', 'line_items__product').get(pk=quote.pk)
 
         # Check if invoice already exists for this quote
         existing_invoice = Invoice.objects.filter(quote=quote).first()

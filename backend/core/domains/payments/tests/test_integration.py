@@ -17,7 +17,7 @@ from core.domains.payments.models import (
     Invoice, InvoiceLineItem
 )
 from core.domains.payments.services.payment_service import PaymentService
-from core.domains.payments.services.payment_gateway_service import PaymentGatewayService
+from core.domains.payments.services.gateway_service import PaymentGatewayService
 from core.domains.payments.services.invoice_service import InvoiceService
 from core.domains.events.models import Event, EventType
 from core.domains.sales.models import EventQuote, QuoteLineItem
@@ -26,7 +26,8 @@ from core.domains.bookingflow.models import (
     BookingFlow, BookingFlowStep, PaymentInfoStepConfiguration, BookingSession
 )
 from core.domains.bookingflow.services.booking_session_service import BookingSessionService
-from core.domains.workflows.models import Workflow, WorkflowAction
+# Note: Workflow models were renamed to WorkflowTemplate/WorkflowStage
+# Keeping imports minimal as only service patching is needed
 
 User = get_user_model()
 
@@ -89,25 +90,29 @@ class CompletePaymentFlowTestCase(TestCase):
         )
         
         # Payment gateway setup
-        self.gateway = PaymentGateway.objects.create(
-            name='Stripe Philippines',
+        self.gateway, _ = PaymentGateway.objects.get_or_create(
             code='stripe',
-            is_active=True,
-            config={
-                'publishable_key': 'pk_test_51234567890',
-                'secret_key': 'sk_test_51234567890',
-                'webhook_secret': 'whsec_test_secret',
-                'test_mode': True
+            defaults={
+                'name': 'Stripe Philippines',
+                'is_active': True,
             }
         )
+        # Always update config to ensure test settings are applied
+        self.gateway.config = {
+            'publishable_key': 'pk_test_51234567890',
+            'secret_key': 'sk_test_51234567890',
+            'webhook_secret': 'whsec_test_secret',
+            'test_mode': True
+        }
+        self.gateway.is_active = True
+        self.gateway.save()
         
         # Payment method
         self.payment_method = PaymentMethod.objects.create(
             gateway=self.gateway,
-            client=self.client_user,
-            token='pm_test_visa_card',
-            card_last_four='4242',
-            card_brand='visa',
+            user=self.client_user,
+            token_reference='pm_test_visa_card',
+            last_four='4242',
             card_exp_month=12,
             card_exp_year=2028,
             is_default=True

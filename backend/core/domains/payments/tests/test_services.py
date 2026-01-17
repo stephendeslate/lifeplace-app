@@ -66,9 +66,9 @@ class PaymentServiceTestCase(TestCase):
         
         self.payment_method = PaymentMethod.objects.create(
             gateway=self.gateway,
-            token='pm_test_123',
-            card_last_four='4242',
-            card_brand='visa'
+            user=self.user,
+            token_reference='pm_test_123',
+            last_four='4242'
         )
     
     def test_create_payment(self):
@@ -215,23 +215,28 @@ class PaymentGatewayServiceTestCase(TestCase):
             start_date=date.today() + timedelta(days=30)
         )
         
-        self.gateway = PaymentGateway.objects.create(
-            name='Stripe Test',
+        self.gateway, _ = PaymentGateway.objects.get_or_create(
             code='stripe',
-            is_active=True,
-            config={
-                'publishable_key': 'pk_test_51234567890',
-                'secret_key': 'sk_test_51234567890',
-                'webhook_secret': 'whsec_test_123',
-                'test_mode': True
+            defaults={
+                'name': 'Stripe Test',
+                'is_active': True,
             }
         )
+        # Always update config to ensure test settings are applied
+        self.gateway.config = {
+            'publishable_key': 'pk_test_51234567890',
+            'secret_key': 'sk_test_51234567890',
+            'webhook_secret': 'whsec_test_123',
+            'test_mode': True
+        }
+        self.gateway.is_active = True
+        self.gateway.save()
         
         self.payment_method = PaymentMethod.objects.create(
             gateway=self.gateway,
-            token='pm_test_card',
-            card_last_four='4242',
-            card_brand='visa'
+            user=self.user,
+            token_reference='pm_test_card',
+            last_four='4242'
         )
     
     @patch('stripe.PaymentIntent.create')
@@ -559,15 +564,20 @@ class InvoiceServiceTestCase(TestCase):
         )
         
         # Create payment
-        gateway = PaymentGateway.objects.create(
-            name='Stripe Test',
+        gateway, _ = PaymentGateway.objects.get_or_create(
             code='stripe',
-            is_active=True
+            defaults={
+                'name': 'Stripe Test',
+                'is_active': True,
+            }
         )
+        gateway.is_active = True
+        gateway.save()
         
         payment_method = PaymentMethod.objects.create(
             gateway=gateway,
-            token='pm_test_123'
+            user=self.user,
+            token_reference='pm_test_123'
         )
         
         payment = Payment.objects.create(
@@ -633,11 +643,15 @@ class DepositPaymentTestCase(TestCase):
             is_enabled=True
         )
         
-        self.gateway = PaymentGateway.objects.create(
-            name='Stripe Test',
+        self.gateway, _ = PaymentGateway.objects.get_or_create(
             code='stripe',
-            is_active=True
+            defaults={
+                'name': 'Stripe Test',
+                'is_active': True,
+            }
         )
+        self.gateway.is_active = True
+        self.gateway.save()
     
     def test_percentage_deposit_calculation(self):
         """Test percentage-based deposit calculation"""

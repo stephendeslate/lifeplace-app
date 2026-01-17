@@ -114,12 +114,17 @@ class TestUserAdminPermissions:
         assert not user.has_admin_permission('can_manage_admins')
         assert not user.has_admin_permission('can_manage_company_settings')
 
-    def test_admin_with_empty_permissions_has_all(self, user_factory):
-        """Test backward compatibility: admin with empty permissions = full admin."""
+    def test_admin_with_empty_permissions_has_none(self, user_factory):
+        """
+        SECURITY FIX (P0-B6): Test that admin with empty permissions has NO access.
+        Empty permissions = no access (not full admin).
+        This prevents privilege escalation through empty permission bypass.
+        """
         user = user_factory(admin=True, admin_permissions={})
 
-        assert user.has_admin_permission('can_manage_admins')
-        assert user.is_full_admin()
+        # Empty permissions should deny all access
+        assert not user.has_admin_permission('can_manage_admins')
+        assert not user.is_full_admin()
 
     def test_admin_with_specific_permissions(self, user_factory):
         """Test admin with specific permissions set."""
