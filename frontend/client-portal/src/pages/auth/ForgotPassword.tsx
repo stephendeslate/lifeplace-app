@@ -103,7 +103,7 @@ const ForgotPassword: React.FC<ForgotPasswordProps> = ({
       setIsSuccess(true);
       showSuccess('Email Sent', response.detail);
     } catch (error: unknown) {
-      console.error('Password reset request error:', error);
+      if (import.meta.env.DEV) console.error('Password reset request error:', error);
 
       const errorObj = error as { response?: { data?: { detail?: string } } };
       if (errorObj?.response?.data?.detail) {

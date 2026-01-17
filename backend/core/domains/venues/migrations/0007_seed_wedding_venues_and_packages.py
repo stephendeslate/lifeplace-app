@@ -292,8 +292,9 @@ def seed_wedding_configuration(apps, schema_editor):
     # =====================================================
 
     # Delete existing wedding packages and their PackageVenue links
+    # Note: event_types is now a ManyToMany field
     existing_wedding_packages = ProductOption.objects.filter(
-        event_type=wedding_event_type,
+        event_types=wedding_event_type,
         type='PACKAGE'
     )
     # PackageVenue will cascade delete
@@ -356,7 +357,6 @@ Rates are subject to change without prior notice."""
         pricing_model='FIXED',
         base_price=Decimal('79000.00'),
         currency='PHP',
-        tax_rate=Decimal('0.00'),
         is_tax_inclusive=True,
         type='PACKAGE',
         is_active=True,
@@ -365,9 +365,9 @@ Rates are subject to change without prior notice."""
         maximum_hours=6,
         minimum_guests=50,
         maximum_guests=220,
-        event_type=wedding_event_type,
         sort_order=1,
     )
+    pkg_sanctuary_openfield.event_types.add(wedding_event_type)
 
     # Package 2: The Sanctuary and Pavilion - PHP 66,000
     pkg_sanctuary_pavilion = ProductOption.objects.create(
@@ -377,7 +377,6 @@ Rates are subject to change without prior notice."""
         pricing_model='FIXED',
         base_price=Decimal('66000.00'),
         currency='PHP',
-        tax_rate=Decimal('0.00'),
         is_tax_inclusive=True,
         type='PACKAGE',
         is_active=True,
@@ -386,9 +385,9 @@ Rates are subject to change without prior notice."""
         maximum_hours=6,
         minimum_guests=50,
         maximum_guests=130,
-        event_type=wedding_event_type,
         sort_order=2,
     )
+    pkg_sanctuary_pavilion.event_types.add(wedding_event_type)
 
     # Package 3: The Angelic Field and Open Field - PHP 71,200
     pkg_angelic_openfield = ProductOption.objects.create(
@@ -398,7 +397,6 @@ Rates are subject to change without prior notice."""
         pricing_model='FIXED',
         base_price=Decimal('71200.00'),
         currency='PHP',
-        tax_rate=Decimal('0.00'),
         is_tax_inclusive=True,
         type='PACKAGE',
         is_active=True,
@@ -407,9 +405,9 @@ Rates are subject to change without prior notice."""
         maximum_hours=6,
         minimum_guests=50,
         maximum_guests=220,
-        event_type=wedding_event_type,
         sort_order=3,
     )
+    pkg_angelic_openfield.event_types.add(wedding_event_type)
 
     # Package 4: The Angelic Field and Pavilion - PHP 60,000
     pkg_angelic_pavilion = ProductOption.objects.create(
@@ -419,7 +417,6 @@ Rates are subject to change without prior notice."""
         pricing_model='FIXED',
         base_price=Decimal('60000.00'),
         currency='PHP',
-        tax_rate=Decimal('0.00'),
         is_tax_inclusive=True,
         type='PACKAGE',
         is_active=True,
@@ -428,9 +425,9 @@ Rates are subject to change without prior notice."""
         maximum_hours=6,
         minimum_guests=50,
         maximum_guests=200,
-        event_type=wedding_event_type,
         sort_order=4,
     )
+    pkg_angelic_pavilion.event_types.add(wedding_event_type)
 
     # =====================================================
     # PART 6: LINK PACKAGES TO VENUES VIA PackageVenue
@@ -532,7 +529,6 @@ Rates are subject to change without prior notice."""
             'pricing_model': 'FIXED',
             'base_price': Decimal('10000.00'),
             'currency': 'PHP',
-            'tax_rate': Decimal('0.00'),
             'is_tax_inclusive': True,
             'type': 'PRODUCT',
             'is_active': True,
@@ -555,7 +551,7 @@ def reverse_wedding_configuration(apps, schema_editor):
     # Delete wedding packages (PackageVenue will cascade)
     if wedding_event_type:
         ProductOption.objects.filter(
-            event_type=wedding_event_type,
+            event_types=wedding_event_type,
             type='PACKAGE'
         ).delete()
 
@@ -579,7 +575,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('venues', '0006_add_amenities_field'),
-        ('products', '0011_add_image_fields_to_productoption'),
+        ('products', '0013_remove_tax_rate_from_productoption'),
         ('events', '0001_initial'),
     ]
 

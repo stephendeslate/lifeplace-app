@@ -27,6 +27,7 @@ import { Button } from '@/components/common';
 import { PaymentMethodSelector } from './PaymentMethodSelector';
 import { StripeCardField } from './StripeCardField';
 import { usePayInvoice } from '@/hooks/useFinancial';
+import { logger } from '@/utils/logger';
 import { useAuthStore } from '@/stores/authStore';
 import { formatCurrency } from '@/utils/formatting';
 import type { Invoice } from '@/apis/payments.api';
@@ -136,7 +137,7 @@ export function InvoicePaymentModal({
         }
       }
     } catch (error) {
-      console.error('Payment error:', error);
+      logger.error('Payment error:', error);
       // Error toast is shown by the hook
     }
   }, [

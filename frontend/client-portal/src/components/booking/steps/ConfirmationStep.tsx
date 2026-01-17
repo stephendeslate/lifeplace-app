@@ -195,7 +195,7 @@ export const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
         });
       }
     } catch (error) {
-      console.error('Failed to complete booking:', error);
+      if (import.meta.env.DEV) console.error('Failed to complete booking:', error);
       onDataChange({
         ...confirmationData,
         completion_status: 'failed',

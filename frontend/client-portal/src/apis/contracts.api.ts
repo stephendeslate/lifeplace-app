@@ -300,51 +300,57 @@ export const contractUtils = {
 
   // Validate signature data
   validateSignature: (signatureData: string): boolean => {
-    console.log('🔍 VALIDATE SIGNATURE called', {
-      hasData: !!signatureData,
-      dataType: typeof signatureData,
-      dataLength: signatureData?.length || 0,
-      timestamp: Date.now()
-    });
-    
+    if (import.meta.env.DEV) {
+      console.log('🔍 VALIDATE SIGNATURE called', {
+        hasData: !!signatureData,
+        dataType: typeof signatureData,
+        dataLength: signatureData?.length || 0,
+        timestamp: Date.now()
+      });
+    }
+
     // Basic validation - signature should be a non-empty string
     if (!signatureData || signatureData.trim().length === 0) {
-      console.log('🔍 VALIDATE SIGNATURE: FAILED - No data or empty string');
+      if (import.meta.env.DEV) console.log('🔍 VALIDATE SIGNATURE: FAILED - No data or empty string');
       return false;
     }
-    
+
     // Check if it's a valid base64 data URL
     if (signatureData.startsWith('data:image/')) {
-      console.log('🔍 VALIDATE SIGNATURE: Checking base64 data URL');
+      if (import.meta.env.DEV) console.log('🔍 VALIDATE SIGNATURE: Checking base64 data URL');
       const base64Data = signatureData.split(',')[1];
-      
+
       if (!base64Data) {
-        console.log('🔍 VALIDATE SIGNATURE: FAILED - No base64 data after comma');
+        if (import.meta.env.DEV) console.log('🔍 VALIDATE SIGNATURE: FAILED - No base64 data after comma');
         return false;
       }
-      
+
       try {
         atob(base64Data);
         const isValid = base64Data.length > 100; // Minimum complexity check
-        console.log('🔍 VALIDATE SIGNATURE: Base64 validation', {
-          base64Length: base64Data.length,
-          isValid,
-          minLength: 100
-        });
+        if (import.meta.env.DEV) {
+          console.log('🔍 VALIDATE SIGNATURE: Base64 validation', {
+            base64Length: base64Data.length,
+            isValid,
+            minLength: 100
+          });
+        }
         return isValid;
       } catch (error) {
-        console.log('🔍 VALIDATE SIGNATURE: FAILED - Invalid base64 data', error);
+        if (import.meta.env.DEV) console.log('🔍 VALIDATE SIGNATURE: FAILED - Invalid base64 data', error);
         return false;
       }
     }
-    
+
     const isValid = signatureData.length > 50; // Minimum length for other formats
-    console.log('🔍 VALIDATE SIGNATURE: Non-image data validation', {
-      dataLength: signatureData.length,
-      isValid,
-      minLength: 50
-    });
-    
+    if (import.meta.env.DEV) {
+      console.log('🔍 VALIDATE SIGNATURE: Non-image data validation', {
+        dataLength: signatureData.length,
+        isValid,
+        minLength: 50
+      });
+    }
+
     return isValid;
   },
 

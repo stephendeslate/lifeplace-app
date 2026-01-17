@@ -7,6 +7,9 @@
 import * as Linking from 'expo-linking';
 import { router } from 'expo-router';
 import { useAuthStore } from '@/stores/authStore';
+import { logger } from './logger';
+
+const deepLinkLogger = logger.create('DeepLinking');
 
 // =============================================================================
 // TYPES
@@ -37,7 +40,7 @@ export interface ParsedDeepLink {
 // =============================================================================
 
 export const APP_SCHEME = 'lifeplace';
-export const WEB_HOST = 'app.lifeplace.com';
+export const WEB_HOST = process.env.EXPO_PUBLIC_WEB_HOST || 'app.lifeplace.dev';
 
 // Supported deep link routes
 const SUPPORTED_ROUTES: DeepLinkRoute[] = [
@@ -112,7 +115,7 @@ export function parseDeepLink(url: string): ParsedDeepLink {
       originalUrl: url,
     };
   } catch (error) {
-    console.error('Deep link parsing error:', error);
+    deepLinkLogger.error('Deep link parsing error:', error);
     return { isValid: false, originalUrl: url };
   }
 }
@@ -172,7 +175,7 @@ export function navigateToDeepLink(params: DeepLinkParams): boolean {
         return false;
     }
   } catch (error) {
-    console.error('Deep link navigation error:', error);
+    deepLinkLogger.error('Deep link navigation error:', error);
     return false;
   }
 }
@@ -242,7 +245,7 @@ export async function getInitialDeepLink(): Promise<string | null> {
     const url = await Linking.getInitialURL();
     return url;
   } catch (error) {
-    console.error('Error getting initial URL:', error);
+    deepLinkLogger.error('Error getting initial URL:', error);
     return null;
   }
 }
@@ -255,7 +258,7 @@ export async function handleDeepLink(url: string): Promise<boolean> {
   const parsed = parseDeepLink(url);
 
   if (!parsed.isValid || !parsed.params) {
-    console.warn('Invalid deep link:', url);
+    deepLinkLogger.warn('Invalid deep link:', url);
     return false;
   }
 
@@ -265,7 +268,7 @@ export async function handleDeepLink(url: string): Promise<boolean> {
 
   if (!isAuthenticated) {
     // Store the deep link for navigation after login
-    console.log('User not authenticated, storing deep link for later:', url);
+    deepLinkLogger.debug('User not authenticated, storing deep link for later:', url);
     storePendingDeepLink(parsed.params);
 
     // Navigate to login - the pending deep link will be handled after auth

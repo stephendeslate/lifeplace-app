@@ -7,6 +7,7 @@
 
 import api from '@/utils/api';
 import { ErrorHandler } from '@/utils/errorHandler';
+import { logger } from '@/utils/logger';
 import type {
   SelectedPackage,
   SelectedAddon,
@@ -249,7 +250,7 @@ export const ProductsAPI = {
 
       return productMap;
     } catch (error) {
-      console.warn('Failed to fetch products by IDs via batch API:', error);
+      logger.warn('Failed to fetch products by IDs via batch API:', error);
 
       // Fallback to individual requests
       const productMap = new Map<number, ProductOption>();
@@ -259,7 +260,7 @@ export const ProductsAPI = {
           const product = await ProductsAPI.getProductOption(id);
           productMap.set(id, product);
         } catch (err) {
-          console.warn(`Failed to fetch product ${id}:`, err);
+          logger.warn(`Failed to fetch product ${id}:`, err);
         }
       }
 

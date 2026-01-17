@@ -1,5 +1,5 @@
 // frontend/client-portal/src/hooks/contracts/__tests__/useContractStatusUpdates.test.tsx
-import { renderHook, waitFor } from '@testing-library/react';
+import { renderHook, waitFor, act } from '@testing-library/react';
 import { vi } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import {
@@ -171,7 +171,7 @@ describe('useContractStatusUpdates', () => {
   it('calls onStatusChange when status changes', async () => {
     const onStatusChange = vi.fn();
 
-    const { rerender } = renderHook(
+    const { result } = renderHook(
       () =>
         useContractStatusUpdates({
           contractId: 'contract-1',
@@ -186,7 +186,7 @@ describe('useContractStatusUpdates', () => {
       expect(mockContractsApi.getContractStatus).toHaveBeenCalledTimes(1);
     });
 
-    // Change the mock response
+    // Change the mock response to return a different status
     mockContractsApi.getContractStatus.mockResolvedValue({
       contract_id: 'contract-1',
       status: 'SIGNED',
@@ -209,8 +209,10 @@ describe('useContractStatusUpdates', () => {
       expires_at: '2024-07-01T10:00:00Z',
     });
 
-    // Trigger re-render to simulate polling
-    rerender();
+    // Manually trigger a refetch to get the new data
+    await act(async () => {
+      await result.current.refreshStatus();
+    });
 
     await waitFor(() => {
       expect(onStatusChange).toHaveBeenCalled();
@@ -291,11 +293,15 @@ describe('useRealTimeContractUpdates', () => {
     );
 
     // Start listening
-    result.current.startListening();
+    act(() => {
+      result.current.startListening();
+    });
     expect(result.current.isConnected).toBe(true);
 
     // Stop listening
-    result.current.stopListening();
+    act(() => {
+      result.current.stopListening();
+    });
     expect(result.current.isConnected).toBe(false);
   });
 
@@ -324,7 +330,9 @@ describe('useRealTimeContractUpdates', () => {
       })
     );
 
-    result.current.startListening();
+    act(() => {
+      result.current.startListening();
+    });
     expect(result.current.isConnected).toBe(true);
 
     unmount();
@@ -354,8 +362,10 @@ describe('useRealTimeContractUpdates', () => {
     );
 
     // Simulate connection error
-    result.current.startListening();
-    
+    act(() => {
+      result.current.startListening();
+    });
+
     // The hook should handle errors gracefully and not throw
     expect(result.current.isConnected).toBe(true);
   });
@@ -367,7 +377,7 @@ describe('useGlobalSignatureEvents', () => {
   });
 
   it('provides global event functions', () => {
-    const { result } = renderHook(() => useGlobalSignatureEvents());
+    const { result } = renderHook(() => useGlobalSignatureEvents(), { wrapper });
 
     expect(typeof result.current.simulateSignatureEvent).toBe('function');
     expect(typeof result.current.addEventListener).toBe('function');
@@ -375,7 +385,7 @@ describe('useGlobalSignatureEvents', () => {
   });
 
   it('handles signature event simulation', () => {
-    const { result } = renderHook(() => useGlobalSignatureEvents());
+    const { result } = renderHook(() => useGlobalSignatureEvents(), { wrapper });
 
     // Should not throw when simulating events
     expect(() => {
@@ -385,7 +395,7 @@ describe('useGlobalSignatureEvents', () => {
   });
 
   it('manages event listeners correctly', () => {
-    const { result } = renderHook(() => useGlobalSignatureEvents());
+    const { result } = renderHook(() => useGlobalSignatureEvents(), { wrapper });
     const mockCallback = vi.fn();
 
     // Add event listener
@@ -412,7 +422,7 @@ describe('useGlobalSignatureEvents', () => {
   });
 
   it('handles multiple event listeners for same event', () => {
-    const { result } = renderHook(() => useGlobalSignatureEvents());
+    const { result } = renderHook(() => useGlobalSignatureEvents(), { wrapper });
     const mockCallback1 = vi.fn();
     const mockCallback2 = vi.fn();
 
@@ -426,7 +436,7 @@ describe('useGlobalSignatureEvents', () => {
   });
 
   it('provides contract-specific event filtering', () => {
-    const { result } = renderHook(() => useGlobalSignatureEvents());
+    const { result } = renderHook(() => useGlobalSignatureEvents(), { wrapper });
     const mockCallback = vi.fn();
 
     result.current.addEventListener('signature_added', mockCallback);
@@ -436,7 +446,7 @@ describe('useGlobalSignatureEvents', () => {
     result.current.simulateSignatureEvent('contract-2', 'signature_added');
 
     expect(mockCallback).toHaveBeenCalledTimes(2);
-    expect(mockCallback).toHaveBeenNthCalledWith(1, 
+    expect(mockCallback).toHaveBeenNthCalledWith(1,
       expect.objectContaining({ contractId: 'contract-1' })
     );
     expect(mockCallback).toHaveBeenNthCalledWith(2,
@@ -445,11 +455,11 @@ describe('useGlobalSignatureEvents', () => {
   });
 
   it('cleans up event listeners on unmount', () => {
-    const { result, unmount } = renderHook(() => useGlobalSignatureEvents());
+    const { result, unmount } = renderHook(() => useGlobalSignatureEvents(), { wrapper });
     const mockCallback = vi.fn();
 
     result.current.addEventListener('signature_added', mockCallback);
-    
+
     unmount();
 
     // After unmount, simulate event should not call the callback

@@ -113,7 +113,7 @@ const Profile: React.FC = () => {
       showSuccess('Profile updated successfully!');
       setIsEditing(false);
     } catch (error) {
-      console.error('Error updating profile:', error);
+      if (import.meta.env.DEV) console.error('Error updating profile:', error);
       showError('Failed to update profile. Please try again.');
     } finally {
       setIsLoading(false);

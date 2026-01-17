@@ -109,7 +109,7 @@ export const useDocuments = (options: UseDocumentsOptions = {}) => {
             const docs = await eventsApi.getEventDocuments(event.id);
             results[event.id] = docs;
           } catch (error) {
-            console.error(`Failed to fetch documents for event ${event.id}:`, error);
+            if (import.meta.env.DEV) console.error(`Failed to fetch documents for event ${event.id}:`, error);
             results[event.id] = [];
           }
         })
@@ -252,7 +252,7 @@ export const useDocuments = (options: UseDocumentsOptions = {}) => {
       queryClient.invalidateQueries({ queryKey: ['event-documents', variables.eventId] });
     },
     onError: (error) => {
-      console.error('Upload failed:', error);
+      if (import.meta.env.DEV) console.error('Upload failed:', error);
       showError('Upload Failed', 'There was an error uploading your document. Please try again.');
     },
   });

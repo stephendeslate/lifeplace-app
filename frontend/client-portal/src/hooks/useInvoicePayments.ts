@@ -69,7 +69,7 @@ export const useInvoicePayments = () => {
       invoiceId: number;
       planData: PaymentPlanRequest
     }) => {
-      console.warn('⚠️ WIP: Payment plan setup mutation is currently disabled');
+      if (import.meta.env.DEV) console.warn('⚠️ WIP: Payment plan setup mutation is currently disabled');
       return FinancialApi.setupInvoicePaymentPlan(invoiceId, planData);
     },
     onSuccess: (_, { invoiceId }) => {
@@ -111,7 +111,7 @@ export const useInvoicePayments = () => {
    * ⚠️ WORK IN PROGRESS - Payment Plan feature is being redesigned
    */
   const setupPaymentPlan = (invoiceId: number, planData: PaymentPlanRequest) => {
-    console.warn('⚠️ WIP: Payment plan setup is currently disabled');
+    if (import.meta.env.DEV) console.warn('⚠️ WIP: Payment plan setup is currently disabled');
     return setupPaymentPlanMutation.mutate({ invoiceId, planData });
   };
 

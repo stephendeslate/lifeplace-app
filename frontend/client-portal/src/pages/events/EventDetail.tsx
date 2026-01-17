@@ -188,7 +188,7 @@ const EventDetail: React.FC = () => {
       setSelectedContract(fullContract);
       setSigningDialogOpen(true);
     } catch (error) {
-      console.error('Error fetching contract details for signing:', error);
+      if (import.meta.env.DEV) console.error('Error fetching contract details for signing:', error);
       // Fallback to showing contract without content
       setSelectedContract(contract);
       setSigningDialogOpen(true);
@@ -204,7 +204,7 @@ const EventDetail: React.FC = () => {
   };
 
   const handleSignError = (error: string) => {
-    console.error('Contract signing error:', error);
+    if (import.meta.env.DEV) console.error('Contract signing error:', error);
     // Error is already shown in the dialog
   };
 

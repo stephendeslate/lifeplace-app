@@ -28,6 +28,7 @@ import {
   ArrowSquareOut,
 } from 'phosphor-react-native';
 import { theme } from '@/theme';
+import { logger } from '@/utils/logger';
 
 export interface PDFViewerModalProps {
   visible: boolean;
@@ -101,7 +102,7 @@ export function PDFViewerModal({
           setDownloadError(`Failed to load PDF (Status: ${downloadResult.status})`);
         }
       } catch (error) {
-        console.error('PDF download error:', error);
+        logger.error('PDF download error:', error);
         setDownloadError('Failed to load PDF. Please try again.');
       } finally {
         setDownloadingPdf(false);

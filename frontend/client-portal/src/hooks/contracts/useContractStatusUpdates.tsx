@@ -91,10 +91,10 @@ export const useContractStatusUpdates = ({
     // };
 
     // For now, we'll just use polling
-    console.log(`Real-time updates enabled for contract ${contractId}`);
-    
+    if (import.meta.env.DEV) console.log(`Real-time updates enabled for contract ${contractId}`);
+
     return () => {
-      console.log(`Real-time updates disabled for contract ${contractId}`);
+      if (import.meta.env.DEV) console.log(`Real-time updates disabled for contract ${contractId}`);
     };
   }, [contractId, enabled, queryClient]);
 
@@ -211,12 +211,12 @@ export const useRealTimeContractUpdates = ({
 
   const startListening = useCallback(() => {
     setIsConnected(true);
-    console.log(`Started listening for real-time updates on contract ${contractId}`);
+    if (import.meta.env.DEV) console.log(`Started listening for real-time updates on contract ${contractId}`);
   }, [contractId]);
 
   const stopListening = useCallback(() => {
     setIsConnected(false);
-    console.log(`Stopped listening for real-time updates on contract ${contractId}`);
+    if (import.meta.env.DEV) console.log(`Stopped listening for real-time updates on contract ${contractId}`);
   }, [contractId]);
 
   const simulateUpdate = useCallback((eventType: string, data: unknown) => {
@@ -279,11 +279,14 @@ export const useGlobalSignatureEvents = () => {
     //   globalWs.close();
     // };
 
-    console.log('Global signature event listener initialized');
+    if (import.meta.env.DEV) console.log('Global signature event listener initialized');
     return () => {
-      console.log('Global signature event listener cleaned up');
+      if (import.meta.env.DEV) console.log('Global signature event listener cleaned up');
     };
   }, []); // Remove queryClient dependency - queryClient is stable in React Query
+
+  // Event listener management for testing
+  const eventListeners = useRef<{ [key: string]: ((event: unknown) => void)[] }>({});
 
   // Manual trigger for testing
   const simulateSignatureEvent = (contractId: string, eventType: 'signature_added' | 'contract_completed') => {
@@ -295,10 +298,14 @@ export const useGlobalSignatureEvents = () => {
         queryClient.invalidateQueries({ queryKey: ['contracts'] });
         break;
     }
-  };
 
-  // Event listener management for testing
-  const eventListeners = useRef<{ [key: string]: ((event: unknown) => void)[] }>({});
+    // Dispatch to registered listeners
+    const listeners = eventListeners.current[eventType];
+    if (listeners) {
+      const event = { type: eventType, contractId, timestamp: new Date().toISOString() };
+      listeners.forEach(callback => callback(event));
+    }
+  };
 
   const addEventListener = (eventType: string, callback: (event: unknown) => void) => {
     if (!eventListeners.current[eventType]) {

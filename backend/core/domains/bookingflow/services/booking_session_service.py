@@ -155,28 +155,23 @@ class BookingSessionService:
     def update_session_data(session_id, step_data, mark_completed=False):
         """Update booking session data for a step"""
         session = BookingSessionService.get_session_by_id(session_id)
-        print(f"SERVICE DEBUG: current_step={session.current_step.get_step_type_display() if session.current_step else 'None'}")
 
         # ENHANCED SAFEGUARD: Prevent updating completed sessions
         if session.is_completed:
             logger.warning(f"🔥 UPDATE_BLOCKED: Attempt to update already completed session {session_id}")
-            print(f"DEBUG: Session already completed, blocking update")
             return session
-        
+
         # Validate step data against current step
         if session.current_step:
             validation_errors = BookingSessionService._validate_step_data(
                 session.current_step, step_data, session
             )
             if validation_errors:
-                print(f"SERVICE DEBUG: Validation errors found: {validation_errors}")
                 # Store validation errors but don't raise exception
                 session.validation_errors = validation_errors
                 session.save()
                 # Still return the session with errors
                 return session
-            else:
-                print(f"SERVICE DEBUG: No validation errors")
         
         with transaction.atomic():
             # Update booking data
@@ -222,19 +217,15 @@ class BookingSessionService:
             session.validation_errors = {}
             
             # Handle step progression
-            print(f"DEBUG: mark_completed={mark_completed}, session.booking_flow={bool(session.booking_flow)}")
             if mark_completed and session.booking_flow:
                 # Add current step to completed steps
                 if session.current_step and session.current_step not in session.completed_steps.all():
                     session.completed_steps.add(session.current_step)
-                    print(f"DEBUG: Added step {session.current_step.get_step_type_display()} to completed_steps")
-                
+
                 # Check if this is a contact_info step - create/associate client user
-                if (session.current_step and 
-                    session.current_step.step_type == 'contact_info' and 
+                if (session.current_step and
+                    session.current_step.step_type == 'contact_info' and
                     'email' in step_data and step_data['email']):
-                    
-                    print(f"DEBUG: Contact info step completed - creating/associating client user")
                     try:
                         from core.domains.users.services import UserService
                         from django.contrib.auth import get_user_model
@@ -251,7 +242,6 @@ class BookingSessionService:
                             user = existing_user
                             session.client = user
                             logger.info(f"Associated existing client user: {user.email} (id: {user.id})")
-                            print(f"DEBUG: Associated existing client user: {user.email}")
 
                             # Log warning if guest tried to create account with existing email
                             if step_data.get('create_account'):
@@ -310,7 +300,6 @@ class BookingSessionService:
                             # Update session with new user
                             session.client = user
                             logger.info(f"✅ Successfully created client user: {user.email} (id: {user.id}, has_password: {create_account and bool(password)})")
-                            print(f"DEBUG: Created new client user: {user.email}")
 
                             # Send welcome email for newly created accounts with passwords
                             if create_account and password:
@@ -349,7 +338,6 @@ class BookingSessionService:
                                     # Don't raise - email failure shouldn't block booking
                         
                     except Exception as e:
-                        print(f"DEBUG: Failed to create/associate client user: {str(e)}")
                         logger.error(f"Failed to create/associate client user for session {session.session_id}: {str(e)}")
                 
                 # ENHANCED SAFEGUARD: Check if this is a confirmation step with create_event_immediately=True
@@ -359,13 +347,11 @@ class BookingSessionService:
                     session.current_step.confirmation_config and
                     session.current_step.confirmation_config.create_event_immediately):
 
-                    print(f"DEBUG: Confirmation step completed with create_event_immediately=True - checking for completion")
                     logger.info(f"🔥 IMMEDIATE_CREATION triggered for session {session.session_id}")
 
                     # CRITICAL SAFEGUARD: Check if session is already completed before creating event
                     if session.is_completed or session.created_event:
-                        logger.warning(f"🔥 IMMEDIATE_CREATION BLOCKED: Session {session.session_id} already completed "f"(is_completed={session.is_completed}, created_event={session.created_event})")
-                        print(f"DEBUG: Event already exists, skipping immediate creation")
+                        logger.warning(f"🔥 IMMEDIATE_CREATION BLOCKED: Session {session.session_id} already completed (is_completed={session.is_completed}, created_event={session.created_event})")
                     else:
                         try:
                             # Ensure we have a client before creating event
@@ -394,18 +380,15 @@ class BookingSessionService:
                             # CRITICAL FIX: Save the session with the linked event immediately
                             session.save(update_fields=['created_event', 'is_completed', 'completed_at'])
 
-                            print(f"DEBUG: Event created immediately: {event.id}")
                             logger.info(f"🔥 IMMEDIATE_CREATION completed for session {session.session_id}, event {event.id}, linked properly")
                         except Exception as e:
-                            print(f"DEBUG: Failed to create event immediately: {str(e)}")
                             logger.error(f"Failed to create event immediately for session {session.session_id}: {str(e)}")
                 
                 # Pass booking_data to check display conditions
                 next_step = session.booking_flow.get_next_step(
                     session.current_step.id,
-                    session.booking_data  # ADD THIS
+                    session.booking_data
                 )
-                print(f"DEBUG: Current step: {session.current_step.get_step_type_display() if session.current_step else 'None'}, Next step: {next_step.get_step_type_display() if next_step else 'None'}")
                 
                 if next_step:
                     session.current_step = next_step

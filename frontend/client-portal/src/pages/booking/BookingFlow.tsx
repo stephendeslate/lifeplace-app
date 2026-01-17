@@ -49,7 +49,7 @@ const EventTypeSelectionContainer: React.FC = () => {
       await actions.selectEventType(eventType);
     } catch (error) {
       // Error is handled by the booking context
-      console.error('Failed to select event type:', error);
+      if (import.meta.env.DEV) console.error('Failed to select event type:', error);
     }
   };
 

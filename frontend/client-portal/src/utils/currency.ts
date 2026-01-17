@@ -128,7 +128,7 @@ export const formatCurrency = (
       ? `${config.symbol}${formattedAmount} ${config.code}`
       : `${formattedAmount}${config.symbol} ${config.code}`;
   } catch (error) {
-    console.warn('Error formatting currency:', error);
+    if (import.meta.env.DEV) console.warn('Error formatting currency:', error);
     return `${config.symbol}${numericAmount}`;
   }
 };

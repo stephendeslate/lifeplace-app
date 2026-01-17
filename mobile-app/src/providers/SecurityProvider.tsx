@@ -35,6 +35,9 @@ import { SecurityBlockedScreen } from '@/components/security/SecurityBlockedScre
 import { BiometricLockScreen } from '@/components/security/BiometricLockScreen';
 import { LoadingScreen } from '@/components/common/LoadingScreen';
 import { useAuthStore } from '@/stores/authStore';
+import { logger } from '@/utils/logger';
+
+const securityLogger = logger.create('SecurityProvider');
 
 // =============================================================================
 // TYPES
@@ -105,7 +108,7 @@ export function SecurityProvider({ children }: SecurityProviderProps) {
           setThreats(status.threats);
         }
       } catch (error) {
-        console.error('[Security] Initialization error:', error);
+        securityLogger.error('Initialization error:', error);
       } finally {
         setIsInitialized(true);
       }

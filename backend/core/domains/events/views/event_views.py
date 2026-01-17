@@ -139,15 +139,24 @@ class EventViewSet(viewsets.ModelViewSet):
         return EventSerializer
     
     def get_queryset(self):
+        user = self.request.user
+
         # Extract filter parameters
         event_type_id = self.request.query_params.get('event_type')
         status = self.request.query_params.get('status')
-        client_id = self.request.query_params.get('client')
         start_date_from = self.request.query_params.get('start_date_from')
         start_date_to = self.request.query_params.get('start_date_to')
         payment_status = self.request.query_params.get('payment_status')
         search_query = self.request.query_params.get('search')
-        
+
+        # SECURITY FIX (P0-B0): For CLIENT users, force filter to only their own events
+        # This prevents clients from accessing other clients' events by passing ?client={other_id}
+        if user.role == 'CLIENT':
+            client_id = user.id  # Force to their own ID, ignore query param
+        else:
+            # ADMIN can filter by any client
+            client_id = self.request.query_params.get('client')
+
         queryset = EventService.get_all_events(
             search_query=search_query,
             event_type_id=event_type_id,
@@ -225,11 +234,19 @@ class EventViewSet(viewsets.ModelViewSet):
         """
         List events with intelligent caching
         """
+        user = request.user
+
+        # SECURITY FIX (P0-B0): For CLIENT users, force client filter to their own ID
+        if user.role == 'CLIENT':
+            client_filter = str(user.id)
+        else:
+            client_filter = request.query_params.get('client')
+
         # Build filter dictionary from query params
         filters = {
             'event_type': request.query_params.get('event_type'),
             'status': request.query_params.get('status'),
-            'client': request.query_params.get('client'),
+            'client': client_filter,
             'start_date_from': request.query_params.get('start_date_from'),
             'start_date_to': request.query_params.get('start_date_to'),
             'payment_status': request.query_params.get('payment_status'),
@@ -341,55 +358,67 @@ class EventViewSet(viewsets.ModelViewSet):
         """
         Get tasks for an event
         """
+        # SECURITY FIX (P0-B0): Verify user has access to this event
+        event = self.get_object()
+
         status_filter = request.query_params.get('status')
         assigned_to = request.query_params.get('assigned_to')
-        
+
         tasks = EventTaskService.get_tasks_for_event(
-            pk, 
-            status=status_filter, 
+            event.id,
+            status=status_filter,
             assigned_to=assigned_to
         )
-        
+
         serializer = EventTaskSerializer(tasks, many=True)
         return Response(serializer.data)
-    
+
     @action(detail=True, methods=['get'])
     def timeline(self, request, pk=None):
         """
         Get timeline entries for an event
         """
+        # SECURITY FIX (P0-B0): Verify user has access to this event
+        event = self.get_object()
+
         is_public = request.query_params.get('is_public')
         if is_public is not None:
             is_public = is_public.lower() == 'true'
-        
-        timeline_entries = EventTimelineService.get_timeline_for_event(pk, is_public)
+
+        timeline_entries = EventTimelineService.get_timeline_for_event(event.id, is_public)
         serializer = EventTimelineSerializer(timeline_entries, many=True)
         return Response(serializer.data)
-    
+
     @action(detail=True, methods=['get'])
     def files(self, request, pk=None):
         """
         Get files for an event
         """
+        # SECURITY FIX (P0-B0): Verify user has access to this event
+        event = self.get_object()
+
         category = request.query_params.get('category')
         is_public = request.query_params.get('is_public')
         if is_public is not None:
             is_public = is_public.lower() == 'true'
-        
-        files = EventFileService.get_files_for_event(pk, category, is_public)
+
+        files = EventFileService.get_files_for_event(event.id, category, is_public)
         serializer = EventFileSerializer(
-            files, 
-            many=True, 
+            files,
+            many=True,
             context={'request': request}
         )
         return Response(serializer.data)
-    
+
     @action(detail=True, methods=['get'])
     def feedback(self, request, pk=None):
         """
         Get feedback for an event
         """
-        feedback = EventFeedbackService.get_feedback_for_event(pk)
+        # SECURITY FIX (P0-B0): Verify user has access to this event
+        event = self.get_object()
+
+        feedback = EventFeedbackService.get_feedback_for_event(event.id)
         serializer = EventFeedbackSerializer(feedback, many=True)
         return Response(serializer.data)
     

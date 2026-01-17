@@ -113,10 +113,10 @@ export const IntelligentDateTimeStep: React.FC<IntelligentDateTimeStepProps> = (
           if (pv) {
             setPackageVenue(pv);
             // Get full venue details
-            VenuesApi.getVenue(pv.venue).then(setVenue).catch(console.error);
+            VenuesApi.getVenue(pv.venue).then(setVenue).catch(err => { if (import.meta.env.DEV) console.error(err); });
           }
         })
-        .catch(console.error)
+        .catch(err => { if (import.meta.env.DEV) console.error(err); })
         .finally(() => setVenueLoading(false));
     }
   }, [selectedPackageId, propVenue, venue]);
@@ -149,7 +149,7 @@ export const IntelligentDateTimeStep: React.FC<IntelligentDateTimeStepProps> = (
       (blockedDate: string) => {
         // Check if the blocked date matches our selected date
         if (selectedDateString && blockedDate === selectedDateString) {
-          console.log('[DateTimeStep] Selected date was blocked by another user!');
+          if (import.meta.env.DEV) console.log('[DateTimeStep] Selected date was blocked by another user!');
           setDateBlockedAlert(true);
           // Clear the selection since the date is no longer available
           setSelectedDate(null);

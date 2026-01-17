@@ -1,5 +1,6 @@
 # backend/core/domains/payments/services/gateway_service.py
 import logging
+import os
 import time
 from decimal import Decimal
 
@@ -164,9 +165,8 @@ class PaymentGatewayService:
     @staticmethod
     def _process_stripe_payment(payment_id, payment_data, user):
         """Process payment through Stripe gateway"""
+        # SECURITY FIX (P0-B8): Removed sensitive payment data logging
         logger.info(f"Starting Stripe payment processing for payment_id={payment_id}")
-        logger.info(f"Stripe payment data: {payment_data}")
-        logger.info(f"User: {user}")
         
         try:
             payment = Payment.objects.get(pk=payment_id)
@@ -224,7 +224,7 @@ class PaymentGatewayService:
                     'amount': int(payment.amount * 100),  # Convert to cents
                     'currency': payment_currency.lower(),
                     'confirm': True,
-                    'return_url': 'https://lifeplacealfonso.com/booking/complete',  # Required for redirect methods
+                    'return_url': f"{os.getenv('CLIENT_FRONTEND_URL', 'https://lifeplace.dev')}/booking/complete",
                     'automatic_payment_methods': {
                         'enabled': True,
                         'allow_redirects': 'never'  # Disable redirect methods to avoid return_url requirement
@@ -234,13 +234,14 @@ class PaymentGatewayService:
                 logger.info(f"Base intent data: amount={intent_data['amount']}, currency={intent_data['currency']}")
                 
                 # Add payment method
+                # SECURITY FIX (P0-B8): Removed token/ID logging
                 if payment_data.get('payment_method_token'):
                     intent_data['payment_method'] = payment_data['payment_method_token']
-                    logger.info(f"Using payment method token: {payment_data['payment_method_token']}")
+                    logger.info("Using payment method token")
                 elif payment_data.get('payment_method_id'):
                     # Use existing payment method
                     intent_data['payment_method'] = payment_data['payment_method_id']
-                    logger.info(f"Using payment method ID: {payment_data['payment_method_id']}")
+                    logger.info("Using payment method ID")
                 elif payment_data.get('payment_method'):
                     # Use saved payment method from database
                     from ..models import PaymentMethod
@@ -251,19 +252,21 @@ class PaymentGatewayService:
                         # Extract the Stripe payment method ID from the saved payment method
                         if saved_payment_method.token_reference:
                             stripe_payment_method_id = saved_payment_method.token_reference
-                            logger.info(f"Using saved payment method token reference: {stripe_payment_method_id}")
+                            # SECURITY FIX (P0-B8): Removed token reference logging
+                            logger.info("Using saved payment method token reference")
 
                             # For saved payment methods, we need to ensure they're attached to a customer
                             # Create or get a Stripe customer for this user
                             user_email = payment.event.client.email if payment.event.client else ''
                             user_name = f"{payment.event.client.first_name} {payment.event.client.last_name}".strip() if payment.event.client else ''
 
-                            logger.info(f"Creating/getting Stripe customer for user: {user_email}")
+                            # SECURITY FIX (P0-B8): Removed email logging
+                            logger.info("Creating/getting Stripe customer for user")
 
                             try:
                                 # Try to find existing customer by email
                                 start_time = time.time()
-                                logger.info(f"⏱️  Starting Stripe Customer.list API call for {user_email}")
+                                logger.info("⏱️  Starting Stripe Customer.list API call")
                                 customers = stripe.Customer.list(email=user_email, limit=1)
                                 elapsed = time.time() - start_time
                                 logger.info(f"⏱️  Stripe Customer.list completed in {elapsed:.2f}s")
@@ -273,7 +276,7 @@ class PaymentGatewayService:
                                 else:
                                     # Create new customer
                                     start_time = time.time()
-                                    logger.info(f"⏱️  Starting Stripe Customer.create API call for {user_email}")
+                                    logger.info("⏱️  Starting Stripe Customer.create API call")
                                     customer = stripe.Customer.create(
                                         email=user_email,
                                         name=user_name,
@@ -303,9 +306,10 @@ class PaymentGatewayService:
                                         )
                                         elapsed = time.time() - start_time
                                         logger.info(f"⏱️  Stripe PaymentMethod.attach completed in {elapsed:.2f}s")
-                                        logger.info(f"Attached payment method {stripe_payment_method_id} to customer {customer.id}")
+                                        # SECURITY FIX (P0-B8): Removed IDs from logging
+                                        logger.info("Attached payment method to customer")
                                     else:
-                                        logger.info(f"Payment method {stripe_payment_method_id} already attached to customer")
+                                        logger.info("Payment method already attached to customer")
 
                                 except stripe.error.StripeError as attach_error:
                                     logger.warning(f"Could not attach payment method to customer: {attach_error}")

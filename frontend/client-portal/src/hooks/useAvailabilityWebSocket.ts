@@ -142,17 +142,14 @@ export const useAvailabilityWebSocket = (
         switch (message.type) {
           case 'date_blocked': {
             const blockedMsg = message as DateBlockedMessage;
-            console.log('[AvailabilityWS] Date blocked:', blockedMsg.date);
+            if (import.meta.env.DEV) console.log('[AvailabilityWS] Date blocked:', blockedMsg.date);
 
             // Invalidate the availability query to refresh calendar
             queryClient.invalidateQueries({ queryKey: ['eventAvailability'] });
 
             // Check if this affects the selected date
             if (selectedDate && blockedMsg.date === selectedDate) {
-              console.log(
-                '[AvailabilityWS] Selected date was blocked!',
-                selectedDate
-              );
+              if (import.meta.env.DEV) console.log('[AvailabilityWS] Selected date was blocked!', selectedDate);
               setSelectedDateBlocked(true);
               setBlockedDate(blockedMsg.date);
             }
@@ -164,7 +161,7 @@ export const useAvailabilityWebSocket = (
 
           case 'date_released': {
             const releasedMsg = message as DateReleasedMessage;
-            console.log('[AvailabilityWS] Date released:', releasedMsg.date);
+            if (import.meta.env.DEV) console.log('[AvailabilityWS] Date released:', releasedMsg.date);
 
             // Invalidate the availability query to refresh calendar
             queryClient.invalidateQueries({ queryKey: ['eventAvailability'] });
@@ -180,7 +177,7 @@ export const useAvailabilityWebSocket = (
           }
 
           case 'connection_established':
-            console.log('[AvailabilityWS] Connected:', message.message);
+            if (import.meta.env.DEV) console.log('[AvailabilityWS] Connected:', message.message);
             break;
 
           case 'pong':
@@ -188,10 +185,10 @@ export const useAvailabilityWebSocket = (
             break;
 
           default:
-            console.log('[AvailabilityWS] Unknown message type:', message);
+            if (import.meta.env.DEV) console.log('[AvailabilityWS] Unknown message type:', message);
         }
       } catch (error) {
-        console.error('[AvailabilityWS] Error parsing message:', error);
+        if (import.meta.env.DEV) console.error('[AvailabilityWS] Error parsing message:', error);
       }
     },
     [
@@ -237,13 +234,13 @@ export const useAvailabilityWebSocket = (
     }
 
     const wsUrl = getWebSocketUrl();
-    console.log('[AvailabilityWS] Connecting to:', wsUrl);
+    if (import.meta.env.DEV) console.log('[AvailabilityWS] Connecting to:', wsUrl);
 
     try {
       const ws = new WebSocket(wsUrl);
 
       ws.onopen = () => {
-        console.log('[AvailabilityWS] Connected');
+        if (import.meta.env.DEV) console.log('[AvailabilityWS] Connected');
         setIsConnected(true);
         startPing();
         onConnect?.();
@@ -252,7 +249,7 @@ export const useAvailabilityWebSocket = (
       ws.onmessage = handleMessage;
 
       ws.onclose = (event) => {
-        console.log('[AvailabilityWS] Disconnected:', event.code, event.reason);
+        if (import.meta.env.DEV) console.log('[AvailabilityWS] Disconnected:', event.code, event.reason);
         setIsConnected(false);
         stopPing();
         onDisconnect?.();
@@ -261,20 +258,20 @@ export const useAvailabilityWebSocket = (
         if (enabled && event.code !== 1000) {
           // 1000 = normal closure
           reconnectTimeoutRef.current = window.setTimeout(() => {
-            console.log('[AvailabilityWS] Attempting to reconnect...');
+            if (import.meta.env.DEV) console.log('[AvailabilityWS] Attempting to reconnect...');
             connect();
           }, 5000);
         }
       };
 
       ws.onerror = (error) => {
-        console.error('[AvailabilityWS] Error:', error);
+        if (import.meta.env.DEV) console.error('[AvailabilityWS] Error:', error);
         onError?.(error);
       };
 
       wsRef.current = ws;
     } catch (error) {
-      console.error('[AvailabilityWS] Failed to connect:', error);
+      if (import.meta.env.DEV) console.error('[AvailabilityWS] Failed to connect:', error);
     }
   }, [
     enabled,

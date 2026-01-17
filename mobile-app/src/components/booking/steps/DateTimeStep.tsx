@@ -23,6 +23,7 @@ import { format, addDays, isBefore, startOfDay, parseISO, differenceInDays } fro
 import { useEventAvailability } from '@/hooks/useEventAvailability';
 import { useAvailabilityWebSocket } from '@/hooks/useAvailabilityWebSocket';
 import { VenuesAPI } from '@/apis/booking';
+import { logger } from '@/utils/logger';
 import type { StepComponentProps } from '../StepRenderer';
 import type { DateTimeStepData, DateTimeStepConfiguration, VenuePublic } from '@/types/booking';
 import * as Haptics from 'expo-haptics';
@@ -93,7 +94,7 @@ export function DateTimeStep({
     onDateBlocked: (blockedDate, eventId) => {
       // If the currently selected date was blocked by another user, clear selection
       if (selectedDateString && blockedDate === selectedDateString) {
-        console.log('[DateTimeStep] Selected date blocked via WebSocket:', blockedDate);
+        logger.debug('Selected date blocked via WebSocket:', blockedDate);
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
         setDateBlockedAlert(true);
         setSelectedDate(null);
@@ -138,7 +139,7 @@ export function DateTimeStep({
       if (venueId) {
         VenuesAPI.getVenue(venueId)
           .then((v) => setVenue(v as VenuePublic))
-          .catch(console.error)
+          .catch((err) => logger.error('Failed to fetch venue:', err))
           .finally(() => setVenueLoading(false));
       } else {
         setVenueLoading(false);

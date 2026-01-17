@@ -17,6 +17,7 @@ import { AxiosError } from 'axios';
 import { ErrorHandler } from './errorHandler';
 import { crashReporter } from './crashReporting';
 import { useAuthStore } from '@/stores/authStore';
+import { logger } from './logger';
 
 // =============================================================================
 // PARAMETER NORMALIZATION
@@ -69,7 +70,7 @@ const onQueryError = (error: unknown) => {
 
   // Log network errors
   if (ErrorHandler.isNetworkError(error)) {
-    console.warn('Network error:', ErrorHandler.extractMessage(error));
+    logger.warn('Network error:', ErrorHandler.extractMessage(error));
   }
 
   // Report non-network errors
@@ -79,7 +80,7 @@ const onQueryError = (error: unknown) => {
 };
 
 const onMutationError = (error: unknown) => {
-  console.error('Mutation error:', ErrorHandler.extractMessage(error));
+  logger.error('Mutation error:', ErrorHandler.extractMessage(error));
 
   if (!ErrorHandler.isNetworkError(error) && error instanceof Error) {
     crashReporter.captureException(error, { type: 'mutation' });

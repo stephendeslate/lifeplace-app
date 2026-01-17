@@ -162,13 +162,30 @@ class ProductCategoryViewSet(viewsets.ModelViewSet):
 class ProductOptionViewSet(viewsets.ModelViewSet):
     """
     ViewSet for Product options (products and packages)
+
+    Permissions:
+    - List/Retrieve: Public (AllowAny) - products are public catalog data
+    - Create/Update/Delete: Admin only (IsAdmin)
+    - create_from_venues/find_matching_packages: Public (used in booking flow)
     """
     serializer_class = ProductOptionSerializer
-    permission_classes = [AllowAny]  # Allow any user to view product options
     filter_backends = [filters.SearchFilter]
     search_fields = ['name', 'description', 'sku']
     pagination_class = LargePagination  # Use larger pagination for products
-    
+
+    def get_permissions(self):
+        """
+        SECURITY FIX (P0-B13): Allow public read access, require admin for write operations.
+        Booking flow endpoints (create_from_venues, find_matching_packages) are public.
+        """
+        # Public endpoints for reading and booking flow
+        if self.action in ['list', 'retrieve', 'packages', 'products', 'active',
+                           'batch', 'featured', 'by_category', 'all',
+                           'create_from_venues', 'find_matching_packages']:
+            return [AllowAny()]
+        # Admin required for create, update, destroy
+        return [IsAdmin()]
+
     def get_queryset(self):
         product_type = self.request.query_params.get('type', None)
         is_active = self.request.query_params.get('is_active', None)

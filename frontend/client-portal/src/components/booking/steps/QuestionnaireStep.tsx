@@ -81,7 +81,7 @@ export const QuestionnaireStep: React.FC<QuestionnaireStepProps> = ({
     // Auto-validate if onValidate is provided
     if (onValidate) {
       onValidate(updatedData).catch(error => {
-        console.warn('Validation failed:', error);
+        if (import.meta.env.DEV) console.warn('Validation failed:', error);
       });
     }
   }, [responses, onDataChange, onValidate]);
@@ -156,7 +156,7 @@ export const QuestionnaireStep: React.FC<QuestionnaireStepProps> = ({
         setQuestionnairesWithFields(prev => new Map([...prev, [questionnaireId, questionnaire]]));
       }
     } catch (error) {
-      console.error(`Failed to load questionnaire ${questionnaireId}:`, error);
+      if (import.meta.env.DEV) console.error(`Failed to load questionnaire ${questionnaireId}:`, error);
       setLoadErrors(prev => new Map([...prev, [questionnaireId, 'Failed to load questionnaire']]));
     } finally {
       setLoadingQuestionnaires(prev => {
@@ -203,7 +203,7 @@ export const QuestionnaireStep: React.FC<QuestionnaireStepProps> = ({
       const uploadedUrls = await uploadFiles(questionnaireId, fieldId, files);
       updateResponse(fieldId, uploadedUrls);
     } catch (error) {
-      console.error('File upload failed:', error);
+      if (import.meta.env.DEV) console.error('File upload failed:', error);
     }
   };
 

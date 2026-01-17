@@ -426,7 +426,7 @@ class CommunicationContextService:
     def _get_system_context() -> Dict[str, Any]:
         """Get system-level context variables."""
         now = timezone.now()
-        frontend_url = getattr(settings, 'FRONTEND_URL', 'https://lifeplacealfonso.com')
+        frontend_url = getattr(settings, 'CLIENT_FRONTEND_URL', 'https://lifeplace.dev')
 
         return {
             'site_name': getattr(settings, 'SITE_NAME', 'LifePlace'),
@@ -579,7 +579,7 @@ class CommunicationContextService:
     @staticmethod
     def _get_contract_context(contract) -> Dict[str, Any]:
         """Get contract-related context variables."""
-        frontend_url = getattr(settings, 'FRONTEND_URL', 'https://lifeplacealfonso.com')
+        frontend_url = getattr(settings, 'CLIENT_FRONTEND_URL', 'https://lifeplace.dev')
 
         # Get signature deadline if available
         signature_deadline = ''
@@ -606,7 +606,7 @@ class CommunicationContextService:
     @staticmethod
     def _get_admin_invitation_context(admin_invitation, user) -> Dict[str, Any]:
         """Get admin invitation context variables."""
-        frontend_url = getattr(settings, 'FRONTEND_URL', 'https://lifeplacealfonso.com')
+        frontend_url = getattr(settings, 'CLIENT_FRONTEND_URL', 'https://lifeplace.dev')
 
         # Get inviter name
         invited_by = ''
@@ -710,7 +710,7 @@ class CommunicationContextService:
     @staticmethod
     def _get_payment_context(payment) -> Dict[str, Any]:
         """Get payment-related context variables."""
-        frontend_url = getattr(settings, 'FRONTEND_URL', 'https://lifeplacealfonso.com')
+        frontend_url = getattr(settings, 'CLIENT_FRONTEND_URL', 'https://lifeplace.dev')
 
         # Format amount
         try:
@@ -775,7 +775,7 @@ class CommunicationContextService:
     @staticmethod
     def _get_invoice_context(invoice) -> Dict[str, Any]:
         """Get invoice-related context variables."""
-        frontend_url = getattr(settings, 'FRONTEND_URL', 'https://lifeplacealfonso.com')
+        frontend_url = getattr(settings, 'CLIENT_FRONTEND_URL', 'https://lifeplace.dev')
         currency_symbol = '₱' if invoice.currency == 'PHP' else '$'
 
         # Line items summary

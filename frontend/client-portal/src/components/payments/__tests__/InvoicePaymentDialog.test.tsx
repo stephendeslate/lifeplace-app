@@ -34,37 +34,6 @@ vi.mock('../PaymentMethodSelector', () => ({
   ),
 }));
 
-// Mock the UnifiedStripePaymentFlow component
-vi.mock('../UnifiedStripePaymentFlow', () => ({
-  UnifiedStripePaymentFlow: ({ onSuccess, disabled }: { onSuccess: (result: unknown) => void; disabled: boolean }) => (
-    <div data-testid="unified-stripe-payment-flow">
-      <button
-        onClick={() => onSuccess({ paymentMethodId: 'pm_test_123' })}
-        disabled={disabled}
-        data-testid="unified-stripe-pay-button"
-      >
-        Pay with Unified Stripe
-      </button>
-    </div>
-  ),
-}));
-
-// Mock the PaymentPlanDialog component
-vi.mock('../PaymentPlanDialog', () => ({
-  PaymentPlanDialog: ({ open, onClose, onSuccess }: { open: boolean; onClose: () => void; onSuccess: () => void }) => (
-    open ? (
-      <div data-testid="payment-plan-dialog">
-        <button onClick={onSuccess} data-testid="create-payment-plan">
-          Create Payment Plan
-        </button>
-        <button onClick={onClose} data-testid="close-payment-plan">
-          Close
-        </button>
-      </div>
-    ) : null
-  ),
-}));
-
 const mockInvoice: Invoice = {
   id: 1,
   invoice_id: 'INV-TEST-001',
@@ -145,7 +114,6 @@ const renderWithProviders = (component: React.ReactElement) => {
 describe('InvoicePaymentDialog', () => {
   const mockOnClose = vi.fn();
   const mockOnPaymentSuccess = vi.fn();
-  const mockOnPaymentPlanCreated = vi.fn();
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -163,8 +131,7 @@ describe('InvoicePaymentDialog', () => {
     open: true,
     invoice: mockInvoice,
     onClose: mockOnClose,
-    onPaymentSuccess: mockOnPaymentSuccess,
-    onPaymentPlanCreated: mockOnPaymentPlanCreated
+    onPaymentSuccess: mockOnPaymentSuccess
   };
 
   it('renders the dialog when open', () => {
@@ -189,24 +156,6 @@ describe('InvoicePaymentDialog', () => {
     expect(screen.getAllByText('₱11,200')).toHaveLength(3); // Should appear in multiple places
     expect(screen.getByText('Total Amount:')).toBeInTheDocument();
     expect(screen.getByText('Amount Due:')).toBeInTheDocument();
-  });
-
-  it('shows payment tabs (Pay Now and Payment Plan)', () => {
-    renderWithProviders(<InvoicePaymentDialog {...defaultProps} />);
-
-    expect(screen.getByText('Pay Now')).toBeInTheDocument();
-    expect(screen.getByText('Payment Plan')).toBeInTheDocument();
-  });
-
-  it('switches between tabs correctly', async () => {
-    const user = userEvent.setup();
-    renderWithProviders(<InvoicePaymentDialog {...defaultProps} />);
-
-    const paymentPlanTab = screen.getByText('Payment Plan');
-    await user.click(paymentPlanTab);
-
-    expect(screen.getByText('Set Up Payment Plan')).toBeInTheDocument();
-    expect(screen.getByText('Create Payment Plan')).toBeInTheDocument();
   });
 
   it('renders payment method selector', () => {
@@ -245,9 +194,9 @@ describe('InvoicePaymentDialog', () => {
 
     await waitFor(() => {
       expect(mockFinancialApi.payInvoice).toHaveBeenCalledWith(1, {
-        gateway_code: 'stripe',
-        payment_method_id: 1,
-        notes: 'Payment for invoice INV-TEST-001'
+        payment_type: 'FULL',
+        payment_method: 1,
+        notes: 'Full payment for invoice INV-TEST-001'
       });
     });
 
@@ -273,81 +222,6 @@ describe('InvoicePaymentDialog', () => {
 
     await waitFor(() => {
       expect(screen.getByText(errorMessage)).toBeInTheDocument();
-    });
-  });
-
-  it('shows Stripe payment form for credit card payment methods', async () => {
-    const user = userEvent.setup();
-    renderWithProviders(<InvoicePaymentDialog {...defaultProps} />);
-
-    // Select payment method (credit card with Stripe)
-    const selectButton = screen.getByTestId('select-payment-method');
-    await user.click(selectButton);
-
-    expect(screen.getByTestId('unified-stripe-payment-flow')).toBeInTheDocument();
-  });
-
-  it('processes Stripe payment successfully', async () => {
-    const user = userEvent.setup();
-    mockFinancialApi.payInvoice.mockResolvedValue(mockPaymentResponse);
-
-    renderWithProviders(<InvoicePaymentDialog {...defaultProps} />);
-
-    // Select payment method
-    const selectButton = screen.getByTestId('select-payment-method');
-    await user.click(selectButton);
-
-    // Click Stripe pay button
-    const stripePayButton = screen.getByTestId('unified-stripe-pay-button');
-    await user.click(stripePayButton);
-
-    await waitFor(() => {
-      expect(mockFinancialApi.payInvoice).toHaveBeenCalledWith(1, {
-        gateway_code: 'stripe',
-        payment_data: { payment_intent_id: 'pi_test_123' },
-        notes: 'Stripe payment for invoice INV-TEST-001'
-      });
-    });
-
-    await waitFor(() => {
-      expect(mockOnPaymentSuccess).toHaveBeenCalledWith(mockPaymentResponse);
-    });
-  });
-
-  it('opens payment plan dialog when clicking Create Payment Plan', async () => {
-    const user = userEvent.setup();
-    renderWithProviders(<InvoicePaymentDialog {...defaultProps} />);
-
-    // Switch to Payment Plan tab
-    const paymentPlanTab = screen.getByText('Payment Plan');
-    await user.click(paymentPlanTab);
-
-    // Click Create Payment Plan button
-    const createPlanButton = screen.getByText('Create Payment Plan');
-    await user.click(createPlanButton);
-
-    expect(screen.getByTestId('payment-plan-dialog')).toBeInTheDocument();
-  });
-
-  it('handles payment plan creation success', async () => {
-    const user = userEvent.setup();
-    renderWithProviders(<InvoicePaymentDialog {...defaultProps} />);
-
-    // Switch to Payment Plan tab
-    const paymentPlanTab = screen.getByText('Payment Plan');
-    await user.click(paymentPlanTab);
-
-    // Click Create Payment Plan button
-    const createPlanButton = screen.getByText('Create Payment Plan');
-    await user.click(createPlanButton);
-
-    // Click create payment plan in dialog
-    const createButton = screen.getByTestId('create-payment-plan');
-    await user.click(createButton);
-
-    await waitFor(() => {
-      expect(mockOnPaymentPlanCreated).toHaveBeenCalled();
-      expect(mockOnClose).toHaveBeenCalled();
     });
   });
 

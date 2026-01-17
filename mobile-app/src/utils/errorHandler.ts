@@ -5,6 +5,7 @@
 
 import type { AxiosError } from 'axios';
 import type { ApiErrorResponse, ValidationError } from '@/types/booking';
+import { logger } from './logger';
 
 /**
  * Error info structure returned by getErrorInfo
@@ -217,7 +218,7 @@ export class ErrorHandler {
    */
   static logError(error: unknown, context?: string): void {
     const info = this.getErrorInfo(error);
-    console.error(`[Error${context ? ` - ${context}` : ''}]`, {
+    logger.error(`Error${context ? ` - ${context}` : ''}`, {
       message: info.message,
       statusCode: info.statusCode,
       validationErrors: info.validationErrors,
@@ -245,7 +246,7 @@ export class ErrorHandler {
 
     if (showNotification) {
       // In a real app, this would show a toast/notification
-      console.warn(`[Notification] ${info.message}`);
+      logger.warn(`Notification: ${info.message}`);
     }
 
     return info;

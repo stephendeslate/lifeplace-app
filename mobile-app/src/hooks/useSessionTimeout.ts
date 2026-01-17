@@ -18,6 +18,9 @@ import {
   LAST_ACTIVITY_KEY,
   SESSION_CHECK_INTERVAL_MS,
 } from '@/constants/session';
+import { logger } from '@/utils/logger';
+
+const sessionLogger = logger.create('SessionTimeout');
 
 // =============================================================================
 // TYPES
@@ -75,7 +78,7 @@ export function useSessionTimeout(
       await SecureStore.setItemAsync(LAST_ACTIVITY_KEY, Date.now().toString());
       warningShownRef.current = false;
     } catch (error) {
-      console.error('Failed to update activity timestamp:', error);
+      sessionLogger.error('Failed to update activity timestamp:', error);
     }
   }, [enabled, isAuthenticated]);
 
@@ -129,7 +132,7 @@ export function useSessionTimeout(
 
       return true;
     } catch (error) {
-      console.error('Session check failed:', error);
+      sessionLogger.error('Session check failed:', error);
       return true; // Fail open to avoid locking out users
     }
   }, [enabled, isAuthenticated, timeoutMs, warningMs, onTimeout, onWarning, logout, updateActivity]);

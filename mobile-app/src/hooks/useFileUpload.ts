@@ -12,6 +12,7 @@ import { Alert } from 'react-native';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { documentsApi } from '@/apis/documents.api';
 import { documentKeys } from '@/hooks/useDocuments';
+import { logger } from '@/utils/logger';
 import type {
   DocumentCategory,
   DocumentItem,
@@ -236,7 +237,7 @@ export function useFileUpload(options: FileUploadOptions = {}) {
         setSelectedFiles((prev) => [...prev, ...files]);
         return files;
       } catch (error) {
-        console.error('Document picker error:', error);
+        logger.error('Document picker error:', error);
         Alert.alert('Error', 'Failed to select document. Please try again.');
         return [];
       }
@@ -286,7 +287,7 @@ export function useFileUpload(options: FileUploadOptions = {}) {
         return result;
       } catch (error) {
         setUploadProgress({ uploading: false, progress: 0 });
-        console.error('Upload error:', error);
+        logger.error('Upload error:', error);
         Alert.alert('Upload Failed', 'Failed to upload file. Please try again.');
         return null;
       }

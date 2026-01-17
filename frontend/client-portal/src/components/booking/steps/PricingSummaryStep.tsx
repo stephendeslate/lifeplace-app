@@ -129,7 +129,7 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
         await actions.updateTotalPrice(totalString);
       }
     } catch (error) {
-      console.error('Failed to update pricing data:', error);
+      if (import.meta.env.DEV) console.error('Failed to update pricing data:', error);
     }
   }, [stepData, onDataChange, pricing.total, state.totalPrice, actions.updateStepData, actions.updateTotalPrice]);
 

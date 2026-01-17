@@ -4,7 +4,6 @@ Unit tests for events domain cache service.
 Tests:
 - EventCacheService (cache operations, invalidation, warming)
 - CacheInvalidator (signal handlers)
-- RedisAnalyticsBuffer (analytics buffering)
 """
 
 import pytest
@@ -18,7 +17,6 @@ from django.core.cache import cache
 from core.domains.events.cache_service import (
     EventCacheService,
     CacheInvalidator,
-    RedisAnalyticsBuffer,
 )
 from core.domains.events.models import (
     Event,
@@ -428,107 +426,8 @@ class TestCacheInvalidator:
         assert cached is None
 
 
-# =============================================================================
-# RedisAnalyticsBuffer Tests
-# =============================================================================
-
-
-@pytest.mark.django_db
-class TestRedisAnalyticsBuffer:
-    """Tests for Redis analytics buffer."""
-
-    @patch('core.domains.events.cache_service.analytics_cache')
-    def test_add_event_to_buffer(self, mock_cache):
-        """Test adding analytics event to buffer."""
-        mock_client = MagicMock()
-        mock_cache._cache.get_client.return_value = mock_client
-        mock_client.llen.return_value = 1  # Below flush threshold
-
-        event_data = {
-            'event_type': 'PAGE_VIEW',
-            'page': '/events',
-            'user_id': 123,
-        }
-
-        RedisAnalyticsBuffer.add_event(event_data)
-
-        mock_client.rpush.assert_called_once()
-        call_args = mock_client.rpush.call_args
-        assert call_args[0][0] == RedisAnalyticsBuffer.BUFFER_KEY
-        # Second arg should be JSON containing the event data
-        pushed_data = json.loads(call_args[0][1])
-        assert pushed_data['event_type'] == 'PAGE_VIEW'
-        assert 'timestamp' in pushed_data  # Timestamp should be added
-
-    @patch('core.domains.events.cache_service.analytics_cache')
-    def test_add_event_triggers_flush_at_threshold(self, mock_cache):
-        """Test adding event triggers flush when buffer reaches threshold."""
-        mock_client = MagicMock()
-        mock_cache._cache.get_client.return_value = mock_client
-        mock_client.llen.return_value = RedisAnalyticsBuffer.BUFFER_SIZE  # At threshold
-        mock_client.lrange.return_value = []  # Empty for flush
-
-        event_data = {'event_type': 'TEST'}
-
-        RedisAnalyticsBuffer.add_event(event_data)
-
-        # flush_buffer should have been called (which calls lrange)
-        mock_client.lrange.assert_called()
-
-    @patch('core.domains.events.cache_service.analytics_cache')
-    def test_flush_buffer_empty(self, mock_cache):
-        """Test flushing empty buffer."""
-        mock_client = MagicMock()
-        mock_cache._cache.get_client.return_value = mock_client
-        mock_client.lrange.return_value = []
-
-        result = RedisAnalyticsBuffer.flush_buffer()
-
-        assert result == 0
-        mock_client.delete.assert_not_called()
-
-    @patch('core.domains.events.cache_service.analytics_cache')
-    @patch('core.domains.analytics.models.AnalyticsEvent')
-    def test_flush_buffer_with_events(self, mock_analytics_event, mock_cache):
-        """Test flushing buffer with events."""
-        mock_client = MagicMock()
-        mock_cache._cache.get_client.return_value = mock_client
-
-        # Simulate buffer with events
-        mock_client.lrange.return_value = [
-            json.dumps({'event_type': 'PAGE_VIEW', 'page': '/home'}),
-            json.dumps({'event_type': 'CLICK', 'element': 'button'}),
-        ]
-
-        # Mock the bulk create
-        with patch(
-            'core.domains.events.cache_service.AnalyticsEvent.objects.bulk_create'
-        ):
-            result = RedisAnalyticsBuffer.flush_buffer()
-
-        assert result == 2
-        mock_client.delete.assert_called_once_with(RedisAnalyticsBuffer.BUFFER_KEY)
-
-    @patch('core.domains.events.cache_service.analytics_cache')
-    def test_flush_buffer_handles_invalid_json(self, mock_cache):
-        """Test flushing buffer handles invalid JSON gracefully."""
-        mock_client = MagicMock()
-        mock_cache._cache.get_client.return_value = mock_client
-
-        # Include invalid JSON
-        mock_client.lrange.return_value = [
-            json.dumps({'event_type': 'VALID'}),
-            'invalid json here',
-            json.dumps({'event_type': 'ALSO_VALID'}),
-        ]
-
-        with patch(
-            'core.domains.events.cache_service.AnalyticsEvent.objects.bulk_create'
-        ) as mock_bulk:
-            result = RedisAnalyticsBuffer.flush_buffer()
-
-        # Should still process valid events
-        assert result >= 0
+# SECURITY FIX (P0-B10): Removed TestRedisAnalyticsBuffer tests
+# The RedisAnalyticsBuffer class was removed as it imported a deleted model
 
 
 # =============================================================================

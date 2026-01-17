@@ -6,6 +6,9 @@
 import * as SecureStore from 'expo-secure-store';
 import type { StoredSession, SessionRecoveryInfo, BookingData, BookingFlow } from '@/types/booking';
 import { isSessionExpired } from './bookingHelpers';
+import { logger } from './logger';
+
+const storageLogger = logger.create('BookingStorage');
 
 // Cache for flow data to avoid repeated API calls during recovery lookup
 let flowCache: Record<number, BookingFlow> = {};
@@ -68,7 +71,7 @@ export async function getStoredSessionIds(): Promise<string[]> {
     if (!indexData) return [];
     return JSON.parse(indexData) as string[];
   } catch (error) {
-    console.warn('Failed to get session index:', error);
+    storageLogger.warn('Failed to get session index:', error);
     return [];
   }
 }
@@ -80,7 +83,7 @@ async function updateSessionIndex(sessionIds: string[]): Promise<void> {
   try {
     await SecureStore.setItemAsync(SESSION_INDEX_KEY, JSON.stringify(sessionIds));
   } catch (error) {
-    console.warn('Failed to update session index:', error);
+    storageLogger.warn('Failed to update session index:', error);
   }
 }
 
@@ -147,7 +150,7 @@ export async function saveBookingSession(
     await SecureStore.setItemAsync(key, JSON.stringify(session));
     await addToSessionIndex(sessionId);
   } catch (error) {
-    console.warn('Failed to save booking session:', error);
+    storageLogger.warn('Failed to save booking session:', error);
     throw error;
   }
 }
@@ -175,7 +178,7 @@ export async function loadBookingSession(
 
     return session;
   } catch (error) {
-    console.warn('Failed to load booking session:', error);
+    storageLogger.warn('Failed to load booking session:', error);
     return null;
   }
 }
@@ -189,7 +192,7 @@ export async function clearBookingSession(sessionId: string): Promise<void> {
     await SecureStore.deleteItemAsync(key);
     await removeFromSessionIndex(sessionId);
   } catch (error) {
-    console.warn('Failed to clear booking session:', error);
+    storageLogger.warn('Failed to clear booking session:', error);
   }
 }
 
@@ -207,7 +210,7 @@ export async function clearAllBookingSessions(): Promise<void> {
 
     await SecureStore.deleteItemAsync(SESSION_INDEX_KEY);
   } catch (error) {
-    console.warn('Failed to clear all booking sessions:', error);
+    storageLogger.warn('Failed to clear all booking sessions:', error);
   }
 }
 
@@ -229,7 +232,7 @@ export async function cleanupExpiredSessions(): Promise<number> {
 
     return cleanedCount;
   } catch (error) {
-    console.warn('Failed to cleanup expired sessions:', error);
+    storageLogger.warn('Failed to cleanup expired sessions:', error);
     return 0;
   }
 }
@@ -265,7 +268,7 @@ export async function getRecoverableSession(): Promise<SessionRecoveryInfo | nul
 
     return null;
   } catch (error) {
-    console.warn('Failed to get recoverable session:', error);
+    storageLogger.warn('Failed to get recoverable session:', error);
     return null;
   }
 }
@@ -305,7 +308,7 @@ export async function hasPendingSync(): Promise<boolean> {
 
     return false;
   } catch (error) {
-    console.warn('Failed to check pending sync:', error);
+    storageLogger.warn('Failed to check pending sync:', error);
     return false;
   }
 }
@@ -325,7 +328,7 @@ export async function markSessionSynced(sessionId: string): Promise<void> {
       });
     }
   } catch (error) {
-    console.warn('Failed to mark session synced:', error);
+    storageLogger.warn('Failed to mark session synced:', error);
   }
 }
 
@@ -346,7 +349,7 @@ export async function getPendingSyncSessions(): Promise<StoredSession[]> {
 
     return pending;
   } catch (error) {
-    console.warn('Failed to get pending sync sessions:', error);
+    storageLogger.warn('Failed to get pending sync sessions:', error);
     return [];
   }
 }
@@ -373,6 +376,6 @@ export async function updateStoredStepData(
       });
     }
   } catch (error) {
-    console.warn('Failed to update stored step data:', error);
+    storageLogger.warn('Failed to update stored step data:', error);
   }
 }

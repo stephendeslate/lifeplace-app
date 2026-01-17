@@ -359,27 +359,28 @@ class ClientEventTaskUpdateSerializer(serializers.Serializer):
 class ClientEventFileUploadSerializer(serializers.ModelSerializer):
     """File upload serializer for clients"""
     file = serializers.FileField(required=True)
-    
+
     class Meta:
         model = EventFile
         fields = ['name', 'category', 'description', 'file']
-    
+
     def validate_file(self, value):
-        """Validate file size and type"""
+        """Validate file size, type, and content (magic numbers)"""
+        from core.utils.validators import validate_file_content
+        from django.core.exceptions import ValidationError as DjangoValidationError
+
         # 10MB limit for client uploads
         if value.size > 10 * 1024 * 1024:
             raise serializers.ValidationError("File size cannot exceed 10MB")
-        
-        # Check file extension
-        import os
-        ext = os.path.splitext(value.name)[1].lower()
-        allowed_extensions = ['.pdf', '.doc', '.docx', '.jpg', '.jpeg', '.png', '.txt', '.rtf']
-        
-        if ext not in allowed_extensions:
-            raise serializers.ValidationError(
-                f"File type not allowed. Allowed types: {', '.join(allowed_extensions)}"
-            )
-        
+
+        # SECURITY FIX (P0-B11): Validate file content matches extension using magic numbers
+        # This prevents malicious files from being uploaded with fake extensions
+        allowed_extensions = ['.pdf', '.doc', '.docx', '.jpg', '.jpeg', '.png', '.txt']
+        try:
+            validate_file_content(value, allowed_extensions=allowed_extensions)
+        except DjangoValidationError as e:
+            raise serializers.ValidationError(str(e.message))
+
         return value
 
 

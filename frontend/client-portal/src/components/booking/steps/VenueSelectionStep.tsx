@@ -67,13 +67,15 @@ export const VenueSelectionStep: React.FC<VenueSelectionStepProps> = ({
   });
 
   // Debug logging - remove after fixing
-  console.log('[VenueSelectionStep] Debug:', {
-    config,
-    configAvailableVenues: config?.available_venues_details,
-    apiVenues: venues,
-    fetchError,
-    isLoading,
-  });
+  if (import.meta.env.DEV) {
+    console.log('[VenueSelectionStep] Debug:', {
+      config,
+      configAvailableVenues: config?.available_venues_details,
+      apiVenues: venues,
+      fetchError,
+      isLoading,
+    });
+  }
 
   // Use configured venues if available, otherwise use fetched venues
   const availableVenues = config?.available_venues_details || venues || [];

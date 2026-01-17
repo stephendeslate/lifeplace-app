@@ -23,7 +23,10 @@ import {
   handleNotificationNavigation,
   parseNotificationData,
 } from '@/utils/notificationHandler';
+import { logger } from '@/utils/logger';
 import type { PushNotificationData } from '@/types/notifications.types';
+
+const notificationLogger = logger.create('Notifications');
 
 // =============================================================================
 // TYPES
@@ -94,17 +97,17 @@ export function useNotifications(): UseNotificationsResult {
             app_version: appVersion,
           });
 
-          console.log('Push token registered with backend');
+          notificationLogger.info('Push token registered with backend');
         } catch (error) {
           // Continue even if backend registration fails
           // Token is still valid for receiving notifications
-          console.warn('Failed to register push token with backend:', error);
+          notificationLogger.warn('Failed to register push token with backend:', error);
         }
       } else {
         setIsEnabled(false);
       }
     } catch (error) {
-      console.error('Push notification registration failed:', error);
+      notificationLogger.error('Push notification registration failed:', error);
       setIsEnabled(false);
     } finally {
       setIsRegistering(false);
@@ -123,7 +126,7 @@ export function useNotifications(): UseNotificationsResult {
 
     // Check if push notifications are available
     if (!NotificationService.isAvailable()) {
-      console.log('Push notifications not available (simulator or web)');
+      notificationLogger.debug('Push notifications not available (simulator or web)');
       return;
     }
 
@@ -148,7 +151,7 @@ export function useNotifications(): UseNotificationsResult {
     // Listener for notifications received while app is in foreground
     notificationListener.current = Notifications.addNotificationReceivedListener(
       (notification) => {
-        console.log('Notification received:', notification.request.content.title);
+        notificationLogger.debug('Notification received:', notification.request.content.title);
         setLastNotification(notification);
       }
     );
@@ -156,7 +159,7 @@ export function useNotifications(): UseNotificationsResult {
     // Listener for when user taps on a notification
     responseListener.current = Notifications.addNotificationResponseReceivedListener(
       (response) => {
-        console.log('Notification tapped:', response.notification.request.content.title);
+        notificationLogger.debug('Notification tapped:', response.notification.request.content.title);
 
         // Parse the notification data
         const data = parseNotificationData(response);

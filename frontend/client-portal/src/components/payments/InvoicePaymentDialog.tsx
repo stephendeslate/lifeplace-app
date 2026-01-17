@@ -170,20 +170,22 @@ export const InvoicePaymentDialog: React.FC<InvoicePaymentDialogProps> = ({
   }, [isDepositAlreadyPaid, paymentType]);
 
   const handlePaymentMethodSelect = (method: PaymentMethod | null) => {
-    console.log('🔍 PAYMENT METHOD SELECT - Method changed:', {
-      previousMethod: selectedPaymentMethod ? {
-        id: selectedPaymentMethod.id,
-        type: selectedPaymentMethod.type,
-        nickname: selectedPaymentMethod.nickname
-      } : null,
-      newMethod: method ? {
-        id: method.id,
-        type: method.type,
-        nickname: method.nickname,
-        gateway_details: !!method.gateway_details
-      } : null,
-      wasAddingNew: isAddingNewMethod
-    });
+    if (import.meta.env.DEV) {
+      console.log('🔍 PAYMENT METHOD SELECT - Method changed:', {
+        previousMethod: selectedPaymentMethod ? {
+          id: selectedPaymentMethod.id,
+          type: selectedPaymentMethod.type,
+          nickname: selectedPaymentMethod.nickname
+        } : null,
+        newMethod: method ? {
+          id: method.id,
+          type: method.type,
+          nickname: method.nickname,
+          gateway_details: !!method.gateway_details
+        } : null,
+        wasAddingNew: isAddingNewMethod
+      });
+    }
 
     setSelectedPaymentMethod(method);
 
@@ -192,11 +194,11 @@ export const InvoicePaymentDialog: React.FC<InvoicePaymentDialogProps> = ({
       setIsAddingNewMethod(false);
       // For saved methods, clear gateway state to prevent interference
       setSelectedGateway(null);
-      console.log('✅ PAYMENT METHOD SELECT - Selected saved method, clearing gateway state');
+      if (import.meta.env.DEV) console.log('✅ PAYMENT METHOD SELECT - Selected saved method, clearing gateway state');
     } else {
       // When clearing method selection, reset states
       setSelectedGateway(null);
-      console.log('🔄 PAYMENT METHOD SELECT - Cleared method selection');
+      if (import.meta.env.DEV) console.log('🔄 PAYMENT METHOD SELECT - Cleared method selection');
     }
 
     setPaymentError(null);
@@ -208,28 +210,30 @@ export const InvoicePaymentDialog: React.FC<InvoicePaymentDialogProps> = ({
   };
 
   const handleFullPayment = async () => {
-    console.log('🔍 PAYMENT DEBUG - handleFullPayment called with state:', {
-      selectedPaymentMethod: selectedPaymentMethod ? {
-        id: selectedPaymentMethod.id,
-        type: selectedPaymentMethod.type,
-        nickname: selectedPaymentMethod.nickname,
-        gateway_details: selectedPaymentMethod.gateway_details,
-        last_four: selectedPaymentMethod.last_four
-      } : null,
-      selectedGateway: selectedGateway ? {
-        id: selectedGateway.id,
-        code: selectedGateway.code,
-        name: selectedGateway.name
-      } : null,
-      isAddingNewMethod,
-      paymentType,
-      customAmount: paymentType === 'CUSTOM' ? customAmount : null,
-      invoice: {
-        id: invoice.id,
-        invoice_id: invoice.invoice_id,
-        total_amount: invoice.total_amount
-      }
-    });
+    if (import.meta.env.DEV) {
+      console.log('🔍 PAYMENT DEBUG - handleFullPayment called with state:', {
+        selectedPaymentMethod: selectedPaymentMethod ? {
+          id: selectedPaymentMethod.id,
+          type: selectedPaymentMethod.type,
+          nickname: selectedPaymentMethod.nickname,
+          gateway_details: selectedPaymentMethod.gateway_details,
+          last_four: selectedPaymentMethod.last_four
+        } : null,
+        selectedGateway: selectedGateway ? {
+          id: selectedGateway.id,
+          code: selectedGateway.code,
+          name: selectedGateway.name
+        } : null,
+        isAddingNewMethod,
+        paymentType,
+        customAmount: paymentType === 'CUSTOM' ? customAmount : null,
+        invoice: {
+          id: invoice.id,
+          invoice_id: invoice.invoice_id,
+          total_amount: invoice.total_amount
+        }
+      });
+    }
 
     // Validate custom amount if selected
     if (paymentType === 'CUSTOM') {
@@ -241,7 +245,7 @@ export const InvoicePaymentDialog: React.FC<InvoicePaymentDialogProps> = ({
     }
 
     if (!selectedPaymentMethod) {
-      console.error('❌ PAYMENT ERROR - No payment method selected');
+      if (import.meta.env.DEV) console.error('❌ PAYMENT ERROR - No payment method selected');
       setPaymentError('Please select a payment method');
       return;
     }
@@ -249,14 +253,16 @@ export const InvoicePaymentDialog: React.FC<InvoicePaymentDialogProps> = ({
     // Only validate gateway requirements when explicitly adding new methods
     if (isAddingNewMethod) {
       const requiresGateway = ['CREDIT_CARD', 'DIGITAL_WALLET'].includes(selectedPaymentMethod.type);
-      console.log('🔍 PAYMENT DEBUG - New method validation:', {
-        requiresGateway,
-        selectedGateway: !!selectedGateway,
-        paymentMethodType: selectedPaymentMethod.type
-      });
+      if (import.meta.env.DEV) {
+        console.log('🔍 PAYMENT DEBUG - New method validation:', {
+          requiresGateway,
+          selectedGateway: !!selectedGateway,
+          paymentMethodType: selectedPaymentMethod.type
+        });
+      }
 
       if (requiresGateway && !selectedGateway) {
-        console.error('❌ PAYMENT ERROR - Gateway required but not selected');
+        if (import.meta.env.DEV) console.error('❌ PAYMENT ERROR - Gateway required but not selected');
         setPaymentError('Please select a payment gateway');
         return;
       }
@@ -280,7 +286,7 @@ export const InvoicePaymentDialog: React.FC<InvoicePaymentDialogProps> = ({
         if (paymentType === 'CUSTOM') {
           paymentData.amount = customAmount;
         }
-        console.log('🔍 PAYMENT DEBUG - New method payment data:', paymentData);
+        if (import.meta.env.DEV) console.log('🔍 PAYMENT DEBUG - New method payment data:', paymentData);
       } else {
         // For saved payment methods - send the saved payment method ID using 'payment_method' field
         paymentData = {
@@ -292,15 +298,17 @@ export const InvoicePaymentDialog: React.FC<InvoicePaymentDialogProps> = ({
         if (paymentType === 'CUSTOM') {
           paymentData.amount = customAmount;
         }
-        console.log('🔍 PAYMENT DEBUG - Saved method payment data:', paymentData);
+        if (import.meta.env.DEV) console.log('🔍 PAYMENT DEBUG - Saved method payment data:', paymentData);
       }
 
-      console.log('🚀 PAYMENT DEBUG - About to call FinancialApi.payInvoice:', {
-        invoiceId: invoice.id,
-        paymentData,
-        selectedPaymentMethodValid: !!selectedPaymentMethod?.id,
-        isAddingNewMethod
-      });
+      if (import.meta.env.DEV) {
+        console.log('🚀 PAYMENT DEBUG - About to call FinancialApi.payInvoice:', {
+          invoiceId: invoice.id,
+          paymentData,
+          selectedPaymentMethodValid: !!selectedPaymentMethod?.id,
+          isAddingNewMethod
+        });
+      }
 
       const response = await FinancialApi.payInvoice(invoice.id, paymentData);
 
@@ -406,6 +414,7 @@ export const InvoicePaymentDialog: React.FC<InvoicePaymentDialogProps> = ({
               onClick={onClose}
               sx={{ minWidth: 'auto', p: 1 }}
               disabled={paymentLoading}
+              aria-label="Close"
             >
               <CloseIcon />
             </Button>

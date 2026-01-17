@@ -31,7 +31,7 @@ export class ConfirmationApi {
       await api.post(`/bookingflow/public/flows/session/${sessionId}/send-confirmation/`);
     } catch (error) {
       // Email sending is optional, log but don't throw
-      console.warn('Failed to send confirmation email:', error);
+      if (import.meta.env.DEV) console.warn('Failed to send confirmation email:', error);
     }
   }
 

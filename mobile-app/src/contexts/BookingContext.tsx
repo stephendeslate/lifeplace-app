@@ -30,6 +30,10 @@ import {
 } from '@/utils/bookingStorage';
 import { isSessionExpired, canSkipStep } from '@/utils/bookingHelpers';
 import { useToast } from '@/contexts/ToastContext';
+import { logger } from '@/utils/logger';
+
+const bookingLogger = logger.create('BookingContext');
+
 import type {
   EventType,
   BookingFlow,
@@ -506,7 +510,7 @@ export function BookingProvider({ children }: BookingProviderProps) {
       try {
         await BookingCoreAPI.abandonSession(state.sessionId, reason);
       } catch (error) {
-        console.warn('Failed to abandon session on server:', error);
+        bookingLogger.warn('Failed to abandon session on server:', error);
       }
 
       await clearBookingSession(state.sessionId);
@@ -610,7 +614,7 @@ export function BookingProvider({ children }: BookingProviderProps) {
             true // markCompleted
           );
         } catch (error) {
-          console.warn('Failed to save step data before navigation:', error);
+          bookingLogger.warn('Failed to save step data before navigation:', error);
           // Still allow navigation even if save fails
         }
       }
@@ -646,12 +650,12 @@ export function BookingProvider({ children }: BookingProviderProps) {
       }
 
       try {
-        console.log('[BookingContext] Validating date availability...');
+        bookingLogger.info('Validating date availability...');
         const result = await BookingCoreAPI.validateAvailability(state.sessionId);
 
         if (result.available && result.reservation_token) {
           dispatch({ type: 'SET_RESERVATION_TOKEN', payload: result.reservation_token });
-          console.log('[BookingContext] Date reserved, token:', result.reservation_token);
+          bookingLogger.info('Date reserved, token:', result.reservation_token);
         } else {
           dispatch({
             type: 'SET_DATE_UNAVAILABLE',
@@ -660,7 +664,7 @@ export function BookingProvider({ children }: BookingProviderProps) {
               error: result.error || 'This date is no longer available.',
             },
           });
-          console.warn('[BookingContext] Date no longer available:', result.error);
+          bookingLogger.warn('Date no longer available:', result.error);
         }
 
         return {
@@ -669,7 +673,7 @@ export function BookingProvider({ children }: BookingProviderProps) {
           error: result.error,
         };
       } catch (error) {
-        console.warn('[BookingContext] Pre-validation failed:', error);
+        bookingLogger.warn('Pre-validation failed:', error);
         // Return available=true to allow proceeding - backend has its own atomic check
         return { available: true, error: 'Validation failed, proceeding with backend check' };
       }
@@ -709,14 +713,14 @@ export function BookingProvider({ children }: BookingProviderProps) {
         // CRITICAL: For payment completions, validate availability BEFORE charging
         // This prevents customers from being charged for unavailable dates
         if (completionType === 'payment') {
-          console.log('[BookingContext] Validating date availability before payment...');
+          bookingLogger.info('Validating date availability before payment...');
 
           try {
             const validation = await BookingCoreAPI.validateAvailability(state.sessionId);
 
             if (!validation.available) {
               // Date is no longer available - show error without charging
-              console.warn('[BookingContext] Date no longer available:', validation.error);
+              bookingLogger.warn('Date no longer available:', validation.error);
               dispatch({
                 type: 'SET_DATE_UNAVAILABLE',
                 payload: {
@@ -732,14 +736,14 @@ export function BookingProvider({ children }: BookingProviderProps) {
             // Store the reservation token for the completion call
             reservationToken = validation.reservation_token;
             dispatch({ type: 'SET_RESERVATION_TOKEN', payload: reservationToken || null });
-            console.log('[BookingContext] Date reserved, token:', reservationToken);
+            bookingLogger.info('Date reserved, token:', reservationToken);
           } catch (validationErr) {
             // If it's our DATE_NO_LONGER_AVAILABLE error, rethrow
             if (validationErr instanceof Error && validationErr.message === 'DATE_NO_LONGER_AVAILABLE') {
               throw validationErr;
             }
             // For other errors, log but proceed - backend has atomic check
-            console.warn('[BookingContext] Pre-validation failed:', validationErr);
+            bookingLogger.warn('Pre-validation failed:', validationErr);
           }
         }
 
@@ -782,9 +786,9 @@ export function BookingProvider({ children }: BookingProviderProps) {
         if (reservationToken && state.sessionId) {
           try {
             await BookingCoreAPI.releaseReservation(state.sessionId, reservationToken);
-            console.log('[BookingContext] Released reservation after error');
+            bookingLogger.info('Released reservation after error');
           } catch (releaseErr) {
-            console.warn('[BookingContext] Failed to release reservation:', releaseErr);
+            bookingLogger.warn('Failed to release reservation:', releaseErr);
           }
         }
 
@@ -805,7 +809,7 @@ export function BookingProvider({ children }: BookingProviderProps) {
       const response = await BookingCoreAPI.getFlowPaymentGateways(flowId);
       dispatch({ type: 'SET_PAYMENT_GATEWAYS', payload: response.available_gateways || [] });
     } catch (error) {
-      console.warn('Failed to fetch payment gateways:', error);
+      bookingLogger.warn('Failed to fetch payment gateways:', error);
     }
   }, []);
 
@@ -878,7 +882,7 @@ export function BookingProvider({ children }: BookingProviderProps) {
         dispatch({ type: 'SHOW_RECOVERY_PROMPT', payload: true });
       }
     } catch (error) {
-      console.warn('Failed to check for recoverable session:', error);
+      bookingLogger.warn('Failed to check for recoverable session:', error);
     }
   }, []);
 

@@ -30,6 +30,7 @@ import {
 import { router } from 'expo-router';
 import { colors, spacing, typeScale, shadows, layout } from '@/theme';
 import { crashReporter } from '@/utils/crashReporting';
+import { logger } from '@/utils/logger';
 
 export type ErrorType = 'network' | 'permission' | 'validation' | 'unknown';
 
@@ -120,7 +121,7 @@ export class ScreenErrorBoundary extends Component<Props, State> {
       ...reportingContext,
     });
 
-    console.error(`[ScreenErrorBoundary] Error in ${screenName || 'unknown screen'}:`, error);
+    logger.error(`Error in ${screenName || 'unknown screen'}:`, error);
   }
 
   handleRetry = () => {

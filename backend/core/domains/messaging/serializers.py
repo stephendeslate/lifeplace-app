@@ -71,6 +71,32 @@ class MessageCreateSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Only admin users can create internal notes")
         return value
 
+    def validate_attachment_files(self, value):
+        """Validate attachment files for size and content type"""
+        from core.utils.validators import validate_file_content
+        from django.core.exceptions import ValidationError as DjangoValidationError
+
+        if not value:
+            return value
+
+        # SECURITY FIX (P0-B11): Validate file content matches extension using magic numbers
+        allowed_extensions = ['.pdf', '.doc', '.docx', '.jpg', '.jpeg', '.png', '.gif', '.txt', '.csv']
+        max_size = 10 * 1024 * 1024  # 10MB per file
+
+        for file_obj in value:
+            # Check file size
+            if file_obj.size > max_size:
+                raise serializers.ValidationError(
+                    f"File '{file_obj.name}' exceeds maximum size of 10MB"
+                )
+            # Validate content matches extension
+            try:
+                validate_file_content(file_obj, allowed_extensions=allowed_extensions)
+            except DjangoValidationError as e:
+                raise serializers.ValidationError(f"File '{file_obj.name}': {e.message}")
+
+        return value
+
     def create(self, validated_data):
         attachment_files = validated_data.pop('attachment_files', [])
         request = self.context.get('request')

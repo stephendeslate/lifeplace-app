@@ -84,7 +84,7 @@ const Dashboard: React.FC = () => {
         // Dashboard data will automatically refresh via React Query
       } catch (error) {
         // Error handling is already done in the hook
-        console.error('Failed to accept quote:', error);
+        if (import.meta.env.DEV) console.error('Failed to accept quote:', error);
       }
     } else {
       // For reject, open the rejection dialog
@@ -109,7 +109,7 @@ const Dashboard: React.FC = () => {
       // Dashboard data will automatically refresh via React Query
     } catch (error) {
       // Error handling is already done in the hook
-      console.error('Failed to reject quote:', error);
+      if (import.meta.env.DEV) console.error('Failed to reject quote:', error);
     }
   };
 

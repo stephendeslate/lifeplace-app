@@ -10,6 +10,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useBookingContext } from '@/contexts/BookingContext';
 import { BookingCoreAPI } from '@/apis/booking';
 import { formatCurrency } from '@/utils/currency';
+import { logger } from '@/utils/logger';
 import type {
   SelectedPackage,
   SelectedAddon,
@@ -189,7 +190,7 @@ export const useSimplePricing = (
         });
       }
     } catch (err) {
-      console.error('Pricing calculation error:', err);
+      logger.error('Pricing calculation error:', err);
       setError('Failed to calculate pricing');
 
       // Fallback calculation if server fails - use context tax rate, no hardcoded default

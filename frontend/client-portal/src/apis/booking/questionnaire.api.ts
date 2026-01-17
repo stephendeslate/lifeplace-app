@@ -297,7 +297,7 @@ export class QuestionnaireApi {
           uploadedFiles.push('unknown_file');
         }
       } catch (error) {
-        console.error(`Failed to upload file ${file.name}:`, error);
+        if (import.meta.env.DEV) console.error(`Failed to upload file ${file.name}:`, error);
         throw new Error(`Failed to upload ${file.name}`);
       }
     }

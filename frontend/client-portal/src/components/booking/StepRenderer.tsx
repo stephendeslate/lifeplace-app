@@ -52,7 +52,7 @@ export const StepRenderer: React.FC = () => {
       // The context will handle both local state and backend updates
       await actions.updateStepData(stepType, data as Record<string, unknown>);
     } catch (error) {
-      console.error('Failed to update step data:', error);
+      if (import.meta.env.DEV) console.error('Failed to update step data:', error);
     }
   }, [currentStep, actions.updateStepData]);
 
@@ -65,7 +65,7 @@ export const StepRenderer: React.FC = () => {
       const result = await validateStep(currentStep.id as number, data as Record<string, unknown>);
       return result || { isValid: false, errors: [{ field: 'general', message: 'Validation failed' }] };
     } catch (error) {
-      console.error('Failed to validate step:', error);
+      if (import.meta.env.DEV) console.error('Failed to validate step:', error);
       return { isValid: false, errors: [{ field: 'general', message: 'Validation failed' }] };
     }
   }, [currentStep, validateStep]);

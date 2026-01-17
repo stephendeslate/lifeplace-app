@@ -96,14 +96,14 @@ export const useConfirmation = (
       // CRITICAL: For payment completions, validate availability BEFORE charging the card
       // This prevents customers from being charged for dates that are no longer available
       if (completionType === 'payment') {
-        console.log('[Confirmation] Validating date availability before payment...');
+        if (import.meta.env.DEV) console.log('[Confirmation] Validating date availability before payment...');
 
         try {
           const validation = await BookingCoreApi.validateAvailability(sessionId);
 
           if (!validation.available) {
             // Date is no longer available - show error without charging
-            console.warn('[Confirmation] Date no longer available:', validation.error);
+            if (import.meta.env.DEV) console.warn('[Confirmation] Date no longer available:', validation.error);
             setDateUnavailable(true);
             setUnavailableDateError(
               validation.error ||
@@ -115,11 +115,11 @@ export const useConfirmation = (
 
           // Store the reservation token for the completion call
           reservationToken = validation.reservation_token;
-          console.log('[Confirmation] Date reserved, token:', reservationToken);
+          if (import.meta.env.DEV) console.log('[Confirmation] Date reserved, token:', reservationToken);
         } catch (validationErr) {
           // If validation fails due to network error, we might still want to proceed
           // The backend has its own atomic check, so this is a defense-in-depth measure
-          console.warn('[Confirmation] Pre-validation failed:', validationErr);
+          if (import.meta.env.DEV) console.warn('[Confirmation] Pre-validation failed:', validationErr);
           // Proceed without reservation token - backend will still check atomically
         }
       }
@@ -157,9 +157,9 @@ export const useConfirmation = (
       if (reservationToken) {
         try {
           await BookingCoreApi.releaseReservation(sessionId, reservationToken);
-          console.log('[Confirmation] Released reservation after error');
+          if (import.meta.env.DEV) console.log('[Confirmation] Released reservation after error');
         } catch (releaseErr) {
-          console.warn('[Confirmation] Failed to release reservation:', releaseErr);
+          if (import.meta.env.DEV) console.warn('[Confirmation] Failed to release reservation:', releaseErr);
         }
       }
 

@@ -31,7 +31,6 @@ ENV SECRET_KEY=dummy-build-key-replaced-at-runtime
 ENV DATABASE_URL=postgres://dummy:dummy@dummy:5432/dummy
 RUN python manage.py collectstatic --noinput
 
-# Start server
-# Gunicorn config: timeout=120s, 2 workers, graceful timeout, max requests for memory management
-# For Fly.io deployment, this CMD runs the application
-CMD gunicorn core.wsgi:application --bind 0.0.0.0:$PORT --timeout 120 --workers 2 --worker-class sync --max-requests 1000 --max-requests-jitter 50 --graceful-timeout 30 --keep-alive 5 --log-level info
+# Start server using Daphne (ASGI) for WebSocket support
+# Daphne is the official ASGI server for Django Channels
+CMD daphne -b 0.0.0.0 -p $PORT core.asgi:application

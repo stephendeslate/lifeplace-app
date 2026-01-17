@@ -60,7 +60,7 @@ export const CleanEventTypeSelection: React.FC<CleanEventTypeSelectionProps> = (
         const data = await BookingCoreApi.getEventTypes();
         setEventTypes(data);
       } catch (err) {
-        console.error('Failed to load event types:', err);
+        if (import.meta.env.DEV) console.error('Failed to load event types:', err);
         setError(BookingCoreApi.handleApiError(err));
       } finally {
         setLoading(false);
@@ -80,7 +80,7 @@ export const CleanEventTypeSelection: React.FC<CleanEventTypeSelectionProps> = (
     try {
       await onSelectEventType(eventType);
     } catch (error) {
-      console.error('Failed to select event type:', error);
+      if (import.meta.env.DEV) console.error('Failed to select event type:', error);
     } finally {
       setIsSelecting(false);
       setIsDetailDialogOpen(false);

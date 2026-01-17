@@ -8,6 +8,10 @@
  * - Bugsnag: npm install @bugsnag/react-native
  */
 
+import { logger } from './logger';
+
+const crashLogger = logger.create('CrashReporter');
+
 interface CrashReporter {
   initialize: () => void;
   captureException: (error: Error, context?: Record<string, unknown>) => void;
@@ -19,7 +23,7 @@ interface CrashReporter {
 export const crashReporter: CrashReporter = {
   initialize: () => {
     if (__DEV__) {
-      console.log('[CrashReporter] Initialized in development mode');
+      crashLogger.debug('Initialized in development mode');
     }
     // TODO: Initialize Sentry/Crashlytics/Bugsnag
     // Example for Sentry:
@@ -32,7 +36,7 @@ export const crashReporter: CrashReporter = {
 
   captureException: (error: Error, context?: Record<string, unknown>) => {
     if (__DEV__) {
-      console.error('[CrashReporter] Exception:', error.message, context);
+      crashLogger.error('Exception:', error.message, context);
     }
     // TODO: Send to crash reporting service
     // Example for Sentry:
@@ -41,7 +45,7 @@ export const crashReporter: CrashReporter = {
 
   setUser: (userId: string | null) => {
     if (__DEV__) {
-      console.log('[CrashReporter] User set:', userId);
+      crashLogger.debug('User set:', userId);
     }
     // TODO: Set user context in crash reporting service
     // Example for Sentry:
@@ -50,7 +54,7 @@ export const crashReporter: CrashReporter = {
 
   addBreadcrumb: (message: string, category = 'app') => {
     if (__DEV__) {
-      console.log(`[CrashReporter] Breadcrumb [${category}]:`, message);
+      crashLogger.debug(`Breadcrumb [${category}]:`, message);
     }
     // TODO: Add breadcrumb to crash reporting service
     // Example for Sentry:

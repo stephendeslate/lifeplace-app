@@ -5,6 +5,7 @@
  */
 
 import api from '@/utils/api';
+import { logger } from '@/utils/logger';
 import type {
   ConfirmationStepData,
   BookingCompletionResult,
@@ -128,7 +129,7 @@ export const ConfirmationAPI = {
   getReceiptUrl: async (_sessionId: string): Promise<{ url: string }> => {
     // Receipt endpoint not yet implemented in backend
     // When implemented, use: `/bookingflow/public/flows/session/${sessionId}/receipt/`
-    console.warn('Receipt URL endpoint not yet implemented');
+    logger.warn('Receipt URL endpoint not yet implemented');
     return { url: '' };
   },
 
