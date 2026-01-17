@@ -17,7 +17,7 @@ from core.domains.payments.models import (
     Invoice
 )
 from core.domains.payments.services.payment_service import PaymentService
-from core.domains.payments.services.payment_gateway_service import PaymentGatewayService
+from core.domains.payments.services.gateway_service import PaymentGatewayService
 from core.domains.events.models import Event, EventType
 
 User = get_user_model()
@@ -43,17 +43,21 @@ class PaymentRefundTestCase(TestCase):
             start_date=date.today() + timedelta(days=30)
         )
         
-        self.gateway = PaymentGateway.objects.create(
-            name='Stripe Test',
+        self.gateway, _ = PaymentGateway.objects.get_or_create(
             code='stripe',
-            is_active=True,
-            config={'test_mode': True}
+            defaults={
+                'name': 'Stripe Test',
+                'is_active': True
+            }
         )
+        self.gateway.config = {'test_mode': True}
+        self.gateway.is_active = True
+        self.gateway.save()
         
         self.payment_method = PaymentMethod.objects.create(
             gateway=self.gateway,
-            client=self.user,
-            token='pm_test_refund'
+            user=self.user,
+            token_reference='pm_test_refund'
         )
     
     def test_full_refund_processing(self):
@@ -268,17 +272,21 @@ class PaymentFailureTestCase(TestCase):
             start_date=date.today() + timedelta(days=45)
         )
         
-        self.gateway = PaymentGateway.objects.create(
-            name='Stripe Test',
+        self.gateway, _ = PaymentGateway.objects.get_or_create(
             code='stripe',
-            is_active=True,
-            config={'test_mode': True}
+            defaults={
+                'name': 'Stripe Test',
+                'is_active': True
+            }
         )
+        self.gateway.config = {'test_mode': True}
+        self.gateway.is_active = True
+        self.gateway.save()
         
         self.payment_method = PaymentMethod.objects.create(
             gateway=self.gateway,
-            client=self.user,
-            token='pm_test_failure'
+            user=self.user,
+            token_reference='pm_test_failure'
         )
     
     def test_card_declined_failure(self):
@@ -473,8 +481,8 @@ class ConcurrentPaymentTestCase(TransactionTestCase):
         
         self.payment_method = PaymentMethod.objects.create(
             gateway=self.gateway,
-            client=self.user,
-            token='pm_concurrent_test'
+            user=self.user,
+            token_reference='pm_concurrent_test'
         )
     
     def test_concurrent_payment_processing(self):

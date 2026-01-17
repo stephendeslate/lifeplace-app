@@ -38,7 +38,7 @@ class RegistrationRateThrottle(AnonRateThrottle):
 
 class AdminActionThrottle(UserRateThrottle):
     """Rate limiting for admin actions"""
-    
+
     def __init__(self):
         super().__init__()
         # Disable throttling in development
@@ -46,6 +46,20 @@ class AdminActionThrottle(UserRateThrottle):
             self.rate = '999999/hour'
         else:
             self.rate = '200/hour'  # 200 admin actions per hour per user
+
+
+class InvitationAcceptRateThrottle(AnonRateThrottle):
+    """
+    SECURITY FIX: Rate limiting for invitation acceptance.
+    Prevents brute-force attacks on invitation tokens.
+    """
+
+    def __init__(self):
+        super().__init__()
+        if settings.DEBUG:
+            self.rate = '999999/hour'
+        else:
+            self.rate = '5/hour'  # 5 invitation accept attempts per hour per IP
 
 
 def sanitize_input(value: Any, max_length: int = None, allow_html: bool = False) -> str:
@@ -333,18 +347,30 @@ def validate_request_data(data: Dict[str, Any], required_fields: List[str] = Non
 
 class SecurityMiddleware:
     """Custom security middleware for additional protection"""
-    
+
     def __init__(self, get_response):
         self.get_response = get_response
-    
+
     def __call__(self, request):
         # Add security headers
         response = self.get_response(request)
-        
+
         # Security headers
         response['X-Content-Type-Options'] = 'nosniff'
         response['X-Frame-Options'] = 'DENY'
         response['Referrer-Policy'] = 'strict-origin-when-cross-origin'
         response['Permissions-Policy'] = 'geolocation=(), microphone=(), camera=()'
-        
+
+        # SECURITY FIX: Add Content Security Policy header
+        # This is a restrictive CSP suitable for an API backend
+        # It blocks all inline scripts, styles, and restricts sources
+        if not settings.DEBUG:
+            csp_directives = [
+                "default-src 'none'",  # Block everything by default
+                "frame-ancestors 'none'",  # Prevent framing (clickjacking)
+                "base-uri 'none'",  # Prevent base tag injection
+                "form-action 'none'",  # Prevent form submissions to other origins
+            ]
+            response['Content-Security-Policy'] = "; ".join(csp_directives)
+
         return response

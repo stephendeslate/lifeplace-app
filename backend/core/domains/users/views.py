@@ -3,6 +3,7 @@ from core.utils.permissions import IsAdmin, IsOwnerOrAdmin, CanManageAdmins
 from core.utils.security import (
     LoginRateThrottle,
     RegistrationRateThrottle,
+    InvitationAcceptRateThrottle,
     validate_email_format,
     validate_password_strength,
     validate_request_data,
@@ -534,9 +535,13 @@ class AdminInvitationDetailAPIView(generics.RetrieveDestroyAPIView):
 
 @api_view(['POST'])
 @permission_classes([permissions.AllowAny])
+@throttle_classes([InvitationAcceptRateThrottle])
 def accept_invitation(request, invitation_id):
     """
     Accept an admin invitation and create a user account
+
+    Security features:
+    - Rate limiting (5 attempts per hour per IP) - SECURITY FIX
     """
     password = request.data.get('password')
     confirm_password = request.data.get('confirm_password')

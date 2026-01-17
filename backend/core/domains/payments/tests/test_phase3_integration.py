@@ -65,17 +65,22 @@ class Phase3IntegrationTestCase(TestCase):
         )
 
         # Create test gateway
-        self.gateway = PaymentGateway.objects.create(
-            name='Test Stripe',
+        self.gateway, _ = PaymentGateway.objects.get_or_create(
             code='stripe',
-            is_active=True,
-            config={
-                'secret_key': 'sk_test_123',
-                'publishable_key': 'pk_test_123',
-                'webhook_secret': 'whsec_test_123',
-                'test_mode': True
+            defaults={
+                'name': 'Test Stripe',
+                'is_active': True,
             }
         )
+        # Always update config to ensure test settings are applied
+        self.gateway.config = {
+            'secret_key': 'sk_test_123',
+            'publishable_key': 'pk_test_123',
+            'webhook_secret': 'whsec_test_123',
+            'test_mode': True
+        }
+        self.gateway.is_active = True
+        self.gateway.save()
 
     def tearDown(self):
         """Clean up after tests"""

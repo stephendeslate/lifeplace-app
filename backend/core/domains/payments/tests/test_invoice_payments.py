@@ -88,12 +88,17 @@ class InvoicePaymentTestCase(TestCase):
         )
 
         # Create payment gateway
-        self.gateway = PaymentGateway.objects.create(
-            name='Test Stripe',
+        self.gateway, _ = PaymentGateway.objects.get_or_create(
             code='stripe',
-            is_active=True,
-            config={'test_mode': True}
+            defaults={
+                'name': 'Test Stripe',
+                'is_active': True,
+            }
         )
+        # Always update config to ensure test settings are applied
+        self.gateway.config = {'test_mode': True}
+        self.gateway.is_active = True
+        self.gateway.save()
 
         # Create payment method
         self.payment_method = PaymentMethod.objects.create(

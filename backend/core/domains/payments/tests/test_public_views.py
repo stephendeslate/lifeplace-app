@@ -21,18 +21,24 @@ class PublicPaymentGatewayViewSetTestCase(TestCase):
         cache.clear()
 
         # Create test payment gateways
-        self.active_gateway_1 = PaymentGateway.objects.create(
-            name="Stripe",
+        self.active_gateway_1, _ = PaymentGateway.objects.get_or_create(
             code="stripe",
-            is_active=True,
-            description="Credit card payments via Stripe",
-            config={
-                "publishable_key": "pk_test_123456789",
-                "secret_key": "sk_test_987654321",
-                "webhook_secret": "whsec_test_123",
-                "test_mode": True
+            defaults={
+                "name": "Stripe",
+                "is_active": True,
+                "description": "Credit card payments via Stripe",
             }
         )
+        # Always update config to ensure test settings are applied
+        self.active_gateway_1.config = {
+            "publishable_key": "pk_test_123456789",
+            "secret_key": "sk_test_987654321",
+            "webhook_secret": "whsec_test_123",
+            "test_mode": True
+        }
+        self.active_gateway_1.is_active = True
+        self.active_gateway_1.description = "Credit card payments via Stripe"
+        self.active_gateway_1.save()
 
         self.active_gateway_2 = PaymentGateway.objects.create(
             name="PayPal",

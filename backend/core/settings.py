@@ -283,6 +283,11 @@ REST_FRAMEWORK = {
         'rest_framework.renderers.JSONRenderer',
         'rest_framework.renderers.BrowsableAPIRenderer',  # This enables the browsable API
     ],
+    # SECURITY FIX: Default throttle classes - ensures ALL endpoints have rate limiting
+    'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.AnonRateThrottle',
+        'rest_framework.throttling.UserRateThrottle',
+    ],
     # Throttling rates - disabled in development
     'DEFAULT_THROTTLE_RATES': {
         'analytics': '999999/hour' if DEBUG else '1000/hour',

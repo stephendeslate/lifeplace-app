@@ -46,12 +46,17 @@ class OverPaymentPreventionTestCase(TestCase):
             start_date=timezone.now() + timedelta(days=60)
         )
 
-        self.gateway = PaymentGateway.objects.create(
-            name='Stripe Test',
+        self.gateway, _ = PaymentGateway.objects.get_or_create(
             code='stripe',
-            is_active=True,
-            config={'test_mode': True}
+            defaults={
+                'name': 'Stripe Test',
+                'is_active': True,
+            }
         )
+        # Always update config to ensure test settings are applied
+        self.gateway.config = {'test_mode': True}
+        self.gateway.is_active = True
+        self.gateway.save()
 
         self.payment_method = PaymentMethod.objects.create(
             gateway=self.gateway,

@@ -385,16 +385,47 @@ class QuestionnaireFieldViewSet(viewsets.ModelViewSet):
 class QuestionnaireResponseViewSet(viewsets.ModelViewSet):
     """
     ViewSet for managing questionnaire responses
+
+    SECURITY FIX (P0-B15): Uses IsAdminOrClient with proper queryset filtering.
+    - Admin users can access all responses
+    - Client users can only access responses for their own events
     """
     serializer_class = QuestionnaireResponseSerializer
-    permission_classes = [IsOwnerOrAdmin]
-    
+    permission_classes = [IsAdminOrClient]
+
     def get_queryset(self):
-        return QuestionnaireResponse.objects.select_related('event', 'field', 'field__questionnaire')
+        """
+        SECURITY FIX (P0-B15): Filter queryset based on user role.
+        Client users can only see responses for their own events.
+        """
+        queryset = QuestionnaireResponse.objects.select_related('event', 'event__client', 'field', 'field__questionnaire')
+
+        user = self.request.user
+        if user.role == 'CLIENT':
+            # Filter to only responses for events owned by this client
+            queryset = queryset.filter(event__client=user)
+
+        return queryset
     
     def list(self, request, *args, **kwargs):
         event_id = request.query_params.get('event')
         if event_id:
+            # SECURITY FIX (P0-B15): Verify client has access to this event
+            user = request.user
+            if user.role == 'CLIENT':
+                from core.domains.events.models import Event
+                try:
+                    event = Event.objects.get(id=event_id)
+                    if event.client_id != user.id:
+                        return Response(
+                            {"detail": "You do not have permission to view this event's responses."},
+                            status=status.HTTP_403_FORBIDDEN
+                        )
+                except Event.DoesNotExist:
+                    return Response(
+                        {"detail": "Event not found"},
+                        status=status.HTTP_404_NOT_FOUND
+                    )
             responses = QuestionnaireResponseService.get_responses_for_event(event_id)
             serializer = self.get_serializer(responses, many=True)
             return Response(serializer.data)
@@ -441,10 +472,27 @@ class QuestionnaireResponseViewSet(viewsets.ModelViewSet):
         """Save multiple responses for an event at once"""
         serializer = EventQuestionnaireResponsesSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        
+
         event_id = serializer.validated_data['event']
         responses_data = serializer.validated_data['responses']
-        
+
+        # SECURITY FIX (P0-B15): Verify client has access to this event
+        user = request.user
+        if user.role == 'CLIENT':
+            from core.domains.events.models import Event
+            try:
+                event = Event.objects.get(id=event_id)
+                if event.client_id != user.id:
+                    return Response(
+                        {"detail": "You do not have permission to modify this event's responses."},
+                        status=status.HTTP_403_FORBIDDEN
+                    )
+            except Event.DoesNotExist:
+                return Response(
+                    {"detail": "Event not found"},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+
         with transaction.atomic():
             responses = QuestionnaireResponseService.save_event_responses(
                 event_id,

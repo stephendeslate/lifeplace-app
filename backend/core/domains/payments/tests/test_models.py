@@ -59,9 +59,9 @@ class PaymentModelTestCase(TestCase):
         
         self.payment_method = PaymentMethod.objects.create(
             gateway=self.gateway,
-            token='test_token_123',
-            card_last_four='4242',
-            card_brand='visa',
+            user=self.user,
+            token_reference='test_token_123',
+            last_four='4242',
             is_default=True
         )
     
@@ -167,16 +167,21 @@ class PaymentGatewayModelTestCase(TestCase):
     
     def test_gateway_creation(self):
         """Test payment gateway creation"""
-        gateway = PaymentGateway.objects.create(
-            name='Stripe Production',
+        gateway, created = PaymentGateway.objects.get_or_create(
             code='stripe',
-            is_active=True,
-            config={
-                'publishable_key': 'pk_test_123',
-                'secret_key': 'sk_test_123',
-                'webhook_secret': 'whsec_123'
+            defaults={
+                'name': 'Stripe Production',
+                'is_active': True,
             }
         )
+        # Always update config to ensure test settings are applied
+        gateway.config = {
+            'publishable_key': 'pk_test_123',
+            'secret_key': 'sk_test_123',
+            'webhook_secret': 'whsec_123'
+        }
+        gateway.is_active = True
+        gateway.save()
         
         self.assertEqual(gateway.name, 'Stripe Production')
         self.assertEqual(gateway.code, 'stripe')
@@ -185,11 +190,15 @@ class PaymentGatewayModelTestCase(TestCase):
     
     def test_gateway_config_encryption(self):
         """Test that gateway config is properly encrypted"""
-        gateway = PaymentGateway.objects.create(
-            name='Stripe Test',
+        gateway, created = PaymentGateway.objects.get_or_create(
             code='stripe',
-            config={'secret_key': 'sk_test_secret_key_123'}
+            defaults={
+                'name': 'Stripe Test',
+                'is_active': True,
+            }
         )
+        gateway.config = {'secret_key': 'sk_test_secret_key_123'}
+        gateway.save()
         
         # Config should be accessible as dict
         self.assertIsInstance(gateway.config, dict)
@@ -331,15 +340,20 @@ class PaymentTransactionModelTestCase(TestCase):
             start_date=date.today() + timedelta(days=30)
         )
         
-        self.gateway = PaymentGateway.objects.create(
-            name='Stripe Test',
+        self.gateway, _ = PaymentGateway.objects.get_or_create(
             code='stripe',
-            is_active=True
+            defaults={
+                'name': 'Stripe Test',
+                'is_active': True,
+            }
         )
+        self.gateway.is_active = True
+        self.gateway.save()
         
         self.payment_method = PaymentMethod.objects.create(
             gateway=self.gateway,
-            token='test_token_123'
+            user=self.user,
+            token_reference='test_token_123'
         )
         
         self.payment = Payment.objects.create(

@@ -13,7 +13,7 @@ from core.domains.payments.models import (
     Payment, PaymentGateway, PaymentMethod
 )
 from core.domains.payments.services.payment_service import PaymentService
-from core.domains.payments.services.payment_gateway_service import PaymentGatewayService
+from core.domains.payments.services.gateway_service import PaymentGatewayService
 from core.domains.events.models import Event, EventType
 from core.domains.products.models import ProductOption, ProductCategory
 from core.domains.bookingflow.models import (
@@ -52,10 +52,12 @@ class DepositCalculationTestCase(TestCase):
             is_enabled=True
         )
         
-        self.gateway = PaymentGateway.objects.create(
-            name='Stripe Test',
+        self.gateway, _ = PaymentGateway.objects.get_or_create(
             code='stripe',
-            is_active=True
+            defaults={
+                'name': 'Stripe Test',
+                'is_active': True
+            }
         )
     
     def test_percentage_deposit_calculation(self):
@@ -193,8 +195,8 @@ class DepositPaymentProcessingTestCase(TestCase):
         
         self.payment_method = PaymentMethod.objects.create(
             gateway=self.gateway,
-            client=self.user,
-            token='pm_deposit_test'
+            user=self.user,
+            token_reference='pm_deposit_test'
         )
     
     def test_deposit_payment_processing(self):
@@ -379,10 +381,12 @@ class BookingFlowDepositTestCase(TestCase):
             is_required=True
         )
         
-        self.gateway = PaymentGateway.objects.create(
-            name='Stripe Test',
+        self.gateway, _ = PaymentGateway.objects.get_or_create(
             code='stripe',
-            is_active=True
+            defaults={
+                'name': 'Stripe Test',
+                'is_active': True
+            }
         )
     
     def test_booking_completion_with_deposit_payment(self):
@@ -544,8 +548,8 @@ class BookingFlowDepositTestCase(TestCase):
             event=event,
             payment_method=PaymentMethod.objects.create(
                 gateway=self.gateway,
-                client=self.user,
-                token='pm_refund_test'
+                user=self.user,
+                token_reference='pm_refund_test'
             ),
             amount=Decimal('12000.00'),
             currency='PHP',
