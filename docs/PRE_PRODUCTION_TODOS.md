@@ -3,7 +3,7 @@
 **Generated:** 2025-12-29
 **Last Updated:** 2026-01-16
 **Status:** Complete production roadmap for Backend, Admin-CRM, Client-Portal, and Mobile App
-**Target Platform:** Fly.io + Fly Postgres + Upstash + Netlify
+**Target Platform:** Fly.io + Fly Postgres + Upstash + Cloudflare Pages
 
 ---
 
@@ -34,9 +34,8 @@ These accounts must be created before deployment:
 | Upstash | Redis Cache/Queue | $0-5/mo | Create account, create Redis database |
 | Stripe | Payments | 2.9% + $0.30/txn | Create account, complete business verification |
 | Brevo | Email/SMS | Free-$9/mo | Create account, verify sender identity |
-| Cloudflare | R2 Storage | ~$5/mo | Create account for file storage |
+| Cloudflare | R2 Storage + Pages | ~$5/mo | Create account for file storage and frontend hosting |
 | Sentry | Error Tracking | Free-$29/mo | Create Django + React projects |
-| Netlify | Frontend Hosting | Free-$19/mo | Create account |
 | Apple Developer | iOS App Store | $99/year | Enroll in developer program |
 | Google Play | Android Store | $25 one-time | Create developer account |
 | Expo | Mobile Builds | Free | Create account, link to EAS |
@@ -345,8 +344,8 @@ Also configure webhook:
 | Type | Name | Value |
 |------|------|-------|
 | CNAME | `api` | `lifeplace-api.fly.dev` |
-| CNAME | `admin` | `admin-crm.netlify.app` |
-| CNAME | `book` | `client-portal.netlify.app` |
+| CNAME | `admin` | `lifeplace-admin.pages.dev` |
+| CNAME | `book` | `lifeplace-client.pages.dev` |
 
 ---
 
@@ -408,7 +407,7 @@ grep -rn "console\." frontend/client-portal/src/apis/
 
 **`frontend/admin-crm/.env.production`:**
 ```env
-VITE_API_BASE_URL=https://api.yourdomain.com
+VITE_API_URL=https://api.yourdomain.com
 VITE_STRIPE_PUBLIC_KEY=pk_live_xxxxx
 VITE_SENTRY_DSN=https://xxxxx@sentry.io/xxxxx
 VITE_GA_MEASUREMENT_ID=G-XXXXXXXXXX
@@ -417,7 +416,7 @@ VITE_ENV=production
 
 **`frontend/client-portal/.env.production`:**
 ```env
-VITE_API_BASE_URL=https://api.yourdomain.com
+VITE_API_URL=https://api.yourdomain.com
 VITE_STRIPE_PUBLIC_KEY=pk_live_xxxxx
 VITE_SENTRY_DSN=https://xxxxx@sentry.io/xxxxx
 VITE_GA_MEASUREMENT_ID=G-XXXXXXXXXX
@@ -617,27 +616,51 @@ fly ssh console -C "python manage.py migrate"
 fly ssh console -C "python manage.py createsuperuser"
 ```
 
-### Frontend Deployment (Netlify)
+### Frontend Deployment (Cloudflare Pages)
+
+**Why Cloudflare Pages:**
+- Unlimited bandwidth (free forever)
+- Manila, Singapore, Hong Kong edge nodes = faster for PH users
+- Same dashboard as R2 storage
 
 **Admin CRM:**
-```bash
-cd frontend/admin-crm
-npm run build
-# Deploy dist/ to Netlify
-```
-- Build command: `npm run build`
-- Publish directory: `dist`
-- Add environment variables in Netlify dashboard
+1. Cloudflare Dashboard → Pages → Create a project
+2. Connect to Git → Select repository
+3. Configure:
+   - Project name: `lifeplace-admin`
+   - Production branch: `main`
+   - Root directory: `frontend/admin-crm`
+   - Build command: `npm run build`
+   - Build output directory: `dist`
+4. Add environment variables:
+   ```
+   VITE_API_URL=https://api.yourdomain.com
+   VITE_STRIPE_PUBLIC_KEY=pk_live_xxxxx
+   VITE_ENV=production
+   ```
 
 **Client Portal:**
-```bash
-cd frontend/client-portal
-npm run build
-# Deploy dist/ to Netlify
+1. Cloudflare Dashboard → Pages → Create a project
+2. Connect to Git → Select repository
+3. Configure:
+   - Project name: `lifeplace-client`
+   - Production branch: `main`
+   - Root directory: `frontend/client-portal`
+   - Build command: `npm run build`
+   - Build output directory: `dist`
+4. Add environment variables:
+   ```
+   VITE_API_URL=https://api.yourdomain.com
+   VITE_STRIPE_PUBLIC_KEY=pk_live_xxxxx
+   VITE_ENV=production
+   ```
+
+**Configure Custom Domains:**
 ```
-- Build command: `npm run build`
-- Publish directory: `dist`
-- Add environment variables in Netlify dashboard
+Pages project → Custom domains → Add domain
+admin.yourdomain.com → lifeplace-admin
+book.yourdomain.com → lifeplace-client
+```
 
 ### Mobile App Build
 
@@ -815,7 +838,7 @@ eas submit --platform android
 | Fly.io Beat Machine | ~$2 |
 | Fly Postgres | ~$7 |
 | Upstash Redis | ~$0-5 |
-| Netlify (2 frontends) | $0 |
+| Cloudflare Pages (2 frontends) | $0 |
 | Brevo (Starter) | $0-9 |
 | Cloudflare R2 | ~$2-5 |
 | Sentry (Free) | $0 |
@@ -830,4 +853,4 @@ eas submit --platform android
 ---
 
 *Last updated: 2026-01-16*
-*Target Platform: Fly.io + Fly Postgres + Upstash + Netlify*
+*Target Platform: Fly.io + Fly Postgres + Upstash + Cloudflare Pages*

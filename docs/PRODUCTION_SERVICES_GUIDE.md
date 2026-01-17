@@ -1,7 +1,7 @@
 # LifePlace Production Services Guide
 
 > Complete documentation for all external services required to run LifePlace in production.
-> **Target Platform: Fly.io + Upstash + Netlify**
+> **Target Platform: Fly.io + Fly Postgres + Upstash + Cloudflare Pages**
 > Last Updated: January 2026
 
 ---
@@ -16,7 +16,7 @@
 6. [Brevo Email & SMS](#6-brevo-email--sms)
 7. [Expo Push Notifications](#7-expo-push-notifications)
 8. [Sentry Error Monitoring](#8-sentry-error-monitoring)
-9. [Frontend Hosting (Netlify)](#9-frontend-hosting-netlify)
+9. [Frontend Hosting (Cloudflare Pages)](#9-frontend-hosting-cloudflare-pages)
 10. [Cloud File Storage (Cloudflare R2)](#10-cloud-file-storage-cloudflare-r2)
 11. [Mobile App Stores](#11-mobile-app-stores)
 12. [Environment Variables Reference](#12-environment-variables-reference)
@@ -567,7 +567,17 @@ fly secrets set SENTRY_DSN="https://xxxxx@sentry.io/xxxxx"
 
 ---
 
-## 9. Frontend Hosting (Netlify)
+## 9. Frontend Hosting (Cloudflare Pages)
+
+### Why Cloudflare Pages?
+
+| Benefit | Description |
+|---------|-------------|
+| **Unlimited Bandwidth** | Free forever, no surprise bills |
+| **Asia CDN** | Manila, Singapore, Hong Kong, Tokyo edge nodes |
+| **Low Latency** | ~10-30ms to Philippines (vs 100-200ms from US) |
+| **Unified Dashboard** | Same account as R2 storage |
+| **Instant Deploys** | Automatic on git push |
 
 ### Applications
 
@@ -578,52 +588,78 @@ fly secrets set SENTRY_DSN="https://xxxxx@sentry.io/xxxxx"
 
 ### Pricing
 
-| Plan | Bandwidth | Cost |
-|------|-----------|------|
-| Starter | 100GB/mo | Free |
-| Pro | 1TB/mo | $19/user/mo |
+| Plan | Bandwidth | Builds | Cost |
+|------|-----------|--------|------|
+| Free | **Unlimited** | 500/mo | $0 |
+| Pro | Unlimited | Unlimited | $20/mo |
 
 ### Step-by-Step Setup
 
-#### 1. Create Netlify Account
+#### 1. Create Cloudflare Account
 ```
-Visit: https://www.netlify.com
-Sign up with GitHub
+Visit: https://dash.cloudflare.com/sign-up
+Sign up (free account)
 ```
 
 #### 2. Deploy Admin CRM
 ```
-Sites → Add new site → Import from Git
+Cloudflare Dashboard → Pages → Create a project → Connect to Git
 
 Configuration:
-- Base directory: frontend/admin-crm
+- Project name: lifeplace-admin
+- Production branch: main
+- Root directory: frontend/admin-crm
 - Build command: npm run build
-- Publish directory: frontend/admin-crm/dist
+- Build output directory: dist
 
-Environment variables:
-VITE_API_BASE_URL=https://api.yourdomain.com
+Environment variables (Production):
+VITE_API_URL=https://api.yourdomain.com
 VITE_STRIPE_PUBLIC_KEY=pk_live_xxxxx
+VITE_SENTRY_DSN=https://xxxxx@sentry.io/xxxxx
+VITE_ENV=production
 ```
 
 #### 3. Deploy Client Portal
 ```
-Configuration:
-- Base directory: frontend/client-portal
-- Build command: npm run build
-- Publish directory: frontend/client-portal/dist
+Cloudflare Dashboard → Pages → Create a project → Connect to Git
 
-Environment variables:
-VITE_API_BASE_URL=https://api.yourdomain.com
+Configuration:
+- Project name: lifeplace-client
+- Production branch: main
+- Root directory: frontend/client-portal
+- Build command: npm run build
+- Build output directory: dist
+
+Environment variables (Production):
+VITE_API_URL=https://api.yourdomain.com
 VITE_STRIPE_PUBLIC_KEY=pk_live_xxxxx
+VITE_SENTRY_DSN=https://xxxxx@sentry.io/xxxxx
+VITE_ENV=production
 ```
 
 #### 4. Configure Custom Domains
 ```
-Site Settings → Domain Management → Add custom domain
+Pages project → Custom domains → Add domain
 
-admin-crm: admin.yourdomain.com
-client-portal: book.yourdomain.com
+admin.yourdomain.com → lifeplace-admin
+book.yourdomain.com → lifeplace-client
 ```
+
+Cloudflare automatically provisions SSL certificates.
+
+#### 5. SPA Redirects Configuration
+
+Create `frontend/admin-crm/_redirects`:
+```
+/*    /index.html   200
+```
+
+Create `frontend/client-portal/_redirects`:
+```
+/*    /index.html   200
+```
+
+This ensures client-side routing works correctly.
 
 ---
 
@@ -764,7 +800,7 @@ CLIENT_FRONTEND_URL=https://book.yourdomain.com
 ### Frontend - Client Portal (.env.production)
 
 ```bash
-VITE_API_BASE_URL=https://api.yourdomain.com
+VITE_API_URL=https://api.yourdomain.com
 VITE_STRIPE_PUBLIC_KEY=pk_live_xxxxx
 VITE_SENTRY_DSN=https://xxxxx@sentry.io/xxxxx
 VITE_ENV=production
@@ -773,7 +809,7 @@ VITE_ENV=production
 ### Frontend - Admin CRM (.env.production)
 
 ```bash
-VITE_API_BASE_URL=https://api.yourdomain.com
+VITE_API_URL=https://api.yourdomain.com
 VITE_STRIPE_PUBLIC_KEY=pk_live_xxxxx
 VITE_SENTRY_DSN=https://xxxxx@sentry.io/xxxxx
 VITE_ENV=production
@@ -881,7 +917,7 @@ fly status
 | Beat Machine | Fly.io | ~$2 |
 | PostgreSQL | Fly Postgres | ~$7 |
 | Redis | Upstash | ~$0-5 |
-| Frontend (2 apps) | Netlify | $0 |
+| Frontend (2 apps) | Cloudflare Pages | $0 |
 | Email | Brevo | $0-9 |
 | Push Notifications | Expo | $0 |
 | Error Monitoring | Sentry | $0 |
@@ -928,10 +964,10 @@ fly status
 - [ ] Configure Stripe in Django admin
 - [ ] Configure custom domain
 
-### Netlify Deployment
+### Cloudflare Pages Deployment
 
-- [ ] Deploy admin-crm with environment variables
-- [ ] Deploy client-portal with environment variables
+- [ ] Create lifeplace-admin project with environment variables
+- [ ] Create lifeplace-client project with environment variables
 - [ ] Configure custom domains
 
 ### External Services
