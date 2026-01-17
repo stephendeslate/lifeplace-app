@@ -41,7 +41,6 @@ class PaymentSettingsModelTest(TestCase):
             late_fee_enabled=True,
             default_late_fee_amount=Decimal('25.00'),
             default_deposit_percentage=Decimal('50.00'),
-            default_currency='PHP',
             auto_payment_retry_attempts=3,
             auto_payment_retry_delay_days=2
         )
@@ -72,7 +71,7 @@ class PaymentSettingsModelTest(TestCase):
         self.assertTrue(settings1.late_fee_enabled)
         self.assertEqual(settings1.default_late_fee_amount, Decimal('25.00'))
         self.assertEqual(settings1.default_deposit_percentage, Decimal('50.00'))
-        self.assertEqual(settings1.default_currency, 'PHP')
+        # Note: default_currency moved to CurrencySettings model
         self.assertEqual(settings1.auto_payment_retry_attempts, 3)
         self.assertEqual(settings1.auto_payment_retry_delay_days, 2)
 
@@ -171,10 +170,11 @@ class PaymentSettingsAdminTest(TestCase):
             if 'fields' in fieldset[1]:
                 all_fields.extend(fieldset[1]['fields'])
 
+        # Note: default_currency moved to CurrencySettings model
         expected_fields = [
             'balance_due_days', 'grace_period_days', 'default_installments',
             'default_installment_frequency', 'late_fee_enabled', 'default_late_fee_amount',
-            'default_deposit_percentage', 'default_currency', 'auto_payment_retry_attempts',
+            'default_deposit_percentage', 'auto_payment_retry_attempts',
             'auto_payment_retry_delay_days'
         ]
 
@@ -258,7 +258,7 @@ class PaymentSettingsAPITest(APITestCase):
         self.assertTrue(settings_data['late_fee_enabled'])
         self.assertEqual(float(settings_data['default_late_fee_amount']), 25.00)
         self.assertEqual(float(settings_data['default_deposit_percentage']), 50.00)
-        self.assertEqual(settings_data['default_currency'], 'PHP')
+        # Note: default_currency moved to CurrencySettings model
         self.assertEqual(settings_data['auto_payment_retry_attempts'], 3)
         self.assertEqual(settings_data['auto_payment_retry_delay_days'], 2)
 
@@ -284,6 +284,7 @@ class PaymentSettingsAPITest(APITestCase):
         settings = PaymentSettings.get_default_settings()
         url = reverse('payment-settings-detail', kwargs={'pk': settings.id})
 
+        # Note: default_currency moved to CurrencySettings model
         update_data = {
             'balance_due_days': 45,
             'grace_period_days': 10,
@@ -292,7 +293,6 @@ class PaymentSettingsAPITest(APITestCase):
             'late_fee_enabled': False,
             'default_late_fee_amount': '30.00',
             'default_deposit_percentage': '60.00',
-            'default_currency': 'USD',
             'auto_payment_retry_attempts': 5,
             'auto_payment_retry_delay_days': 3
         }
@@ -309,7 +309,6 @@ class PaymentSettingsAPITest(APITestCase):
         self.assertFalse(settings.late_fee_enabled)
         self.assertEqual(settings.default_late_fee_amount, Decimal('30.00'))
         self.assertEqual(settings.default_deposit_percentage, Decimal('60.00'))
-        self.assertEqual(settings.default_currency, 'USD')
         self.assertEqual(settings.auto_payment_retry_attempts, 5)
         self.assertEqual(settings.auto_payment_retry_delay_days, 3)
 

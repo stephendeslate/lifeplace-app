@@ -224,7 +224,7 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
         });
 
       } catch (error) {
-        console.warn('Background update failed, data preserved in localStorage:', error);
+        if (import.meta.env.DEV) console.warn('Background update failed, data preserved in localStorage:', error);
         // Data is already saved to localStorage from the pre-API save
       }
     }, 1000); // Debounce for 1 second
@@ -290,7 +290,7 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
           }
         })
         .catch(error => {
-          console.warn('Failed to recover session from URL:', error);
+          if (import.meta.env.DEV) console.warn('Failed to recover session from URL:', error);
         });
     } else {
       // No URL param - scan localStorage for recoverable sessions (guests)
@@ -365,7 +365,7 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
             });
           }
         } catch (error) {
-          console.warn('Error discovering recoverable sessions:', error);
+          if (import.meta.env.DEV) console.warn('Error discovering recoverable sessions:', error);
         }
       };
 
@@ -407,7 +407,7 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
           JSON.stringify(sessionToSave)
         );
       } catch (e) {
-        console.warn('Failed to save session on unload:', e);
+        if (import.meta.env.DEV) console.warn('Failed to save session on unload:', e);
       }
     };
 
@@ -648,7 +648,7 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
       // Early return if current step is confirmation type (additional safeguard)
       if (state.currentSession.current_step?.step_type === 'confirmation') {
-        console.warn('nextStep called on confirmation step - blocked by safeguard');
+        if (import.meta.env.DEV) console.warn('nextStep called on confirmation step - blocked by safeguard');
         return;
       }
 
@@ -811,7 +811,7 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
           }
         }
       } catch (error) {
-        console.warn('Failed to load payment gateways:', error);
+        if (import.meta.env.DEV) console.warn('Failed to load payment gateways:', error);
       }
     }, [state.currentFlow]),
 
@@ -831,7 +831,7 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
             false
           );
         } catch (error) {
-          console.warn('Failed to update session total price:', error);
+          if (import.meta.env.DEV) console.warn('Failed to update session total price:', error);
         }
       }
     }, [state.currentSession]),

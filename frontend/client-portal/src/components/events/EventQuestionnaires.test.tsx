@@ -3,7 +3,7 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { vi } from 'vitest';
+import { vi, describe, it, expect, beforeEach } from 'vitest';
 import EventQuestionnaires from './EventQuestionnaires';
 import { ToastProvider } from '../../contexts/ToastContext';
 import type { Questionnaire, QuestionnaireResponse } from '../../types/questionnaires.types';
@@ -65,7 +65,7 @@ const mockSaveResponses = vi.fn();
 // Mock the hooks
 vi.mock('../../hooks/useEventQuestionnaires', () => ({
   useEventQuestionnaires: () => ({
-    useActiveQuestionnaires: () => ({
+    useQuestionnairesForEvent: () => ({
       data: mockQuestionnaires,
       isLoading: false,
       error: null,
@@ -125,7 +125,8 @@ describe('EventQuestionnaires', () => {
       </TestWrapper>
     );
 
-    expect(screen.getByText('Event Details')).toBeInTheDocument();
+    // 'Event Details' appears in both accordion and summary card
+    expect(screen.getAllByText('Event Details').length).toBeGreaterThan(0);
     expect(screen.getByText('1 of 2 fields completed')).toBeInTheDocument();
   });
 
@@ -173,8 +174,9 @@ describe('EventQuestionnaires', () => {
       </TestWrapper>
     );
 
-    const accordion = screen.getByText('Event Details');
-    fireEvent.click(accordion);
+    // Get the accordion summary (first occurrence of 'Event Details')
+    const accordionHeaders = screen.getAllByText('Event Details');
+    fireEvent.click(accordionHeaders[0]);
 
     await waitFor(() => {
       expect(screen.getByText('Event Name')).toBeInTheDocument();

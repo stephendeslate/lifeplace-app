@@ -19,6 +19,7 @@ import {
 import { ClipboardText, Check, Star, Upload } from 'phosphor-react-native';
 import { colors, spacing, typeScale, layout } from '@/theme';
 import { QuestionnaireAPI } from '@/apis/booking/questionnaire.api';
+import { logger } from '@/utils/logger';
 import type { StepComponentProps } from '../StepRenderer';
 import type {
   QuestionnaireStepData,
@@ -88,7 +89,7 @@ export function QuestionnaireStep({
         return next;
       });
     } catch (error) {
-      console.error(`Failed to load questionnaire ${questionnaireId}:`, error);
+      logger.error(`Failed to load questionnaire ${questionnaireId}:`, error);
       setLoadErrors(prev => new Map(prev).set(questionnaireId, 'Failed to load questionnaire'));
     } finally {
       setLoadingQuestionnaires(prev => {

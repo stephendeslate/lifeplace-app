@@ -389,7 +389,7 @@ const PaymentFlowInner: React.FC<PaymentFlowInnerProps> = ({
           }
 
           // Validate that we actually have the essential card details
-          if (!cardDetails.last_four) {
+          if (!cardDetails.last_four && debugMode) {
             console.warn('UnifiedStripePaymentFlow - Warning: last4 not found in card object');
           }
         } else {

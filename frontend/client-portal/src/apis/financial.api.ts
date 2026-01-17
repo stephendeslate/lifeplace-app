@@ -138,7 +138,7 @@ export class FinancialApi {
           const response = await api.get<PaymentGateway[]>('/payments/client/gateways/');
           return response.data || [];
         } catch (_clientFallbackError) {
-          console.error('Failed to fetch payment gateways from all endpoints:', error);
+          if (import.meta.env.DEV) console.error('Failed to fetch payment gateways from all endpoints:', error);
           throw error; // Throw original error
         }
       }
@@ -154,7 +154,7 @@ export class FinancialApi {
       const response = await api.get<PaymentGateway[]>('/payments/client/gateways/');
       return response.data || [];
     } catch (error) {
-      console.error('Client payment gateways endpoint not available:', error);
+      if (import.meta.env.DEV) console.error('Client payment gateways endpoint not available:', error);
       throw new Error('Unable to access payment gateways. Please try again or contact support.');
     }
   }
@@ -327,7 +327,7 @@ export class FinancialApi {
     invoiceId: number,
     planData: PaymentPlanRequest
   ): Promise<PaymentPlan> {
-    console.warn('⚠️ WIP: Payment plan setup is currently disabled');
+    if (import.meta.env.DEV) console.warn('⚠️ WIP: Payment plan setup is currently disabled');
     try {
       const response = await api.post<PaymentPlan>(
         `/payments/client/invoices/${invoiceId}/setup_payment_plan/`,
@@ -347,7 +347,7 @@ export class FinancialApi {
    * ⚠️ WORK IN PROGRESS - Payment Plan feature is being redesigned
    */
   static async getPaymentPlans(): Promise<PaginatedResponse<PaymentPlan>> {
-    console.warn('⚠️ WIP: Payment plans API is currently disabled');
+    if (import.meta.env.DEV) console.warn('⚠️ WIP: Payment plans API is currently disabled');
     const response = await api.get<PaginatedResponse<PaymentPlan>>('/payments/client/payment-plans/');
     return response.data;
   }
@@ -357,7 +357,7 @@ export class FinancialApi {
    * ⚠️ WORK IN PROGRESS - Payment Plan feature is being redesigned
    */
   static async getPaymentPlan(planId: number): Promise<PaymentPlan> {
-    console.warn('⚠️ WIP: Payment plan details API is currently disabled');
+    if (import.meta.env.DEV) console.warn('⚠️ WIP: Payment plan details API is currently disabled');
     const response = await api.get<PaymentPlan>(`/payments/client/payment-plans/${planId}/`);
     return response.data;
   }
@@ -370,7 +370,7 @@ export class FinancialApi {
     planId: number,
     paymentData: InstallmentPaymentData
   ): Promise<Payment> {
-    console.warn('⚠️ WIP: Payment installment API is currently disabled');
+    if (import.meta.env.DEV) console.warn('⚠️ WIP: Payment installment API is currently disabled');
     const response = await api.post<Payment>(
       `/payments/client/payment-plans/${planId}/pay_installment/`,
       paymentData
@@ -493,7 +493,7 @@ export class FinancialApi {
 
     // If no currency provided, we need to get it from payment settings
     if (!currency) {
-      console.warn('Currency not provided to formatAmount. Consider fetching from payment settings.');
+      if (import.meta.env.DEV) console.warn('Currency not provided to formatAmount. Consider fetching from payment settings.');
       return num.toString(); // Fallback to plain number
     }
 
@@ -916,7 +916,7 @@ export class FinancialApi {
       const settings = await this.getPaymentSettings();
       return this.formatAmount(amount, settings.default_currency);
     } catch (error) {
-      console.error('Failed to get payment settings for formatting:', error);
+      if (import.meta.env.DEV) console.error('Failed to get payment settings for formatting:', error);
       return this.formatAmount(amount); // Fallback without currency
     }
   }
@@ -929,7 +929,7 @@ export class FinancialApi {
       const settings = await this.getPaymentSettings();
       return this.getCurrencySymbol(settings.default_currency);
     } catch (error) {
-      console.error('Failed to get payment settings for currency symbol:', error);
+      if (import.meta.env.DEV) console.error('Failed to get payment settings for currency symbol:', error);
       return '$'; // Default fallback
     }
   }
@@ -942,7 +942,7 @@ export class FinancialApi {
       const settings = await this.getPaymentSettings();
       return settings.available_currencies || [settings.default_currency];
     } catch (error) {
-      console.error('Failed to get available currencies:', error);
+      if (import.meta.env.DEV) console.error('Failed to get available currencies:', error);
       return ['USD']; // Default fallback
     }
   }
@@ -955,7 +955,7 @@ export class FinancialApi {
       const settings = await this.getPaymentSettings();
       return settings.default_currency;
     } catch (error) {
-      console.error('Failed to get default currency:', error);
+      if (import.meta.env.DEV) console.error('Failed to get default currency:', error);
       return 'USD'; // Default fallback
     }
   }

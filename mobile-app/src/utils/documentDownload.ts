@@ -9,6 +9,9 @@ import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import { Alert, Platform } from 'react-native';
 import api from '@/utils/api';
+import { logger } from './logger';
+
+const downloadLogger = logger.create('DocumentDownload');
 
 // =============================================================================
 // TYPES
@@ -103,7 +106,7 @@ async function cleanupCache(): Promise<void> {
       }
     }
   } catch (error) {
-    console.warn('Cache cleanup failed:', error);
+    downloadLogger.warn('Cache cleanup failed:', error);
   }
 }
 
@@ -170,7 +173,7 @@ export async function downloadDocument(
 
     return { success: true, localUri: result.uri };
   } catch (error) {
-    console.error('Download error:', error);
+    downloadLogger.error('Download error:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Download failed',
@@ -249,7 +252,7 @@ export async function saveDocumentLocally(
 
     return { success: true, localUri: destUri };
   } catch (error) {
-    console.error('Save error:', error);
+    downloadLogger.error('Save error:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to save document',
@@ -265,7 +268,7 @@ export async function listSavedDocuments(): Promise<string[]> {
     await ensureDirectories();
     return await FileSystem.readDirectoryAsync(DOCUMENT_DIR);
   } catch (error) {
-    console.error('List documents error:', error);
+    downloadLogger.error('List documents error:', error);
     return [];
   }
 }
@@ -279,7 +282,7 @@ export async function deleteSavedDocument(filename: string): Promise<boolean> {
     await FileSystem.deleteAsync(filePath, { idempotent: true });
     return true;
   } catch (error) {
-    console.error('Delete error:', error);
+    downloadLogger.error('Delete error:', error);
     return false;
   }
 }
@@ -295,7 +298,7 @@ export async function getDocumentInfo(
     const info = await FileSystem.getInfoAsync(filePath);
     return info.exists ? info : null;
   } catch (error) {
-    console.error('Get info error:', error);
+    downloadLogger.error('Get info error:', error);
     return null;
   }
 }
@@ -326,7 +329,7 @@ export async function shareDocument(
 
     return true;
   } catch (error) {
-    console.error('Share error:', error);
+    downloadLogger.error('Share error:', error);
     Alert.alert('Error', 'Failed to share document.');
     return false;
   }
@@ -377,4 +380,4 @@ export async function cleanupTemporaryFiles(): Promise<void> {
 }
 
 // Initialize cleanup on module load
-cleanupCache().catch(console.warn);
+cleanupCache().catch((err) => downloadLogger.warn('Initial cleanup failed:', err));

@@ -211,7 +211,7 @@ export const HelpCenter: React.FC = () => {
   };
 
   const handleHelpfulClick = (type: 'up' | 'down', id: string) => {
-    console.log(`Marked ${type} for item ${id}`);
+    if (import.meta.env.DEV) console.log(`Marked ${type} for item ${id}`);
     // In a real app, this would send feedback to the server
   };
 

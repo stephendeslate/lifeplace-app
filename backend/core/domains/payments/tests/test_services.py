@@ -48,16 +48,21 @@ class PaymentServiceTestCase(TestCase):
             start_date=date.today() + timedelta(days=30)
         )
         
-        self.gateway = PaymentGateway.objects.create(
-            name='Stripe Test',
+        self.gateway, _ = PaymentGateway.objects.get_or_create(
             code='stripe',
-            is_active=True,
-            config={
-                'publishable_key': 'pk_test_123',
-                'secret_key': 'sk_test_123',
-                'test_mode': True
+            defaults={
+                'name': 'Stripe Test',
+                'is_active': True,
             }
         )
+        # Always update config to ensure test keys are set
+        self.gateway.config = {
+            'publishable_key': 'pk_test_123',
+            'secret_key': 'sk_test_123',
+            'test_mode': True
+        }
+        self.gateway.is_active = True
+        self.gateway.save()
         
         self.payment_method = PaymentMethod.objects.create(
             gateway=self.gateway,

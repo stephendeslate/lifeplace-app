@@ -117,7 +117,7 @@ export const usePaymentPlans = () => {
   return useQuery({
     queryKey: financialKeys.paymentPlans(),
     queryFn: async () => {
-      console.warn('⚠️ WIP: Payment plans hook is currently disabled');
+      if (import.meta.env.DEV) console.warn('⚠️ WIP: Payment plans hook is currently disabled');
       const data = await FinancialApi.getPaymentPlans();
       return data.results || [];
     },
@@ -130,7 +130,7 @@ export const usePaymentPlan = (planId: number) => {
   return useQuery({
     queryKey: financialKeys.paymentPlan(planId),
     queryFn: () => {
-      console.warn('⚠️ WIP: Payment plan details hook is currently disabled');
+      if (import.meta.env.DEV) console.warn('⚠️ WIP: Payment plan details hook is currently disabled');
       return FinancialApi.getPaymentPlan(planId);
     },
     enabled: false, // Disabled - WIP
@@ -143,7 +143,7 @@ export const usePayInstallment = () => {
 
   return useMutation({
     mutationFn: ({ planId, paymentData }: { planId: number; paymentData: InstallmentPaymentData }) => {
-      console.warn('⚠️ WIP: Payment installment hook is currently disabled');
+      if (import.meta.env.DEV) console.warn('⚠️ WIP: Payment installment hook is currently disabled');
       return FinancialApi.payInstallment(planId, paymentData);
     },
     onSuccess: (_payment, { planId }) => {
@@ -326,14 +326,16 @@ export const useFinancialOverview = () => {
   const refunds = Array.isArray(refundsQuery.data?.results) ? refundsQuery.data.results : [];
 
   // Log non-array data for debugging
-  if (paymentsQuery.data?.results && !Array.isArray(paymentsQuery.data.results)) {
-    console.warn('Payment data is not an array:', paymentsQuery.data);
-  }
-  if (invoicesQuery.data?.results && !Array.isArray(invoicesQuery.data.results)) {
-    console.warn('Invoice data is not an array:', invoicesQuery.data);
-  }
-  if (refundsQuery.data?.results && !Array.isArray(refundsQuery.data.results)) {
-    console.warn('Refunds data is not an array:', refundsQuery.data);
+  if (import.meta.env.DEV) {
+    if (paymentsQuery.data?.results && !Array.isArray(paymentsQuery.data.results)) {
+      console.warn('Payment data is not an array:', paymentsQuery.data);
+    }
+    if (invoicesQuery.data?.results && !Array.isArray(invoicesQuery.data.results)) {
+      console.warn('Invoice data is not an array:', invoicesQuery.data);
+    }
+    if (refundsQuery.data?.results && !Array.isArray(refundsQuery.data.results)) {
+      console.warn('Refunds data is not an array:', refundsQuery.data);
+    }
   }
 
   return {

@@ -37,6 +37,11 @@ from core.factories.payments import (
     PaymentMethodFactory,
     InvoiceFactory,
 )
+from core.factories.questionnaires import (
+    QuestionnaireFactory,
+    QuestionnaireFieldFactory,
+    QuestionnaireResponseFactory,
+)
 
 
 # =============================================================================
@@ -65,6 +70,11 @@ register(PaymentFactory)
 register(PaymentGatewayFactory)
 register(PaymentMethodFactory)
 register(InvoiceFactory)
+
+# Questionnaires domain
+register(QuestionnaireFactory)
+register(QuestionnaireFieldFactory)
+register(QuestionnaireResponseFactory)
 
 
 # =============================================================================

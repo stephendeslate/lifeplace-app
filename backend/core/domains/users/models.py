@@ -83,16 +83,16 @@ class User(AbstractUser):
 
         - Superusers always have all permissions.
         - Non-admin users always return False.
-        - If admin_permissions is empty/None, treat as full admin (backward compatibility).
+        - Empty admin_permissions means no permissions (security fix P0-B6).
         """
         if self.is_superuser:
             return True
         if self.role != 'ADMIN':
             return False
 
-        # If admin_permissions is empty or None, treat as full admin (backward compatibility)
+        # SECURITY FIX (P0-B6): Empty permissions = no access (removed backward compatibility bypass)
         if not self.admin_permissions:
-            return True
+            return False
 
         return self.admin_permissions.get(permission_key, False)
 
@@ -108,12 +108,12 @@ class User(AbstractUser):
         if self.role != 'ADMIN':
             return {key: False for key in ADMIN_PERMISSIONS.keys()}
 
-        # If empty, return all True (backward compatibility for existing admins)
+        # SECURITY FIX (P0-B6): Empty permissions = no access
         if not self.admin_permissions:
-            return FULL_ADMIN_PERMISSIONS.copy()
+            return {key: False for key in ADMIN_PERMISSIONS.keys()}
 
         # Merge with defaults to ensure all keys exist
-        result = ADMIN_PERMISSIONS.copy()
+        result = {key: False for key in ADMIN_PERMISSIONS.keys()}
         result.update(self.admin_permissions)
         return result
 
@@ -125,8 +125,9 @@ class User(AbstractUser):
             return True
         if self.role != 'ADMIN':
             return False
+        # SECURITY FIX (P0-B6): Empty permissions = no access
         if not self.admin_permissions:
-            return True  # backward compatibility
+            return False
         return all(self.admin_permissions.get(key, False) for key in ADMIN_PERMISSIONS.keys())
 
     def __str__(self):
@@ -140,10 +141,16 @@ class UserProfile(BaseModel):
         ('business_with_local', 'Philippines + Local Time'),
         ('dual_display', 'Both Timezones Side by Side'),
     ]
-    
+
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
     phone = models.CharField(max_length=20, blank=True, null=True)
     company = models.CharField(max_length=200, blank=True, null=True)
+    avatar = models.ImageField(
+        upload_to='users/avatars/',
+        null=True,
+        blank=True,
+        help_text='User profile picture'
+    )
     
     # Timezone preferences
     display_timezone = models.CharField(

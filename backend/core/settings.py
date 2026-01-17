@@ -85,6 +85,7 @@ INSTALLED_APPS = [
     'django_celery_beat',
     'corsheaders',
     'channels',  # Django Channels for WebSocket support
+    'storages',  # Cloud storage (Cloudflare R2)
     'rest_framework',
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',  # SECURITY: JWT token blacklisting
@@ -190,6 +191,21 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 # Media files (uploaded images)
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+# Cloud Storage Configuration (Production - Cloudflare R2)
+if IS_PRODUCTION:
+    DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+    AWS_ACCESS_KEY_ID = os.getenv('R2_ACCESS_KEY_ID')
+    AWS_SECRET_ACCESS_KEY = os.getenv('R2_SECRET_ACCESS_KEY')
+    AWS_STORAGE_BUCKET_NAME = os.getenv('R2_BUCKET_NAME', 'lifeplace-media')
+    AWS_S3_ENDPOINT_URL = os.getenv('R2_ENDPOINT_URL')
+    AWS_S3_REGION_NAME = 'auto'
+    AWS_DEFAULT_ACL = 'public-read'
+    AWS_QUERYSTRING_AUTH = False
+    AWS_S3_FILE_OVERWRITE = False
+    AWS_S3_CUSTOM_DOMAIN = os.getenv('R2_PUBLIC_URL')
+    if AWS_S3_CUSTOM_DOMAIN:
+        MEDIA_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/'
 
 # File upload settings
 FILE_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024  # 5MB
@@ -465,8 +481,8 @@ SIMPLE_JWT = {
 }
 
 # Frontend URLs for email templates
-ADMIN_FRONTEND_URL = os.getenv('ADMIN_FRONTEND_URL', 'http://localhost:5173')  # admin-crm
-CLIENT_FRONTEND_URL = os.getenv('CLIENT_FRONTEND_URL', 'http://localhost:5174')  # client-portal
+ADMIN_FRONTEND_URL = os.getenv('ADMIN_FRONTEND_URL', 'https://admin.lifeplace.dev')  # admin-crm
+CLIENT_FRONTEND_URL = os.getenv('CLIENT_FRONTEND_URL', 'https://lifeplace.dev')  # client-portal
 
 # Brevo Configuration
 BREVO_API_KEY = os.getenv('BREVO_API_KEY')

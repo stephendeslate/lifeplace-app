@@ -274,7 +274,7 @@ def seed_all_event_configuration(apps, schema_editor):
         return desc
 
     # --- BUDGET PACKAGES ---
-    ProductOption.objects.get_or_create(
+    budget_day, _ = ProductOption.objects.get_or_create(
         name='Budget Package - Day Trip',
         category=budget_category,
         defaults={
@@ -290,12 +290,12 @@ def seed_all_event_configuration(apps, schema_editor):
             'is_active': True,
             'allow_multiple': True,
             'minimum_guests': 80,
-            'event_type': camps_event_type,
             'sort_order': 1,
         }
     )
+    budget_day.event_types.add(camps_event_type)
 
-    ProductOption.objects.get_or_create(
+    budget_overnight, _ = ProductOption.objects.get_or_create(
         name='Budget Package - Overnight',
         category=budget_category,
         defaults={
@@ -312,10 +312,10 @@ def seed_all_event_configuration(apps, schema_editor):
             'allow_multiple': True,
             'minimum_guests': 80,
             'event_days': 2,
-            'event_type': camps_event_type,
             'sort_order': 2,
         }
     )
+    budget_overnight.event_types.add(camps_event_type)
 
     # --- BASIC PACKAGES ---
     basic_day = ProductOption.objects.get_or_create(
@@ -334,10 +334,10 @@ def seed_all_event_configuration(apps, schema_editor):
             'is_active': True,
             'allow_multiple': True,
             'minimum_guests': 80,
-            'event_type': camps_event_type,
             'sort_order': 1,
         }
     )[0]
+    basic_day.event_types.add(camps_event_type)
 
     basic_2d1n = ProductOption.objects.get_or_create(
         name='Basic Package - 2D1N',
@@ -357,10 +357,10 @@ def seed_all_event_configuration(apps, schema_editor):
             'allow_multiple': True,
             'minimum_guests': 80,
             'event_days': 2,
-            'event_type': camps_event_type,
             'sort_order': 2,
         }
     )[0]
+    basic_2d1n.event_types.add(camps_event_type)
 
     basic_3d2n = ProductOption.objects.get_or_create(
         name='Basic Package - 3D2N',
@@ -381,10 +381,10 @@ def seed_all_event_configuration(apps, schema_editor):
             'allow_multiple': True,
             'minimum_guests': 80,
             'event_days': 3,
-            'event_type': camps_event_type,
             'sort_order': 3,
         }
     )[0]
+    basic_3d2n.event_types.add(camps_event_type)
 
     basic_4d3n = ProductOption.objects.get_or_create(
         name='Basic Package - 4D3N',
@@ -404,10 +404,10 @@ def seed_all_event_configuration(apps, schema_editor):
             'allow_multiple': True,
             'minimum_guests': 80,
             'event_days': 4,
-            'event_type': camps_event_type,
             'sort_order': 4,
         }
     )[0]
+    basic_4d3n.event_types.add(camps_event_type)
 
     # --- PREMIUM PACKAGES ---
     premium_day = ProductOption.objects.get_or_create(
@@ -427,10 +427,10 @@ def seed_all_event_configuration(apps, schema_editor):
             'is_active': True,
             'allow_multiple': True,
             'minimum_guests': 80,
-            'event_type': camps_event_type,
             'sort_order': 1,
         }
     )[0]
+    premium_day.event_types.add(camps_event_type)
 
     premium_2d1n = ProductOption.objects.get_or_create(
         name='Premium Package - 2D1N',
@@ -450,10 +450,10 @@ def seed_all_event_configuration(apps, schema_editor):
             'allow_multiple': True,
             'minimum_guests': 80,
             'event_days': 2,
-            'event_type': camps_event_type,
             'sort_order': 2,
         }
     )[0]
+    premium_2d1n.event_types.add(camps_event_type)
 
     premium_3d2n = ProductOption.objects.get_or_create(
         name='Premium Package - 3D2N',
@@ -473,10 +473,10 @@ def seed_all_event_configuration(apps, schema_editor):
             'allow_multiple': True,
             'minimum_guests': 80,
             'event_days': 3,
-            'event_type': camps_event_type,
             'sort_order': 3,
         }
     )[0]
+    premium_3d2n.event_types.add(camps_event_type)
 
     premium_4d3n = ProductOption.objects.get_or_create(
         name='Premium Package - 4D3N',
@@ -496,10 +496,10 @@ def seed_all_event_configuration(apps, schema_editor):
             'allow_multiple': True,
             'minimum_guests': 80,
             'event_days': 4,
-            'event_type': camps_event_type,
             'sort_order': 4,
         }
     )[0]
+    premium_4d3n.event_types.add(camps_event_type)
 
     # Link Premium packages to venues (Cabanas + Havilah)
     def link_premium_package_venues(package, include_havilah=False):
@@ -583,7 +583,7 @@ def seed_all_event_configuration(apps, schema_editor):
     # =====================================================
 
     # Facilitation Only packages
-    ProductOption.objects.get_or_create(
+    tb_facilitation_under100, _ = ProductOption.objects.get_or_create(
         name='Team Building Facilitation - Under 100 pax',
         category=tb_facilitation_category,
         defaults={
@@ -611,12 +611,12 @@ Minimum 80 participants required.
             'allow_multiple': True,
             'minimum_guests': 80,
             'maximum_guests': 99,
-            'event_type': team_building_event_type,
             'sort_order': 1,
         }
     )
+    tb_facilitation_under100.event_types.add(team_building_event_type)
 
-    ProductOption.objects.get_or_create(
+    tb_facilitation_100plus, _ = ProductOption.objects.get_or_create(
         name='Team Building Facilitation - 100+ pax',
         category=tb_facilitation_category,
         defaults={
@@ -642,10 +642,10 @@ Note: This is facilitation only. Venue and meals are separate.
             'is_active': True,
             'allow_multiple': True,
             'minimum_guests': 100,
-            'event_type': team_building_event_type,
             'sort_order': 2,
         }
     )
+    tb_facilitation_100plus.event_types.add(team_building_event_type)
 
     # All-In Team Building packages
     tb_allin_day = ProductOption.objects.get_or_create(
@@ -680,10 +680,10 @@ Minimum 80 participants required.
             'is_active': True,
             'allow_multiple': True,
             'minimum_guests': 80,
-            'event_type': team_building_event_type,
             'sort_order': 1,
         }
     )[0]
+    tb_allin_day.event_types.add(team_building_event_type)
 
     tb_allin_2d1n = ProductOption.objects.get_or_create(
         name='All-In Team Building - 2D1N',
@@ -719,10 +719,10 @@ Minimum 80 participants required.
             'allow_multiple': True,
             'minimum_guests': 80,
             'event_days': 2,
-            'event_type': team_building_event_type,
             'sort_order': 2,
         }
     )[0]
+    tb_allin_2d1n.event_types.add(team_building_event_type)
 
     tb_allin_3d2n = ProductOption.objects.get_or_create(
         name='All-In Team Building - 3D2N',
@@ -758,10 +758,10 @@ Minimum 80 participants required.
             'allow_multiple': True,
             'minimum_guests': 80,
             'event_days': 3,
-            'event_type': team_building_event_type,
             'sort_order': 3,
         }
     )[0]
+    tb_allin_3d2n.event_types.add(team_building_event_type)
 
     # Link Team Building packages to venues
     if havilah:
@@ -830,11 +830,12 @@ Additional guests: approximately ₱979-1,089/person depending on venue."""
             'is_featured': True,
             'requires_approval': True,
             'minimum_guests': 100,
-            'event_type': wedding_event_type,
             'minimum_hours': 6,
             'sort_order': 1,
         }
     )[0]
+    if wedding_event_type:
+        allin_sp.event_types.add(wedding_event_type)
 
     # All-In Wedding - Sanctuary & Open Field
     allin_so = ProductOption.objects.get_or_create(
@@ -851,11 +852,12 @@ Additional guests: approximately ₱979-1,089/person depending on venue."""
             'is_featured': True,
             'requires_approval': True,
             'minimum_guests': 100,
-            'event_type': wedding_event_type,
             'minimum_hours': 6,
             'sort_order': 2,
         }
     )[0]
+    if wedding_event_type:
+        allin_so.event_types.add(wedding_event_type)
 
     # All-In Wedding - Angelic Field & Pavilion
     allin_ap = ProductOption.objects.get_or_create(
@@ -871,11 +873,12 @@ Additional guests: approximately ₱979-1,089/person depending on venue."""
             'is_active': True,
             'requires_approval': True,
             'minimum_guests': 100,
-            'event_type': wedding_event_type,
             'minimum_hours': 6,
             'sort_order': 3,
         }
     )[0]
+    if wedding_event_type:
+        allin_ap.event_types.add(wedding_event_type)
 
     # All-In Wedding - Angelic Field & Open Field
     allin_ao = ProductOption.objects.get_or_create(
@@ -891,11 +894,12 @@ Additional guests: approximately ₱979-1,089/person depending on venue."""
             'is_active': True,
             'requires_approval': True,
             'minimum_guests': 100,
-            'event_type': wedding_event_type,
             'minimum_hours': 6,
             'sort_order': 4,
         }
     )[0]
+    if wedding_event_type:
+        allin_ao.event_types.add(wedding_event_type)
 
     # Link All-In Wedding packages to venues
     def link_allin_wedding_venues(package, ceremony_venue, reception_venue):
@@ -1098,7 +1102,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('venues', '0007_seed_wedding_venues_and_packages'),
-        ('products', '0011_add_image_fields_to_productoption'),
+        ('products', '0013_remove_tax_rate_from_productoption'),
         ('events', '0001_initial'),
     ]
 

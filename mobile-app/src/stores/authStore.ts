@@ -15,6 +15,9 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import * as SecureStore from 'expo-secure-store';
 
 import type { User } from '@/types/auth.types';
+import { logger } from '@/utils/logger';
+
+const storeLogger = logger.create('AuthStore');
 
 // =============================================================================
 // TYPES
@@ -65,7 +68,7 @@ const secureStorage = {
     try {
       return await SecureStore.getItemAsync(name, SECURE_OPTIONS);
     } catch (error) {
-      console.error('SecureStore getItem error:', error);
+      storeLogger.error('SecureStore getItem error:', error);
       return null;
     }
   },
@@ -73,14 +76,14 @@ const secureStorage = {
     try {
       await SecureStore.setItemAsync(name, value, SECURE_OPTIONS);
     } catch (error) {
-      console.error('SecureStore setItem error:', error);
+      storeLogger.error('SecureStore setItem error:', error);
     }
   },
   removeItem: async (name: string): Promise<void> => {
     try {
       await SecureStore.deleteItemAsync(name, SECURE_OPTIONS);
     } catch (error) {
-      console.error('SecureStore removeItem error:', error);
+      storeLogger.error('SecureStore removeItem error:', error);
     }
   },
 };

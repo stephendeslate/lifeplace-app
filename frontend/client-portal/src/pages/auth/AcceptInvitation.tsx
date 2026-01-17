@@ -117,7 +117,7 @@ const AcceptInvitation: React.FC = () => {
         navigate('/dashboard', { replace: true });
       }
     } catch (error: unknown) {
-      console.error('Accept invitation error:', error);
+      if (import.meta.env.DEV) console.error('Accept invitation error:', error);
       const message = ErrorHandler.extractMessage(error);
       showError('Activation Failed', message);
     } finally {

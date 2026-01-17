@@ -715,7 +715,7 @@ const CleanPackageSelectionStep: React.FC<CleanPackageSelectionStepProps> = ({
 
         setAvailablePackages(Array.isArray(packages) ? packages : []);
       } catch (err) {
-        console.error('Failed to load packages:', err);
+        if (import.meta.env.DEV) console.error('Failed to load packages:', err);
         setAvailablePackages([]);
       } finally {
         setIsLoading(false);

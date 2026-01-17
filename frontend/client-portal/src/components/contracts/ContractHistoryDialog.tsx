@@ -692,7 +692,7 @@ export const ContractHistoryDialog: React.FC<ContractHistoryDialogProps> = ({
             startIcon={<DownloadIcon />}
             onClick={() => {
               // Handle export functionality
-              console.log('Export contract history');
+              if (import.meta.env.DEV) console.log('Export contract history');
             }}
             sx={{ textTransform: 'none' }}
           >

@@ -24,7 +24,7 @@ export const useAuth = () => {
       queryClient.invalidateQueries({ queryKey: ['bookings'] });
     },
     onError: (error: unknown) => {
-      console.error('Login error:', error);
+      if (import.meta.env.DEV) console.error('Login error:', error);
       const message = ErrorHandler.extractMessage(error);
       showError('Login Failed', message);
     },
@@ -43,7 +43,7 @@ export const useAuth = () => {
       queryClient.invalidateQueries({ queryKey: ['user'] });
     },
     onError: (error: unknown) => {
-      console.error('Registration error:', error);
+      if (import.meta.env.DEV) console.error('Registration error:', error);
       const message = ErrorHandler.extractMessage(error);
       showError('Registration Failed', message);
     },
@@ -60,7 +60,7 @@ export const useAuth = () => {
       showSuccess('Password Changed', 'Your password has been updated successfully.');
     },
     onError: (error: unknown) => {
-      console.error('Change password error:', error);
+      if (import.meta.env.DEV) console.error('Change password error:', error);
       const message = ErrorHandler.extractMessage(error);
       showError('Password Change Failed', message);
     },
@@ -81,7 +81,7 @@ export const useAuth = () => {
       queryClient.invalidateQueries({ queryKey: ['user'] });
     },
     onError: (error: unknown) => {
-      console.error('Update profile error:', error);
+      if (import.meta.env.DEV) console.error('Update profile error:', error);
       const message = ErrorHandler.extractMessage(error);
       showError('Update Failed', message);
     },
@@ -101,7 +101,7 @@ export const useAuth = () => {
       queryClient.invalidateQueries({ queryKey: ['user'] });
     },
     onError: (error: unknown) => {
-      console.error('Upload avatar error:', error);
+      if (import.meta.env.DEV) console.error('Upload avatar error:', error);
       const message = ErrorHandler.extractMessage(error);
       showError('Upload Failed', message);
     },

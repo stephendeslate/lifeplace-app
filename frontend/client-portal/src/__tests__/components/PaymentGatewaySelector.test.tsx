@@ -4,14 +4,15 @@ import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { PaymentGatewaySelector } from '../../components/payments/PaymentGatewaySelector';
-import FinancialApi from '../../apis/financial.api';
 import type { PaymentGateway } from '../../types/financial.types';
 
-// Mock the API
-vi.mock('../../apis/financial.api');
-const mockedFinancialApi = FinancialApi as {
-  getActivePaymentGateways: ReturnType<typeof vi.fn>;
-};
+// Mock the API - create a mock function that we can control
+const mockGetActivePaymentGateways = vi.fn();
+vi.mock('../../apis/financial.api', () => ({
+  default: {
+    getActivePaymentGateways: (...args: unknown[]) => mockGetActivePaymentGateways(...args),
+  },
+}));
 
 // Mock data
 const mockGateways: PaymentGateway[] = [
@@ -60,11 +61,11 @@ describe('PaymentGatewaySelector', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    mockedFinancialApi.getActivePaymentGateways = vi.fn().mockResolvedValue(mockGateways);
+    mockGetActivePaymentGateways.mockResolvedValue(mockGateways);
   });
 
   it('renders loading state initially', async () => {
-    mockedFinancialApi.getActivePaymentGateways = vi.fn().mockImplementation(() => new Promise(() => {}));
+    mockGetActivePaymentGateways.mockImplementation(() => new Promise(() => {}));
 
     render(
       <TestWrapper>
@@ -100,7 +101,7 @@ describe('PaymentGatewaySelector', () => {
 
   it('auto-selects when only one gateway is available', async () => {
     const singleGateway = [mockGateways[0]];
-    mockedFinancialApi.getActivePaymentGateways = vi.fn().mockResolvedValue(singleGateway);
+    mockGetActivePaymentGateways.mockResolvedValue(singleGateway);
 
     render(
       <TestWrapper>
@@ -165,7 +166,7 @@ describe('PaymentGatewaySelector', () => {
   it('handles authentication errors gracefully', async () => {
     const authError = new Error('Unauthorized');
     (authError as Error & { response?: { status?: number } }).response = { status: 403 };
-    mockedFinancialApi.getActivePaymentGateways = vi.fn().mockRejectedValue(authError);
+    mockGetActivePaymentGateways.mockRejectedValue(authError);
 
     render(
       <TestWrapper>
@@ -176,14 +177,15 @@ describe('PaymentGatewaySelector', () => {
       </TestWrapper>
     );
 
+    // Wait with longer timeout as component has retry logic (retries once for 403)
     await waitFor(() => {
       expect(screen.getByText(/Payment gateway information is not available/)).toBeInTheDocument();
-    });
+    }, { timeout: 5000 });
   });
 
   it('handles network errors', async () => {
     const networkError = new Error('Network error');
-    mockedFinancialApi.getActivePaymentGateways = vi.fn().mockRejectedValue(networkError);
+    mockGetActivePaymentGateways.mockRejectedValue(networkError);
 
     render(
       <TestWrapper>
@@ -194,13 +196,14 @@ describe('PaymentGatewaySelector', () => {
       </TestWrapper>
     );
 
+    // Wait with longer timeout as component has retry logic (retries up to 3 times)
     await waitFor(() => {
       expect(screen.getByText(/Failed to load payment gateways/)).toBeInTheDocument();
-    });
-  });
+    }, { timeout: 10000 });
+  }, 15000); // Increase test timeout to allow for retry delays
 
   it('handles empty gateway list', async () => {
-    mockedFinancialApi.getActivePaymentGateways = vi.fn().mockResolvedValue([]);
+    mockGetActivePaymentGateways.mockResolvedValue([]);
 
     render(
       <TestWrapper>
@@ -248,7 +251,9 @@ describe('PaymentGatewaySelector', () => {
       </TestWrapper>
     );
 
-    expect(screen.getByText('Payment Gateway')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('Payment Gateway')).toBeInTheDocument();
+    });
   });
 
   it('shows required indicator when required is true', async () => {
@@ -263,6 +268,8 @@ describe('PaymentGatewaySelector', () => {
       </TestWrapper>
     );
 
-    expect(screen.getByText('Payment Gateway *')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('Payment Gateway *')).toBeInTheDocument();
+    });
   });
 });

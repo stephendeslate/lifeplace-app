@@ -54,63 +54,83 @@ class ClientCreateUpdateSerializer(serializers.ModelSerializer):
     profile = ClientProfileSerializer(required=False)
     email = serializers.EmailField(required=True)
     password = serializers.CharField(write_only=True, required=False)
-    
+
     class Meta:
         model = User
         fields = [
-            'id', 'email', 'first_name', 'last_name', 
+            'id', 'email', 'first_name', 'last_name',
             'profile', 'password', 'is_active'
         ]
+        # SECURITY FIX (P0-B14): Prevent mass assignment of sensitive fields
         read_only_fields = ['id']
-    
+
+    # SECURITY FIX (P0-B14): Whitelist of fields that can be updated
+    ALLOWED_UPDATE_FIELDS = {'first_name', 'last_name', 'is_active'}
+
+    def validate(self, data):
+        """
+        SECURITY FIX (P0-B14): Strip any fields that could be used for privilege escalation.
+        """
+        # Remove any sensitive fields that should never be set via API
+        sensitive_fields = ['role', 'is_staff', 'is_superuser', 'admin_permissions']
+        for field in sensitive_fields:
+            data.pop(field, None)
+        return data
+
     def create(self, validated_data):
         profile_data = validated_data.pop('profile', {})
         password = validated_data.pop('password', None)
-        
-        # Set role to CLIENT
+
+        # SECURITY: Force role to CLIENT - never trust user input for role
         validated_data['role'] = 'CLIENT'
-        
+        validated_data['is_staff'] = False
+        validated_data['is_superuser'] = False
+
         # Create user
         user = User.objects.create_user(**validated_data)
-        
-        # FIXED: Handle password properly
+
+        # Handle password properly
         if password:
             # Set usable password
             user.set_password(password)
         else:
             # Set unusable password for clients without accounts
             user.set_unusable_password()
-        
+
         user.save()
-        
+
         # Create or update profile
         if profile_data and hasattr(user, 'profile'):
             for key, value in profile_data.items():
                 setattr(user.profile, key, value)
             user.profile.save()
-        
+
         return user
-    
+
     def update(self, instance, validated_data):
         profile_data = validated_data.pop('profile', {})
         password = validated_data.pop('password', None)
-        
-        # Update user fields
+
+        # SECURITY FIX (P0-B14): Only update explicitly allowed fields
+        # This prevents mass assignment of sensitive fields like role, is_staff, etc.
         for key, value in validated_data.items():
-            setattr(instance, key, value)
-        
+            if key in self.ALLOWED_UPDATE_FIELDS:
+                setattr(instance, key, value)
+
         # Update password if provided
         if password:
             instance.set_password(password)
-        
+
         instance.save()
-        
-        # Update profile if it exists
+
+        # Update profile if it exists (profile fields are already validated)
         if profile_data and hasattr(instance, 'profile'):
+            allowed_profile_fields = {'phone', 'company'}
             for key, value in profile_data.items():
-                setattr(instance.profile, key, value)
+                if key in allowed_profile_fields:
+                    setattr(instance.profile, key, value)
             instance.profile.save()
-        
+
         return instance
 
 

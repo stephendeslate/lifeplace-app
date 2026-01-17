@@ -106,7 +106,7 @@ export const useSimplePricing = (
       });
     } catch (err) {
       setError('Failed to calculate pricing');
-      console.error('Pricing calculation error:', err);
+      if (import.meta.env.DEV) console.error('Pricing calculation error:', err);
 
       // Fallback calculation if server fails - use context tax rate, no hardcoded default
       const subtotal = selectedPackages.reduce((sum, pkg) => sum + parseFloat(pkg.price) * pkg.quantity, 0) +

@@ -124,7 +124,7 @@ export const PaymentStep: React.FC<PaymentStepProps> = ({
     // paymentPlanSettings should always be loaded (checked in loading state above)
     // If not loaded, this code shouldn't execute
     if (!paymentPlanSettings) {
-      console.error('PaymentPlanSettings not loaded - should be caught by loading state');
+      if (import.meta.env.DEV) console.error('PaymentPlanSettings not loaded - should be caught by loading state');
       return {
         total: 0,
         deposit: 0,
@@ -194,7 +194,7 @@ export const PaymentStep: React.FC<PaymentStepProps> = ({
 
     if (onValidate) {
       onValidate(newData).catch(error => {
-        console.warn('Validation failed:', error);
+        if (import.meta.env.DEV) console.warn('Validation failed:', error);
       });
     }
   }, [paymentData, onDataChange, onValidate]);
@@ -312,7 +312,7 @@ export const PaymentStep: React.FC<PaymentStepProps> = ({
 
   // Handle unified payment flow error
   const handlePaymentFlowError = useCallback((error: PaymentFlowError) => {
-    console.error('Payment flow error:', error);
+    if (import.meta.env.DEV) console.error('Payment flow error:', error);
     // You might want to show this error to the user
   }, []);
 

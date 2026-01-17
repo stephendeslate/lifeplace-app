@@ -168,10 +168,10 @@ export class ProductsApi {
       
       return productMap;
     } catch (error) {
-      console.error('Failed to fetch products by IDs via batch API:', error);
-      
+      if (import.meta.env.DEV) console.error('Failed to fetch products by IDs via batch API:', error);
+
       // Fallback to individual requests only if batch API fails
-      console.warn('Falling back to individual product requests');
+      if (import.meta.env.DEV) console.warn('Falling back to individual product requests');
       const productMap = new Map<number, ProductOption>();
       
       // Try fetching individually and handle failures gracefully
@@ -180,7 +180,7 @@ export class ProductsApi {
           const product = await this.getProductOption(id);
           productMap.set(id, product);
         } catch (err) {
-          console.warn(`Failed to fetch product ${id}:`, err);
+          if (import.meta.env.DEV) console.warn(`Failed to fetch product ${id}:`, err);
         }
       }
       

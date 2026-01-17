@@ -21,6 +21,7 @@ urlpatterns = [
     path('logout-all/', views.logout_all_devices, name='logout_all_devices'),
     path('sessions/', views.active_sessions, name='active_sessions'),
     path('me/', views.CurrentUserView.as_view(), name='current_user'),
+    path('me/avatar/', views.AvatarUploadView.as_view(), name='avatar_upload'),
 
     # Client registration endpoint
     path('register/', views.client_register, name='client_register'),

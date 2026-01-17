@@ -28,10 +28,8 @@
         "ITSAppUsesNonExemptEncryption": false
       },
       "associatedDomains": [
-        "applinks:app.lifeplace.com",
-        "applinks:*.lifeplace.com",
-        "applinks:app.lifeplace.com",
-        "applinks:*.lifeplace.com"
+        "applinks:app.lifeplace.dev",
+        "applinks:*.lifeplace.dev"
       ]
     },
     "android": {
@@ -52,27 +50,27 @@
           "data": [
             {
               "scheme": "https",
-              "host": "app.lifeplace.com",
+              "host": "app.lifeplace.dev",
               "pathPrefix": "/actions"
             },
             {
               "scheme": "https",
-              "host": "app.lifeplace.com",
+              "host": "app.lifeplace.dev",
               "pathPrefix": "/quotes"
             },
             {
               "scheme": "https",
-              "host": "app.lifeplace.com",
+              "host": "app.lifeplace.dev",
               "pathPrefix": "/contracts"
             },
             {
               "scheme": "https",
-              "host": "app.lifeplace.com",
+              "host": "app.lifeplace.dev",
               "pathPrefix": "/payments"
             },
             {
               "scheme": "https",
-              "host": "app.lifeplace.com",
+              "host": "app.lifeplace.dev",
               "pathPrefix": "/events"
             }
           ],
@@ -144,7 +142,9 @@
     "extra": {
       "eas": {
         "projectId": "53b517db-6212-4786-8680-4c555a74fdf4"
-      }
+      },
+      "privacyPolicyUrl": "https://yourdomain.com/privacy",
+      "termsOfServiceUrl": "https://yourdomain.com/terms"
     }
   }
 }

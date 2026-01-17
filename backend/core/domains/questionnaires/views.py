@@ -24,11 +24,29 @@ from .services import (
 class QuestionnaireViewSet(viewsets.ModelViewSet):
     """
     ViewSet for managing questionnaires
+
+    Permissions:
+    - List/Retrieve/Active: Admin and Client (clients can view questionnaires)
+    - Create/Update/Delete: Admin only
+    - for_event: Admin and Client (with ownership check for clients)
+    - Analytics endpoints: Admin only
     """
-    permission_classes = [IsAdminOrClient]
     filter_backends = [filters.SearchFilter]
     search_fields = ['name']
-    
+
+    def get_permissions(self):
+        """
+        SECURITY FIX (P0-B15): Granular permissions for different actions.
+        """
+        # Read-only actions for admin and client
+        if self.action in ['list', 'retrieve', 'active', 'fields', 'validation_rules', 'for_event']:
+            return [IsAdminOrClient()]
+        # Analytics are admin-only
+        if self.action in ['analytics', 'analytics_summary', 'response_trends']:
+            return [IsAdmin()]
+        # Write operations are admin-only
+        return [IsAdmin()]
+
     def get_queryset(self):
         event_type_id = self.request.query_params.get('event_type')
         is_active = self.request.query_params.get('is_active')
@@ -174,6 +192,14 @@ class QuestionnaireViewSet(viewsets.ModelViewSet):
             return Response(
                 {"detail": "Event not found"},
                 status=status.HTTP_404_NOT_FOUND
+            )
+
+        # SECURITY FIX (P0-B15): Verify ownership for CLIENT users
+        user = request.user
+        if user.role == 'CLIENT' and event.client_id != user.id:
+            return Response(
+                {"detail": "You do not have permission to view this event's questionnaires."},
+                status=status.HTTP_403_FORBIDDEN
             )
 
         # Try to get the booking session for this event

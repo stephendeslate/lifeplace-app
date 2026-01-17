@@ -12,6 +12,7 @@ import {
   handleDeepLink,
   getInitialDeepLink,
 } from '@/utils/deepLinking';
+import { logger } from '@/utils/logger';
 
 // =============================================================================
 // TYPES
@@ -92,7 +93,7 @@ export function useDeepLinking(
 
         return success;
       } catch (error) {
-        console.error('Deep link handling error:', error);
+        logger.error('Deep link handling error:', error);
         onNavigationError?.(url, error as Error);
         return false;
       }

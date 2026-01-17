@@ -10,6 +10,7 @@ Uses CompanySettings to provide consistent branding across all PDF documents:
 """
 
 import logging
+import os
 from dataclasses import dataclass
 from typing import Optional
 from reportlab.lib import colors
@@ -80,8 +81,8 @@ class PDFBrandingService:
     DEFAULT_PRIMARY_COLOR = '#2c5aa0'
     DEFAULT_SECONDARY_COLOR = '#1a365d'
     DEFAULT_ACCENT_COLOR = '#38a169'
-    DEFAULT_EMAIL = 'info@lifeplacealfonso.com'
-    DEFAULT_WEBSITE = 'https://lifeplacealfonso.com'
+    DEFAULT_EMAIL = os.getenv('DEFAULT_COMPANY_EMAIL', 'info@lifeplace.dev')
+    DEFAULT_WEBSITE = os.getenv('DEFAULT_COMPANY_WEBSITE', 'https://lifeplace.dev')
     DEFAULT_FOOTER = 'Thank you for choosing LifePlace Retreat & Events Center!'
 
     @classmethod

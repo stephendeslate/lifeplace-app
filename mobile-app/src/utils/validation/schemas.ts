@@ -50,8 +50,8 @@ export function validateResponse<T extends z.ZodType>(
     // In development, we might want to throw
     // In production, return the data and let TypeScript handle it
     if (__DEV__) {
-      console.warn(
-        `[Validation] Response validation failed${context ? ` for ${context}` : ''}:`,
+      logger.warn(
+        `Response validation failed${context ? ` for ${context}` : ''}:`,
         result.error.issues
       );
     }

@@ -56,7 +56,7 @@ export const ContractsProvider: React.FC<ContractsProviderProps> = ({ children }
 
   // Debug logging
   useEffect(() => {
-    console.log('ContractsProvider auth state:', { user: !!user, authLoading, isAuthenticated });
+    if (import.meta.env.DEV) console.log('ContractsProvider auth state:', { user: !!user, authLoading, isAuthenticated });
   }, [user, authLoading, isAuthenticated]);
 
   // Query for all contracts
@@ -127,7 +127,7 @@ export const ContractsProvider: React.FC<ContractsProviderProps> = ({ children }
       simulateSignatureEvent(contractId, 'signature_added');
     },
     onError: (error) => {
-      console.error('Failed to sign contract:', error);
+      if (import.meta.env.DEV) console.error('Failed to sign contract:', error);
     },
   });
 
@@ -194,7 +194,7 @@ export const ContractsProvider: React.FC<ContractsProviderProps> = ({ children }
       const staleThreshold = 5 * 60 * 1000; // 5 minutes
 
       if (lastUpdate && now - lastUpdate > staleThreshold) {
-        console.log('Data is stale, refreshing...');
+        if (import.meta.env.DEV) console.log('Data is stale, refreshing...');
         refreshContracts();
       }
     }, 60000); // Check every minute

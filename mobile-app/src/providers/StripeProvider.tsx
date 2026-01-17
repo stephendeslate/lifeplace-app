@@ -8,6 +8,7 @@
 import React, { type ReactElement } from 'react';
 import { StripeProvider as StripeNativeProvider } from '@stripe/stripe-react-native';
 import Constants from 'expo-constants';
+import { logger } from '@/utils/logger';
 
 interface StripeProviderProps {
   children: ReactElement | ReactElement[];
@@ -20,7 +21,7 @@ const STRIPE_PUBLISHABLE_KEY =
 
 export function StripeProvider({ children }: StripeProviderProps) {
   if (!STRIPE_PUBLISHABLE_KEY) {
-    console.warn('Stripe publishable key not configured');
+    logger.warn('Stripe publishable key not configured');
   }
 
   return (

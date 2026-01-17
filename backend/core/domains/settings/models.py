@@ -514,11 +514,11 @@ class CompanySettings(BaseModel):
 
     # Contact Information
     email = models.EmailField(
-        default='info@lifeplacealfonso.com',
+        default='info@lifeplace.dev',
         help_text="Primary contact email"
     )
     support_email = models.EmailField(
-        default='support@lifeplacealfonso.com',
+        default='support@lifeplace.dev',
         help_text="Support email address"
     )
     phone = models.CharField(
@@ -578,7 +578,7 @@ class CompanySettings(BaseModel):
 
     # Online Presence
     website = models.URLField(
-        default='https://lifeplacealfonso.com',
+        default='https://lifeplace.dev',
         help_text="Company website URL"
     )
     facebook_url = models.URLField(

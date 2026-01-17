@@ -12,6 +12,7 @@ import { router } from 'expo-router';
 
 import { colors, spacing, typeScale, colorScales } from '@/theme';
 import { crashReporter } from '@/utils/crashReporting';
+import { logger } from '@/utils/logger';
 
 interface Props {
   children: ReactNode;
@@ -37,7 +38,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     // Log to error reporting service
-    console.error('ErrorBoundary caught an error:', error, errorInfo);
+    logger.error('ErrorBoundary caught an error:', error, errorInfo);
 
     // Send to crash reporting service
     crashReporter.captureException(error, {

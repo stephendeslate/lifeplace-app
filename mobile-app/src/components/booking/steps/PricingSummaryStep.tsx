@@ -41,6 +41,7 @@ import { formatCurrency } from '@/utils/currency';
 import { useSimplePricing } from '@/hooks/booking/useSimplePricing';
 import { usePaymentPlanSettings } from '@/hooks/usePaymentPlanSettings';
 import { format, parseISO } from 'date-fns';
+import { logger } from '@/utils/logger';
 import type { StepComponentProps } from '../StepRenderer';
 import type {
   PricingSummaryStepData,
@@ -225,7 +226,7 @@ export function PricingSummaryStep({
     try {
       await Linking.openURL(url);
     } catch (error) {
-      console.error('Failed to open link:', error);
+      logger.error('Failed to open link:', error);
     }
   };
 

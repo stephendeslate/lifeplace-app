@@ -35,6 +35,7 @@ from .models import AdminInvitation, User
 from .serializers import (
     AdminInvitationSerializer,
     AdminPermissionsSerializer,
+    AvatarUploadSerializer,
     UserCreateSerializer,
     UserSerializer,
 )
@@ -373,33 +374,80 @@ class CurrentUserView(APIView):
     Get or update current logged in user
     """
     permission_classes = [permissions.IsAuthenticated]
-    
+
     def get(self, request):
         user_id = request.user.id
-        
+
         # Try to get from cache first
         cached_user = users_cache_service.get_cached_user_detail(user_id)
-        
+
         if cached_user is not None:
             logger.debug(f"Current user data served from cache for user {user_id}")
             return Response(cached_user)
-        
+
         # Cache miss - serialize and cache
-        user_data = UserSerializer(request.user).data
+        user_data = UserSerializer(request.user, context={'request': request}).data
         users_cache_service.cache_user_detail(user_id, user_data)
         users_cache_service.cache_user_by_email(request.user.email, user_data)
         logger.info(f"Current user data cached for user {user_id}")
-        
+
         return Response(user_data)
-    
+
     def put(self, request):
-        serializer = UserSerializer(request.user, data=request.data, partial=True)
+        serializer = UserSerializer(request.user, data=request.data, partial=True, context={'request': request})
         serializer.is_valid(raise_exception=True)
-        
+
         with transaction.atomic():
             updated_user = UserService.update_user(request.user, serializer.validated_data)
-        
-        return Response(UserSerializer(updated_user).data)
+
+        return Response(UserSerializer(updated_user, context={'request': request}).data)
+
+
+class AvatarUploadView(APIView):
+    """
+    Upload avatar for current user
+
+    POST /api/users/me/avatar/
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        serializer = AvatarUploadSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        user = request.user
+        avatar_file = serializer.validated_data['avatar']
+
+        # Ensure user has a profile
+        if not hasattr(user, 'profile') or user.profile is None:
+            from .models import UserProfile
+            UserProfile.objects.create(user=user)
+
+        # Delete old avatar if exists
+        if user.profile.avatar:
+            user.profile.avatar.delete(save=False)
+
+        # Save new avatar
+        user.profile.avatar = avatar_file
+        user.profile.save()
+
+        # Invalidate user cache
+        users_cache_service.invalidate_user_caches(user_id=user.id)
+
+        logger.info(f"Avatar uploaded for user {user.id}")
+
+        return Response(UserSerializer(user, context={'request': request}).data)
+
+    def delete(self, request):
+        """Delete current user's avatar"""
+        user = request.user
+
+        if hasattr(user, 'profile') and user.profile and user.profile.avatar:
+            user.profile.avatar.delete(save=True)
+            users_cache_service.invalidate_user_caches(user_id=user.id)
+            logger.info(f"Avatar deleted for user {user.id}")
+
+        return Response(UserSerializer(user, context={'request': request}).data)
 
 
 class AdminInvitationListCreateAPIView(generics.ListCreateAPIView):

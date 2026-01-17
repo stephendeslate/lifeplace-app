@@ -121,7 +121,7 @@ export const eventsApi = {
         }, 100);
       }
     } catch (error) {
-      console.error('Download failed:', error);
+      if (import.meta.env.DEV) console.error('Download failed:', error);
       throw new Error('Failed to download file. Please try again.');
     }
   },

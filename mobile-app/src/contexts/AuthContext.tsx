@@ -28,11 +28,14 @@ import { NotificationService } from '@/services/notifications';
 import { unregisterPushToken } from '@/apis/notifications.api';
 import { clearBadge } from '@/utils/notificationHandler';
 import { getPendingDeepLink, navigateToDeepLink } from '@/utils/deepLinking';
+import { logger } from '@/utils/logger';
 import type {
   User,
   LoginCredentials,
   RegisterCredentials,
 } from '@/types/auth.types';
+
+const authLogger = logger.create('AuthContext');
 
 // =============================================================================
 // TYPES
@@ -100,7 +103,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
           setUser(currentUser);
         } catch (error) {
           // Token is invalid, clear auth
-          console.log('Token verification failed, clearing auth');
+          authLogger.debug('Token verification failed, clearing auth');
           clearAuth();
         }
       }
@@ -194,7 +197,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
           await unregisterPushToken({ token: pushToken });
         } catch {
           // Continue with logout even if unregistration fails
-          console.warn('Failed to unregister push token');
+          authLogger.warn('Failed to unregister push token');
         }
       }
 
@@ -202,7 +205,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       await AuthAPI.logout();
     } catch (error) {
       // Even if logout API fails, we still clear local auth
-      console.warn('Logout API failed:', getErrorMessage(error));
+      authLogger.warn('Logout API failed:', getErrorMessage(error));
     } finally {
       // Clear stored push token
       await NotificationService.clearStoredPushToken();
@@ -232,7 +235,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const currentUser = await AuthAPI.getCurrentUser();
       setUser(currentUser);
     } catch (error) {
-      console.error('Failed to refresh user:', getErrorMessage(error));
+      authLogger.error('Failed to refresh user:', getErrorMessage(error));
     }
   }, [setUser]);
 

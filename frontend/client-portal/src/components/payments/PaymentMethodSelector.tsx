@@ -209,7 +209,7 @@ const AddPaymentMethodDialog: React.FC<{
       ...(selectedGateway && { gateway: selectedGateway.id }),
     };
 
-    console.log('PaymentMethodSelector - Creating payment method manually:', {
+    if (import.meta.env.DEV) console.log('PaymentMethodSelector - Creating payment method manually:', {
       formData,
       selectedGateway: selectedGateway?.id,
       finalFormData

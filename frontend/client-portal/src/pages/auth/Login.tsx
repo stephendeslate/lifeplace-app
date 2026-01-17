@@ -95,7 +95,7 @@ const Login: React.FC<LoginProps> = ({
       );
       onLoginSuccess?.();
     } catch (error: unknown) {
-      console.error('Login error:', error);
+      if (import.meta.env.DEV) console.error('Login error:', error);
       
       // Handle different types of errors
       const statusCode = ErrorHandler.getStatusCode(error);

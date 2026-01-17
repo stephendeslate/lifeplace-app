@@ -4,6 +4,9 @@ import { useEffect, useRef, useCallback, useState } from 'react';
 import { AppState, AppStateStatus } from 'react-native';
 import { useQueryClient } from '@tanstack/react-query';
 import NetInfo, { NetInfoState } from '@react-native-community/netinfo';
+import { logger } from '@/utils/logger';
+
+const wsLogger = logger.create('AvailabilityWS');
 
 // Get API URL from environment variable (same as in api.ts)
 const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8000/api';
@@ -133,7 +136,7 @@ export const useAvailabilityWebSocket = (
   // Get WebSocket URL
   const getWebSocketUrl = useCallback(() => {
     if (!API_URL) {
-      console.warn('[AvailabilityWS] API_URL not configured');
+      wsLogger.warn('API_URL not configured');
       return null;
     }
 
@@ -142,7 +145,7 @@ export const useAvailabilityWebSocket = (
       const protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
       return `${protocol}//${url.host}/ws/availability/`;
     } catch (error) {
-      console.error('[AvailabilityWS] Invalid API_URL:', error);
+      wsLogger.error('Invalid API_URL:', error);
       return null;
     }
   }, []);
@@ -156,17 +159,14 @@ export const useAvailabilityWebSocket = (
         switch (message.type) {
           case 'date_blocked': {
             const blockedMsg = message as DateBlockedMessage;
-            console.log('[AvailabilityWS] Date blocked:', blockedMsg.date);
+            wsLogger.info('Date blocked:', blockedMsg.date);
 
             // Invalidate the availability query to refresh calendar
             queryClient.invalidateQueries({ queryKey: ['eventAvailability'] });
 
             // Check if this affects the selected date
             if (selectedDate && blockedMsg.date === selectedDate) {
-              console.log(
-                '[AvailabilityWS] Selected date was blocked!',
-                selectedDate
-              );
+              wsLogger.info('Selected date was blocked!', selectedDate);
               setSelectedDateBlocked(true);
               setBlockedDate(blockedMsg.date);
             }
@@ -178,7 +178,7 @@ export const useAvailabilityWebSocket = (
 
           case 'date_released': {
             const releasedMsg = message as DateReleasedMessage;
-            console.log('[AvailabilityWS] Date released:', releasedMsg.date);
+            wsLogger.info('Date released:', releasedMsg.date);
 
             // Invalidate the availability query to refresh calendar
             queryClient.invalidateQueries({ queryKey: ['eventAvailability'] });
@@ -194,7 +194,7 @@ export const useAvailabilityWebSocket = (
           }
 
           case 'connection_established':
-            console.log('[AvailabilityWS] Connected:', message.message);
+            wsLogger.info('Connected:', message.message);
             break;
 
           case 'pong':
@@ -202,10 +202,10 @@ export const useAvailabilityWebSocket = (
             break;
 
           default:
-            console.log('[AvailabilityWS] Unknown message type:', message);
+            wsLogger.debug('Unknown message type:', message);
         }
       } catch (error) {
-        console.error('[AvailabilityWS] Error parsing message:', error);
+        wsLogger.error('Error parsing message:', error);
       }
     },
     [
@@ -247,13 +247,13 @@ export const useAvailabilityWebSocket = (
 
     // Don't connect if offline
     if (!isOnline) {
-      console.log('[AvailabilityWS] Skipping connection - device is offline');
+      wsLogger.debug('Skipping connection - device is offline');
       return;
     }
 
     const wsUrl = getWebSocketUrl();
     if (!wsUrl) {
-      console.warn('[AvailabilityWS] Cannot connect - no WebSocket URL');
+      wsLogger.warn('Cannot connect - no WebSocket URL');
       return;
     }
 
@@ -262,13 +262,13 @@ export const useAvailabilityWebSocket = (
       wsRef.current.close();
     }
 
-    console.log('[AvailabilityWS] Connecting to:', wsUrl);
+    wsLogger.debug('Connecting to:', wsUrl);
 
     try {
       const ws = new WebSocket(wsUrl);
 
       ws.onopen = () => {
-        console.log('[AvailabilityWS] Connected');
+        wsLogger.info('Connected');
         setIsConnected(true);
         startPing();
         onConnect?.();
@@ -277,11 +277,7 @@ export const useAvailabilityWebSocket = (
       ws.onmessage = handleMessage;
 
       ws.onclose = (event) => {
-        console.log(
-          '[AvailabilityWS] Disconnected:',
-          event.code,
-          event.reason
-        );
+        wsLogger.info('Disconnected:', event.code, event.reason);
         setIsConnected(false);
         stopPing();
         onDisconnect?.();
@@ -289,20 +285,20 @@ export const useAvailabilityWebSocket = (
         // Attempt to reconnect after 5 seconds if enabled and online
         if (enabled && isOnline && event.code !== 1000) {
           reconnectTimeoutRef.current = setTimeout(() => {
-            console.log('[AvailabilityWS] Attempting to reconnect...');
+            wsLogger.info('Attempting to reconnect...');
             connect();
           }, 5000);
         }
       };
 
       ws.onerror = (error) => {
-        console.error('[AvailabilityWS] Error:', error);
+        wsLogger.error('Error:', error);
         onError?.(error as Event);
       };
 
       wsRef.current = ws;
     } catch (error) {
-      console.error('[AvailabilityWS] Failed to connect:', error);
+      wsLogger.error('Failed to connect:', error);
     }
   }, [
     enabled,
@@ -334,7 +330,7 @@ export const useAvailabilityWebSocket = (
 
       // Reconnect when coming back online
       if (!wasOnline && nowOnline && enabled) {
-        console.log('[AvailabilityWS] Network restored, reconnecting...');
+        wsLogger.info('Network restored, reconnecting...');
         connect();
       }
     });
@@ -350,12 +346,12 @@ export const useAvailabilityWebSocket = (
       if (nextAppState === 'active' && enabled && isOnline) {
         // App came to foreground - reconnect if not connected
         if (wsRef.current?.readyState !== WebSocket.OPEN) {
-          console.log('[AvailabilityWS] App active, reconnecting...');
+          wsLogger.info('App active, reconnecting...');
           connect();
         }
       } else if (nextAppState === 'background') {
         // App went to background - close connection to save battery
-        console.log('[AvailabilityWS] App backgrounded, closing connection');
+        wsLogger.debug('App backgrounded, closing connection');
         if (wsRef.current) {
           wsRef.current.close(1000, 'App backgrounded');
         }

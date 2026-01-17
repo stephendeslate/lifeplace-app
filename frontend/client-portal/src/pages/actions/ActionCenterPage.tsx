@@ -131,7 +131,7 @@ export const ActionCenterPage: React.FC = () => {
       setSelectedContract(fullContract);
       setSigningDialogOpen(true);
     } catch (error) {
-      console.error('Error fetching contract for signing:', error);
+      if (import.meta.env.DEV) console.error('Error fetching contract for signing:', error);
     }
   };
 
@@ -141,7 +141,7 @@ export const ActionCenterPage: React.FC = () => {
       const fullContract = await contractsApi.getContract(action.contractId);
       setViewingContract(fullContract);
     } catch (error) {
-      console.error('Error fetching contract:', error);
+      if (import.meta.env.DEV) console.error('Error fetching contract:', error);
     }
   };
 
@@ -429,7 +429,7 @@ export const ActionCenterPage: React.FC = () => {
             setSelectedContract(null);
           }}
           onSignComplete={handleSignComplete}
-          onError={(error) => console.error('Signing error:', error)}
+          onError={(error) => { if (import.meta.env.DEV) console.error('Signing error:', error); }}
         />
       )}
 

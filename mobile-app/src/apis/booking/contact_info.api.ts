@@ -6,6 +6,7 @@
 
 import api from '@/utils/api';
 import { validateEmail, validatePhone, formatPhoneNumber } from '@/utils/security';
+import { logger } from '@/utils/logger';
 import type {
   ContactInfoStepData,
   StepValidationResult,
@@ -246,7 +247,7 @@ export const ContactInfoAPI = {
           }
         } catch {
           // If check fails, allow to proceed (backend will validate)
-          console.warn('Email existence check failed, proceeding with submission');
+          logger.warn('Email existence check failed, proceeding with submission');
         }
       }
     }

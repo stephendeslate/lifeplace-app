@@ -129,7 +129,7 @@ export const DocumentsPage: React.FC = () => {
         window.URL.revokeObjectURL(url);
         window.document.body.removeChild(a);
       } catch (error) {
-        console.error('Error downloading contract:', error);
+        if (import.meta.env.DEV) console.error('Error downloading contract:', error);
       }
     } else if (document.downloadUrl) {
       // Regular file download

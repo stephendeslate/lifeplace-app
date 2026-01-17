@@ -2,6 +2,7 @@
 
 import threading
 import time
+from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from django.test import TestCase, TransactionTestCase
 from django.db import transaction
@@ -11,6 +12,9 @@ from ..services.payment_number_service import PaymentNumberService, PaymentNumbe
 from ..models import PaymentNumberSequence, Payment
 from core.domains.events.models import Event
 from core.domains.users.models import User
+
+# Get current year for dynamic testing
+CURRENT_YEAR = datetime.now().year
 
 
 class PaymentNumberServiceTest(TransactionTestCase):
@@ -40,13 +44,13 @@ class PaymentNumberServiceTest(TransactionTestCase):
         """Test basic payment number generation"""
         payment_number = PaymentNumberService.generate_unique_payment_number()
 
-        self.assertTrue(payment_number.startswith('PAY-2025-'))
+        self.assertTrue(payment_number.startswith(f'PAY-{CURRENT_YEAR}-'))
         self.assertEqual(len(payment_number), 14)  # PAY-YYYY-XXXXXX
 
         # Verify format
         info = PaymentNumberService.get_payment_number_info(payment_number)
         self.assertTrue(info['is_valid_format'])
-        self.assertEqual(info['year'], 2025)
+        self.assertEqual(info['year'], CURRENT_YEAR)
         self.assertEqual(info['sequence'], 1)
 
     def test_sequential_number_generation(self):
@@ -176,11 +180,11 @@ class PaymentNumberServiceTest(TransactionTestCase):
         PaymentNumberService.generate_unique_payment_number()
 
         # Verify sequence is at 3
-        sequence = PaymentNumberSequence.objects.get(year=2025)
+        sequence = PaymentNumberSequence.objects.get(year=CURRENT_YEAR)
         self.assertEqual(sequence.next_number, 3)
 
         # Reset sequence
-        PaymentNumberService.reset_sequence_for_year(2025)
+        PaymentNumberService.reset_sequence_for_year(CURRENT_YEAR)
 
         # Verify sequence is back to 1
         sequence.refresh_from_db()

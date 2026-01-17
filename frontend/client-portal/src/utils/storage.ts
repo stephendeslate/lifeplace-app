@@ -80,7 +80,7 @@ class Storage {
     try {
       return JSON.parse(value);
     } catch (error) {
-      console.warn('Failed to parse JSON from localStorage:', error);
+      if (import.meta.env.DEV) console.warn('Failed to parse JSON from localStorage:', error);
       return fallback;
     }
   }
@@ -92,7 +92,7 @@ class Storage {
     try {
       localStorage.setItem(key, JSON.stringify(value));
     } catch (error) {
-      console.error('Failed to store item in localStorage:', error);
+      if (import.meta.env.DEV) console.error('Failed to store item in localStorage:', error);
     }
   }
 

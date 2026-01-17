@@ -17,6 +17,10 @@
  * ```
  */
 
+import { logger } from './logger';
+
+const sslLogger = logger.create('SSLPinning');
+
 // =============================================================================
 // TYPES
 // =============================================================================
@@ -81,7 +85,7 @@ const SSL_PINS: SSLPinConfig = {
 export async function initSSLPinning(): Promise<SSLPinningResult> {
   // Skip in development to allow debugging with Charles/mitmproxy
   if (__DEV__) {
-    console.log('SSL Pinning: Skipped in development mode');
+    sslLogger.debug('Skipped in development mode');
     return { success: true };
   }
 
@@ -93,12 +97,12 @@ export async function initSSLPinning(): Promise<SSLPinningResult> {
 
     await initializeSslPinning(SSL_PINS);
 
-    console.log('SSL Pinning: Initialized successfully');
+    sslLogger.info('Initialized successfully');
     return { success: true };
   } catch (error) {
     const errorMessage =
       error instanceof Error ? error.message : 'Unknown error';
-    console.error('SSL Pinning: Initialization failed -', errorMessage);
+    sslLogger.error('Initialization failed -', errorMessage);
 
     // In production, we might want to block the app if pinning fails
     // For now, we log the error and return failure status

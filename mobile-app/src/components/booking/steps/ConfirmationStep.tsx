@@ -66,6 +66,7 @@ import type {
 } from '@/types/booking';
 import * as Haptics from 'expo-haptics';
 import * as Clipboard from 'expo-clipboard';
+import { logger } from '@/utils/logger';
 
 type ConfirmationStepProps = StepComponentProps<ConfirmationStepData, ConfirmationStepConfiguration>;
 
@@ -253,7 +254,7 @@ export function ConfirmationStep({
         title: isQuoteRequest ? 'LifePlace Quote Request' : 'LifePlace Booking Confirmation',
       });
     } catch (error) {
-      console.error('Share error:', error);
+      logger.error('Share error:', error);
     }
   };
 
@@ -278,7 +279,7 @@ export function ConfirmationStep({
       try {
         await actions.goToStep(dateTimeStepIndex);
       } catch (error) {
-        console.error('Failed to navigate to date step:', error);
+        logger.error('Failed to navigate to date step:', error);
       }
     }
   };

@@ -171,7 +171,7 @@ const ResetPassword: React.FC<ResetPasswordProps> = ({
         handleBackToLogin();
       }, 2000);
     } catch (error: unknown) {
-      console.error('Password reset error:', error);
+      if (import.meta.env.DEV) console.error('Password reset error:', error);
 
       const err = error as { response?: { data?: { detail?: string; password_feedback?: string[] } }; message?: string };
       const errorMessage = err?.response?.data?.detail || err.message || 'Failed to reset password. Please try again.';

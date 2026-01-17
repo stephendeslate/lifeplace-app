@@ -276,7 +276,7 @@ export class BookingCoreApi {
       };
       localStorage.setItem(storageKey, JSON.stringify(dataToStore));
     } catch (error) {
-      console.warn('Failed to save session to local storage:', error);
+      if (import.meta.env.DEV) console.warn('Failed to save session to local storage:', error);
     }
   }
 
@@ -302,7 +302,7 @@ export class BookingCoreApi {
 
       return sessionData;
     } catch (error) {
-      console.warn('Failed to load session from local storage:', error);
+      if (import.meta.env.DEV) console.warn('Failed to load session from local storage:', error);
       return null;
     }
   }
@@ -315,7 +315,7 @@ export class BookingCoreApi {
       const storageKey = `booking_session_${sessionId}`;
       localStorage.removeItem(storageKey);
     } catch (error) {
-      console.warn('Failed to clear session from local storage:', error);
+      if (import.meta.env.DEV) console.warn('Failed to clear session from local storage:', error);
     }
   }
 
@@ -339,7 +339,7 @@ export class BookingCoreApi {
         }
       });
     } catch (error) {
-      console.warn('Failed to cleanup expired sessions:', error);
+      if (import.meta.env.DEV) console.warn('Failed to cleanup expired sessions:', error);
     }
   }
 
@@ -353,7 +353,7 @@ export class BookingCoreApi {
       const sessionKeys = keys.filter(key => key.startsWith('booking_session_'));
       sessionKeys.forEach(key => localStorage.removeItem(key));
     } catch (error) {
-      console.warn('Failed to clear all sessions from local storage:', error);
+      if (import.meta.env.DEV) console.warn('Failed to clear all sessions from local storage:', error);
     }
   }
 

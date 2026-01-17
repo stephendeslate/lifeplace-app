@@ -94,14 +94,14 @@ api.interceptors.response.use(
       // Check if this is a public endpoint - if so, don't try to refresh or redirect
       if (isPublicEndpoint(originalRequest.url)) {
         // For public endpoints, just return the error without redirecting
-        console.warn('Public endpoint returned 401, this might indicate a backend configuration issue');
+        if (import.meta.env.DEV) console.warn('Public endpoint returned 401, this might indicate a backend configuration issue');
         return Promise.reject(error);
       }
 
       // If we're on a booking page, don't redirect to login immediately
       // Booking should work for guests
       if (isBookingPage()) {
-        console.warn('401 error on booking page, continuing without authentication');
+        if (import.meta.env.DEV) console.warn('401 error on booking page, continuing without authentication');
         return Promise.reject(error);
       }
 

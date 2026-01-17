@@ -7,9 +7,44 @@ from .models import AdminInvitation, User, UserProfile
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
+    avatar_url = serializers.SerializerMethodField()
+
     class Meta:
         model = UserProfile
-        fields = ['phone', 'company']
+        fields = ['phone', 'company', 'avatar', 'avatar_url']
+        extra_kwargs = {
+            'avatar': {'write_only': True}
+        }
+
+    def get_avatar_url(self, obj):
+        """Return the full URL for the avatar if it exists."""
+        if obj.avatar and hasattr(obj.avatar, 'url'):
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.avatar.url)
+            return obj.avatar.url
+        return None
+
+
+class AvatarUploadSerializer(serializers.Serializer):
+    """Serializer for avatar upload endpoint."""
+    avatar = serializers.ImageField(required=True)
+
+    def validate_avatar(self, value):
+        """Validate avatar file size and type."""
+        # Max 5MB
+        max_size = 5 * 1024 * 1024
+        if value.size > max_size:
+            raise serializers.ValidationError("Avatar image must be less than 5MB.")
+
+        # Validate content type
+        allowed_types = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
+        if value.content_type not in allowed_types:
+            raise serializers.ValidationError(
+                f"Invalid image type. Allowed types: {', '.join(allowed_types)}"
+            )
+
+        return value
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -21,7 +56,8 @@ class UserSerializer(serializers.ModelSerializer):
         model = User
         fields = ['id', 'email', 'first_name', 'last_name', 'is_active', 'role',
                   'profile', 'date_joined', 'admin_permissions', 'is_full_admin']
-        read_only_fields = ['id', 'is_active', 'date_joined', 'admin_permissions', 'is_full_admin']
+        # SECURITY FIX (P0-B7): Added 'email' and 'role' to prevent privilege escalation
+        read_only_fields = ['id', 'email', 'role', 'is_active', 'date_joined', 'admin_permissions', 'is_full_admin']
         extra_kwargs = {
             'password': {'write_only': True}
         }
