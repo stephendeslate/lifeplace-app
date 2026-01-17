@@ -13,8 +13,6 @@ import {
   CircularProgress,
 } from '@mui/material';
 
-// Modern Design System imports
-import { ModernCard } from '../../common/ModernCard';
 import {
   Payment as PaymentIcon,
   Schedule as PlanIcon,
@@ -162,11 +160,10 @@ export const PaymentInfoStepConfig: React.FC<PaymentInfoStepConfigProps> = ({
 
       <Stack spacing={3}>
         {/* Payment Options */}
-        <ModernCard variant="glass" size="medium" animation="none">
-          <Box sx={{ p: 3 }}>
-            <Typography variant="subtitle1" gutterBottom>
-              Payment Options
-            </Typography>
+        <Box sx={{ borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
+          <Typography variant="subtitle1" gutterBottom>
+            Payment Options
+          </Typography>
             
             <Stack spacing={2}>
               <Box display="flex" alignItems="center" gap={1}>
@@ -205,16 +202,14 @@ export const PaymentInfoStepConfig: React.FC<PaymentInfoStepConfigProps> = ({
                 <Alert severity="error">{errors.payment_options}</Alert>
               )}
             </Stack>
-          </Box>
-        </ModernCard>
+        </Box>
 
         {/* Deposit Settings - Now Global */}
         {formData.accept_deposit && (
-          <ModernCard variant="glass" size="medium" animation="none">
-            <Box sx={{ p: 3 }}>
-              <Typography variant="subtitle1" gutterBottom>
-                Deposit Settings
-              </Typography>
+          <Box sx={{ borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
+            <Typography variant="subtitle1" gutterBottom>
+              Deposit Settings
+            </Typography>
 
               <Alert severity="info" sx={{ mb: 2 }}>
                 <strong>Global Setting:</strong> Deposit percentage and balance due days are configured globally in Payment Settings.
@@ -260,19 +255,17 @@ export const PaymentInfoStepConfig: React.FC<PaymentInfoStepConfigProps> = ({
                   Unable to load payment settings. Please check your configuration.
                 </Alert>
               )}
-            </Box>
-          </ModernCard>
+          </Box>
         )}
 
         {/* Refund & Gateway Settings - Global Configuration Info */}
-        <ModernCard variant="glass" size="medium" animation="none">
-          <Box sx={{ p: 3 }}>
-            <Box display="flex" alignItems="center" gap={1} mb={2}>
-              <SecurityIcon color="primary" />
-              <Typography variant="subtitle1">
-                Refund & Gateway Settings
-              </Typography>
-            </Box>
+        <Box sx={{ borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
+          <Box display="flex" alignItems="center" gap={1} mb={2}>
+            <SecurityIcon color="primary" />
+            <Typography variant="subtitle1">
+              Refund & Gateway Settings
+            </Typography>
+          </Box>
 
             <Alert severity="info" sx={{ mb: 2 }}>
               <strong>Global Configuration:</strong> Refund policies and payment gateways are configured globally in Payment Settings.
@@ -308,8 +301,7 @@ export const PaymentInfoStepConfig: React.FC<PaymentInfoStepConfigProps> = ({
                 Update Global Payment Settings →
               </Button>
             )}
-          </Box>
-        </ModernCard>
+        </Box>
 
         {/* Flow-Specific Payment Terms Override */}
         {onUpdatePaymentTerms && (
@@ -321,11 +313,10 @@ export const PaymentInfoStepConfig: React.FC<PaymentInfoStepConfigProps> = ({
         )}
 
         {/* Payment Processing */}
-        <ModernCard variant="glass" size="medium" animation="none">
-          <Box sx={{ p: 3 }}>
-            <Typography variant="subtitle1" gutterBottom>
-              Payment Processing
-            </Typography>
+        <Box sx={{ borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
+          <Typography variant="subtitle1" gutterBottom>
+            Payment Processing
+          </Typography>
             
             <Stack spacing={2}>
               <Box display="flex" alignItems="center" gap={1}>
@@ -360,18 +351,16 @@ export const PaymentInfoStepConfig: React.FC<PaymentInfoStepConfigProps> = ({
                 Enable installment payment options for clients
               </Typography>
             </Stack>
-          </Box>
-        </ModernCard>
+        </Box>
 
         {/* Quote Request Options */}
-        <ModernCard variant="glass" size="medium" animation="none">
-          <Box sx={{ p: 3 }}>
-            <Box display="flex" alignItems="center" gap={1} mb={2}>
-              <CheckIcon color="primary" />
-              <Typography variant="subtitle1">
-                Quote Request Options
-              </Typography>
-            </Box>
+        <Box sx={{ borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
+          <Box display="flex" alignItems="center" gap={1} mb={2}>
+            <CheckIcon color="primary" />
+            <Typography variant="subtitle1">
+              Quote Request Options
+            </Typography>
+          </Box>
             
             <Stack spacing={2}>
               <Box display="flex" alignItems="center" gap={1}>
@@ -420,15 +409,13 @@ export const PaymentInfoStepConfig: React.FC<PaymentInfoStepConfigProps> = ({
                 </>
               )}
             </Stack>
-          </Box>
-        </ModernCard>
+        </Box>
 
         {/* Payment Terms */}
-        <ModernCard variant="glass" size="medium" animation="none">
-          <Box sx={{ p: 3 }}>
-            <Typography variant="subtitle1" gutterBottom>
-              Payment Terms & Conditions
-            </Typography>
+        <Box sx={{ borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
+          <Typography variant="subtitle1" gutterBottom>
+            Payment Terms & Conditions
+          </Typography>
             
             <TextField
               fullWidth
@@ -440,15 +427,13 @@ export const PaymentInfoStepConfig: React.FC<PaymentInfoStepConfigProps> = ({
               helperText="Additional terms and conditions regarding payment (optional)"
               placeholder="Enter payment terms, cancellation policy, refund information, etc."
             />
-          </Box>
-        </ModernCard>
+        </Box>
 
         {/* Configuration Summary */}
-        <ModernCard variant="glass" size="medium" animation="none">
-          <Box sx={{ p: 3 }}>
-            <Typography variant="subtitle1" gutterBottom>
-              Configuration Summary
-            </Typography>
+        <Box sx={{ borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
+          <Typography variant="subtitle1" gutterBottom>
+            Configuration Summary
+          </Typography>
 
             <Stack spacing={1}>
               <Typography variant="body2">
@@ -485,8 +470,7 @@ export const PaymentInfoStepConfig: React.FC<PaymentInfoStepConfigProps> = ({
                 </Typography>
               </Alert>
             </Stack>
-          </Box>
-        </ModernCard>
+        </Box>
 
         {/* Actions */}
         <Box display="flex" gap={2}>

@@ -2,12 +2,19 @@
 
 import React from 'react';
 import { Box, Typography, Container } from '@mui/material';
+import { SEO } from '../../hooks/useSEO';
 import { CommunicationHistory } from '../../components/communications';
 import { AnimatedElement } from '../../design-system/components/AnimatedElement';
 
 export const RecordsPage: React.FC = () => {
   return (
-    <Container maxWidth="xl" sx={{ py: 3 }}>
+    <>
+      <SEO
+        title="Communication Records | LifePlace Alfonso"
+        description="View your communication records."
+        noIndex={true}
+      />
+      <Container maxWidth="xl" sx={{ py: 3 }}>
       <AnimatedElement animation="fadeIn" delay={100}>
         <Box sx={{ mb: 4 }}>
           <Typography variant="h4" sx={{ fontWeight: 600, mb: 1, color: 'primary.main' }}>
@@ -19,10 +26,11 @@ export const RecordsPage: React.FC = () => {
         </Box>
       </AnimatedElement>
 
-      <AnimatedElement animation="slideUp" delay={200}>
-        <CommunicationHistory />
-      </AnimatedElement>
-    </Container>
+        <AnimatedElement animation="slideUp" delay={200}>
+          <CommunicationHistory />
+        </AnimatedElement>
+      </Container>
+    </>
   );
 };
 

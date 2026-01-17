@@ -23,8 +23,8 @@ export const BookingLayout: React.FC<BookingLayoutProps> = ({
       sx={{ 
         display: 'flex', 
         flexDirection: 'column', 
-        minHeight: '100vh', 
-        width: '100vw',
+        minHeight: '100vh',
+        width: '100%',
         overflow: 'hidden',
         position: 'relative',
         // Original lighter background like PublicLayout had before
@@ -60,7 +60,7 @@ export const BookingLayout: React.FC<BookingLayoutProps> = ({
         component="main"
         sx={{
           flex: 1,
-          width: '100vw',
+          width: '100%',
           display: 'flex',
           flexDirection: 'column',
           pt: { xs: '60px', md: '64px' }, // Zero gap below fixed header

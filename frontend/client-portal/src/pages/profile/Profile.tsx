@@ -26,6 +26,7 @@ import {
   Security as SecurityIcon,
   Notifications as NotificationsIcon,
 } from '@mui/icons-material';
+import { SEO } from '../../hooks/useSEO';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToastActions } from '../../contexts/ToastContext';
 import { GlassCard } from '../../design-system/components/GlassCard';
@@ -130,18 +131,31 @@ const Profile: React.FC = () => {
 
   if (!user) {
     return (
-      <AnimatedElement animation="fadeIn">
-        <GlassCard variant="light" intensity="subtle" sx={{ p: 4, textAlign: 'center' }}>
-          <Typography variant="h6" color="text.secondary">
-            Loading profile...
-          </Typography>
-        </GlassCard>
-      </AnimatedElement>
+      <>
+        <SEO
+          title="Profile | LifePlace Alfonso"
+          description="Your LifePlace Alfonso profile."
+          noIndex={true}
+        />
+        <AnimatedElement animation="fadeIn">
+          <GlassCard variant="light" intensity="subtle" sx={{ p: 4, textAlign: 'center' }}>
+            <Typography variant="h6" color="text.secondary">
+              Loading profile...
+            </Typography>
+          </GlassCard>
+        </AnimatedElement>
+      </>
     );
   }
 
   return (
-    <Box>
+    <>
+      <SEO
+        title="Profile | LifePlace Alfonso"
+        description="Your LifePlace Alfonso profile."
+        noIndex={true}
+      />
+      <Box>
       {/* Header */}
       <AnimatedElement animation="slideDown" delay={100}>
         <Box sx={{ mb: 4 }}>
@@ -489,7 +503,8 @@ const Profile: React.FC = () => {
         open={notificationPreferencesOpen}
         onClose={() => setNotificationPreferencesOpen(false)}
       />
-    </Box>
+      </Box>
+    </>
   );
 };
 

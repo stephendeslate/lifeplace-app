@@ -139,14 +139,11 @@ export const ProgressiveForm: React.FC<ProgressiveFormProps> = ({
         onChange={() => toggleSection(section.id)}
         sx={{
           mb: 2,
-          boxShadow: theme.shadows[1],
+          border: `1px solid ${alpha(theme.palette.divider, 0.2)}`,
           '&:before': { display: 'none' },
           borderRadius: 2,
           overflow: 'hidden',
-          transition: 'all 0.3s',
-          ...(isExpanded && {
-            boxShadow: theme.shadows[3],
-          }),
+          transition: 'background-color 0.2s',
         }}
       >
         <AccordionSummary
@@ -417,10 +414,6 @@ export const ProgressiveForm: React.FC<ProgressiveFormProps> = ({
           size="large"
           sx={{
             minWidth: 160,
-            boxShadow: theme.shadows[2],
-            '&:hover': {
-              boxShadow: theme.shadows[4],
-            },
           }}
         >
           {autoSaveState.isSaving ? 'Saving...' : 'Save All Changes'}

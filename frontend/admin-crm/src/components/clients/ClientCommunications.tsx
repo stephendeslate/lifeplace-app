@@ -231,7 +231,7 @@ export const ClientCommunications: React.FC<ClientCommunicationsProps> = ({
         </Paper>
       ) : (
         <TableContainer component={Paper}>
-          <Table>
+          <Table size="small">
             <TableHead>
               <TableRow>
                 <TableCell>Date/Time</TableCell>

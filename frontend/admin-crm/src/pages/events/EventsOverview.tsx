@@ -1,5 +1,4 @@
-// Modern Events Overview Page
-// Completely modernized with ModernDesignSystem components and no animations
+// Events Overview - Flat design matching Analytics page style
 
 import React, { useEffect, useState } from 'react';
 import {
@@ -26,17 +25,19 @@ import {
   TextField,
   Typography,
   LinearProgress,
+  CircularProgress,
 } from '@mui/material';
 import {
   Add as AddIcon,
   MoreVert as MoreVertIcon,
   EventNote as EventIcon,
-  Person as PersonIcon,
   Search as SearchIcon,
   TrendingUp as TrendingUpIcon,
   CalendarToday,
   Visibility as VisibilityIcon,
   Timeline as TimelineIcon,
+  Refresh as RefreshIcon,
+  FileDownload as ExportIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useLayout } from '../../contexts/LayoutContext';
@@ -47,20 +48,7 @@ import { EventForm } from '../../components/events/EventForm';
 import { eventsApi } from '../../apis/events.api';
 import type { Event, EventFilters, CreateEventData, EventStatus } from '../../types/events.types';
 import { EVENT_STATUSES } from '../../types/events.types';
-
-// Modern Design System imports
-import { 
-  ModernOverviewLayout,
-  ModernGlassCard,
-  ModernOverviewHeader,
-  createRefreshAction, 
-  createExportAction, 
-  createAddAction,
-  ModernEmptyState,
-  ModernLoadingSpinner
-} from '../../components/common/ModernDesignSystem';
-import { tokens } from '../../design-system';
-import { glassPresets } from '../../design-system/utils/glassmorphism';
+import { ModernPageLayout, ModernPageHeader, ModernEmptyState } from '../../components/common';
 
 export const EventsOverview: React.FC = () => {
   const navigate = useNavigate();
@@ -216,43 +204,42 @@ export const EventsOverview: React.FC = () => {
 
   if (isLoadingEvents) {
     return (
-      <ModernOverviewLayout>
-        <ModernLoadingSpinner
-          size={48}
-          message="Loading events..."
-          variant="circular"
-          glass
-        />
-      </ModernOverviewLayout>
+      <ModernPageLayout backgroundPattern="default">
+        <Box display="flex" justifyContent="center" alignItems="center" minHeight={400}>
+          <CircularProgress />
+        </Box>
+      </ModernPageLayout>
     );
   }
 
   return (
-    <ModernOverviewLayout>
-        {/* Modern Overview Header */}
-        <ModernOverviewHeader
+    <ModernPageLayout backgroundPattern="default">
+        {/* Page Header - flat style */}
+        <ModernPageHeader
           title="Events"
           subtitle={`${filteredCount} event${filteredCount !== 1 ? 's' : ''} found`}
           icon={<CalendarToday />}
-          primaryAction={createAddAction('Add Event', () => setCreateDialogOpen(true))}
+          size="medium"
+          primaryAction={{
+            label: 'Add Event',
+            icon: <AddIcon />,
+            onClick: () => setCreateDialogOpen(true),
+            variant: 'contained',
+            color: 'primary',
+          }}
           secondaryActions={[
-            createRefreshAction(() => window.location.reload()),
-            createExportAction(handleExport)
-          ]}
-          stats={[
-            { label: 'Total Events', value: filteredCount },
-            { 
-              label: 'Confirmed', 
-              value: events?.filter(e => e.status === 'CONFIRMED').length || 0
-            },
-            { 
-              label: 'Leads', 
-              value: events?.filter(e => e.status === 'LEAD').length || 0
+            {
+              label: 'Export',
+              icon: <ExportIcon />,
+              onClick: handleExport,
+              variant: 'outlined',
             },
             {
-              label: 'Completed',
-              value: events?.filter(e => e.status === 'COMPLETED').length || 0
-            }
+              label: 'Refresh',
+              icon: <RefreshIcon />,
+              onClick: () => window.location.reload(),
+              variant: 'outlined',
+            },
           ]}
         />
 
@@ -277,197 +264,75 @@ export const EventsOverview: React.FC = () => {
               type: 'pro'
             }}
             size="medium"
-            illustration="gradient"
           />
         ) : (
           <>
-            {/* Modern Filters Card */}
-            <ModernGlassCard 
-              size="medium" 
-              sx={{ 
-                mb: 4,
-                position: 'relative',
-                '&::before': {
-                  content: '""',
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  background: `linear-gradient(135deg, ${tokens.color.primary[500]}03 0%, ${tokens.color.success[500]}02 100%)`,
-                  borderRadius: tokens.spacing.radius.xxl,
-                  pointerEvents: 'none',
-                }
-              }}
-            >
-              <Box sx={{ position: 'relative', zIndex: 1 }}>
-                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems="center">
-                  <TextField
-                    size="small"
-                    placeholder="Search events..."
-                    value={searchValue}
-                    onChange={(e) => setSearchValue(e.target.value)}
-                    InputProps={{
-                      startAdornment: <SearchIcon color="action" sx={{ mr: 1 }} />
-                    }}
-                    sx={{ 
-                      flex: 1, 
-                      minWidth: 200,
-                      '& .MuiOutlinedInput-root': {
-                        ...glassPresets.light,
-                        border: `1px solid ${tokens.color.borders.glass}`,
-                        borderRadius: tokens.spacing.radius.full,
-                        transition: 'all 0.2s ease-in-out',
-                        
-                        '&:hover': {
-                          border: `1px solid ${tokens.color.primary[500]}40`,
-                        },
-                        
-                        '&.Mui-focused': {
-                          ...glassPresets.medium,
-                          border: `1px solid ${tokens.color.primary[500]}60`,
-                          boxShadow: `0 0 0 3px ${tokens.color.primary[500]}10`,
-                        }
-                      }
-                    }}
-                  />
-                  
-                  <FormControl size="small" sx={{ minWidth: 140 }}>
-                    <InputLabel>Status</InputLabel>
-                    <Select
-                      value={filters.status || 'all'}
-                      label="Status"
-                      onChange={(e) => handleFilterChange('status', e.target.value)}
-                      sx={{
-                        '& .MuiOutlinedInput-root': {
-                          ...glassPresets.light,
-                          border: `1px solid ${tokens.color.borders.glass}`,
-                          borderRadius: tokens.spacing.radius.lg,
-                        }
-                      }}
-                    >
-                      <MenuItem value="all">All Status</MenuItem>
-                      {EVENT_STATUSES.map((status) => (
-                        <MenuItem key={status.value} value={status.value}>
-                          {status.label}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-
-                  <FormControl size="small" sx={{ minWidth: 140 }}>
-                    <InputLabel>Event Type</InputLabel>
-                    <Select
-                      value={filters.event_type || 'all'}
-                      label="Event Type"
-                      onChange={(e) => handleFilterChange('event_type', String(e.target.value))}
-                      sx={{
-                        '& .MuiOutlinedInput-root': {
-                          ...glassPresets.light,
-                          border: `1px solid ${tokens.color.borders.glass}`,
-                          borderRadius: tokens.spacing.radius.lg,
-                        }
-                      }}
-                    >
-                      <MenuItem value="all">All Types</MenuItem>
-                      {eventTypes.map((type) => (
-                        <MenuItem key={type.id} value={type.id.toString()}>
-                          {type.name}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                  
-                  {hasActiveFilters && (
-                    <Button 
-                      variant="outlined" 
-                      size="small" 
-                      onClick={() => {
-                        setFilters({});
-                        setSearchValue('');
-                      }}
-                      sx={{
-                        ...glassPresets.light,
-                        border: `1px solid ${tokens.color.warning[500]}30`,
-                        color: tokens.color.warning[600],
-                        borderRadius: tokens.spacing.radius.full,
-                        
-                        '&:hover': {
-                          ...glassPresets.medium,
-                          border: `1px solid ${tokens.color.warning[500]}50`,
-                        }
-                      }}
-                    >
-                      Clear Filters
-                    </Button>
-                  )}
-                </Stack>
-              </Box>
-            </ModernGlassCard>
-
-            {/* Modern Events Table Card */}
-            <ModernGlassCard 
-              size="medium"
-              sx={{
-                position: 'relative',
-                overflow: 'hidden',
-                
-                '&::before': {
-                  content: '""',
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  background: `linear-gradient(135deg, ${tokens.color.primary[500]}02 0%, ${tokens.color.success[500]}01 100%)`,
-                  borderRadius: tokens.spacing.radius.xxl,
-                  pointerEvents: 'none',
-                }
-              }}
-            >
-              <Box sx={{ position: 'relative', zIndex: 1 }}>
-                <TableContainer 
-                  sx={{
-                    '& .MuiTable-root': {
-                      '& .MuiTableHead-root': {
-                        '& .MuiTableCell-head': {
-                          backgroundColor: 'transparent',
-                          borderBottom: `1px solid ${tokens.color.borders.glass}`,
-                          fontWeight: 600,
-                          color: tokens.color.neutral[700],
-                          fontSize: '0.875rem',
-                          textTransform: 'uppercase',
-                          letterSpacing: '0.05em',
-                          py: 2,
-                        }
-                      },
-                      
-                      '& .MuiTableBody-root': {
-                        '& .MuiTableRow-root': {
-                          transition: 'all 0.2s ease-in-out',
-                          cursor: 'pointer',
-                          
-                          '&:hover': {
-                            backgroundColor: `${tokens.color.primary[50]}40`,
-                            transform: 'translateY(-1px)',
-                            
-                            '& .action-button': {
-                              opacity: 1,
-                              transform: 'scale(1)',
-                            }
-                          },
-                          
-                          '& .MuiTableCell-body': {
-                            borderBottom: `1px solid ${tokens.color.borders.subtle}`,
-                            py: 2,
-                            fontSize: '0.875rem',
-                          }
-                        }
-                      }
-                    }
+            {/* Filters - flat style */}
+            <Box sx={{ mb: 3, p: 2, borderRadius: 1, bgcolor: 'action.hover' }}>
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems="center">
+                <TextField
+                  size="small"
+                  placeholder="Search events..."
+                  value={searchValue}
+                  onChange={(e) => setSearchValue(e.target.value)}
+                  InputProps={{
+                    startAdornment: <SearchIcon color="action" sx={{ mr: 1 }} />
                   }}
-                >
-                  <Table>
+                  sx={{ flex: 1, minWidth: 200 }}
+                />
+
+                <FormControl size="small" sx={{ minWidth: 140 }}>
+                  <InputLabel>Status</InputLabel>
+                  <Select
+                    value={filters.status || 'all'}
+                    label="Status"
+                    onChange={(e) => handleFilterChange('status', e.target.value)}
+                  >
+                    <MenuItem value="all">All Status</MenuItem>
+                    {EVENT_STATUSES.map((status) => (
+                      <MenuItem key={status.value} value={status.value}>
+                        {status.label}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+
+                <FormControl size="small" sx={{ minWidth: 140 }}>
+                  <InputLabel>Event Type</InputLabel>
+                  <Select
+                    value={filters.event_type || 'all'}
+                    label="Event Type"
+                    onChange={(e) => handleFilterChange('event_type', String(e.target.value))}
+                  >
+                    <MenuItem value="all">All Types</MenuItem>
+                    {eventTypes.map((type) => (
+                      <MenuItem key={type.id} value={type.id.toString()}>
+                        {type.name}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+
+                {hasActiveFilters && (
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    color="warning"
+                    onClick={() => {
+                      setFilters({});
+                      setSearchValue('');
+                    }}
+                  >
+                    Clear Filters
+                  </Button>
+                )}
+              </Stack>
+            </Box>
+
+            {/* Events Table - flat style */}
+            <Box sx={{ borderRadius: 1, bgcolor: 'background.paper', overflow: 'hidden' }}>
+              <TableContainer>
+                  <Table size="small">
                     <TableHead>
                       <TableRow>
                         <TableCell>Date & Time</TableCell>
@@ -518,12 +383,9 @@ export const EventsOverview: React.FC = () => {
                       </TableCell>
                       
                       <TableCell>
-                        <Box display="flex" alignItems="center" gap={1}>
-                          <PersonIcon color="action" fontSize="small" />
-                          <Typography variant="body2">
-                            {event.client_name || 'Unknown Client'}
-                          </Typography>
-                        </Box>
+                        <Typography variant="body2">
+                          {event.client_name || 'Unknown Client'}
+                        </Typography>
                       </TableCell>
                       
                       <TableCell>
@@ -597,16 +459,6 @@ export const EventsOverview: React.FC = () => {
                         <IconButton
                           size="small"
                           onClick={(e) => handleMenuOpen(e, event)}
-                          className="action-button"
-                          sx={{
-                            opacity: 0.7,
-                            transform: 'scale(0.9)',
-                            transition: 'all 0.2s ease-in-out',
-                            
-                            '&:hover': {
-                              backgroundColor: `${tokens.color.primary[500]}10`,
-                            }
-                          }}
                         >
                           <MoreVertIcon />
                         </IconButton>
@@ -616,92 +468,45 @@ export const EventsOverview: React.FC = () => {
                   </TableBody>
                   </Table>
                 </TableContainer>
-                
-                <Box
-                  sx={{
-                    ...glassPresets.light,
-                    borderTop: `1px solid ${tokens.color.borders.glass}`,
-                  }}
-                >
-                  <TablePagination
-                    rowsPerPageOptions={[10, 25, 50, 100]}
-                    component="div"
-                    count={totalEvents || 0}
-                    rowsPerPage={rowsPerPage}
-                    page={page}
-                    onPageChange={handleChangePage}
-                    onRowsPerPageChange={handleChangeRowsPerPage}
-                    sx={{
-                      '& .MuiTablePagination-toolbar': {
-                        backgroundColor: 'transparent',
-                      }
-                    }}
-                  />
-                </Box>
-              </Box>
-            </ModernGlassCard>
+
+                <TablePagination
+                  rowsPerPageOptions={[10, 25, 50, 100]}
+                  component="div"
+                  count={totalEvents || 0}
+                  rowsPerPage={rowsPerPage}
+                  page={page}
+                  onPageChange={handleChangePage}
+                  onRowsPerPageChange={handleChangeRowsPerPage}
+                />
+            </Box>
         </>
       )}
 
-          {/* Modern Action Menu */}
+        {/* Action Menu */}
         <Menu
           anchorEl={menuAnchor}
           open={Boolean(menuAnchor)}
           onClose={handleMenuClose}
-          PaperProps={{
-            sx: {
-              ...glassPresets.strong,
-              borderRadius: tokens.spacing.radius.xl,
-              border: `1px solid ${tokens.color.borders.glass}`,
-              boxShadow: tokens.shadow.glass.floating,
-              minWidth: 200,
-            }
-          }}
         >
-          <MenuItem 
+          <MenuItem
             onClick={() => {
               if (selectedEvent) navigate(`/events/${selectedEvent.id}`);
               handleMenuClose();
             }}
-            sx={{
-              borderRadius: tokens.spacing.radius.lg,
-              mx: 1,
-              mb: 0.5,
-              '&:hover': {
-                backgroundColor: `${tokens.color.primary[500]}10`,
-              }
-            }}
           >
-            <VisibilityIcon sx={{ mr: 1.5, fontSize: 18, color: tokens.color.primary[500] }} />
+            <VisibilityIcon sx={{ mr: 1.5, fontSize: 18 }} />
             <Typography variant="body2" fontWeight={500}>View Event Details</Typography>
           </MenuItem>
         </Menu>
 
-          {/* Modern Create Event Dialog */}
-        <Dialog 
-          open={createDialogOpen} 
-          onClose={() => setCreateDialogOpen(false)} 
-          maxWidth="md" 
+        {/* Create Event Dialog */}
+        <Dialog
+          open={createDialogOpen}
+          onClose={() => setCreateDialogOpen(false)}
+          maxWidth="md"
           fullWidth
-          PaperProps={{
-            sx: {
-              ...glassPresets.strong,
-              borderRadius: tokens.spacing.radius.xxl,
-              border: `1px solid ${tokens.color.borders.glass}`,
-              boxShadow: tokens.shadow.glass.floating,
-            }
-          }}
         >
-          <DialogTitle 
-            sx={{
-              background: `linear-gradient(135deg, ${tokens.color.primary[500]}08 0%, transparent 100%)`,
-              borderBottom: `1px solid ${tokens.color.borders.glass}`,
-              fontWeight: 700,
-              fontSize: '1.5rem',
-            }}
-          >
-            Create New Event
-          </DialogTitle>
+          <DialogTitle>Create New Event</DialogTitle>
           <DialogContent sx={{ p: 3 }}>
             <EventForm
               onSubmit={(data) => {
@@ -714,6 +519,6 @@ export const EventsOverview: React.FC = () => {
             />
           </DialogContent>
         </Dialog>
-    </ModernOverviewLayout>
+    </ModernPageLayout>
   );
 };

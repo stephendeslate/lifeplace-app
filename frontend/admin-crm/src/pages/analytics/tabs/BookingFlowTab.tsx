@@ -31,7 +31,7 @@ import {
   Legend,
 } from 'recharts';
 
-import { KPICard } from '../../../components/analytics';
+import { KPICard, KPIGrid } from '../../../components/analytics';
 import {
   useBookingFlowFunnel,
   useBookingFlowPerformance,
@@ -40,6 +40,8 @@ import {
 } from '../../../hooks/useAnalytics';
 import type { DateRange } from '../../../types/analytics.types';
 import { tokens } from '../../../design-system';
+import { formatCurrency } from '../../../utils/currency';
+import { formatPercent } from '../../../utils/formatters';
 
 interface BookingFlowTabProps {
   dateRange: DateRange;
@@ -52,15 +54,6 @@ export const BookingFlowTab: React.FC<BookingFlowTabProps> = ({ dateRange }) => 
   const { data: funnel, isLoading: funnelLoading } = useBookingFlowFunnel(dateRange, selectedFlowId);
   const { data: abandonment, isLoading: abandonmentLoading } = useBookingFlowAbandonment(dateRange, selectedFlowId);
   const { data: trends, isLoading: trendsLoading } = useBookingFlowTrends(dateRange, selectedFlowId);
-
-  const formatCurrency = (value: number) =>
-    new Intl.NumberFormat('en-PH', {
-      style: 'currency',
-      currency: 'PHP',
-      minimumFractionDigits: 0,
-    }).format(value);
-
-  const formatPercent = (value: number) => `${value.toFixed(1)}%`;
 
   // Calculate overall metrics
   const totalSessions = performance?.reduce((sum, f) => sum + f.total_sessions, 0) ?? 0;
@@ -76,17 +69,7 @@ export const BookingFlowTab: React.FC<BookingFlowTabProps> = ({ dateRange }) => 
         <Typography variant="h6" mb={2}>
           Overall Booking Flow Metrics
         </Typography>
-        <Box
-          display="flex"
-          gap={2}
-          sx={{
-            flexWrap: 'wrap',
-            '& > *': {
-              flex: '1 1 180px',
-              minWidth: 180,
-            },
-          }}
-        >
+        <KPIGrid>
           <KPICard
             title="Total Sessions"
             value={totalSessions}
@@ -117,7 +100,7 @@ export const BookingFlowTab: React.FC<BookingFlowTabProps> = ({ dateRange }) => 
             isLoading={performanceLoading}
             color="success"
           />
-        </Box>
+        </KPIGrid>
       </Box>
 
       {/* Flow Selector */}
@@ -149,7 +132,7 @@ export const BookingFlowTab: React.FC<BookingFlowTabProps> = ({ dateRange }) => 
         {funnelLoading ? (
           <Skeleton variant="rectangular" height={300} />
         ) : funnel && funnel.length > 0 ? (
-          <ModernCard variant="glass" size="medium">
+          <ModernCard variant="flat" size="medium">
             <Box sx={{ width: '100%', height: 350 }}>
               <ResponsiveContainer>
                 <BarChart
@@ -225,7 +208,7 @@ export const BookingFlowTab: React.FC<BookingFlowTabProps> = ({ dateRange }) => 
             </TableContainer>
           </ModernCard>
         ) : (
-          <ModernCard variant="glass" size="small" sx={{ textAlign: 'center' }}>
+          <ModernCard variant="flat" size="small" sx={{ textAlign: 'center' }}>
             <Typography color="text.secondary">
               No funnel data available for the selected period
             </Typography>
@@ -241,7 +224,7 @@ export const BookingFlowTab: React.FC<BookingFlowTabProps> = ({ dateRange }) => 
         {abandonmentLoading ? (
           <Skeleton variant="rectangular" height={200} />
         ) : abandonment && abandonment.by_step?.length > 0 ? (
-          <ModernCard variant="glass" size="medium">
+          <ModernCard variant="flat" size="medium">
             <Box display="flex" alignItems="center" gap={2} mb={2}>
               <Typography variant="body1">
                 Total Abandoned Sessions: <strong>{abandonment.total_abandoned}</strong>
@@ -279,7 +262,7 @@ export const BookingFlowTab: React.FC<BookingFlowTabProps> = ({ dateRange }) => 
             </TableContainer>
           </ModernCard>
         ) : (
-          <ModernCard variant="glass" size="small" sx={{ textAlign: 'center' }}>
+          <ModernCard variant="flat" size="small" sx={{ textAlign: 'center' }}>
             <Typography color="text.secondary">
               No abandonment data available for the selected period
             </Typography>
@@ -295,7 +278,7 @@ export const BookingFlowTab: React.FC<BookingFlowTabProps> = ({ dateRange }) => 
         {trendsLoading ? (
           <Skeleton variant="rectangular" height={300} />
         ) : trends && trends.length > 0 ? (
-          <ModernCard variant="glass" size="medium">
+          <ModernCard variant="flat" size="medium">
             <Box sx={{ width: '100%', height: 300 }}>
               <ResponsiveContainer>
                 <LineChart data={trends} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
@@ -347,7 +330,7 @@ export const BookingFlowTab: React.FC<BookingFlowTabProps> = ({ dateRange }) => 
             </Box>
           </ModernCard>
         ) : (
-          <ModernCard variant="glass" size="small" sx={{ textAlign: 'center' }}>
+          <ModernCard variant="flat" size="small" sx={{ textAlign: 'center' }}>
             <Typography color="text.secondary">
               No trend data available for the selected period
             </Typography>
@@ -363,7 +346,7 @@ export const BookingFlowTab: React.FC<BookingFlowTabProps> = ({ dateRange }) => 
         {performanceLoading ? (
           <Skeleton variant="rectangular" height={300} />
         ) : performance && performance.length > 0 ? (
-          <ModernCard variant="glass" size="medium">
+          <ModernCard variant="flat" size="medium">
             <TableContainer>
               <Table size="small">
               <TableHead>
@@ -411,7 +394,7 @@ export const BookingFlowTab: React.FC<BookingFlowTabProps> = ({ dateRange }) => 
             </TableContainer>
           </ModernCard>
         ) : (
-          <ModernCard variant="glass" size="small" sx={{ textAlign: 'center' }}>
+          <ModernCard variant="flat" size="small" sx={{ textAlign: 'center' }}>
             <Typography color="text.secondary">
               No booking flow performance data available
             </Typography>

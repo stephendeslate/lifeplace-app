@@ -1,7 +1,7 @@
 // frontend/admin-crm/src/utils/storage.test.ts
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { storage, STORAGE_KEYS, UserPreferences, TableSettings } from './storage'
+import { storage, STORAGE_KEYS, UserPreferences } from './storage'
 import type { User, AuthTokens } from '../types/auth.types'
 
 describe('Storage Utility', () => {

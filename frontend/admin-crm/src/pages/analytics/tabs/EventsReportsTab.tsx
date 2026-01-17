@@ -15,7 +15,7 @@ import {
 } from '@mui/material';
 import { ModernCard } from '../../../components/common/ModernCard';
 
-import { KPICard, PackageChart, PlaceholderCard } from '../../../components/analytics';
+import { KPICard, KPIGrid, PackageChart, PlaceholderCard } from '../../../components/analytics';
 import {
   useEventAttendance,
   usePackagePerformance,
@@ -23,6 +23,7 @@ import {
   useEventTypeBreakdown,
 } from '../../../hooks/useAnalytics';
 import type { DateRange } from '../../../types/analytics.types';
+import { formatCurrency } from '../../../utils/currency';
 
 interface EventsReportsTabProps {
   dateRange: DateRange;
@@ -34,13 +35,6 @@ export const EventsReportsTab: React.FC<EventsReportsTabProps> = ({ dateRange })
   const { data: feedback, isLoading: feedbackLoading } = useFeedbackScores(dateRange);
   const { data: eventTypes, isLoading: eventTypesLoading } = useEventTypeBreakdown(dateRange);
 
-  const formatCurrency = (value: number) =>
-    new Intl.NumberFormat('en-PH', {
-      style: 'currency',
-      currency: 'PHP',
-      minimumFractionDigits: 0,
-    }).format(value);
-
   const totalGuests = attendance?.reduce((sum, item) => sum + item.total_guests, 0) ?? 0;
 
   return (
@@ -50,15 +44,7 @@ export const EventsReportsTab: React.FC<EventsReportsTabProps> = ({ dateRange })
         <Typography variant="h6" mb={2}>
           Event Attendance
         </Typography>
-        <Box
-          display="flex"
-          gap={2}
-          mb={3}
-          sx={{
-            flexWrap: 'wrap',
-            '& > *': { flex: '1 1 200px', minWidth: 200 },
-          }}
-        >
+        <KPIGrid columns={2} minCardWidth={200}>
           <KPICard
             title="Total Guests"
             value={totalGuests}
@@ -71,12 +57,12 @@ export const EventsReportsTab: React.FC<EventsReportsTabProps> = ({ dateRange })
             isLoading={attendanceLoading}
             color="success"
           />
-        </Box>
+        </KPIGrid>
 
         {attendanceLoading ? (
           <Skeleton variant="rectangular" height={200} />
         ) : (
-          <ModernCard variant="glass" size="medium">
+          <ModernCard variant="flat" size="medium">
             <TableContainer>
               <Table size="small">
                 <TableHead>
@@ -126,7 +112,7 @@ export const EventsReportsTab: React.FC<EventsReportsTabProps> = ({ dateRange })
         {eventTypesLoading ? (
           <Skeleton variant="rectangular" height={200} />
         ) : (
-          <ModernCard variant="glass" size="medium">
+          <ModernCard variant="flat" size="medium">
             <TableContainer>
               <Table size="small">
                 <TableHead>
@@ -182,7 +168,7 @@ export const EventsReportsTab: React.FC<EventsReportsTabProps> = ({ dateRange })
             isLoading={feedbackLoading}
             color="primary"
           />
-          <ModernCard variant="glass" size="small" sx={{ flex: '1 1 180px', minWidth: 180 }}>
+          <ModernCard variant="flat" size="small" sx={{ flex: '1 1 180px', minWidth: 180 }}>
             <Typography variant="body2" color="text.secondary" mb={1}>
               Average Rating
             </Typography>
@@ -207,7 +193,7 @@ export const EventsReportsTab: React.FC<EventsReportsTabProps> = ({ dateRange })
         </Box>
 
         {!feedbackLoading && feedback && feedback.total_feedback > 0 && (
-          <ModernCard variant="glass" size="medium">
+          <ModernCard variant="flat" size="medium">
             <Typography variant="subtitle2" mb={2}>
               Rating Distribution
             </Typography>

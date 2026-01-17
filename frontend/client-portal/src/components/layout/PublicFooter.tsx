@@ -1,11 +1,12 @@
 // components/layout/PublicFooter.tsx
 
 import React from 'react';
+import { Link as RouterLink } from 'react-router-dom';
 import {
   Box,
   Container,
   Typography,
-  Link,
+  Link as MuiLink,
   IconButton,
   Divider,
   useTheme,
@@ -128,9 +129,10 @@ export const PublicFooter: React.FC = () => {
               </Typography>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                 {quickLinks.map((link) => (
-                  <Link
+                  <MuiLink
                     key={link.label}
-                    href={link.href}
+                    component={RouterLink}
+                    to={link.href}
                     sx={{
                       color: 'white',
                       textDecoration: 'none',
@@ -143,7 +145,7 @@ export const PublicFooter: React.FC = () => {
                     }}
                   >
                     {link.label}
-                  </Link>
+                  </MuiLink>
                 ))}
               </Box>
             </Box>
@@ -155,9 +157,10 @@ export const PublicFooter: React.FC = () => {
               </Typography>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                 {services.map((service) => (
-                  <Link
+                  <MuiLink
                     key={service.label}
-                    href={service.href}
+                    component={RouterLink}
+                    to={service.href}
                     sx={{
                       color: 'white',
                       textDecoration: 'none',
@@ -170,7 +173,7 @@ export const PublicFooter: React.FC = () => {
                     }}
                   >
                     {service.label}
-                  </Link>
+                  </MuiLink>
                 ))}
               </Box>
             </Box>
@@ -191,7 +194,7 @@ export const PublicFooter: React.FC = () => {
                         {contact.label}
                       </Typography>
                       {contact.href ? (
-                        <Link
+                        <MuiLink
                           href={contact.href}
                           sx={{
                             color: 'white',
@@ -204,7 +207,7 @@ export const PublicFooter: React.FC = () => {
                           }}
                         >
                           {contact.value}
-                        </Link>
+                        </MuiLink>
                       ) : (
                         <Typography variant="body2" sx={{ opacity: 0.9 }}>
                           {contact.value}
@@ -235,8 +238,9 @@ export const PublicFooter: React.FC = () => {
               © {new Date().getFullYear()} LifePlace Alfonso. All rights reserved.
             </Typography>
             <Box sx={{ display: 'flex', gap: 3 }}>
-              <Link
-                href="/privacy"
+              <MuiLink
+                component={RouterLink}
+                to="/privacy"
                 sx={{
                   color: 'white',
                   textDecoration: 'none',
@@ -249,9 +253,10 @@ export const PublicFooter: React.FC = () => {
                 }}
               >
                 Privacy Policy
-              </Link>
-              <Link
-                href="/terms"
+              </MuiLink>
+              <MuiLink
+                component={RouterLink}
+                to="/terms"
                 sx={{
                   color: 'white',
                   textDecoration: 'none',
@@ -264,7 +269,7 @@ export const PublicFooter: React.FC = () => {
                 }}
               >
                 Terms of Service
-              </Link>
+              </MuiLink>
             </Box>
           </Box>
         </AnimatedElement>

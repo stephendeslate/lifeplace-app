@@ -229,7 +229,7 @@ export const EventCommunications: React.FC<EventCommunicationsProps> = ({
         </Paper>
       ) : (
         <TableContainer component={Paper}>
-          <Table>
+          <Table size="small">
             <TableHead>
               <TableRow>
                 <TableCell>Date/Time</TableCell>

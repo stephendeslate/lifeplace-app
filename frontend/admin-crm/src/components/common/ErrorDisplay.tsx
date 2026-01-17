@@ -61,7 +61,7 @@ export const ErrorDisplay: React.FC<ErrorDisplayProps> = ({
     return (
       <Box sx={{ mb: 4 }}>
         <ModernCard
-          variant="glass"
+          variant="flat"
           color="error"
           sx={{
             borderLeft: `4px solid ${tokens.color.error[500]}`,

@@ -41,7 +41,8 @@ export const SmartCard: React.FC<SmartCardProps> = ({
       height: '100%',
       position: 'relative' as const,
       overflow: 'hidden',
-      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+      transition: 'background-color 0.2s ease-in-out',
+      border: `1px solid ${alpha(theme.palette.divider, 0.2)}`,
     };
 
     const variantStyles = {
@@ -49,35 +50,31 @@ export const SmartCard: React.FC<SmartCardProps> = ({
         bgcolor: 'background.paper',
       },
       glass: {
-        bgcolor: alpha(theme.palette.background.paper, 0.8),
-        backdropFilter: 'blur(20px)',
-        border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+        bgcolor: 'background.paper',
       },
       gradient: {
-        background: `linear-gradient(135deg, ${alpha(theme.palette.primary.light, 0.1)} 0%, ${alpha(theme.palette.secondary.light, 0.1)} 100%)`,
-        border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+        bgcolor: 'background.paper',
       },
       outlined: {
         bgcolor: 'transparent',
-        border: `2px solid ${alpha(theme.palette.divider, 0.3)}`,
+        border: `1px solid ${alpha(theme.palette.divider, 0.3)}`,
       },
     };
 
     const animationStyles = {
       'hover-lift': {
         '&:hover': {
-          transform: 'translateY(-8px)',
-          boxShadow: theme.shadows[8],
+          bgcolor: alpha(theme.palette.action.hover, 0.5),
         },
       },
       'hover-glow': {
         '&:hover': {
-          boxShadow: `0 0 20px ${alpha(theme.palette.primary.main, 0.3)}`,
+          bgcolor: alpha(theme.palette.action.hover, 0.5),
         },
       },
       'hover-scale': {
         '&:hover': {
-          transform: 'scale(1.02)',
+          bgcolor: alpha(theme.palette.action.hover, 0.5),
         },
       },
       none: {},
@@ -236,7 +233,7 @@ export const SmartCard: React.FC<SmartCardProps> = ({
 
   if (onClick) {
     return (
-      <Card elevation={2} sx={getCardStyles()}>
+      <Card elevation={0} sx={getCardStyles()}>
         <CardActionArea onClick={onClick} sx={{ height: '100%' }}>
           {cardContent}
         </CardActionArea>
@@ -245,7 +242,7 @@ export const SmartCard: React.FC<SmartCardProps> = ({
   }
 
   return (
-    <Card elevation={2} sx={getCardStyles()}>
+    <Card elevation={0} sx={getCardStyles()}>
       {cardContent}
     </Card>
   );
@@ -254,7 +251,7 @@ export const SmartCard: React.FC<SmartCardProps> = ({
 // Loading skeleton for SmartCard
 export const SmartCardSkeleton: React.FC = () => {
   return (
-    <Card elevation={2}>
+    <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider' }}>
       <CardContent sx={{ p: 3 }}>
         <Box display="flex" alignItems="center" gap={2} mb={2}>
           <Skeleton variant="circular" width={48} height={48} />

@@ -35,6 +35,7 @@ import {
   History as HistoryIcon,
   Update as UpdateIcon,
 } from '@mui/icons-material';
+import { SEO } from '../../hooks/useSEO';
 import { getRelativeTime } from '../../utils/eventHelpers';
 import { useAuth } from '../../contexts/AuthContext';
 import { useDashboardData } from '../../hooks/useDashboardData';
@@ -132,8 +133,14 @@ const Dashboard: React.FC = () => {
 
 
   return (
-    <Box sx={{ width: '100%' }}>
-      {/* Welcome Header */}
+    <>
+      <SEO
+        title="Dashboard | LifePlace Alfonso"
+        description="Your LifePlace Alfonso client dashboard."
+        noIndex={true}
+      />
+      <Box sx={{ width: '100%' }}>
+        {/* Welcome Header */}
       <Box sx={{ mb: 4 }}>
         <Typography variant="h4" sx={{ fontWeight: 600, mb: 1, color: 'primary.main' }}>
           Welcome back, {user?.first_name || 'Client'}! 🌿
@@ -735,15 +742,16 @@ const Dashboard: React.FC = () => {
         </GlassCard>
       </AnimatedElement>
 
-      {/* Quote Rejection Dialog */}
-      <QuoteRejectionDialog
-        open={rejectionDialog.open}
-        onClose={handleRejectionDialogClose}
-        onConfirm={handleQuoteRejection}
-        quoteName={rejectionDialog.quoteName || undefined}
-        isLoading={rejectQuoteMutation.isPending}
-      />
-    </Box>
+        {/* Quote Rejection Dialog */}
+        <QuoteRejectionDialog
+          open={rejectionDialog.open}
+          onClose={handleRejectionDialogClose}
+          onConfirm={handleQuoteRejection}
+          quoteName={rejectionDialog.quoteName || undefined}
+          isLoading={rejectQuoteMutation.isPending}
+        />
+      </Box>
+    </>
   );
 };
 

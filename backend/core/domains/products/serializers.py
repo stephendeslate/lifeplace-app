@@ -1,4 +1,6 @@
 # backend/core/domains/products/serializers.py
+import json
+
 from django.utils import timezone
 from rest_framework import serializers
 from django.utils.text import slugify
@@ -77,8 +79,29 @@ class ProductOptionSerializer(serializers.ModelSerializer):
     formatted_price = serializers.CharField(read_only=True)
     price_with_tax = serializers.DecimalField(max_digits=15, decimal_places=2, read_only=True)
     # Event types - ManyToMany field for filtering packages by event type
+    # Read: returns list of IDs via SerializerMethodField
+    # Write: accepts list of IDs via input_event_type_ids
     event_type_ids = serializers.SerializerMethodField()
     event_type_names = serializers.SerializerMethodField()
+    # Writable field for setting event types (accepts array of IDs or JSON string)
+    input_event_type_ids = serializers.ListField(
+        child=serializers.IntegerField(),
+        write_only=True,
+        required=False,
+        allow_empty=True,
+        help_text="List of event type IDs this package is available for"
+    )
+
+    def to_internal_value(self, data):
+        """Handle JSON string input for event_type_ids (from FormData)"""
+        if 'input_event_type_ids' in data and isinstance(data.get('input_event_type_ids'), str):
+            try:
+                # Parse JSON string to list
+                data = data.copy()  # Don't modify original
+                data['input_event_type_ids'] = json.loads(data['input_event_type_ids'])
+            except (json.JSONDecodeError, TypeError):
+                pass  # Let validation handle invalid format
+        return super().to_internal_value(data)
     # Capacity fields
     minimum_guests = serializers.IntegerField(read_only=True, allow_null=True)
     maximum_guests = serializers.IntegerField(read_only=True, allow_null=True)
@@ -98,6 +121,7 @@ class ProductOptionSerializer(serializers.ModelSerializer):
             'minimum_hours', 'maximum_hours', 'advance_booking_days', 'maximum_booking_days',
             'event_days', 'minimum_guests', 'maximum_guests',
             'sku', 'sort_order', 'event_types', 'event_type_ids', 'event_type_names',
+            'input_event_type_ids',  # Writable field for setting event types
             'formatted_price', 'price_with_tax',
             'featured_image', 'gallery_images',
             'effective_featured_image', 'effective_gallery_images',
@@ -105,6 +129,26 @@ class ProductOptionSerializer(serializers.ModelSerializer):
             'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
+
+    def create(self, validated_data):
+        """Handle creation with event_type_ids"""
+        event_type_ids = validated_data.pop('input_event_type_ids', None)
+        instance = super().create(validated_data)
+
+        if event_type_ids is not None:
+            instance.event_types.set(event_type_ids)
+
+        return instance
+
+    def update(self, instance, validated_data):
+        """Handle update with event_type_ids"""
+        event_type_ids = validated_data.pop('input_event_type_ids', None)
+        instance = super().update(instance, validated_data)
+
+        if event_type_ids is not None:
+            instance.event_types.set(event_type_ids)
+
+        return instance
 
     def get_event_type_ids(self, obj):
         """Return list of event type IDs this package is available for"""

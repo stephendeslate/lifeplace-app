@@ -115,13 +115,7 @@ export const FileViewerDialog: React.FC<FileViewerDialogProps> = ({
           setLoading(false);
         });
     }
-
-    return () => {
-      // Clean up blob URL if we created one (not for direct file_url images)
-      if (blobUrl && !(previewType === 'image' && file.file_url)) {
-        URL.revokeObjectURL(blobUrl);
-      }
-    };
+    // Cleanup is handled by the separate useEffect below that tracks blobUrl
   }, [open, file, getFileBlob]);
 
   // Clean up blob URL on unmount

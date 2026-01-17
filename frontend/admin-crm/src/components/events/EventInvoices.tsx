@@ -226,7 +226,7 @@ export const EventInvoices: React.FC<EventInvoicesProps> = ({ event }) => {
 
       {/* Invoices Table */}
       <TableContainer component={Paper}>
-        <Table>
+        <Table size="small">
           <TableHead>
             <TableRow>
               <TableCell>Invoice #</TableCell>

@@ -24,6 +24,7 @@ import {
   Visibility as VisibilityIcon,
   VisibilityOff as VisibilityOffIcon,
 } from '@mui/icons-material';
+import { tokens } from '../../design-system';
 import type { NoteCardProps } from '../../types/notes.types';
 
 export const NoteCard: React.FC<NoteCardProps> = ({
@@ -84,12 +85,13 @@ export const NoteCard: React.FC<NoteCardProps> = ({
     : note.content;
 
   return (
-    <Card 
-      variant="outlined" 
-      sx={{ 
+    <Card
+      variant="outlined"
+      sx={{
         mb: 1,
+        border: `1px solid ${tokens.color.neutral[200]}`,
         '&:hover': {
-          boxShadow: 1,
+          background: tokens.color.neutral[50],
         },
       }}
     >

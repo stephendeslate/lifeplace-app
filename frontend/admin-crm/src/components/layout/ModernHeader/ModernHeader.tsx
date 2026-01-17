@@ -1,4 +1,4 @@
-// Modern Header Component with Glassmorphism and Navigation
+// Modern Header Component with Clean, Flat Design
 // Complete modern header with navigation menu and mobile dropdown
 
 import React, { useState } from 'react';
@@ -47,10 +47,8 @@ import { useLayout } from '../../../contexts/LayoutContext';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useToastActions } from '../../../contexts/ToastContext';
 import { useTheme as useAppTheme } from '../../../contexts/ThemeContext';
-import { useBranding } from '../../../contexts/BrandingContext';
 import { NotificationBadge } from '../../notifications/NotificationBadge';
 import { tokens } from '../../../design-system';
-import { createGlassEffect, glassPresets } from '../../../design-system/utils/glassmorphism';
 import { createTransition } from '../../../design-system/utils/animations';
 
 // Navigation items configuration
@@ -77,7 +75,6 @@ export const ModernHeader: React.FC = () => {
   const authContext = useAuth();
   const toastContext = useToastActions();
   const appTheme = useAppTheme();
-  const branding = useBranding();
 
   const {
     headerHeight = 64
@@ -85,58 +82,21 @@ export const ModernHeader: React.FC = () => {
   const { user, logout } = authContext || {};
   const { showInfo } = toastContext || {};
 
-  // Brand colors from company settings (with fallbacks to design system)
-  const defaultGradient = `linear-gradient(135deg, ${tokens.color.primary[500]} 0%, ${tokens.color.primary[600]} 100%)`;
-  const defaultGradientHover = `linear-gradient(135deg, ${tokens.color.primary[600]} 0%, ${tokens.color.primary[700]} 100%)`;
-  const primaryColor = branding?.colors?.primary || tokens.color.primary[500];
-  const r = parseInt(primaryColor.slice(1, 3), 16);
-  const g = parseInt(primaryColor.slice(3, 5), 16);
-  const b = parseInt(primaryColor.slice(5, 7), 16);
-  const brandGradient = branding?.colors?.primaryGradient || defaultGradient;
-  const brandGradientHover = branding?.colors?.primaryGradientHover || defaultGradientHover;
-  const brandSubtle = `linear-gradient(135deg, rgba(${r}, ${g}, ${b}, 0.1) 0%, rgba(${r}, ${g}, ${b}, 0.05) 100%)`;
-  
   const [userMenuAnchor, setUserMenuAnchor] = useState<null | HTMLElement>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // Enhanced glass effect styles for header - theme aware
-  const headerGlassStyle = (() => {
+  // Simple flat header style - theme aware
+  const headerStyle = (() => {
     const isDark = appTheme.effectiveMode === 'dark';
-    
-    try {
-      const baseStyle = createGlassEffect({
-        opacity: isDark ? 0.9 : 0.85,
-        blur: 20,
-        saturation: 1.1,
-        borderOpacity: isDark ? 0.15 : 0.2,
-        shadowIntensity: isDark ? 'medium' : 'light'
-      });
-      
-      return {
-        ...baseStyle,
-        borderBottom: isDark 
-          ? `1px solid ${tokens.color.neutral[800]}` 
-          : '1px solid rgba(0, 0, 0, 0.08)',
-        backdropFilter: 'blur(20px) saturate(1.2)',
-        background: isDark 
-          ? 'rgba(10, 10, 10, 0.9)' 
-          : 'rgba(255, 255, 255, 0.85)',
-        boxShadow: isDark 
-          ? '0 2px 8px 0 rgba(0, 0, 0, 0.3)' 
-          : '0 2px 8px 0 rgba(0, 0, 0, 0.04)',
-      };
-    } catch {
-      // Fallback styling if glass effect fails
-      return {
-        borderBottom: isDark 
-          ? `1px solid ${tokens.color.neutral[800]}` 
-          : '1px solid rgba(0, 0, 0, 0.12)',
-        backdropFilter: 'blur(20px) saturate(1.1)',
-        background: isDark 
-          ? 'rgba(26, 26, 26, 0.95)' 
-          : 'rgba(255, 255, 255, 0.95)',
-      };
-    }
+
+    return {
+      borderBottom: isDark
+        ? `1px solid ${tokens.color.neutral[800]}`
+        : `1px solid ${tokens.color.neutral[200]}`,
+      background: isDark
+        ? tokens.color.neutral[900]
+        : 'white',
+    };
   })();
 
   // User menu handlers
@@ -200,20 +160,10 @@ export const ModernHeader: React.FC = () => {
         position="fixed"
         elevation={0}
         sx={{
-          ...headerGlassStyle,
+          ...headerStyle,
           zIndex: 1300,
           height: headerHeight,
-          transition: createTransition(['background', 'backdrop-filter', 'box-shadow'], 'fast'),
-          '&::before': {
-            content: '""',
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.02) 0%, rgba(16, 185, 129, 0.02) 100%)',
-            pointerEvents: 'none',
-          },
+          transition: createTransition(['background'], 'fast'),
         }}
       >
         <Toolbar 
@@ -231,23 +181,18 @@ export const ModernHeader: React.FC = () => {
                 <IconButton
                   edge="start"
                   onClick={toggleMobileMenu}
-                  sx={{ 
-                    ...glassPresets.light,
-                    borderRadius: tokens.spacing.radius.xl,
+                  sx={{
+                    borderRadius: tokens.spacing.radius.md,
                     width: 44,
                     height: 44,
-                    transition: createTransition(['all'], 'fast'),
-                    background: 'rgba(255, 255, 255, 0.6)',
-                    backdropFilter: 'blur(10px)',
-                    border: '1px solid rgba(255, 255, 255, 0.3)',
+                    transition: createTransition(['background'], 'fast'),
+                    background: tokens.color.neutral[100],
+                    border: `1px solid ${tokens.color.neutral[200]}`,
                     '&:hover': {
-                      ...glassPresets.medium,
-                      transform: 'translateY(-2px) scale(1.05)',
-                      boxShadow: '0 4px 12px rgba(99, 102, 241, 0.15)',
-                      background: 'rgba(255, 255, 255, 0.8)',
+                      background: tokens.color.neutral[200],
                     },
                     '&:active': {
-                      transform: 'scale(0.95)',
+                      background: tokens.color.neutral[300],
                     }
                   }}
                 >
@@ -256,15 +201,15 @@ export const ModernHeader: React.FC = () => {
               </Tooltip>
             )}
 
-            {/* Enhanced Brand with Gradient */}
+            {/* Brand */}
             <Box
               display="flex"
               alignItems="center"
-              sx={{ 
+              sx={{
                 cursor: 'pointer',
-                transition: createTransition('all', 'fast'),
+                transition: createTransition('opacity', 'fast'),
                 '&:hover': {
-                  transform: 'scale(1.03) translateY(-1px)',
+                  opacity: 0.8,
                 }
               }}
               onClick={() => navigate('/dashboard')}
@@ -274,14 +219,10 @@ export const ModernHeader: React.FC = () => {
                 component="div"
                 sx={{
                   fontWeight: 700,
-                  background: brandGradient,
-                  backgroundClip: 'text',
-                  WebkitBackgroundClip: 'text',
-                  color: 'transparent',
+                  color: tokens.color.primary[600],
                   whiteSpace: 'nowrap',
                   fontSize: { xs: '1.1rem', md: '1.35rem' },
                   letterSpacing: '-0.02em',
-                  textShadow: '0 2px 4px rgba(0,0,0,0.05)',
                 }}
               >
                 LifePlace Admin
@@ -306,17 +247,16 @@ export const ModernHeader: React.FC = () => {
                         fontSize: '0.875rem',
                         px: 2,
                         py: 1,
-                        borderRadius: tokens.spacing.radius.lg,
+                        borderRadius: tokens.spacing.radius.md,
                         position: 'relative',
-                        transition: createTransition(['all'], 'fast'),
+                        transition: createTransition(['background', 'color'], 'fast'),
                         background: isActive
-                          ? brandSubtle
+                          ? tokens.color.primary[50]
                           : 'transparent',
                         '&:hover': {
                           background: isActive
-                            ? brandGradientHover
-                            : 'rgba(0, 0, 0, 0.04)',
-                          transform: 'translateY(-1px)',
+                            ? tokens.color.primary[100]
+                            : tokens.color.neutral[100],
                         },
                         '&::after': isActive ? {
                           content: '""',
@@ -374,19 +314,16 @@ export const ModernHeader: React.FC = () => {
                 >
                   <Avatar
                     sx={{
-                      bgcolor: 'transparent',
+                      bgcolor: tokens.color.primary[500],
                       color: 'white',
                       width: 42,
                       height: 42,
                       fontSize: '0.875rem',
                       fontWeight: 600,
-                      background: brandGradient,
-                      border: `2px solid rgba(255, 255, 255, 0.9)`,
-                      transition: createTransition(['all'], 'fast'),
-                      boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
+                      border: `2px solid ${tokens.color.neutral[200]}`,
+                      transition: createTransition(['opacity'], 'fast'),
                       '&:hover': {
-                        transform: 'translateY(-2px) scale(1.05)',
-                        boxShadow: '0 4px 16px rgba(99, 102, 241, 0.3)',
+                        opacity: 0.9,
                       },
                     }}
                   >
@@ -396,7 +333,7 @@ export const ModernHeader: React.FC = () => {
               </IconButton>
             </Tooltip>
 
-            {/* Enhanced User Menu - Simplified for stability */}
+            {/* User Menu */}
             <Menu
               anchorEl={userMenuAnchor}
               open={Boolean(userMenuAnchor)}
@@ -408,27 +345,23 @@ export const ModernHeader: React.FC = () => {
                 sx: {
                   mt: 1.5,
                   minWidth: 240,
-                  borderRadius: tokens.spacing.radius.xl,
-                  boxShadow: appTheme.effectiveMode === 'dark' 
-                    ? '0 8px 32px rgba(0, 0, 0, 0.5)' 
-                    : '0 8px 32px rgba(0, 0, 0, 0.12)',
+                  borderRadius: tokens.spacing.radius.lg,
                   border: appTheme.effectiveMode === 'dark'
-                    ? '1px solid rgba(255, 255, 255, 0.1)'
-                    : '1px solid rgba(255, 255, 255, 0.8)',
+                    ? `1px solid ${tokens.color.neutral[700]}`
+                    : `1px solid ${tokens.color.neutral[200]}`,
                   background: appTheme.effectiveMode === 'dark'
-                    ? 'rgba(26, 26, 26, 0.95)'
-                    : 'rgba(255, 255, 255, 0.95)',
-                  backdropFilter: 'blur(20px)',
+                    ? tokens.color.neutral[900]
+                    : 'white',
                   overflow: 'hidden',
                 },
               }}
             >
               {/* User Info Header */}
-              <Box 
-                sx={{ 
-                  px: 2.5, 
+              <Box
+                sx={{
+                  px: 2.5,
                   py: 2.5,
-                  background: brandSubtle,
+                  background: tokens.color.neutral[50],
                 }}
               >
                 <Box display="flex" alignItems="center" gap={2}>
@@ -436,10 +369,9 @@ export const ModernHeader: React.FC = () => {
                     sx={{
                       width: 52,
                       height: 52,
-                      background: brandGradient,
+                      background: tokens.color.primary[500],
                       fontWeight: 600,
                       fontSize: '1rem',
-                      boxShadow: '0 4px 12px rgba(99, 102, 241, 0.2)',
                     }}
                   >
                     {getInitials(user?.first_name, user?.last_name, user?.email)}
@@ -478,9 +410,9 @@ export const ModernHeader: React.FC = () => {
                           mt: 0.5,
                           height: 20,
                           fontSize: '0.7rem',
-                          background: brandSubtle,
+                          background: tokens.color.primary[50],
                           color: tokens.color.primary[700],
-                          border: 'none',
+                          border: `1px solid ${tokens.color.primary[200]}`,
                         }}
                       />
                     )}
@@ -490,17 +422,16 @@ export const ModernHeader: React.FC = () => {
               
               <Divider sx={{ opacity: 0.1 }} />
 
-              {/* Menu Items with Enhanced Hover */}
+              {/* Menu Items */}
               <Box sx={{ py: 1 }}>
-                <MenuItem 
+                <MenuItem
                   onClick={handleSettingsClick}
                   sx={{
                     mx: 1,
-                    borderRadius: tokens.spacing.radius.lg,
-                    transition: createTransition(['all'], 'fast'),
+                    borderRadius: tokens.spacing.radius.md,
+                    transition: createTransition(['background'], 'fast'),
                     '&:hover': {
-                      background: brandSubtle,
-                      transform: 'translateX(4px)',
+                      background: tokens.color.neutral[100],
                     }
                   }}
                 >
@@ -510,16 +441,15 @@ export const ModernHeader: React.FC = () => {
                   <ListItemText>Account Settings</ListItemText>
                 </MenuItem>
 
-                {/* Enhanced Theme Toggle */}
-                <MenuItem 
+                {/* Theme Toggle */}
+                <MenuItem
                   onClick={handleThemeToggle}
                   sx={{
                     mx: 1,
-                    borderRadius: tokens.spacing.radius.lg,
-                    transition: createTransition(['all'], 'fast'),
+                    borderRadius: tokens.spacing.radius.md,
+                    transition: createTransition(['background'], 'fast'),
                     '&:hover': {
-                      background: brandSubtle,
-                      transform: 'translateX(4px)',
+                      background: tokens.color.neutral[100],
                     }
                   }}
                 >
@@ -546,17 +476,16 @@ export const ModernHeader: React.FC = () => {
 
                 <Divider sx={{ opacity: 0.1, my: 1 }} />
 
-                {/* Logout with Enhanced Hover */}
-                <MenuItem 
+                {/* Logout */}
+                <MenuItem
                   onClick={handleLogout}
                   sx={{
                     mx: 1,
-                    borderRadius: tokens.spacing.radius.lg,
-                    transition: createTransition(['all'], 'fast'),
+                    borderRadius: tokens.spacing.radius.md,
+                    transition: createTransition(['background', 'color'], 'fast'),
                     '&:hover': {
-                      background: `linear-gradient(135deg, ${tokens.color.error[500]}15 0%, ${tokens.color.error[500]}08 100%)`,
+                      background: tokens.color.error[50],
                       color: tokens.color.error[600],
-                      transform: 'translateX(4px)',
                       '& .MuiListItemIcon-root': {
                         color: tokens.color.error[600],
                       }
@@ -584,15 +513,12 @@ export const ModernHeader: React.FC = () => {
               left: 0,
               right: 0,
               zIndex: 1299,
-              ...headerGlassStyle,
               background: appTheme.effectiveMode === 'dark'
-                ? 'rgba(26, 26, 26, 0.98)'
-                : 'rgba(255, 255, 255, 0.98)',
-              backdropFilter: 'blur(30px)',
-              boxShadow: appTheme.effectiveMode === 'dark'
-                ? '0 8px 32px rgba(0, 0, 0, 0.4)'
-                : '0 8px 32px rgba(0, 0, 0, 0.12)',
-              borderTop: 'none',
+                ? tokens.color.neutral[900]
+                : 'white',
+              borderBottom: appTheme.effectiveMode === 'dark'
+                ? `1px solid ${tokens.color.neutral[800]}`
+                : `1px solid ${tokens.color.neutral[200]}`,
               maxHeight: `calc(100vh - ${headerHeight}px)`,
               overflowY: 'auto',
             }}
@@ -607,16 +533,16 @@ export const ModernHeader: React.FC = () => {
                     <ListItemButton
                       onClick={() => handleNavigate(item.path)}
                       sx={{
-                        borderRadius: tokens.spacing.radius.lg,
+                        borderRadius: tokens.spacing.radius.md,
                         py: 1.5,
-                        transition: createTransition(['all'], 'fast'),
+                        transition: createTransition(['background'], 'fast'),
                         background: isActive
-                          ? brandSubtle
+                          ? tokens.color.primary[50]
                           : 'transparent',
                         '&:hover': {
                           background: isActive
-                            ? brandGradientHover
-                            : 'rgba(0, 0, 0, 0.04)',
+                            ? tokens.color.primary[100]
+                            : tokens.color.neutral[100],
                         },
                       }}
                     >

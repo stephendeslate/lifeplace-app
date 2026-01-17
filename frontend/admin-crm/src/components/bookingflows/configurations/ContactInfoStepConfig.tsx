@@ -25,8 +25,6 @@ import {
   MenuItem,
 } from '@mui/material';
 
-// Modern Design System imports
-import { ModernCard } from '../../common/ModernCard';
 import {
   Add as AddIcon,
   Delete as DeleteIcon,
@@ -38,11 +36,13 @@ import {
   AccountCircle as AccountIcon,
   Edit as EditIcon,
 } from '@mui/icons-material';
-import type { 
-  BookingFlowStep, 
-  ContactInfoStepConfiguration 
+import type {
+  BookingFlowStep,
+  ContactInfoStepConfiguration
 } from '../../../types/bookingflows.types';
 import { useBookingFlowStepConfiguration } from '../../../hooks/useBookingFlows';
+import { useFormHandlers } from '../../../hooks/useFormHandlers';
+import { ConfigSection } from '../../common';
 
 interface ContactInfoStepConfigProps {
   step: BookingFlowStep;
@@ -102,6 +102,14 @@ export const ContactInfoStepConfig: React.FC<ContactInfoStepConfigProps> = ({
   const [formData, setFormData] = useState<ContactInfoConfigFormData>(defaultFormData);
   const [customFieldDialogOpen, setCustomFieldDialogOpen] = useState(false);
   const [editingField, setEditingField] = useState<CustomField | null>(null);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Use centralized form handlers
+  const { handleSwitchChange } = useFormHandlers(
+    setFormData,
+    errors,
+    setErrors
+  );
 
   const {
     updateConfiguration,
@@ -122,15 +130,6 @@ export const ContactInfoStepConfig: React.FC<ContactInfoStepConfigProps> = ({
       });
     }
   }, [config]);
-
-  const handleSwitchChange = (field: keyof ContactInfoConfigFormData) => (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: event.target.checked,
-    }));
-  };
 
   const handleAddCustomField = () => {
     setEditingField(null);
@@ -220,13 +219,8 @@ export const ContactInfoStepConfig: React.FC<ContactInfoStepConfigProps> = ({
 
       <Stack spacing={3}>
         {/* Standard Fields */}
-        <ModernCard variant="glass" size="medium" animation="none">
-          <Box sx={{ p: 3 }}>
-            <Typography variant="subtitle1" gutterBottom>
-              Standard Contact Fields
-            </Typography>
-            
-            <Stack spacing={2}>
+        <ConfigSection title="Standard Contact Fields">
+          <Stack spacing={2}>
               <Box display="flex" alignItems="center" gap={1}>
                 <PersonIcon color="primary" />
                 <FormControlLabel
@@ -297,27 +291,21 @@ export const ContactInfoStepConfig: React.FC<ContactInfoStepConfigProps> = ({
                 />
               </Box>
             </Stack>
-          </Box>
-        </ModernCard>
+        </ConfigSection>
 
         {/* Custom Fields */}
-        <ModernCard variant="glass" size="medium" animation="none">
-          <Box sx={{ p: 3 }}>
-            <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-              <Typography variant="subtitle1">
-                Custom Fields ({formData.custom_fields.length})
-              </Typography>
-              
-              <Button
-                variant="outlined"
-                startIcon={<AddIcon />}
-                onClick={handleAddCustomField}
-                size="small"
-                disabled={currentlyLoading}
-              >
-                Add Custom Field
-              </Button>
-            </Box>
+        <ConfigSection title={`Custom Fields (${formData.custom_fields.length})`}>
+          <Box display="flex" justifyContent="flex-end" mb={2}>
+            <Button
+              variant="outlined"
+              startIcon={<AddIcon />}
+              onClick={handleAddCustomField}
+              size="small"
+              disabled={currentlyLoading}
+            >
+              Add Custom Field
+            </Button>
+          </Box>
 
             {formData.custom_fields.length === 0 ? (
               <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
@@ -383,17 +371,11 @@ export const ContactInfoStepConfig: React.FC<ContactInfoStepConfigProps> = ({
                 ))}
               </List>
             )}
-          </Box>
-        </ModernCard>
+        </ConfigSection>
 
         {/* Account Creation */}
-        <ModernCard variant="glass" size="medium" animation="none">
-          <Box sx={{ p: 3 }}>
-            <Typography variant="subtitle1" gutterBottom>
-              Account Creation
-            </Typography>
-            
-            <Stack spacing={2}>
+        <ConfigSection title="Account Creation">
+          <Stack spacing={2}>
               <Box display="flex" alignItems="center" gap={1}>
                 <AccountIcon color="primary" />
                 <FormControlLabel
@@ -428,17 +410,11 @@ export const ContactInfoStepConfig: React.FC<ContactInfoStepConfigProps> = ({
                 Force all clients to create an account (only available if account creation is offered)
               </Typography>
             </Stack>
-          </Box>
-        </ModernCard>
+        </ConfigSection>
 
         {/* Configuration Summary */}
-        <ModernCard variant="glass" size="medium" animation="none">
-          <Box sx={{ p: 3 }}>
-            <Typography variant="subtitle1" gutterBottom>
-              Configuration Summary
-            </Typography>
-            
-            <Stack spacing={1}>
+        <ConfigSection title="Configuration Summary">
+          <Stack spacing={1}>
               <Typography variant="body2">
                 <strong>Required Fields:</strong> {getRequiredFieldsCount()} total
               </Typography>
@@ -471,8 +447,7 @@ export const ContactInfoStepConfig: React.FC<ContactInfoStepConfigProps> = ({
                 }
               </Typography>
             </Stack>
-          </Box>
-        </ModernCard>
+        </ConfigSection>
 
         {/* Actions */}
         <Box display="flex" gap={2}>

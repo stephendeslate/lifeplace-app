@@ -299,7 +299,7 @@ export const EventFiles: React.FC<EventFilesProps> = ({ event }) => {
 
       {/* Files Table */}
       <TableContainer component={Paper}>
-        <Table>
+        <Table size="small">
           <TableHead>
             <TableRow>
               <TableCell>File Name</TableCell>

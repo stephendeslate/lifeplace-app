@@ -1,5 +1,5 @@
-// Modern Client Profile Page
-// Completely modernized with ModernDesignSystem components and consistent patterns
+// Client Profile Page
+// Flat, simple styling consistent with Analytics page pattern
 
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -29,6 +29,7 @@ import {
   TableRow,
   TableCell,
   TableBody,
+  CircularProgress,
 } from '@mui/material';
 import {
   ArrowBack as ArrowBackIcon,
@@ -78,15 +79,10 @@ import {
 } from '../../components/common';
 import {
   ModernPageLayout,
-  ModernCard,
   ModernEmptyState,
-  ModernLoadingSpinner,
   ModernPageHeader,
   createRefreshAction,
 } from '../../components/common/ModernDesignSystem';
-import { tokens } from '../../design-system';
-import { glassPresets } from '../../design-system/utils/glassmorphism';
-import { createTransition } from '../../design-system/utils/animations';
 import { formatCurrency } from '../../utils/currency';
 import { useCurrencySettings } from '../../hooks/useCurrency';
 
@@ -358,12 +354,9 @@ export const ClientProfile: React.FC = () => {
   if (isLoading) {
     return (
       <ModernPageLayout backgroundPattern="default">
-        <ModernLoadingSpinner
-          size={48}
-          message="Loading client profile..."
-          variant="circular"
-          glass
-        />
+        <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
+          <CircularProgress />
+        </Box>
       </ModernPageLayout>
     );
   }
@@ -394,7 +387,6 @@ export const ClientProfile: React.FC = () => {
             color: 'primary'
           }}
           size="medium"
-          illustration="minimal"
         />
       </ModernPageLayout>
     );
@@ -413,10 +405,9 @@ export const ClientProfile: React.FC = () => {
             sx={{
               width: 56,
               height: 56,
-              background: `linear-gradient(135deg, ${tokens.color.primary[500]} 0%, ${tokens.color.secondary[500]} 100%)`,
+              bgcolor: 'primary.main',
               fontSize: '1.5rem',
               fontWeight: 700,
-              boxShadow: `0 8px 32px ${tokens.color.primary[500]}25`,
             }}
           >
             {client.first_name?.charAt(0)}{client.last_name?.charAt(0)}
@@ -478,11 +469,7 @@ export const ClientProfile: React.FC = () => {
         open={Boolean(anchorEl)}
         onClose={handleMenuClose}
         PaperProps={{
-          sx: {
-            ...glassPresets.medium,
-            border: `1px solid ${tokens.color.borders.glass}`,
-            borderRadius: tokens.spacing.radius.lg,
-          }
+          sx: { borderRadius: 1 }
         }}
       >
         <MenuItem onClick={handleEditClient}>
@@ -519,40 +506,11 @@ export const ClientProfile: React.FC = () => {
       >
         {/* Contact Information */}
         <Box sx={{ flex: 1 }}>
-          <ModernCard
-            variant="glass"
-            size="large"
-            interactive={false}
-            animation="none"
-            title="Contact Information"
-            sx={{
-              '&::before': {
-                background: `linear-gradient(135deg, ${tokens.color.primary[500]}08 0%, ${tokens.color.info[500]}06 100%)`,
-              }
-            }}
-          >
+          <Box sx={{ borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
             <Stack spacing={3}>
               <Box display="flex" alignItems="center" gap={2}>
-                <Box
-                  sx={{
-                    p: 1.5,
-                    borderRadius: tokens.spacing.radius.lg,
-                    backgroundColor: `${tokens.color.primary[500]}15`,
-                    color: tokens.color.primary[600],
-                  }}
-                >
-                  <PersonIcon />
-                </Box>
-                <Typography
-                  variant="h6"
-                  sx={{
-                    background: `linear-gradient(135deg, ${tokens.color.primary[600]}, ${tokens.color.primary[700]})`,
-                    backgroundClip: 'text',
-                    WebkitBackgroundClip: 'text',
-                    color: 'transparent',
-                    fontWeight: 600,
-                  }}
-                >
+                <PersonIcon color="primary" />
+                <Typography variant="h6" fontWeight={600}>
                   Contact Details
                 </Typography>
               </Box>
@@ -563,15 +521,7 @@ export const ClientProfile: React.FC = () => {
                     Email Address
                   </Typography>
                   <Box display="flex" alignItems="center" gap={2}>
-                    <Box
-                      sx={{
-                        p: 1,
-                        borderRadius: tokens.spacing.radius.full,
-                        backgroundColor: `${tokens.color.info[500]}15`,
-                      }}
-                    >
-                      <EmailIcon sx={{ fontSize: 16, color: tokens.color.info[600] }} />
-                    </Box>
+                    <EmailIcon color="action" sx={{ fontSize: 20 }} />
                     <Typography variant="body1" fontWeight="medium">
                       {client.email}
                     </Typography>
@@ -584,15 +534,7 @@ export const ClientProfile: React.FC = () => {
                       Phone Number
                     </Typography>
                     <Box display="flex" alignItems="center" gap={2}>
-                      <Box
-                        sx={{
-                          p: 1,
-                          borderRadius: tokens.spacing.radius.full,
-                          backgroundColor: `${tokens.color.success[500]}15`,
-                        }}
-                      >
-                        <PhoneIcon sx={{ fontSize: 16, color: tokens.color.success[600] }} />
-                      </Box>
+                      <PhoneIcon color="action" sx={{ fontSize: 20 }} />
                       <Typography variant="body1" fontWeight="medium">
                         {client.profile.phone}
                       </Typography>
@@ -606,15 +548,7 @@ export const ClientProfile: React.FC = () => {
                       Company
                     </Typography>
                     <Box display="flex" alignItems="center" gap={2}>
-                      <Box
-                        sx={{
-                          p: 1,
-                          borderRadius: tokens.spacing.radius.full,
-                          backgroundColor: `${tokens.color.warning[500]}15`,
-                        }}
-                      >
-                        <BusinessIcon sx={{ fontSize: 16, color: tokens.color.warning[600] }} />
-                      </Box>
+                      <BusinessIcon color="action" sx={{ fontSize: 20 }} />
                       <Typography variant="body1" fontWeight="medium">
                         {client.profile.company}
                       </Typography>
@@ -623,45 +557,16 @@ export const ClientProfile: React.FC = () => {
                 )}
               </Stack>
             </Stack>
-          </ModernCard>
+          </Box>
         </Box>
 
         {/* Client Statistics */}
         <Box sx={{ flex: 1 }}>
-          <ModernCard
-            variant="glass"
-            size="large"
-            interactive={false}
-            animation="none"
-            title="Client Statistics"
-            sx={{
-              '&::before': {
-                background: `linear-gradient(135deg, ${tokens.color.success[500]}08 0%, ${tokens.color.secondary[500]}06 100%)`,
-              }
-            }}
-          >
+          <Box sx={{ borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
             <Stack spacing={3}>
               <Box display="flex" alignItems="center" gap={2}>
-                <Box
-                  sx={{
-                    p: 1.5,
-                    borderRadius: tokens.spacing.radius.lg,
-                    backgroundColor: `${tokens.color.success[500]}15`,
-                    color: tokens.color.success[600],
-                  }}
-                >
-                  <TrendingUpIcon />
-                </Box>
-                <Typography
-                  variant="h6"
-                  sx={{
-                    background: `linear-gradient(135deg, ${tokens.color.success[600]}, ${tokens.color.success[700]})`,
-                    backgroundClip: 'text',
-                    WebkitBackgroundClip: 'text',
-                    color: 'transparent',
-                    fontWeight: 600,
-                  }}
-                >
+                <TrendingUpIcon color="primary" />
+                <Typography variant="h6" fontWeight={600}>
                   Performance
                 </Typography>
               </Box>
@@ -671,16 +576,7 @@ export const ClientProfile: React.FC = () => {
                   <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 0.5 }}>
                     Total Events
                   </Typography>
-                  <Typography
-                    variant="h4"
-                    sx={{
-                      background: `linear-gradient(135deg, ${tokens.color.primary[600]}, ${tokens.color.success[600]})`,
-                      backgroundClip: 'text',
-                      WebkitBackgroundClip: 'text',
-                      color: 'transparent',
-                      fontWeight: 700,
-                    }}
-                  >
+                  <Typography variant="h4" color="primary.main" fontWeight={700}>
                     {events.length}
                   </Typography>
                 </Box>
@@ -689,16 +585,7 @@ export const ClientProfile: React.FC = () => {
                   <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 0.5 }}>
                     Lifetime Value
                   </Typography>
-                  <Typography
-                    variant="h4"
-                    sx={{
-                      background: `linear-gradient(135deg, ${tokens.color.success[600]}, ${tokens.color.primary[600]})`,
-                      backgroundClip: 'text',
-                      WebkitBackgroundClip: 'text',
-                      color: 'transparent',
-                      fontWeight: 700,
-                    }}
-                  >
+                  <Typography variant="h4" color="success.main" fontWeight={700}>
                     {totalClientValue}
                   </Typography>
                 </Box>
@@ -717,45 +604,16 @@ export const ClientProfile: React.FC = () => {
                 </Box>
               </Stack>
             </Stack>
-          </ModernCard>
+          </Box>
         </Box>
 
         {/* Account Status */}
         <Box sx={{ flex: 1 }}>
-          <ModernCard
-            variant="glass"
-            size="large"
-            interactive={false}
-            animation="none"
-            title="Account Status"
-            sx={{
-              '&::before': {
-                background: `linear-gradient(135deg, ${tokens.color.secondary[500]}08 0%, ${tokens.color.warning[500]}06 100%)`,
-              }
-            }}
-          >
+          <Box sx={{ borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
             <Stack spacing={3}>
               <Box display="flex" alignItems="center" gap={2}>
-                <Box
-                  sx={{
-                    p: 1.5,
-                    borderRadius: tokens.spacing.radius.lg,
-                    backgroundColor: `${tokens.color.secondary[500]}15`,
-                    color: tokens.color.secondary[600],
-                  }}
-                >
-                  <CalendarIcon />
-                </Box>
-                <Typography
-                  variant="h6"
-                  sx={{
-                    background: `linear-gradient(135deg, ${tokens.color.secondary[600]}, ${tokens.color.secondary[700]})`,
-                    backgroundClip: 'text',
-                    WebkitBackgroundClip: 'text',
-                    color: 'transparent',
-                    fontWeight: 600,
-                  }}
-                >
+                <CalendarIcon color="primary" />
+                <Typography variant="h6" fontWeight={600}>
                   Status & Activity
                 </Typography>
               </Box>
@@ -785,7 +643,7 @@ export const ClientProfile: React.FC = () => {
 
               </Stack>
             </Stack>
-          </ModernCard>
+          </Box>
         </Box>
       </Box>
 
@@ -801,36 +659,18 @@ export const ClientProfile: React.FC = () => {
         >
           {/* Quick Actions */}
           <Box sx={{ flex: 1 }}>
-            <ModernCard
-              variant="glass"
-              size="medium"
-              animation="none"
-              sx={{
-                '&::before': {
-                  background: `linear-gradient(135deg, ${tokens.color.primary[500]}04 0%, ${tokens.color.secondary[500]}04 100%)`,
-                }
-              }}
-            >
+            <Box sx={{ borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
               <QuickActions
                 actions={quickActions}
                 title="Client Actions"
                 compactMode={false}
               />
-            </ModernCard>
+            </Box>
           </Box>
 
           {/* Related Events */}
           <Box sx={{ flex: 1 }}>
-            <ModernCard
-              variant="glass"
-              size="medium"
-              animation="none"
-              sx={{
-                '&::before': {
-                  background: `linear-gradient(135deg, ${tokens.color.success[500]}04 0%, ${tokens.color.warning[500]}04 100%)`,
-                }
-              }}
-            >
+            <Box sx={{ borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
               <EntityNavigation
                 title="Recent Events"
                 entities={relatedEvents}
@@ -839,77 +679,29 @@ export const ClientProfile: React.FC = () => {
                 showViewAll={relatedEvents.length > 3}
                 onViewAll={relatedEvents.length > 3 ? () => navigate(`/events?client=${clientId}`) : undefined}
               />
-            </ModernCard>
+            </Box>
           </Box>
         </Box>
 
         {/* Financial Summary */}
-        <ModernCard
-          variant="glass"
-          size="large"
-          animation="none"
-          title="Client Financials"
-          sx={{
-            '&::before': {
-              background: `linear-gradient(135deg, ${tokens.color.success[500]}04 0%, ${tokens.color.info[500]}04 100%)`,
-            }
-          }}
-        >
+        <Box sx={{ borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
           <FinancialSummary
             title="Financial Overview"
             metrics={financialMetrics}
             compactMode={false}
           />
-        </ModernCard>
+        </Box>
       </Stack>
 
       {/* Tabs */}
-      <ModernCard
-        variant="glass"
-        size="large"
-        animation="none"
-        sx={{
-          '&::before': {
-            background: `linear-gradient(135deg, ${tokens.color.neutral[500]}03 0%, ${tokens.color.primary[500]}03 100%)`,
-          }
-        }}
-      >
-        <Box
-          sx={{
-            borderBottom: `1px solid ${tokens.color.borders.glass}`,
-            backgroundColor: `${tokens.color.neutral[50]}50`,
-            borderRadius: `${tokens.spacing.radius.xxl} ${tokens.spacing.radius.xxl} 0 0`,
-          }}
-        >
+      <Box sx={{ borderRadius: 1, bgcolor: 'background.paper' }}>
+        <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
           <Tabs
             value={tabValue}
             onChange={(_, newValue) => setTabValue(newValue)}
             variant="scrollable"
             scrollButtons="auto"
             allowScrollButtonsMobile
-            sx={{
-              '& .MuiTab-root': {
-                minHeight: 64,
-                fontWeight: 600,
-                fontSize: '0.9rem',
-                color: tokens.color.neutral[600],
-                transition: createTransition(['color', 'background'], 'fast'),
-
-                '&.Mui-selected': {
-                  color: tokens.color.primary[600],
-                  background: `linear-gradient(135deg, ${tokens.color.primary[500]}08 0%, ${tokens.color.primary[600]}06 100%)`,
-                },
-
-                '&:hover': {
-                  backgroundColor: `${tokens.color.neutral[500]}10`,
-                }
-              },
-              '& .MuiTabs-indicator': {
-                background: `linear-gradient(135deg, ${tokens.color.primary[500]}, ${tokens.color.primary[600]})`,
-                height: 3,
-                borderRadius: tokens.spacing.radius.full,
-              }
-            }}
           >
             <Tab
               label={`Activity (${activityItems.length})`}
@@ -963,11 +755,9 @@ export const ClientProfile: React.FC = () => {
           {/* Events Tab */}
           <TabPanel value={tabValue} index={1}>
             {isLoadingEvents ? (
-              <ModernLoadingSpinner
-                size={32}
-                message="Loading events..."
-                variant="circular"
-              />
+              <Box display="flex" justifyContent="center" p={4}>
+                <CircularProgress size={32} />
+              </Box>
             ) : events.length === 0 ? (
               <ModernEmptyState
                 icon={EventIcon}
@@ -980,7 +770,6 @@ export const ClientProfile: React.FC = () => {
                   color: 'primary'
                 }}
                 size="small"
-                illustration="minimal"
                 tip={{
                   text: 'Events help you track client bookings, milestones, and deliverables',
                   type: 'info'
@@ -988,52 +777,28 @@ export const ClientProfile: React.FC = () => {
                 sx={{ py: 4 }}
               />
             ) : (
-              <TableContainer
-                component={Paper}
-                sx={{
-                  ...glassPresets.light,
-                  border: `1px solid ${tokens.color.borders.glass}`,
-                  borderRadius: tokens.spacing.radius.lg,
-                  overflow: 'hidden',
-                }}
-              >
-                <Table>
+              <TableContainer component={Paper} sx={{ borderRadius: 1 }}>
+                <Table size="small">
                   <TableHead>
-                    <TableRow
-                      sx={{
-                        backgroundColor: `${tokens.color.primary[500]}10`,
-                        '& .MuiTableCell-root': {
-                          fontWeight: 600,
-                          color: tokens.color.primary[700],
-                          borderBottom: `1px solid ${tokens.color.borders.glass}`,
-                        }
-                      }}
-                    >
-                      <TableCell>Event Name</TableCell>
-                      <TableCell>Date</TableCell>
-                      <TableCell>Status</TableCell>
-                      <TableCell align="right">Actions</TableCell>
+                    <TableRow sx={{ bgcolor: 'action.hover' }}>
+                      <TableCell sx={{ fontWeight: 600 }}>Event Name</TableCell>
+                      <TableCell sx={{ fontWeight: 600 }}>Date</TableCell>
+                      <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
+                      <TableCell align="right" sx={{ fontWeight: 600 }}>Actions</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {events.map((event, index) => (
+                    {events.map((event) => (
                       <TableRow
                         key={event.id}
                         sx={{
-                          backgroundColor: index % 2 === 0 ? 'transparent' : `${tokens.color.neutral[500]}05`,
-                          '& .MuiTableCell-root': {
-                            borderBottom: `1px solid ${tokens.color.borders.glass}`,
-                            py: 2,
-                          },
                           cursor: 'pointer',
-                          '&:hover': {
-                            backgroundColor: `${tokens.color.primary[500]}08`,
-                          }
+                          '&:hover': { bgcolor: 'action.hover' }
                         }}
                         onClick={() => navigate(`/events/${event.id}`)}
                       >
                         <TableCell>
-                          <Typography variant="body1" fontWeight="600">
+                          <Typography variant="body1" fontWeight={600}>
                             {event.name}
                           </Typography>
                           <Typography variant="caption" color="text.secondary">
@@ -1069,10 +834,7 @@ export const ClientProfile: React.FC = () => {
                               e.stopPropagation();
                               navigate(`/events/${event.id}`);
                             }}
-                            sx={{
-                              textTransform: 'none',
-                              fontWeight: 600,
-                            }}
+                            sx={{ textTransform: 'none', fontWeight: 600 }}
                           >
                             View Details
                           </Button>
@@ -1117,7 +879,7 @@ export const ClientProfile: React.FC = () => {
             />
           </TabPanel>
         </Box>
-      </ModernCard>
+      </Box>
 
       {/* Edit Dialog */}
       <Dialog
@@ -1125,23 +887,9 @@ export const ClientProfile: React.FC = () => {
         onClose={() => setEditDialogOpen(false)}
         maxWidth="md"
         fullWidth
-        PaperProps={{
-          sx: {
-            ...glassPresets.medium,
-            border: `1px solid ${tokens.color.borders.glass}`,
-            borderRadius: tokens.spacing.radius.xl,
-            backdropFilter: 'blur(20px)',
-          }
-        }}
+        PaperProps={{ sx: { borderRadius: 1 } }}
       >
-        <DialogTitle
-          sx={{
-            background: `linear-gradient(135deg, ${tokens.color.primary[500]}10, ${tokens.color.secondary[500]}10)`,
-            borderBottom: `1px solid ${tokens.color.borders.glass}`,
-            fontSize: '1.25rem',
-            fontWeight: 600,
-          }}
-        >
+        <DialogTitle sx={{ fontWeight: 600 }}>
           Edit Client
         </DialogTitle>
         <DialogContent sx={{ p: 3 }}>
@@ -1158,46 +906,19 @@ export const ClientProfile: React.FC = () => {
       <Dialog
         open={deleteDialogOpen}
         onClose={() => setDeleteDialogOpen(false)}
-        PaperProps={{
-          sx: {
-            ...glassPresets.medium,
-            border: `1px solid ${tokens.color.borders.glass}`,
-            borderRadius: tokens.spacing.radius.xl,
-            backdropFilter: 'blur(20px)',
-          }
-        }}
+        PaperProps={{ sx: { borderRadius: 1 } }}
       >
-        <DialogTitle
-          sx={{
-            background: `linear-gradient(135deg, ${tokens.color.error[500]}10, ${tokens.color.warning[500]}10)`,
-            borderBottom: `1px solid ${tokens.color.borders.glass}`,
-            fontSize: '1.25rem',
-            fontWeight: 600,
-            color: tokens.color.error[700],
-          }}
-        >
+        <DialogTitle sx={{ fontWeight: 600, color: 'error.main' }}>
           Deactivate Client
         </DialogTitle>
         <DialogContent sx={{ p: 3 }}>
-          <DialogContentText
-            sx={{
-              fontSize: '1rem',
-              color: tokens.color.neutral[600],
-              lineHeight: 1.6,
-            }}
-          >
+          <DialogContentText>
             Are you sure you want to deactivate <strong>{client.first_name} {client.last_name}</strong>?
             This will make their account inactive but preserve all data.
           </DialogContentText>
         </DialogContent>
         <DialogActions sx={{ p: 3, pt: 0, gap: 2 }}>
-          <Button
-            onClick={() => setDeleteDialogOpen(false)}
-            sx={{
-              borderRadius: tokens.spacing.radius.full,
-              fontWeight: 600,
-            }}
-          >
+          <Button onClick={() => setDeleteDialogOpen(false)}>
             Cancel
           </Button>
           <Button
@@ -1205,20 +926,8 @@ export const ClientProfile: React.FC = () => {
             color="error"
             variant="contained"
             disabled={isDeletingClient}
-            sx={{
-              borderRadius: tokens.spacing.radius.full,
-              fontWeight: 600,
-              background: `linear-gradient(135deg, ${tokens.color.error[500]}, ${tokens.color.error[600]})`,
-              boxShadow: `0 4px 12px ${tokens.color.error[500]}40`,
-
-              '&:hover': {
-                background: `linear-gradient(135deg, ${tokens.color.error[600]}, ${tokens.color.error[700]})`,
-                transform: 'translateY(-1px)',
-                boxShadow: `0 6px 16px ${tokens.color.error[500]}50`,
-              }
-            }}
           >
-            {isDeletingClient ? <ModernLoadingSpinner size={20} variant="circular" /> : 'Deactivate'}
+            {isDeletingClient ? <CircularProgress size={20} color="inherit" /> : 'Deactivate'}
           </Button>
         </DialogActions>
       </Dialog>

@@ -12,10 +12,8 @@ import {
 } from '@mui/icons-material';
 import { TaskCard } from './TaskCard';
 import { ModernEmptyState } from '../common/ModernEmptyState';
-import type { Task, TaskDomain } from '../../types/tasks.types';
 import { tokens } from '../../design-system';
-import { glassPresets } from '../../design-system/utils/glassmorphism';
-import { createTransition } from '../../design-system/utils/animations';
+import type { Task, TaskDomain } from '../../types/tasks.types';
 
 interface TaskSectionProps {
   domain: TaskDomain;
@@ -27,32 +25,32 @@ interface TaskSectionProps {
   onRetryCommunication?: (id: string) => void;
 }
 
-const domainConfig: Record<TaskDomain, { label: string; icon: React.ElementType; color: string; emptyTitle: string; emptyDescription: string }> = {
+const domainConfig: Record<TaskDomain, { label: string; icon: React.ElementType; color: 'info' | 'warning' | 'success' | 'secondary'; emptyTitle: string; emptyDescription: string }> = {
   quotes: {
     label: 'Quotes',
     icon: RequestQuote,
-    color: tokens.color.info[500],
+    color: 'info',
     emptyTitle: 'No Pending Quotes',
     emptyDescription: 'All quotes have been sent and processed. New quotes requiring attention will appear here.',
   },
   contracts: {
     label: 'Contracts',
     icon: Description,
-    color: tokens.color.warning[500],
+    color: 'warning',
     emptyTitle: 'No Pending Contracts',
     emptyDescription: 'All contracts have been signed. Contracts awaiting signatures will appear here.',
   },
   payments: {
     label: 'Payments',
     icon: Payment,
-    color: tokens.color.success[500],
+    color: 'success',
     emptyTitle: 'No Pending Payments',
     emptyDescription: 'All payments are up to date. Pending or failed payments will appear here.',
   },
   communications: {
     label: 'Communications',
     icon: Email,
-    color: tokens.color.secondary[500],
+    color: 'secondary',
     emptyTitle: 'No Pending Communications',
     emptyDescription: 'All messages have been delivered. Failed or pending messages will appear here.',
   },
@@ -76,9 +74,10 @@ export const TaskSection: React.FC<TaskSectionProps> = ({
   return (
     <Box
       sx={{
-        ...glassPresets.light,
-        borderRadius: tokens.spacing.radius.xxl,
-        border: `1px solid ${tokens.color.borders.glass}`,
+        borderRadius: tokens.spacing.radius.md,
+        bgcolor: 'background.paper',
+        border: 1,
+        borderColor: 'divider',
         overflow: 'hidden',
       }}
     >
@@ -91,54 +90,48 @@ export const TaskSection: React.FC<TaskSectionProps> = ({
           justifyContent: 'space-between',
           p: 3,
           cursor: 'pointer',
-          transition: createTransition(['background'], 'fast'),
-
           '&:hover': {
-            backgroundColor: `${config.color}05`,
+            bgcolor: 'action.hover',
           },
         }}
       >
         <Box display="flex" alignItems="center" gap={2}>
           <Box
             sx={{
-              ...glassPresets.medium,
-              borderRadius: tokens.spacing.radius.lg,
+              borderRadius: tokens.spacing.radius.md,
               p: 1.5,
-              background: `${config.color}15`,
-              border: `1px solid ${config.color}30`,
+              bgcolor: `${config.color}.50`,
             }}
           >
-            <Icon sx={{ fontSize: 20, color: config.color }} />
+            <Icon sx={{ fontSize: 20 }} color={config.color} />
           </Box>
           <Typography
             variant="h6"
             fontWeight={600}
-            sx={{ color: tokens.color.neutral[800] }}
+            color="text.primary"
           >
             {config.label}
           </Typography>
           <Chip
             label={tasks.length}
             size="small"
+            color={tasks.length > 0 ? config.color : 'default'}
+            variant="outlined"
             sx={{
               height: 24,
               minWidth: 32,
               fontWeight: 700,
-              backgroundColor: tasks.length > 0 ? `${config.color}15` : tokens.color.neutral[100],
-              color: tasks.length > 0 ? config.color : tokens.color.neutral[500],
-              border: `1px solid ${tasks.length > 0 ? config.color : tokens.color.neutral[300]}30`,
             }}
           />
           {urgentCount > 0 && (
             <Chip
               label={`${urgentCount} urgent`}
               size="small"
+              color="error"
+              variant="outlined"
               sx={{
                 height: 24,
                 fontWeight: 600,
-                backgroundColor: `${tokens.color.error[500]}15`,
-                color: tokens.color.error[600],
-                border: `1px solid ${tokens.color.error[500]}30`,
               }}
             />
           )}
@@ -146,8 +139,6 @@ export const TaskSection: React.FC<TaskSectionProps> = ({
         <IconButton
           size="small"
           sx={{
-            color: tokens.color.neutral[500],
-            transition: createTransition(['transform'], 'fast'),
             transform: expanded ? 'rotate(0deg)' : 'rotate(-90deg)',
           }}
         >
@@ -177,7 +168,6 @@ export const TaskSection: React.FC<TaskSectionProps> = ({
               title={config.emptyTitle}
               description={config.emptyDescription}
               size="small"
-              illustration="minimal"
             />
           )}
         </Box>

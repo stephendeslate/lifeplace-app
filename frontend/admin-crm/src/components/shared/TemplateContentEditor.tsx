@@ -21,7 +21,7 @@ import type {
   TemplateEditorMode,
 } from '../../types/templates.types';
 import { tokens } from '../../design-system';
-import { glassPresets } from '../../design-system/utils/glassmorphism';
+import { glassInputStyles } from '../../design-system/utils/glassmorphism';
 
 /**
  * TemplateContentEditor - A unified content editor for template editing
@@ -199,7 +199,6 @@ export const TemplateContentEditor = forwardRef<
             onChange={handleModeChange}
             size="small"
             sx={{
-              ...glassPresets.light,
               borderRadius: tokens.spacing.radius.full,
               border: `1px solid ${tokens.color.borders.glass}`,
               overflow: 'hidden',
@@ -209,17 +208,6 @@ export const TemplateContentEditor = forwardRef<
                 px: 2,
                 py: 0.5,
                 fontWeight: 500,
-                color: tokens.color.neutral[600],
-                '&.Mui-selected': {
-                  background: `linear-gradient(135deg, ${tokens.color.primary[500]} 0%, ${tokens.color.primary[600]} 100%)`,
-                  color: 'white',
-                  '&:hover': {
-                    background: `linear-gradient(135deg, ${tokens.color.primary[600]} 0%, ${tokens.color.primary[700]} 100%)`,
-                  },
-                },
-                '&:hover': {
-                  background: `linear-gradient(135deg, ${tokens.color.primary[50]} 0%, ${tokens.color.primary[50]} 100%)`,
-                },
               },
             }}
           >
@@ -258,22 +246,10 @@ export const TemplateContentEditor = forwardRef<
             error={error}
             placeholder={getPlaceholder()}
             sx={{
-              '& .MuiOutlinedInput-root': {
-                ...glassPresets.light,
-                borderRadius: tokens.spacing.radius.lg,
-                border: `1px solid ${error ? tokens.color.error[500] : tokens.color.borders.glass}`,
-                '&:hover': {
-                  border: `1px solid ${error ? tokens.color.error[500] : tokens.color.primary[300]}`,
-                },
-                '&.Mui-focused': {
-                  border: `1px solid ${error ? tokens.color.error[500] : tokens.color.primary[500]}`,
-                  boxShadow: `0 0 0 3px ${error ? tokens.color.error[500] : tokens.color.primary[500]}15`,
-                },
-              },
+              ...glassInputStyles,
               '& .MuiInputBase-input': {
                 fontFamily: mode === 'html' ? 'monospace' : 'inherit',
                 fontSize: mode === 'html' ? '0.875rem' : '1rem',
-                color: tokens.color.neutral[700],
               },
             }}
           />

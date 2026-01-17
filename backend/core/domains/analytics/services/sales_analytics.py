@@ -189,7 +189,7 @@ class SalesAnalyticsService:
     @staticmethod
     def get_payment_tracking(start_date, end_date):
         """Payment status tracking including overdue payments."""
-        from core.domains.payments.models import Payment, PaymentInstallment
+        from core.domains.payments.models import Payment
 
         # Filter by booking creation date for payment tracking
         payments = Payment.objects.filter(
@@ -197,32 +197,19 @@ class SalesAnalyticsService:
         )
 
         # Get payment summaries by status
+        today = timezone.now().date()
         summary = payments.aggregate(
             total_payments=Count('id'),
             total_amount=Sum('amount'),
             completed_amount=Sum('amount', filter=Q(status='COMPLETED')),
             pending_amount=Sum('amount', filter=Q(status='PENDING')),
             failed_count=Count('id', filter=Q(status='FAILED')),
-        )
-
-        # Get overdue installments
-        today = timezone.now().date()
-        overdue = PaymentInstallment.objects.filter(
-            status='PENDING',
-            due_date__lt=today
-        ).aggregate(
-            overdue_count=Count('id'),
-            overdue_amount=Sum('amount')
-        )
-
-        # Get upcoming installments
-        upcoming = PaymentInstallment.objects.filter(
-            status='PENDING',
-            due_date__gte=today,
-            due_date__lte=today + timezone.timedelta(days=30)
-        ).aggregate(
-            upcoming_count=Count('id'),
-            upcoming_amount=Sum('amount')
+            # Overdue: pending payments past their due date
+            overdue_count=Count('id', filter=Q(status='PENDING', due_date__lt=today)),
+            overdue_amount=Sum('amount', filter=Q(status='PENDING', due_date__lt=today)),
+            # Upcoming: pending payments due within next 30 days
+            upcoming_count=Count('id', filter=Q(status='PENDING', due_date__gte=today, due_date__lte=today + timezone.timedelta(days=30))),
+            upcoming_amount=Sum('amount', filter=Q(status='PENDING', due_date__gte=today, due_date__lte=today + timezone.timedelta(days=30))),
         )
 
         return {
@@ -231,8 +218,8 @@ class SalesAnalyticsService:
             'completed_amount': float(summary['completed_amount'] or 0),
             'pending_amount': float(summary['pending_amount'] or 0),
             'failed_count': summary['failed_count'] or 0,
-            'overdue_count': overdue['overdue_count'] or 0,
-            'overdue_amount': float(overdue['overdue_amount'] or 0),
-            'upcoming_count': upcoming['upcoming_count'] or 0,
-            'upcoming_amount': float(upcoming['upcoming_amount'] or 0),
+            'overdue_count': summary['overdue_count'] or 0,
+            'overdue_amount': float(summary['overdue_amount'] or 0),
+            'upcoming_count': summary['upcoming_count'] or 0,
+            'upcoming_amount': float(summary['upcoming_amount'] or 0),
         }

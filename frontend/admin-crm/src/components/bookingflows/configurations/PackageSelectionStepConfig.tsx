@@ -25,18 +25,18 @@ import {
   CircularProgress,
 } from '@mui/material';
 
-// Modern Design System imports
-import { ModernCard } from '../../common/ModernCard';
 import {
   ExpandMore as ExpandMoreIcon,
   LocalShipping as PackageIcon,
   Category as CategoryIcon,
 } from '@mui/icons-material';
-import type { 
-  BookingFlowStep, 
+import type {
+  BookingFlowStep,
   PackageSelectionStepConfiguration,
 } from '../../../types/bookingflows.types';
 import { useBookingFlowStepConfiguration } from '../../../hooks/useBookingFlows';
+import { useFormHandlers } from '../../../hooks/useFormHandlers';
+import { ConfigSection } from '../../common';
 
 interface PackageSelectionStepConfigProps {
   step: BookingFlowStep;
@@ -81,6 +81,13 @@ export const PackageSelectionStepConfig: React.FC<PackageSelectionStepConfigProp
 }) => {
   const [formData, setFormData] = useState<PackageConfigFormData>(defaultFormData);
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Use centralized form handlers
+  const { handleSwitchChange } = useFormHandlers(
+    setFormData,
+    errors,
+    setErrors
+  );
 
   // Use the correct hooks from useBookingFlowStepConfiguration
   const {
@@ -136,15 +143,6 @@ export const PackageSelectionStepConfig: React.FC<PackageSelectionStepConfigProp
         [field]: '',
       }));
     }
-  };
-
-  const handleSwitchChange = (field: keyof PackageConfigFormData) => (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: event.target.checked,
-    }));
   };
 
   const handleSelectionTypeChange = (value: 'SINGLE' | 'MULTIPLE') => {
@@ -235,13 +233,8 @@ export const PackageSelectionStepConfig: React.FC<PackageSelectionStepConfigProp
 
       <Stack spacing={3}>
         {/* Package Availability */}
-        <ModernCard variant="glass" size="medium" animation="none">
-          <Box sx={{ p: 3 }}>
-            <Typography variant="subtitle1" gutterBottom>
-              Available Packages
-            </Typography>
-            
-            <Stack spacing={2}>
+        <ConfigSection title="Available Packages">
+          <Stack spacing={2}>
               {/* Categories Selection */}
               <FormControl fullWidth>
                 <InputLabel>Filter by Categories</InputLabel>
@@ -321,17 +314,11 @@ export const PackageSelectionStepConfig: React.FC<PackageSelectionStepConfigProp
                 <Alert severity="error">{errors.packages}</Alert>
               )}
             </Stack>
-          </Box>
-        </ModernCard>
+        </ConfigSection>
 
         {/* Selection Behavior */}
-        <ModernCard variant="glass" size="medium" animation="none">
-          <Box sx={{ p: 3 }}>
-            <Typography variant="subtitle1" gutterBottom>
-              Selection Behavior
-            </Typography>
-            
-            <Stack spacing={2}>
+        <ConfigSection title="Selection Behavior">
+          <Stack spacing={2}>
               <FormControl>
                 <Typography variant="body2" gutterBottom>
                   Selection Type
@@ -379,17 +366,11 @@ export const PackageSelectionStepConfig: React.FC<PackageSelectionStepConfigProp
                 </Box>
               )}
             </Stack>
-          </Box>
-        </ModernCard>
+        </ConfigSection>
 
         {/* Event Type Filtering */}
-        <ModernCard variant="glass" size="medium" animation="none">
-          <Box sx={{ p: 3 }}>
-            <Typography variant="subtitle1" gutterBottom>
-              Event Type Filtering
-            </Typography>
-
-            <Stack spacing={2}>
+        <ConfigSection title="Event Type Filtering">
+          <Stack spacing={2}>
               <FormControlLabel
                 control={
                   <Switch
@@ -410,17 +391,11 @@ export const PackageSelectionStepConfig: React.FC<PackageSelectionStepConfigProp
                 </Alert>
               )}
             </Stack>
-          </Box>
-        </ModernCard>
+        </ConfigSection>
 
         {/* Display Options */}
-        <ModernCard variant="glass" size="medium" animation="none">
-          <Box sx={{ p: 3 }}>
-            <Typography variant="subtitle1" gutterBottom>
-              Display Options
-            </Typography>
-
-            <Stack spacing={2}>
+        <ConfigSection title="Display Options">
+          <Stack spacing={2}>
               <FormControlLabel
                 control={
                   <Switch
@@ -473,8 +448,7 @@ export const PackageSelectionStepConfig: React.FC<PackageSelectionStepConfigProp
                 Allow clients to compare packages side-by-side
               </Typography>
             </Stack>
-          </Box>
-        </ModernCard>
+        </ConfigSection>
 
         {/* Advanced Pricing */}
         <Accordion>
@@ -527,13 +501,8 @@ export const PackageSelectionStepConfig: React.FC<PackageSelectionStepConfigProp
         </Accordion>
 
         {/* Configuration Summary */}
-        <ModernCard variant="glass" size="medium" animation="none">
-          <Box sx={{ p: 3 }}>
-            <Typography variant="subtitle1" gutterBottom>
-              Configuration Summary
-            </Typography>
-            
-            <Stack spacing={1}>
+        <ConfigSection title="Configuration Summary">
+          <Stack spacing={1}>
               <Typography variant="body2">
                 <strong>Package Source:</strong>{' '}
                 {formData.available_packages.length > 0 
@@ -570,8 +539,7 @@ export const PackageSelectionStepConfig: React.FC<PackageSelectionStepConfigProp
                 </Typography>
               )}
             </Stack>
-          </Box>
-        </ModernCard>
+        </ConfigSection>
 
         {/* Actions */}
         <Box display="flex" gap={2}>

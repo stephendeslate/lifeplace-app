@@ -121,3 +121,23 @@ export { ImageUploadField } from './ImageUploadField';
 export type { ImageUploadFieldProps } from './ImageUploadField';
 export { GalleryUploadField } from './GalleryUploadField';
 export type { GalleryUploadFieldProps } from './GalleryUploadField';
+
+// Icon Badge - Lightweight icon container with optional gradient
+export { IconBadge } from './IconBadge';
+export type { IconBadgeProps } from './IconBadge';
+
+// Quick Action Button - Standardized action button for dashboards
+export { QuickActionButton } from './QuickActionButton';
+export type { QuickActionButtonProps } from './QuickActionButton';
+
+// Config Section - Reusable section container for configurations
+export { ConfigSection, ConfigSectionCompact } from './ConfigSection';
+
+// Loading Overlay - Reusable loading overlay component
+export { LoadingOverlay, FullPageLoadingOverlay } from './LoadingOverlay';
+
+// Section Header - Reusable section header with icon and actions
+export { SectionHeader } from './SectionHeader';
+
+// Tab Panel - Reusable tab panel for tab interfaces
+export { TabPanel, a11yTabProps, a11yTabPanelProps } from './TabPanel';

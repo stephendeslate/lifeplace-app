@@ -9,7 +9,8 @@ import {
   Alert,
   Chip,
   Divider,
-  Fade,
+  Button,
+  CircularProgress,
 } from '@mui/material';
 import {
   ArrowBack as ArrowBackIcon,
@@ -28,14 +29,6 @@ import { contractsApi } from '../../apis/contracts.api';
 import { formatCurrency } from '../../utils/currency';
 import { ContractAmendmentsSection } from '../../components/contracts';
 import { useLayout } from '../../contexts/LayoutContext';
-
-// Modern Design System imports
-import { ModernPageLayout } from '../../components/common/ModernPageLayout';
-import { ModernCard } from '../../components/common/ModernCard';
-import { ModernPageHeader, type HeaderAction } from '../../components/common/ModernPageHeader';
-import ModernLoadingStates from '../../components/common/ModernLoadingStates';
-import { tokens } from '../../design-system';
-import { glassPresets } from '../../design-system/utils/glassmorphism';
 
 export const ContractView: React.FC = () => {
   const { contractId } = useParams<{ contractId: string }>();
@@ -102,39 +95,28 @@ export const ContractView: React.FC = () => {
     }
   };
 
-  // Loading state with modern design
+  // Loading state
   if (isLoading) {
     return (
-      <ModernPageLayout backgroundPattern="default">
-        <ModernLoadingStates.ModernLoadingSpinner
-          size={40}
-          message="Loading contract..."
-          variant="circular"
-          glass
-        />
-      </ModernPageLayout>
+      <Box sx={{ p: 3 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', py: 8 }}>
+          <CircularProgress size={40} />
+          <Typography variant="body1" color="text.secondary" sx={{ ml: 2 }}>
+            Loading contract...
+          </Typography>
+        </Box>
+      </Box>
     );
   }
 
-  // Error state with modern design
+  // Error state
   if (error || !contract) {
     return (
-      <ModernPageLayout backgroundPattern="default">
-        <ModernCard variant="glass" size="large" color="error" animation="fade">
-          <Alert
-            severity="error"
-            sx={{
-              background: 'transparent',
-              border: 'none',
-              '& .MuiAlert-message': {
-                color: tokens.color.error[700],
-              },
-            }}
-          >
-            Failed to load contract. Please try again.
-          </Alert>
-        </ModernCard>
-      </ModernPageLayout>
+      <Box sx={{ p: 3 }}>
+        <Alert severity="error">
+          Failed to load contract. Please try again.
+        </Alert>
+      </Box>
     );
   }
 
@@ -153,339 +135,295 @@ export const ContractView: React.FC = () => {
     }
   };
 
-  // Build header actions
-  const secondaryActions: HeaderAction[] = [
-    {
-      icon: <ArrowBackIcon />,
-      label: 'Back to Event',
-      onClick: handleBackToEvent,
-      variant: 'outlined',
-      tooltip: 'Return to event details',
-    },
-    {
-      icon: <DownloadIcon />,
-      label: 'Download PDF',
-      onClick: handleDownload,
-      variant: 'outlined',
-      color: 'success',
-    },
-  ];
-
-  if (contract.status === 'DRAFT') {
-    secondaryActions.push({
-      icon: <EditIcon />,
-      label: 'Edit',
-      onClick: handleEdit,
-      variant: 'outlined',
-    });
-  }
-
-  const primaryAction: HeaderAction | undefined = contract.status === 'DRAFT' ? {
-    icon: <SendIcon />,
-    label: 'Send to Client',
-    onClick: handleSend,
-    variant: 'contained',
-    color: 'primary',
-  } : undefined;
-
   return (
-    <ModernPageLayout backgroundPattern="default">
-      {/* Modern Header */}
-      <ModernPageHeader
-        title={`Contract #${contract.id}`}
-        subtitle={`Template: ${contract.template_name}`}
-        icon={<ContractIcon />}
-        status={{
-          label: contract.status_display || contract.status,
-          color: getStatusColor(),
+    <Box sx={{ p: 3 }}>
+      {/* Header */}
+      <Box
+        sx={{
+          mb: 4,
+          p: 3,
+          borderRadius: 1,
+          bgcolor: 'background.paper',
+          border: '1px solid',
+          borderColor: 'divider',
         }}
-        primaryAction={primaryAction}
-        secondaryActions={secondaryActions}
-        size="medium"
-        gradient
-        glass
-      />
+      >
+        <Box
+          display="flex"
+          flexDirection={{ xs: 'column', md: 'row' }}
+          justifyContent="space-between"
+          alignItems={{ xs: 'flex-start', md: 'center' }}
+          gap={2}
+        >
+          <Box display="flex" alignItems="center" gap={2}>
+            <ContractIcon color="primary" sx={{ fontSize: 32 }} />
+            <Box>
+              <Box display="flex" alignItems="center" gap={2}>
+                <Typography variant="h4" component="h1" fontWeight="bold">
+                  Contract #{contract.id}
+                </Typography>
+                <Chip
+                  label={contract.status_display || contract.status}
+                  color={getStatusColor()}
+                  size="small"
+                />
+              </Box>
+              <Typography variant="body1" color="text.secondary">
+                Template: {contract.template_name}
+              </Typography>
+            </Box>
+          </Box>
+          <Stack direction="row" spacing={2} flexWrap="wrap">
+            <Button
+              variant="outlined"
+              startIcon={<ArrowBackIcon />}
+              onClick={handleBackToEvent}
+            >
+              Back to Event
+            </Button>
+            <Button
+              variant="outlined"
+              color="success"
+              startIcon={<DownloadIcon />}
+              onClick={handleDownload}
+            >
+              Download PDF
+            </Button>
+            {contract.status === 'DRAFT' && (
+              <>
+                <Button
+                  variant="outlined"
+                  startIcon={<EditIcon />}
+                  onClick={handleEdit}
+                >
+                  Edit
+                </Button>
+                <Button
+                  variant="contained"
+                  startIcon={<SendIcon />}
+                  onClick={handleSend}
+                >
+                  Send to Client
+                </Button>
+              </>
+            )}
+          </Stack>
+        </Box>
+      </Box>
 
       {/* Contract Details */}
       <Stack spacing={3}>
         {/* Contract Information */}
-        <Fade in timeout={300}>
-          <div>
-            <ModernCard
-              variant="glass"
-              size="large"
-              color="primary"
-              animation="none"
-              sx={{
-                '&::before': {
-                  background: `linear-gradient(135deg, ${tokens.color.primary[500]}04 0%, ${tokens.color.primary[600]}03 100%)`,
-                },
-              }}
-            >
-              {/* Section Header with Icon */}
-              <Box display="flex" alignItems="center" gap={1.5} mb={3}>
-                <Box
-                  sx={{
-                    p: 1.5,
-                    borderRadius: tokens.spacing.radius.lg,
-                    background: `linear-gradient(135deg, ${tokens.color.primary[500]}15 0%, ${tokens.color.primary[600]}10 100%)`,
-                    border: `1px solid ${tokens.color.primary[500]}20`,
-                  }}
-                >
-                  <InfoIcon sx={{ color: tokens.color.primary[600], fontSize: '1.25rem' }} />
-                </Box>
-                <Typography variant="h6" fontWeight="600" sx={{ color: tokens.color.neutral[800] }}>
-                  Contract Information
+        <Box
+          sx={{
+            p: 3,
+            borderRadius: 1,
+            bgcolor: 'background.paper',
+            border: '1px solid',
+            borderColor: 'divider',
+          }}
+        >
+          {/* Section Header with Icon */}
+          <Box display="flex" alignItems="center" gap={1.5} mb={3}>
+            <InfoIcon color="primary" />
+            <Typography variant="h6" fontWeight="600">
+              Contract Information
+            </Typography>
+          </Box>
+
+          <Stack spacing={2}>
+            <Box display="flex" gap={4} flexWrap="wrap">
+              <Box>
+                <Typography variant="body2" color="text.secondary">
+                  Event
+                </Typography>
+                <Typography variant="body1" fontWeight={500}>
+                  {eventName}
                 </Typography>
               </Box>
+              <Box>
+                <Typography variant="body2" color="text.secondary">
+                  Client
+                </Typography>
+                <Typography variant="body1" fontWeight={500}>
+                  {contract.event_details?.client_name ||
+                   (typeof contract.event === 'object' ? contract.event.client_name : null) ||
+                   'Not specified'}
+                </Typography>
+              </Box>
+              <Box>
+                <Typography variant="body2" color="text.secondary">
+                  Created
+                </Typography>
+                <Typography variant="body1" fontWeight={500}>
+                  {format(new Date(contract.created_at), 'MMM dd, yyyy')}
+                </Typography>
+              </Box>
+            </Box>
 
-              <Stack spacing={2}>
-                <Box display="flex" gap={4} flexWrap="wrap">
-                  <Box>
-                    <Typography variant="body2" sx={{ color: tokens.color.neutral[500], fontWeight: 500 }}>
-                      Event
-                    </Typography>
-                    <Typography variant="body1" sx={{ color: tokens.color.neutral[800], fontWeight: 500 }}>
-                      {eventName}
-                    </Typography>
-                  </Box>
-                  <Box>
-                    <Typography variant="body2" sx={{ color: tokens.color.neutral[500], fontWeight: 500 }}>
-                      Client
-                    </Typography>
-                    <Typography variant="body1" sx={{ color: tokens.color.neutral[800], fontWeight: 500 }}>
-                      {contract.event_details?.client_name ||
-                       (typeof contract.event === 'object' ? contract.event.client_name : null) ||
-                       'Not specified'}
-                    </Typography>
-                  </Box>
-                  <Box>
-                    <Typography variant="body2" sx={{ color: tokens.color.neutral[500], fontWeight: 500 }}>
-                      Created
-                    </Typography>
-                    <Typography variant="body1" sx={{ color: tokens.color.neutral[800], fontWeight: 500 }}>
-                      {format(new Date(contract.created_at), 'MMM dd, yyyy')}
-                    </Typography>
-                  </Box>
+            <Divider />
+
+            <Box display="flex" gap={4} flexWrap="wrap">
+              {contract.contract_value && (
+                <Box>
+                  <Typography variant="body2" color="text.secondary">
+                    Contract Value
+                  </Typography>
+                  <Typography variant="body1" fontWeight={600} color="success.main">
+                    {formatCurrency(contract.contract_value, contract.currency || 'PHP')}
+                  </Typography>
                 </Box>
-
-                <Divider sx={{ borderColor: tokens.color.borders.glass }} />
-
-                <Box display="flex" gap={4} flexWrap="wrap">
-                  {contract.contract_value && (
-                    <Box>
-                      <Typography variant="body2" sx={{ color: tokens.color.neutral[500], fontWeight: 500 }}>
-                        Contract Value
-                      </Typography>
-                      <Typography
-                        variant="body1"
-                        sx={{
-                          color: tokens.color.success[600],
-                          fontWeight: 600,
-                        }}
-                      >
-                        {formatCurrency(contract.contract_value, contract.currency || 'PHP')}
-                      </Typography>
-                    </Box>
-                  )}
-                  {contract.valid_until && (
-                    <Box>
-                      <Typography variant="body2" sx={{ color: tokens.color.neutral[500], fontWeight: 500 }}>
-                        Valid Until
-                      </Typography>
-                      <Typography variant="body1" sx={{ color: tokens.color.neutral[800], fontWeight: 500 }}>
-                        {format(new Date(contract.valid_until), 'MMM dd, yyyy')}
-                      </Typography>
-                    </Box>
-                  )}
-                  {contract.fully_signed_at && (
-                    <Box>
-                      <Typography variant="body2" sx={{ color: tokens.color.neutral[500], fontWeight: 500 }}>
-                        Signed On
-                      </Typography>
-                      <Typography variant="body1" sx={{ color: tokens.color.success[600], fontWeight: 500 }}>
-                        {format(new Date(contract.fully_signed_at), 'MMM dd, yyyy')}
-                      </Typography>
-                    </Box>
-                  )}
+              )}
+              {contract.valid_until && (
+                <Box>
+                  <Typography variant="body2" color="text.secondary">
+                    Valid Until
+                  </Typography>
+                  <Typography variant="body1" fontWeight={500}>
+                    {format(new Date(contract.valid_until), 'MMM dd, yyyy')}
+                  </Typography>
                 </Box>
-              </Stack>
-            </ModernCard>
-          </div>
-        </Fade>
+              )}
+              {contract.fully_signed_at && (
+                <Box>
+                  <Typography variant="body2" color="text.secondary">
+                    Signed On
+                  </Typography>
+                  <Typography variant="body1" fontWeight={500} color="success.main">
+                    {format(new Date(contract.fully_signed_at), 'MMM dd, yyyy')}
+                  </Typography>
+                </Box>
+              )}
+            </Box>
+          </Stack>
+        </Box>
 
         {/* Signatures Section */}
         {contract.signatures && contract.signatures.length > 0 && (
-          <Fade in timeout={400}>
-            <div>
-              <ModernCard
-                variant="glass"
-                size="large"
-                color="success"
-                animation="none"
-                sx={{
-                  '&::before': {
-                    background: `linear-gradient(135deg, ${tokens.color.success[500]}04 0%, ${tokens.color.success[600]}03 100%)`,
-                  },
-                }}
-              >
-                {/* Section Header with Icon */}
-                <Box display="flex" alignItems="center" gap={1.5} mb={3}>
-                  <Box
-                    sx={{
-                      p: 1.5,
-                      borderRadius: tokens.spacing.radius.lg,
-                      background: `linear-gradient(135deg, ${tokens.color.success[500]}15 0%, ${tokens.color.success[600]}10 100%)`,
-                      border: `1px solid ${tokens.color.success[500]}20`,
-                    }}
-                  >
-                    <SignatureIcon sx={{ color: tokens.color.success[600], fontSize: '1.25rem' }} />
-                  </Box>
-                  <Typography variant="h6" fontWeight="600" sx={{ color: tokens.color.neutral[800] }}>
-                    Signatures
-                  </Typography>
-                </Box>
+          <Box
+            sx={{
+              p: 3,
+              borderRadius: 1,
+              bgcolor: 'background.paper',
+              border: '1px solid',
+              borderColor: 'divider',
+            }}
+          >
+            {/* Section Header with Icon */}
+            <Box display="flex" alignItems="center" gap={1.5} mb={3}>
+              <SignatureIcon color="success" />
+              <Typography variant="h6" fontWeight="600">
+                Signatures
+              </Typography>
+            </Box>
 
-                <Stack spacing={2}>
-                  {contract.signatures.map((signature) => (
-                    <Box
-                      key={signature.id}
-                      sx={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        p: 2,
-                        borderRadius: tokens.spacing.radius.lg,
-                        ...glassPresets.light,
-                        background: `linear-gradient(135deg, ${tokens.color.success[500]}06 0%, ${tokens.color.success[600]}04 100%)`,
-                        border: `1px solid ${tokens.color.success[300]}30`,
-                      }}
-                    >
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                        <SignedIcon sx={{ color: tokens.color.success[600] }} />
-                        <Box>
-                          <Typography variant="body2" sx={{ fontWeight: 600, color: tokens.color.neutral[800] }}>
-                            {signature.role === 'CLIENT' ? 'Client Signature' :
-                             signature.role === 'COMPANY_REP' ? 'LifePlace Representative' :
-                             signature.role === 'WITNESS' ? 'Witness Signature' :
-                             signature.role_display || signature.role.replace('_', ' ')}
-                          </Typography>
-                          <Typography variant="caption" sx={{ color: tokens.color.neutral[600] }}>
-                            Signed by {signature.signer_name} on {format(new Date(signature.signed_at), 'MMM dd, yyyy \'at\' h:mm a')}
-                          </Typography>
-                          {signature.signer_title && (
-                            <Typography variant="caption" sx={{ color: tokens.color.neutral[500], display: 'block' }}>
-                              Title: {signature.signer_title}
-                            </Typography>
-                          )}
-                        </Box>
-                      </Box>
-                      <Chip
-                        label="Signed"
-                        size="small"
-                        sx={{
-                          fontWeight: 600,
-                          background: `linear-gradient(135deg, ${tokens.color.success[500]} 0%, ${tokens.color.success[600]} 100%)`,
-                          color: 'white',
-                        }}
-                      />
+            <Stack spacing={2}>
+              {contract.signatures.map((signature) => (
+                <Box
+                  key={signature.id}
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    p: 2,
+                    borderRadius: 1,
+                    bgcolor: 'success.50',
+                    border: '1px solid',
+                    borderColor: 'success.200',
+                  }}
+                >
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <SignedIcon color="success" />
+                    <Box>
+                      <Typography variant="body2" fontWeight={600}>
+                        {signature.role === 'CLIENT' ? 'Client Signature' :
+                         signature.role === 'COMPANY_REP' ? 'LifePlace Representative' :
+                         signature.role === 'WITNESS' ? 'Witness Signature' :
+                         signature.role_display || signature.role.replace('_', ' ')}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        Signed by {signature.signer_name} on {format(new Date(signature.signed_at), 'MMM dd, yyyy \'at\' h:mm a')}
+                      </Typography>
+                      {signature.signer_title && (
+                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                          Title: {signature.signer_title}
+                        </Typography>
+                      )}
                     </Box>
-                  ))}
-                </Stack>
-              </ModernCard>
-            </div>
-          </Fade>
+                  </Box>
+                  <Chip
+                    label="Signed"
+                    size="small"
+                    color="success"
+                  />
+                </Box>
+              ))}
+            </Stack>
+          </Box>
         )}
 
         {/* Amendments Section */}
-        <Fade in timeout={500}>
-          <div>
-            <ContractAmendmentsSection contract={contract} />
-          </div>
-        </Fade>
+        <ContractAmendmentsSection contract={contract} />
 
         {/* Contract Content */}
-        <Fade in timeout={600}>
-          <div>
-            <ModernCard
-              variant="glass"
-              size="large"
-              color="default"
-              animation="none"
-            >
-              {/* Section Header with Icon */}
-              <Box display="flex" alignItems="center" gap={1.5} mb={3}>
-                <Box
-                  sx={{
-                    p: 1.5,
-                    borderRadius: tokens.spacing.radius.lg,
-                    background: `linear-gradient(135deg, ${tokens.color.neutral[500]}15 0%, ${tokens.color.neutral[600]}10 100%)`,
-                    border: `1px solid ${tokens.color.neutral[400]}20`,
-                  }}
-                >
-                  <ContentIcon sx={{ color: tokens.color.neutral[600], fontSize: '1.25rem' }} />
-                </Box>
-                <Typography variant="h6" fontWeight="600" sx={{ color: tokens.color.neutral[800] }}>
-                  Contract Content
-                </Typography>
-              </Box>
+        <Box
+          sx={{
+            p: 3,
+            borderRadius: 1,
+            bgcolor: 'background.paper',
+            border: '1px solid',
+            borderColor: 'divider',
+          }}
+        >
+          {/* Section Header with Icon */}
+          <Box display="flex" alignItems="center" gap={1.5} mb={3}>
+            <ContentIcon color="action" />
+            <Typography variant="h6" fontWeight="600">
+              Contract Content
+            </Typography>
+          </Box>
 
-              <Box
-                sx={{
-                  ...glassPresets.light,
-                  border: `1px solid ${tokens.color.borders.glass}`,
-                  borderRadius: tokens.spacing.radius.lg,
-                  p: 3,
-                  backgroundColor: tokens.color.neutral[50],
-                  maxHeight: '600px',
-                  overflow: 'auto',
-                  // Signature styling
-                  '& .contract-signature': {
-                    maxWidth: '200px',
-                    height: '60px',
-                    borderBottom: `1px solid ${tokens.color.neutral[950]}`,
-                    display: 'inline-block',
-                    verticalAlign: 'bottom',
-                    margin: '0 4px',
-                  },
-                  '& .signature-pending': {
-                    fontStyle: 'italic',
-                    color: tokens.color.neutral[600],
-                    backgroundColor: tokens.color.neutral[100],
-                    padding: '2px 8px',
-                    borderRadius: tokens.spacing.radius.sm,
-                    fontSize: '12px',
-                  },
-                  // Print styles for signatures
-                  '@media print': {
-                    '& .contract-signature': {
-                      maxWidth: '180px',
-                      height: '50px',
-                      WebkitPrintColorAdjust: 'exact',
-                      colorAdjust: 'exact',
-                    },
-                    '& .signature-pending': {
-                      backgroundColor: `${tokens.color.neutral[100]} !important`,
-                      WebkitPrintColorAdjust: 'exact',
-                      colorAdjust: 'exact',
-                    },
-                  },
-                }}
-              >
-                <div
-                  dangerouslySetInnerHTML={{
-                    __html: contract.content || 'No content available'
-                  }}
-                  style={{
-                    lineHeight: 1.6,
-                    fontSize: '14px',
-                  }}
-                />
-              </Box>
-            </ModernCard>
-          </div>
-        </Fade>
+          <Box
+            sx={{
+              border: '1px solid',
+              borderColor: 'divider',
+              borderRadius: 1,
+              p: 3,
+              bgcolor: 'grey.50',
+              maxHeight: '600px',
+              overflow: 'auto',
+              // Signature styling
+              '& .contract-signature': {
+                maxWidth: '200px',
+                height: '60px',
+                borderBottom: '1px solid',
+                borderColor: 'grey.900',
+                display: 'inline-block',
+                verticalAlign: 'bottom',
+                margin: '0 4px',
+              },
+              '& .signature-pending': {
+                fontStyle: 'italic',
+                color: 'text.secondary',
+                bgcolor: 'grey.100',
+                padding: '2px 8px',
+                borderRadius: 0.5,
+                fontSize: '12px',
+              },
+            }}
+          >
+            <div
+              dangerouslySetInnerHTML={{
+                __html: contract.content || 'No content available'
+              }}
+              style={{
+                lineHeight: 1.6,
+                fontSize: '14px',
+              }}
+            />
+          </Box>
+        </Box>
       </Stack>
-    </ModernPageLayout>
+    </Box>
   );
 };

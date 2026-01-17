@@ -13,8 +13,6 @@ import {
   Skeleton,
 } from '@mui/material';
 
-// Modern Design System imports
-import { ModernCard } from '../../common/ModernCard';
 import {
   Receipt as ReceiptIcon,
   Percent as DiscountIcon,
@@ -177,15 +175,13 @@ export const PricingSummaryStepConfig: React.FC<PricingSummaryStepConfigProps> =
 
   if (isLoading) {
     return (
-      <ModernCard variant="glass" size="medium" animation="none">
-        <Box sx={{ p: 3 }}>
-          <Stack spacing={2}>
-            <Skeleton variant="text" width="60%" height={32} />
-            <Skeleton variant="rectangular" height={120} />
-            <Skeleton variant="rectangular" height={60} />
-          </Stack>
-        </Box>
-      </ModernCard>
+      <Box sx={{ borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
+        <Stack spacing={2}>
+          <Skeleton variant="text" width="60%" height={32} />
+          <Skeleton variant="rectangular" height={120} />
+          <Skeleton variant="rectangular" height={60} />
+        </Stack>
+      </Box>
     );
   }
 
@@ -212,12 +208,11 @@ export const PricingSummaryStepConfig: React.FC<PricingSummaryStepConfigProps> =
         )}
 
         {/* Display Options */}
-        <ModernCard variant="glass" size="medium" animation="none">
-          <Box sx={{ p: 3 }}>
-            <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <PreviewIcon />
-              Display Options
-            </Typography>
+        <Box sx={{ borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
+          <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <PreviewIcon />
+            Display Options
+          </Typography>
             
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
               <Box sx={{ flex: { xs: '100%', sm: 'calc(50% - 8px)' } }}>
@@ -285,16 +280,14 @@ export const PricingSummaryStepConfig: React.FC<PricingSummaryStepConfigProps> =
                 />
               </Box>
             </Box>
-          </Box>
-        </ModernCard>
+        </Box>
 
         {/* Behavior Options */}
-        <ModernCard variant="glass" size="medium" animation="none">
-          <Box sx={{ p: 3 }}>
-            <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <CalculateIcon />
-              Behavior Options
-            </Typography>
+        <Box sx={{ borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
+          <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <CalculateIcon />
+            Behavior Options
+          </Typography>
             
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
               <Box sx={{ flex: { xs: '100%', sm: 'calc(50% - 8px)' } }}>
@@ -323,16 +316,14 @@ export const PricingSummaryStepConfig: React.FC<PricingSummaryStepConfigProps> =
                 />
               </Box>
             </Box>
-          </Box>
-        </ModernCard>
+        </Box>
 
         {/* Custom Messaging */}
-        <ModernCard variant="glass" size="medium" animation="none">
-          <Box sx={{ p: 3 }}>
-            <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <DiscountIcon />
-              Custom Messaging
-            </Typography>
+        <Box sx={{ borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
+          <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <DiscountIcon />
+            Custom Messaging
+          </Typography>
 
             <Stack spacing={2}>
               <TextField
@@ -365,16 +356,14 @@ export const PricingSummaryStepConfig: React.FC<PricingSummaryStepConfigProps> =
                 helperText="Text shown in or near the discount code field"
               />
             </Stack>
-          </Box>
-        </ModernCard>
+        </Box>
 
         {/* Terms & Legal Options */}
-        <ModernCard variant="glass" size="medium" animation="none">
-          <Box sx={{ p: 3 }}>
-            <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <GavelIcon />
-              Terms & Legal
-            </Typography>
+        <Box sx={{ borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
+          <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <GavelIcon />
+            Terms & Legal
+          </Typography>
 
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mb: 2 }}>
               <Box sx={{ flex: { xs: '100%', sm: 'calc(50% - 8px)' } }}>
@@ -448,8 +437,7 @@ export const PricingSummaryStepConfig: React.FC<PricingSummaryStepConfigProps> =
                 helperText="Override the default Privacy Policy link"
               />
             </Stack>
-          </Box>
-        </ModernCard>
+        </Box>
 
         {/* Actions */}
         <Box display="flex" gap={2} justifyContent="flex-end">

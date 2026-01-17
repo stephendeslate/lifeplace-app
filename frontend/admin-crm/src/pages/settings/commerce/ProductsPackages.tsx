@@ -22,8 +22,7 @@ import {
 import { useProductCategories, useProducts, useDiscounts } from '../../../hooks/useProducts';
 import { useVenues } from '../../../hooks/useVenues';
 import { useVendors } from '../../../hooks/useVendors';
-import { 
-  ModernCard,
+import {
   ModernPageHeader,
   ModernDialog,
   createDeleteActions,
@@ -61,8 +60,6 @@ import type {
   CreateVendorData,
   UpdateVendorData,
 } from '../../../types/vendors.types';
-import { tokens } from '../../../design-system';
-import { glassPresets } from '../../../design-system/utils/glassmorphism';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -520,86 +517,41 @@ export const ProductsPackages: React.FC = () => {
               { label: 'Vendors', value: vendors.length },
             ]}
             size="medium"
-            gradient
-            glass
           />
         );
       })()}
 
       {/* Search Field - Conditionally Shown */}
       {showSearchField && (
-        <Box sx={{ mb: 4 }}>
-          <ModernCard
-            variant="glass"
-            size="large"
-            color="primary"
-            animation="fade"
-            sx={{
-              '&::before': {
-                background: `linear-gradient(135deg, ${tokens.color.primary[500]}04 0%, ${tokens.color.primary[600]}03 100%)`,
-              },
+        <Box sx={{ mb: 4, borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
+          <Box display="flex" alignItems="center" gap={1.5} mb={1}>
+            <SearchIcon color="primary" />
+            <Typography variant="h6" fontWeight="600">
+              Search Products & Packages
+            </Typography>
+          </Box>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+            Find products, categories, and discounts by name or description
+          </Typography>
+          <TextField
+            fullWidth
+            placeholder="Search by name, description, or type..."
+            value={headerSearchQuery}
+            onChange={(e) => handleHeaderSearch(e.target.value)}
+            autoFocus
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon color="action" />
+                </InputAdornment>
+              ),
             }}
-          >
-            <Box sx={{ position: 'relative' }}>
-              <Typography 
-                variant="h6" 
-                sx={{ 
-                  color: tokens.color.neutral[800],
-                  fontWeight: 600,
-                  mb: 1,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 1.5,
-                }}
-              >
-                <SearchIcon sx={{ color: tokens.color.primary[600] }} />
-                Search Products & Packages
-              </Typography>
-              <Typography 
-                variant="body2" 
-                sx={{ 
-                  color: tokens.color.neutral[600],
-                  mb: 3,
-                }}
-              >
-                Find products, categories, and discounts by name or description
-              </Typography>
-
-              <TextField
-                fullWidth
-                placeholder="Search by name, description, or type..."
-                value={headerSearchQuery}
-                onChange={(e) => handleHeaderSearch(e.target.value)}
-                autoFocus
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    ...glassPresets.light,
-                    borderRadius: tokens.spacing.radius.lg,
-                    border: `1px solid ${tokens.color.borders.glass}`,
-                    '&:hover': {
-                      border: `1px solid ${tokens.color.primary[300]}`,
-                    },
-                    '&.Mui-focused': {
-                      border: `1px solid ${tokens.color.primary[500]}`,
-                      boxShadow: `0 0 0 3px ${tokens.color.primary[500]}15`,
-                    },
-                  },
-                }}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <SearchIcon sx={{ color: tokens.color.primary[600] }} />
-                    </InputAdornment>
-                  ),
-                }}
-              />
-            </Box>
-          </ModernCard>
+          />
         </Box>
       )}
 
       {/* Tabs */}
-      <ModernCard sx={{ mb: 3 }}>
+      <Box sx={{ mb: 3, borderRadius: 1, bgcolor: 'background.paper' }}>
         <Tabs
           value={activeTab}
           onChange={handleTabChange}
@@ -760,7 +712,7 @@ export const ProductsPackages: React.FC = () => {
             />
           </Box>
         </TabPanel>
-      </ModernCard>
+      </Box>
 
       {/* Dialogs */}
       <CategoryFormDialog

@@ -286,7 +286,6 @@ export const TemplateList: React.FC<TemplateListProps> = ({
       }}
       size="large"
       color="primary"
-      illustration="gradient"
     />
   );
 

@@ -17,7 +17,8 @@ import {
 import { ModernCard } from '../../../components/common/ModernCard';
 import DownloadIcon from '@mui/icons-material/Download';
 
-import { KPICard, RevenueChart, PipelineChart } from '../../../components/analytics';
+import { KPICard, KPIGrid, RevenueChart, PipelineChart } from '../../../components/analytics';
+import { formatCurrency } from '../../../utils/currency';
 import {
   useBookingsSummary,
   useReservationPipeline,
@@ -39,13 +40,6 @@ export const SalesReportsTab: React.FC<SalesReportsTabProps> = ({ dateRange }) =
   const { data: pipeline, isLoading: pipelineLoading } = useReservationPipeline(dateRange);
   const { data: revenue, isLoading: revenueLoading } = useRevenueByType(dateRange);
   const { data: payments, isLoading: paymentsLoading } = usePaymentTracking(dateRange);
-
-  const formatCurrency = (value: number) =>
-    new Intl.NumberFormat('en-PH', {
-      style: 'currency',
-      currency: 'PHP',
-      minimumFractionDigits: 0,
-    }).format(value);
 
   const handleExportBookings = async () => {
     try {
@@ -110,17 +104,7 @@ export const SalesReportsTab: React.FC<SalesReportsTabProps> = ({ dateRange }) =
         <Typography variant="h6" mb={2}>
           Payment Tracking
         </Typography>
-        <Box
-          display="flex"
-          gap={2}
-          sx={{
-            flexWrap: 'wrap',
-            '& > *': {
-              flex: '1 1 180px',
-              minWidth: 180,
-            },
-          }}
-        >
+        <KPIGrid>
           <KPICard
             title="Total Payments"
             value={payments?.total_payments ?? 0}
@@ -145,7 +129,7 @@ export const SalesReportsTab: React.FC<SalesReportsTabProps> = ({ dateRange }) =
             isLoading={paymentsLoading}
             color="error"
           />
-        </Box>
+        </KPIGrid>
       </Box>
 
       {/* Revenue by Type */}
@@ -164,7 +148,7 @@ export const SalesReportsTab: React.FC<SalesReportsTabProps> = ({ dateRange }) =
         {revenueLoading ? (
           <Skeleton variant="rectangular" height={300} />
         ) : (
-          <ModernCard variant="glass" size="medium">
+          <ModernCard variant="flat" size="medium">
             <TableContainer>
               <Table size="small">
                 <TableHead>

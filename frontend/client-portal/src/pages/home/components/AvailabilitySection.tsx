@@ -8,11 +8,15 @@ import { useEventAvailability } from '../../../hooks/useEventAvailability';
 import { useToastActions } from '../../../contexts/ToastContext';
 import type { AvailabilitySectionProps } from '../types/home.types';
 import type { EventData, AvailabilitySlot } from '../../../design-system/visualizations/EventAvailabilityCalendar';
+import { useGlobalAvailabilityConfig } from '../../../hooks/useGlobalAvailabilityConfig';
 
 export const AvailabilitySection: React.FC<AvailabilitySectionProps> = ({
   onNavigateToBooking,
 }) => {
   const { showError, showSuccess } = useToastActions();
+
+  // Get global availability config (minimum across all booking flows)
+  const { minAdvanceBookingDays, maxAdvanceBookingDays } = useGlobalAvailabilityConfig();
 
   // Track current month for calendar
   const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
@@ -63,7 +67,7 @@ export const AvailabilitySection: React.FC<AvailabilitySectionProps> = ({
   }, [onNavigateToBooking, showError, showSuccess]);
 
   return (
-    <Box sx={{ py: { xs: 6, md: 8 }, px: { xs: 2, sm: 3, md: 4 }, backgroundColor: 'background.default', width: '100vw' }}>
+    <Box sx={{ py: { xs: 6, md: 8 }, px: { xs: 2, sm: 3, md: 4 }, backgroundColor: 'background.default', width: '100%' }}>
       <Box sx={{ maxWidth: 800, mx: 'auto' }}>
         <AnimatedElement animation="fadeIn" delay={200}>
           <Stack spacing={4}>
@@ -97,8 +101,8 @@ export const AvailabilitySection: React.FC<AvailabilitySectionProps> = ({
                 selectedDate={selectedDate || undefined}
                 onDateSelect={handleDateSelect}
                 onMonthChange={handleMonthChange}
-                minAdvanceBookingDays={7}
-                maxAdvanceBookingDays={365}
+                minAdvanceBookingDays={minAdvanceBookingDays}
+                maxAdvanceBookingDays={maxAdvanceBookingDays}
               />
             )}
           </Stack>

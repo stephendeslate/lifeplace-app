@@ -24,8 +24,6 @@ import {
   Skeleton,
 } from '@mui/material';
 
-// Modern Design System imports
-import { ModernCard } from '../../common/ModernCard';
 import {
   ExpandMore as ExpandMoreIcon,
   ShoppingCart as AddonIcon,
@@ -316,11 +314,10 @@ export const AddonSelectionStepConfig: React.FC<AddonSelectionStepConfigProps> =
 
       <Stack spacing={3}>
         {/* Add-on Availability */}
-        <ModernCard variant="glass" size="medium" animation="none">
-          <Box sx={{ p: 3 }}>
-            <Typography variant="subtitle1" gutterBottom>
-              Available Add-ons
-            </Typography>
+        <Box sx={{ borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
+          <Typography variant="subtitle1" gutterBottom>
+            Available Add-ons
+          </Typography>
             
             <Stack spacing={2}>
               {/* Categories Selection */}
@@ -422,15 +419,13 @@ export const AddonSelectionStepConfig: React.FC<AddonSelectionStepConfigProps> =
                 <Alert severity="error">{errors.selection}</Alert>
               )}
             </Stack>
-          </Box>
-        </ModernCard>
+        </Box>
 
         {/* Selection Behavior */}
-        <ModernCard variant="glass" size="medium" animation="none">
-          <Box sx={{ p: 3 }}>
-            <Typography variant="subtitle1" gutterBottom>
-              Selection Behavior
-            </Typography>
+        <Box sx={{ borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
+          <Typography variant="subtitle1" gutterBottom>
+            Selection Behavior
+          </Typography>
             
             <Stack spacing={2}>
               <Box display="flex" gap={2}>
@@ -459,15 +454,13 @@ export const AddonSelectionStepConfig: React.FC<AddonSelectionStepConfigProps> =
                 />
               </Box>
             </Stack>
-          </Box>
-        </ModernCard>
+        </Box>
 
         {/* Display Options */}
-        <ModernCard variant="glass" size="medium" animation="none">
-          <Box sx={{ p: 3 }}>
-            <Typography variant="subtitle1" gutterBottom>
-              Display Options
-            </Typography>
+        <Box sx={{ borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
+          <Typography variant="subtitle1" gutterBottom>
+            Display Options
+          </Typography>
             
             <Stack spacing={2}>
               <FormControlLabel
@@ -498,8 +491,7 @@ export const AddonSelectionStepConfig: React.FC<AddonSelectionStepConfigProps> =
                 Highlight recommended add-ons based on the client's selections
               </Typography>
             </Stack>
-          </Box>
-        </ModernCard>
+        </Box>
 
         {/* Advanced Recommendations */}
         <Accordion>
@@ -542,11 +534,10 @@ export const AddonSelectionStepConfig: React.FC<AddonSelectionStepConfigProps> =
         </Accordion>
 
         {/* Configuration Summary */}
-        <ModernCard variant="glass" size="medium" animation="none">
-          <Box sx={{ p: 3 }}>
-            <Typography variant="subtitle1" gutterBottom>
-              Configuration Summary
-            </Typography>
+        <Box sx={{ borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
+          <Typography variant="subtitle1" gutterBottom>
+            Configuration Summary
+          </Typography>
             
             {isDataLoading ? (
               <Stack spacing={1}>
@@ -586,8 +577,7 @@ export const AddonSelectionStepConfig: React.FC<AddonSelectionStepConfigProps> =
                 )}
               </Stack>
             )}
-          </Box>
-        </ModernCard>
+        </Box>
 
         {/* Actions */}
         <Box display="flex" gap={2} alignItems="center">

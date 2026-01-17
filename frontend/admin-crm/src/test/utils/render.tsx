@@ -1,11 +1,11 @@
 // frontend/admin-crm/src/test/utils/render.tsx
 
 import React from 'react'
-import { render, RenderOptions } from '@testing-library/react'
+import { render, type RenderOptions } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ThemeProvider } from '@mui/material/styles'
 import { CssBaseline } from '@mui/material'
-import { MemoryRouter, MemoryRouterProps } from 'react-router-dom'
+import { MemoryRouter, type MemoryRouterProps } from 'react-router-dom'
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns'
 import { createTestQueryClient } from './test-query-client'

@@ -19,9 +19,8 @@ import {
   Search as SearchIcon,
 } from '@mui/icons-material';
 import { useLayout } from '../../../contexts/LayoutContext';
-import { 
+import {
   ModernSettingsLayout,
-  ModernCard,
   ModernPageHeader,
   ModernDialog,
   createDeleteActions,
@@ -33,8 +32,6 @@ import { TaxRateFormDialog } from '../../../components/payments/TaxRateFormDialo
 import { useCurrencySettings } from '../../../hooks/useCurrency';
 import { useTaxRates, useDeleteTaxRate } from '../../../hooks/usePayments';
 import type { TaxRate } from '../../../types/payments.types';
-import { tokens } from '../../../design-system';
-import { glassPresets } from '../../../design-system/utils/glassmorphism';
 
 export const CurrencyTaxes: React.FC = () => {
   const { setBreadcrumbs } = useLayout();
@@ -147,7 +144,7 @@ export const CurrencyTaxes: React.FC = () => {
 
   return (
     <ModernSettingsLayout>
-      {/* Modern Header */}
+      {/* Header */}
       <ModernPageHeader
         title="Currency & Taxes"
         subtitle="Configure currency display settings and manage tax rates for your business"
@@ -165,208 +162,102 @@ export const CurrencyTaxes: React.FC = () => {
           { label: 'Default Rate', value: filteredTaxRates.filter(rate => rate.is_default).length },
         ]}
         size="medium"
-        gradient
-        glass
       />
 
       {/* Search Field - Conditionally Shown */}
       {showSearchField && (
-        <Box sx={{ mb: 4 }}>
-          <ModernCard
-            variant="glass"
-            size="large"
-            color="primary"
-            animation="fade"
-            sx={{
-              '&::before': {
-                background: `linear-gradient(135deg, ${tokens.color.primary[500]}04 0%, ${tokens.color.primary[600]}03 100%)`,
-              },
+        <Box sx={{ mb: 4, borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
+          <Box display="flex" alignItems="center" gap={1.5} mb={1}>
+            <SearchIcon color="primary" />
+            <Typography variant="h6" fontWeight="600">
+              Search Currency & Tax Settings
+            </Typography>
+          </Box>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+            Find tax rates by name, description, or rate percentage
+          </Typography>
+          <TextField
+            fullWidth
+            placeholder="Search by name, description, or rate..."
+            value={searchQuery}
+            onChange={(e) => handleSearch(e.target.value)}
+            autoFocus
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon color="primary" />
+                </InputAdornment>
+              ),
             }}
-          >
-            <Box sx={{ position: 'relative' }}>
-              <Typography 
-                variant="h6" 
-                sx={{ 
-                  color: tokens.color.neutral[800],
-                  fontWeight: 600,
-                  mb: 1,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 1.5,
-                }}
-              >
-                <SearchIcon sx={{ color: tokens.color.primary[600] }} />
-                Search Currency & Tax Settings
-              </Typography>
-              <Typography 
-                variant="body2" 
-                sx={{ 
-                  color: tokens.color.neutral[600],
-                  mb: 3,
-                }}
-              >
-                Find tax rates by name, description, or rate percentage
-              </Typography>
-
-              <TextField
-                fullWidth
-                placeholder="Search by name, description, or rate..."
-                value={searchQuery}
-                onChange={(e) => handleSearch(e.target.value)}
-                autoFocus
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    ...glassPresets.light,
-                    borderRadius: tokens.spacing.radius.lg,
-                    border: `1px solid ${tokens.color.borders.glass}`,
-                    '&:hover': {
-                      border: `1px solid ${tokens.color.primary[300]}`,
-                    },
-                    '&.Mui-focused': {
-                      border: `1px solid ${tokens.color.primary[500]}`,
-                      boxShadow: `0 0 0 3px ${tokens.color.primary[500]}15`,
-                    },
-                  },
-                }}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <SearchIcon sx={{ color: tokens.color.primary[600] }} />
-                    </InputAdornment>
-                  ),
-                }}
-              />
-            </Box>
-          </ModernCard>
+          />
         </Box>
       )}
 
       {/* Currency Settings Section */}
-      <Box sx={{ mb: 4 }}>
-        <ModernCard
-          variant="glass"
-          size="large"
-          color="primary"
-          animation="none"
-          title="Currency Settings"
-          subtitle="Configure how currency amounts are displayed throughout the application"
-          sx={{
-            '&::before': {
-              background: `linear-gradient(135deg, ${tokens.color.primary[500]}04 0%, ${tokens.color.primary[600]}03 100%)`,
-            },
-          }}
-        >
-          <Box sx={{ position: 'relative' }}>
-            <Typography 
-              variant="h6" 
-              sx={{ 
-                color: tokens.color.neutral[800],
-                fontWeight: 600,
-                mb: 1,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 1.5,
-              }}
-            >
-              <SettingsIcon sx={{ color: tokens.color.primary[600] }} />
-              Display Configuration
-            </Typography>
-            <Typography 
-              variant="body2" 
-              sx={{ 
-                color: tokens.color.neutral[600],
-                mb: 3,
-              }}
-            >
-              These settings affect invoices, payments, and all financial data display throughout the system.
-            </Typography>
+      <Box sx={{ mb: 4, borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
+        <Box display="flex" alignItems="center" gap={1.5} mb={1}>
+          <SettingsIcon color="primary" />
+          <Typography variant="h6" fontWeight="600">
+            Display Configuration
+          </Typography>
+        </Box>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+          These settings affect invoices, payments, and all financial data display throughout the system.
+        </Typography>
 
-            {currencyError && (
-              <Alert severity="error" sx={{ mb: 3 }}>
-                Failed to load currency settings. Please try again.
-              </Alert>
-            )}
+        {currencyError && (
+          <Alert severity="error" sx={{ mb: 3 }}>
+            Failed to load currency settings. Please try again.
+          </Alert>
+        )}
 
-            <CurrencySettingsForm
-              settings={currencySettings}
-              onSubmit={updateCurrencySettings}
-              loading={isLoadingCurrency || isUpdatingCurrency}
-            />
+        <CurrencySettingsForm
+          settings={currencySettings}
+          onSubmit={updateCurrencySettings}
+          loading={isLoadingCurrency || isUpdatingCurrency}
+        />
 
-            <Stack direction="row" spacing={2} sx={{ mt: 3, justifyContent: 'flex-end' }}>
-              <Button
-                variant="outlined"
-                onClick={handleResetCurrency}
-                disabled={isResettingCurrency}
-                startIcon={<RefreshIcon />}
-              >
-                Reset to Defaults
-              </Button>
-            </Stack>
-          </Box>
-        </ModernCard>
+        <Stack direction="row" spacing={2} sx={{ mt: 3, justifyContent: 'flex-end' }}>
+          <Button
+            variant="outlined"
+            onClick={handleResetCurrency}
+            disabled={isResettingCurrency}
+            startIcon={<RefreshIcon />}
+          >
+            Reset to Defaults
+          </Button>
+        </Stack>
       </Box>
 
       {/* Tax Rates Section */}
-      <Box sx={{ mb: 4 }}>
-        <ModernCard
-          variant="glass"
-          size="large"
-          color="success"
-          animation="none"
-          title="Tax Rates Management"
-          subtitle="Manage tax rates for different regions or services"
-          sx={{
-            '&::before': {
-              background: `linear-gradient(135deg, ${tokens.color.success[500]}04 0%, ${tokens.color.success[600]}03 100%)`,
-            },
+      <Box sx={{ mb: 4, borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
+        <Box display="flex" alignItems="center" gap={1.5} mb={1}>
+          <TaxIcon color="success" />
+          <Typography variant="h6" fontWeight="600">
+            Tax Configuration
+          </Typography>
+        </Box>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+          {searchQuery ? `Search results for "${searchQuery}" - ${filteredTaxRates.length} found` : 'Tax rates are automatically applied to invoices and payments based on the client\'s location or service type.'}
+        </Typography>
+
+        <Alert severity="info" sx={{ mb: 3 }}>
+          <Typography variant="body2">
+            <strong>Philippine Tax Context:</strong> Standard VAT rate is 12% for most goods and services.
+            Some services may be VAT-exempt or zero-rated. Consult with a tax professional for specific requirements.
+          </Typography>
+        </Alert>
+
+        <TaxRateTable
+          taxRates={filteredTaxRates}
+          isLoading={isLoadingTaxRates}
+          onEdit={handleEditTaxRate}
+          onDelete={(id) => {
+            const taxRate = filteredTaxRates.find(rate => rate.id === id);
+            if (taxRate) handleDeleteTaxRate(taxRate);
           }}
-        >
-          <Box sx={{ position: 'relative' }}>
-            <Typography 
-              variant="h6" 
-              sx={{ 
-                color: tokens.color.neutral[800],
-                fontWeight: 600,
-                mb: 1,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 1.5,
-              }}
-            >
-              <TaxIcon sx={{ color: tokens.color.success[600] }} />
-              Tax Configuration
-            </Typography>
-
-            <Typography 
-              variant="body2" 
-              sx={{ 
-                color: tokens.color.neutral[600],
-                mb: 3,
-              }}
-            >
-              {searchQuery ? `Search results for "${searchQuery}" - ${filteredTaxRates.length} found` : 'Tax rates are automatically applied to invoices and payments based on the client\'s location or service type.'}
-            </Typography>
-
-            <Alert severity="info" sx={{ mb: 3 }}>
-              <Typography variant="body2">
-                <strong>Philippine Tax Context:</strong> Standard VAT rate is 12% for most goods and services. 
-                Some services may be VAT-exempt or zero-rated. Consult with a tax professional for specific requirements.
-              </Typography>
-            </Alert>
-
-            <TaxRateTable
-              taxRates={filteredTaxRates}
-              isLoading={isLoadingTaxRates}
-              onEdit={handleEditTaxRate}
-              onDelete={(id) => {
-                const taxRate = filteredTaxRates.find(rate => rate.id === id);
-                if (taxRate) handleDeleteTaxRate(taxRate);
-              }}
-              isDeleting={deleteTaxRateMutation.isPending}
-            />
-          </Box>
-        </ModernCard>
+          isDeleting={deleteTaxRateMutation.isPending}
+        />
       </Box>
 
       {/* Dialogs */}

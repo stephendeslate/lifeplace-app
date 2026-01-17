@@ -13,13 +13,15 @@ import {
   Skeleton,
 } from '@mui/material';
 
-import { ModernCard } from '../../common/ModernCard';
 import {
   Save as SaveIcon,
   Refresh as RefreshIcon,
   Home as VenueIcon,
 } from '@mui/icons-material';
 import { useBookingFlowStepConfiguration } from '../../../hooks/useBookingFlows';
+import { useFormHandlers } from '../../../hooks/useFormHandlers';
+import { ConfigSection } from '../../common';
+import { tokens } from '../../../design-system';
 import type {
   BookingFlowStep,
   VenueSelectionStepConfiguration,
@@ -66,6 +68,13 @@ export const VenueSelectionStepConfig: React.FC<VenueSelectionStepConfigProps> =
   const [formData, setFormData] = useState<VenueSelectionConfigFormData>(defaultFormData);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [hasChanges, setHasChanges] = useState(false);
+
+  // Use centralized form handlers
+  const { handleInputChange, handleSwitchChange } = useFormHandlers(
+    setFormData,
+    errors,
+    setErrors
+  );
 
   const {
     useStepConfiguration,
@@ -127,23 +136,6 @@ export const VenueSelectionStepConfig: React.FC<VenueSelectionStepConfigProps> =
     }
   }, [formData, config]);
 
-  const handleInputChange = (field: keyof VenueSelectionConfigFormData) => (
-    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    const value = event.target.value;
-    setFormData(prev => ({
-      ...prev,
-      [field]: value,
-    }));
-
-    if (errors[field]) {
-      setErrors(prev => ({
-        ...prev,
-        [field]: '',
-      }));
-    }
-  };
-
   const handleNumberChange = (field: 'min_venues' | 'max_venues') => (
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
@@ -154,15 +146,6 @@ export const VenueSelectionStepConfig: React.FC<VenueSelectionStepConfigProps> =
         [field]: value,
       }));
     }
-  };
-
-  const handleSwitchChange = (field: keyof VenueSelectionConfigFormData) => (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: event.target.checked,
-    }));
   };
 
   const validateForm = (): boolean => {
@@ -309,210 +292,180 @@ export const VenueSelectionStepConfig: React.FC<VenueSelectionStepConfigProps> =
 
       <Stack spacing={3}>
         {/* Content Settings */}
-        <ModernCard variant="glass" size="medium" animation="none">
-          <Box sx={{ p: 3 }}>
-            <Typography variant="subtitle1" gutterBottom>
-              Step Content
-            </Typography>
-
-            <Stack spacing={2}>
-              <TextField
-                fullWidth
-                label="Title"
-                value={formData.title}
-                onChange={handleInputChange('title')}
-                error={!!errors.title}
-                helperText={errors.title || 'Heading displayed at the top of the step'}
-                required
-                disabled={isUpdatingConfiguration}
-              />
-
-              <TextField
-                fullWidth
-                label="Description"
-                value={formData.description}
-                onChange={handleInputChange('description')}
-                helperText="Instructions for clients"
-                multiline
-                rows={2}
-                disabled={isUpdatingConfiguration}
-              />
-            </Stack>
-          </Box>
-        </ModernCard>
-
-        {/* Selection Constraints */}
-        <ModernCard variant="glass" size="medium" animation="none">
-          <Box sx={{ p: 3 }}>
-            <Typography variant="subtitle1" gutterBottom>
-              Selection Constraints
-            </Typography>
-
-            <Stack spacing={2} direction="row">
-              <TextField
-                type="number"
-                label="Minimum Venues"
-                value={formData.min_venues}
-                onChange={handleNumberChange('min_venues')}
-                error={!!errors.min_venues}
-                helperText={errors.min_venues || 'Minimum spaces required'}
-                inputProps={{ min: 0 }}
-                disabled={isUpdatingConfiguration}
-                sx={{ width: 200 }}
-              />
-
-              <TextField
-                type="number"
-                label="Maximum Venues"
-                value={formData.max_venues}
-                onChange={handleNumberChange('max_venues')}
-                error={!!errors.max_venues}
-                helperText={errors.max_venues || 'Maximum spaces allowed'}
-                inputProps={{ min: 1 }}
-                disabled={isUpdatingConfiguration}
-                sx={{ width: 200 }}
-              />
-            </Stack>
-          </Box>
-        </ModernCard>
-
-        {/* Display Options */}
-        <ModernCard variant="glass" size="medium" animation="none">
-          <Box sx={{ p: 3 }}>
-            <Typography variant="subtitle1" gutterBottom>
-              Display Options
-            </Typography>
-
-            <Stack spacing={2}>
-              <Box>
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={formData.show_pricing}
-                      onChange={handleSwitchChange('show_pricing')}
-                      disabled={isUpdatingConfiguration}
-                    />
-                  }
-                  label="Show Pricing"
-                />
-                <Typography variant="caption" color="text.secondary" display="block">
-                  Display standalone rental price for each venue
-                </Typography>
-              </Box>
-
-              <Box>
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={formData.show_included_hours}
-                      onChange={handleSwitchChange('show_included_hours')}
-                      disabled={isUpdatingConfiguration}
-                    />
-                  }
-                  label="Show Included Hours"
-                />
-                <Typography variant="caption" color="text.secondary" display="block">
-                  Display how many hours are included with each venue
-                </Typography>
-              </Box>
-
-              <Box>
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={formData.show_bundle_discount}
-                      onChange={handleSwitchChange('show_bundle_discount')}
-                      disabled={isUpdatingConfiguration}
-                    />
-                  }
-                  label="Show Multi-Space Discount"
-                />
-                <Typography variant="caption" color="text.secondary" display="block">
-                  Show discount applied when selecting multiple spaces
-                </Typography>
-              </Box>
-            </Stack>
-          </Box>
-        </ModernCard>
-
-        {/* Package Recommendations */}
-        <ModernCard variant="glass" size="medium" animation="none">
-          <Box sx={{ p: 3 }}>
-            <Typography variant="subtitle1" gutterBottom>
-              Package Recommendations
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              Show users pre-made packages that match their venue selection, helping them find better value options.
-            </Typography>
-
-            <Stack spacing={2}>
-              <Box>
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={formData.show_package_recommendations}
-                      onChange={handleSwitchChange('show_package_recommendations')}
-                      disabled={isUpdatingConfiguration}
-                    />
-                  }
-                  label="Show Package Recommendations"
-                />
-                <Typography variant="caption" color="text.secondary" display="block">
-                  When enabled, shows matching pre-made packages with price comparisons
-                </Typography>
-              </Box>
-
-              <Box>
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={formData.show_view_packages_option}
-                      onChange={handleSwitchChange('show_view_packages_option')}
-                      disabled={isUpdatingConfiguration}
-                    />
-                  }
-                  label="Show 'View Packages' Option"
-                />
-                <Typography variant="caption" color="text.secondary" display="block">
-                  Allow users to navigate to package selection if unsure about venue selection
-                </Typography>
-              </Box>
-
-              {formData.show_view_packages_option && (
-                <TextField
-                  fullWidth
-                  label="View Packages Button Text"
-                  value={formData.view_packages_button_text}
-                  onChange={handleInputChange('view_packages_button_text')}
-                  helperText="Text shown on the button to navigate to packages"
-                  disabled={isUpdatingConfiguration}
-                />
-              )}
-            </Stack>
-          </Box>
-        </ModernCard>
-
-        {/* Bundle Discount */}
-        <ModernCard variant="glass" size="medium" animation="none">
-          <Box sx={{ p: 3 }}>
-            <Typography variant="subtitle1" gutterBottom>
-              Multi-Space Discount
-            </Typography>
+        <ConfigSection title="Step Content">
+          <Stack spacing={2}>
+            <TextField
+              fullWidth
+              label="Title"
+              value={formData.title}
+              onChange={handleInputChange('title')}
+              error={!!errors.title}
+              helperText={errors.title || 'Heading displayed at the top of the step'}
+              required
+              disabled={isUpdatingConfiguration}
+            />
 
             <TextField
-              label="Discount Percentage"
-              value={formData.bundle_discount_percent}
-              onChange={handleInputChange('bundle_discount_percent')}
-              error={!!errors.bundle_discount_percent}
-              helperText={errors.bundle_discount_percent || 'Discount applied when selecting 2+ spaces (e.g., 10.00 for 10%)'}
+              fullWidth
+              label="Description"
+              value={formData.description}
+              onChange={handleInputChange('description')}
+              helperText="Instructions for clients"
+              multiline
+              rows={2}
+              disabled={isUpdatingConfiguration}
+            />
+          </Stack>
+        </ConfigSection>
+
+        {/* Selection Constraints */}
+        <ConfigSection title="Selection Constraints">
+          <Stack spacing={2} direction="row">
+            <TextField
+              type="number"
+              label="Minimum Venues"
+              value={formData.min_venues}
+              onChange={handleNumberChange('min_venues')}
+              error={!!errors.min_venues}
+              helperText={errors.min_venues || 'Minimum spaces required'}
+              inputProps={{ min: 0 }}
               disabled={isUpdatingConfiguration}
               sx={{ width: 200 }}
-              InputProps={{
-                endAdornment: <Typography color="text.secondary">%</Typography>,
-              }}
             />
-          </Box>
-        </ModernCard>
+
+            <TextField
+              type="number"
+              label="Maximum Venues"
+              value={formData.max_venues}
+              onChange={handleNumberChange('max_venues')}
+              error={!!errors.max_venues}
+              helperText={errors.max_venues || 'Maximum spaces allowed'}
+              inputProps={{ min: 1 }}
+              disabled={isUpdatingConfiguration}
+              sx={{ width: 200 }}
+            />
+          </Stack>
+        </ConfigSection>
+
+        {/* Display Options */}
+        <ConfigSection title="Display Options">
+          <Stack spacing={2}>
+            <Box>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={formData.show_pricing}
+                    onChange={handleSwitchChange('show_pricing')}
+                    disabled={isUpdatingConfiguration}
+                  />
+                }
+                label="Show Pricing"
+              />
+              <Typography variant="caption" color="text.secondary" display="block">
+                Display standalone rental price for each venue
+              </Typography>
+            </Box>
+
+            <Box>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={formData.show_included_hours}
+                    onChange={handleSwitchChange('show_included_hours')}
+                    disabled={isUpdatingConfiguration}
+                  />
+                }
+                label="Show Included Hours"
+              />
+              <Typography variant="caption" color="text.secondary" display="block">
+                Display how many hours are included with each venue
+              </Typography>
+            </Box>
+
+            <Box>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={formData.show_bundle_discount}
+                    onChange={handleSwitchChange('show_bundle_discount')}
+                    disabled={isUpdatingConfiguration}
+                  />
+                }
+                label="Show Multi-Space Discount"
+              />
+              <Typography variant="caption" color="text.secondary" display="block">
+                Show discount applied when selecting multiple spaces
+              </Typography>
+            </Box>
+          </Stack>
+        </ConfigSection>
+
+        {/* Package Recommendations */}
+        <ConfigSection
+          title="Package Recommendations"
+          description="Show users pre-made packages that match their venue selection, helping them find better value options."
+        >
+          <Stack spacing={2}>
+            <Box>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={formData.show_package_recommendations}
+                    onChange={handleSwitchChange('show_package_recommendations')}
+                    disabled={isUpdatingConfiguration}
+                  />
+                }
+                label="Show Package Recommendations"
+              />
+              <Typography variant="caption" color="text.secondary" display="block">
+                When enabled, shows matching pre-made packages with price comparisons
+              </Typography>
+            </Box>
+
+            <Box>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={formData.show_view_packages_option}
+                    onChange={handleSwitchChange('show_view_packages_option')}
+                    disabled={isUpdatingConfiguration}
+                  />
+                }
+                label="Show 'View Packages' Option"
+              />
+              <Typography variant="caption" color="text.secondary" display="block">
+                Allow users to navigate to package selection if unsure about venue selection
+              </Typography>
+            </Box>
+
+            {formData.show_view_packages_option && (
+              <TextField
+                fullWidth
+                label="View Packages Button Text"
+                value={formData.view_packages_button_text}
+                onChange={handleInputChange('view_packages_button_text')}
+                helperText="Text shown on the button to navigate to packages"
+                disabled={isUpdatingConfiguration}
+              />
+            )}
+          </Stack>
+        </ConfigSection>
+
+        {/* Bundle Discount */}
+        <ConfigSection title="Multi-Space Discount">
+          <TextField
+            label="Discount Percentage"
+            value={formData.bundle_discount_percent}
+            onChange={handleInputChange('bundle_discount_percent')}
+            error={!!errors.bundle_discount_percent}
+            helperText={errors.bundle_discount_percent || 'Discount applied when selecting 2+ spaces (e.g., 10.00 for 10%)'}
+            disabled={isUpdatingConfiguration}
+            sx={{ width: 200 }}
+            InputProps={{
+              endAdornment: <Typography color="text.secondary">%</Typography>,
+            }}
+          />
+        </ConfigSection>
 
         {/* Available Venues Note */}
         <Alert severity="info">
@@ -541,16 +494,14 @@ export const VenueSelectionStepConfig: React.FC<VenueSelectionStepConfigProps> =
 
         {/* Debug Info */}
         {process.env.NODE_ENV === 'development' && config && (
-          <ModernCard variant="glass" size="small" animation="none" sx={{ backgroundColor: 'grey.50' }}>
-            <Box sx={{ p: 3 }}>
-              <Typography variant="caption" gutterBottom>
-                Debug: Current Configuration
-              </Typography>
-              <pre style={{ fontSize: '0.75rem', overflow: 'auto' }}>
-                {JSON.stringify(config, null, 2)}
-              </pre>
-            </Box>
-          </ModernCard>
+          <Box sx={{ borderRadius: tokens.spacing.radius.md, bgcolor: tokens.color.neutral[50], p: 3 }}>
+            <Typography variant="caption" gutterBottom>
+              Debug: Current Configuration
+            </Typography>
+            <pre style={{ fontSize: '0.75rem', overflow: 'auto' }}>
+              {JSON.stringify(config, null, 2)}
+            </pre>
+          </Box>
         )}
       </Stack>
     </Box>

@@ -26,7 +26,6 @@ import {
   Add as AddIcon,
   Delete as DeleteIcon,
 } from '@mui/icons-material';
-import { ModernCard } from '../../common/ModernCard';
 import { usePaymentSettings } from '../../../hooks/usePayments';
 import { useCurrentCurrency } from '../../../hooks/useCurrency';
 import type { PaymentTermsConfiguration } from '../../../types/bookingflows.types';
@@ -309,15 +308,14 @@ export const PaymentTermsStepConfig: React.FC<PaymentTermsStepConfigProps> = ({
   };
 
   return (
-    <ModernCard variant="glass" size="medium" animation="none">
-      <Box sx={{ p: 3 }}>
-        <Box
-          display="flex"
-          alignItems="center"
-          justifyContent="space-between"
-          sx={{ cursor: 'pointer' }}
-          onClick={() => setExpanded(!expanded)}
-        >
+    <Box sx={{ borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
+      <Box
+        display="flex"
+        alignItems="center"
+        justifyContent="space-between"
+        sx={{ cursor: 'pointer' }}
+        onClick={() => setExpanded(!expanded)}
+      >
           <Box display="flex" alignItems="center" gap={1}>
             <SettingsIcon color="primary" />
             <Typography variant="subtitle1">
@@ -816,7 +814,6 @@ export const PaymentTermsStepConfig: React.FC<PaymentTermsStepConfigProps> = ({
             </Box>
           </Stack>
         </Collapse>
-      </Box>
-    </ModernCard>
+    </Box>
   );
 };

@@ -17,6 +17,7 @@ import { ModernCard } from '../../../components/common/ModernCard';
 import { VenueChart, PlaceholderCard } from '../../../components/analytics';
 import { useVenueUsage, useCalendarUtilization } from '../../../hooks/useAnalytics';
 import type { DateRange } from '../../../types/analytics.types';
+import { formatCurrency } from '../../../utils/currency';
 
 interface OperationsReportsTabProps {
   dateRange: DateRange;
@@ -25,13 +26,6 @@ interface OperationsReportsTabProps {
 export const OperationsReportsTab: React.FC<OperationsReportsTabProps> = ({ dateRange }) => {
   const { data: venues, isLoading: venuesLoading } = useVenueUsage(dateRange);
   const { data: calendar, isLoading: calendarLoading } = useCalendarUtilization(dateRange);
-
-  const formatCurrency = (value: number) =>
-    new Intl.NumberFormat('en-PH', {
-      style: 'currency',
-      currency: 'PHP',
-      minimumFractionDigits: 0,
-    }).format(value);
 
   // Find max values for progress bars
   const maxMonthlyBookings = Math.max(...(calendar?.by_month?.map((m) => m.booking_count) || [1]));
@@ -49,7 +43,7 @@ export const OperationsReportsTab: React.FC<OperationsReportsTabProps> = ({ date
         <VenueChart data={venues || []} isLoading={venuesLoading} />
 
         {!venuesLoading && venues && venues.length > 0 && (
-          <ModernCard variant="glass" size="medium" sx={{ mt: 2 }}>
+          <ModernCard variant="flat" size="medium" sx={{ mt: 2 }}>
             <TableContainer>
               <Table size="small">
                 <TableHead>
@@ -97,7 +91,7 @@ export const OperationsReportsTab: React.FC<OperationsReportsTabProps> = ({ date
 
         <Box display="flex" gap={3} flexWrap="wrap">
           {/* By Month */}
-          <ModernCard variant="glass" size="medium" sx={{ flex: '1 1 400px', minWidth: 300 }}>
+          <ModernCard variant="flat" size="medium" sx={{ flex: '1 1 400px', minWidth: 300 }}>
             <Typography variant="subtitle2" mb={2}>
               Bookings by Month
             </Typography>
@@ -142,7 +136,7 @@ export const OperationsReportsTab: React.FC<OperationsReportsTabProps> = ({ date
           </ModernCard>
 
           {/* By Day of Week */}
-          <ModernCard variant="glass" size="medium" sx={{ flex: '1 1 400px', minWidth: 300 }}>
+          <ModernCard variant="flat" size="medium" sx={{ flex: '1 1 400px', minWidth: 300 }}>
             <Typography variant="subtitle2" mb={2}>
               Bookings by Day of Week
             </Typography>

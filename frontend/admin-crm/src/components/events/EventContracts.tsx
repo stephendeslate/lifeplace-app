@@ -359,7 +359,7 @@ export const EventContracts: React.FC<EventContractsProps> = ({ event }) => {
 
       {/* Contracts Table */}
       <TableContainer component={Paper}>
-        <Table>
+        <Table size="small">
           <TableHead>
             <TableRow>
               <TableCell>Contract #</TableCell>

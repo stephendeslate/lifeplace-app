@@ -242,7 +242,7 @@ export const eventsHandlers = [
       event_type_name: eventType?.name || 'Unknown',
       status: body.status,
       start_date: body.start_date,
-      end_date: null,
+      end_date: '',
       client: body.client,
       client_name: 'New Client',
       total_price: 0,

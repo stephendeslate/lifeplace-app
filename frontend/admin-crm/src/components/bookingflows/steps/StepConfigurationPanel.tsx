@@ -13,16 +13,12 @@ import {
   IconButton,
   Tooltip,
 } from '@mui/material';
-import { ModernCard } from '../../common/ModernCard';
 import {
   Settings as ConfigIcon,
   Preview as PreviewIcon,
   Refresh as RefreshIcon,
   ContentCopy as CopyIcon,
 } from '@mui/icons-material';
-// Modern Design System imports
-import { tokens } from '../../../design-system';
-import { glassPresets } from '../../../design-system/utils/glassmorphism';
 import type {
   BookingFlowStep,
   QuestionnaireStepConfiguration,
@@ -257,13 +253,13 @@ export const StepConfigurationPanel: React.FC<StepConfigurationPanelProps> = ({
   // Error handling
   if (configError) {
     return (
-      <ModernCard variant="glass" size="medium" color="error">
-        <Alert 
-          severity="error" 
+      <Box sx={{ borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
+        <Alert
+          severity="error"
           action={
-            <IconButton 
-              color="inherit" 
-              size="small" 
+            <IconButton
+              color="inherit"
+              size="small"
               onClick={() => refetchConfig()}
             >
               <RefreshIcon />
@@ -272,22 +268,22 @@ export const StepConfigurationPanel: React.FC<StepConfigurationPanelProps> = ({
         >
           Failed to load step configuration: {configError instanceof Error ? configError.message : String(configError)}
         </Alert>
-      </ModernCard>
+      </Box>
     );
   }
 
   if (isLoadingConfig) {
     return (
-      <ModernCard variant="glass" size="medium" loading={true}>
+      <Box sx={{ borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
         <Box display="flex" justifyContent="center" py={4}>
           <CircularProgress />
         </Box>
-      </ModernCard>
+      </Box>
     );
   }
 
   return (
-    <ModernCard variant="glass" size="large" color="primary">
+    <Box sx={{ borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
         <Box display="flex" alignItems="center" gap={1}>
           <ConfigIcon color="primary" />
@@ -352,7 +348,7 @@ export const StepConfigurationPanel: React.FC<StepConfigurationPanelProps> = ({
       <TabPanel value={activeTab} index={1}>
         {renderPreview()}
       </TabPanel>
-    </ModernCard>
+    </Box>
   );
 };
 
@@ -372,12 +368,13 @@ const GenericConfigForm: React.FC<{ step: BookingFlowStep; config: unknown }> = 
         <Typography variant="subtitle2" gutterBottom>
           Current Configuration (Raw Data)
         </Typography>
-        <Box 
-          sx={{ 
-            p: 2, 
-            ...glassPresets.light,
-            border: `1px solid ${tokens.color.borders.glass}`,
-            borderRadius: tokens.spacing.radius.lg,
+        <Box
+          sx={{
+            p: 2,
+            borderRadius: 1,
+            bgcolor: 'grey.50',
+            border: 1,
+            borderColor: 'divider',
             overflow: 'auto'
           }}
         >

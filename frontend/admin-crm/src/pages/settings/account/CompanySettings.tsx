@@ -36,10 +36,7 @@ import type { CompanySettingsUpdateData } from '../../../types/settings.types';
 
 // Modern Design System imports
 import { ModernSettingsLayout } from '../../../components/common/ModernPageLayout';
-import { ModernCard } from '../../../components/common/ModernCard';
 import { ModernPageHeader } from '../../../components/common/ModernPageHeader';
-import { tokens } from '../../../design-system';
-import { glassPresets } from '../../../design-system/utils/glassmorphism';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -183,20 +180,7 @@ export const CompanySettings: React.FC = () => {
     setTabValue(newValue);
   };
 
-  const textFieldSx = {
-    '& .MuiOutlinedInput-root': {
-      ...glassPresets.light,
-      borderRadius: tokens.spacing.radius.lg,
-      border: `1px solid ${tokens.color.borders.glass}`,
-      '&:hover': {
-        border: `1px solid ${tokens.color.primary[300]}`,
-      },
-      '&.Mui-focused': {
-        border: `1px solid ${tokens.color.primary[500]}`,
-        boxShadow: `0 0 0 3px ${tokens.color.primary[500]}15`,
-      },
-    },
-  };
+  const textFieldSx = {};
 
   if (isLoading) {
     return (
@@ -206,8 +190,6 @@ export const CompanySettings: React.FC = () => {
           subtitle="Loading company settings..."
           icon={<BusinessIcon />}
           size="medium"
-          gradient
-          glass
         />
         <Stack spacing={3}>
           <Skeleton variant="rounded" height={200} />
@@ -225,8 +207,6 @@ export const CompanySettings: React.FC = () => {
           subtitle="Configure your company branding and information"
           icon={<BusinessIcon />}
           size="medium"
-          gradient
-          glass
         />
         <Alert severity="error" sx={{ mt: 2 }}>
           Failed to load company settings. Please try again later.
@@ -237,7 +217,7 @@ export const CompanySettings: React.FC = () => {
 
   return (
     <ModernSettingsLayout>
-      {/* Modern Header */}
+      {/* Header */}
       <ModernPageHeader
         title="Company Settings"
         subtitle="Configure your company branding, contact information, and PDF settings"
@@ -248,8 +228,6 @@ export const CompanySettings: React.FC = () => {
           { label: 'Company Settings' },
         ]}
         size="medium"
-        gradient
-        glass
       />
 
       {/* Tabs */}
@@ -275,14 +253,9 @@ export const CompanySettings: React.FC = () => {
       <form onSubmit={handleSubmit}>
         {/* General Tab */}
         <TabPanel value={tabValue} index={0}>
-          <ModernCard
-            variant="glass"
-            size="large"
-            color="primary"
-            animation="none"
-            title="Company Information"
-            subtitle="Basic information about your company"
-          >
+          <Box sx={{ borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
+            <Typography variant="h6" fontWeight="600" sx={{ mb: 1 }}>Company Information</Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>Basic information about your company</Typography>
             <Stack spacing={3}>
               <TextField
                 fullWidth
@@ -294,7 +267,7 @@ export const CompanySettings: React.FC = () => {
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
-                      <BusinessIcon sx={{ color: tokens.color.primary[600] }} />
+                      <BusinessIcon color="primary" />
                     </InputAdornment>
                   ),
                 }}
@@ -340,26 +313,21 @@ export const CompanySettings: React.FC = () => {
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
-                      <Language sx={{ color: tokens.color.primary[600] }} />
+                      <Language color="primary" />
                     </InputAdornment>
                   ),
                 }}
               />
             </Stack>
-          </ModernCard>
+          </Box>
         </TabPanel>
 
         {/* Branding Tab */}
         <TabPanel value={tabValue} index={1}>
           {/* Logo Upload Section */}
-          <ModernCard
-            variant="glass"
-            size="large"
-            color="primary"
-            animation="none"
-            title="Company Logos"
-            subtitle="Upload your company logos for PDFs and documents"
-          >
+          <Box sx={{ borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
+            <Typography variant="h6" fontWeight="600" sx={{ mb: 1 }}>Company Logos</Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>Upload your company logos for PDFs and documents</Typography>
             <Stack spacing={3}>
               <Typography variant="body2" color="text.secondary">
                 Upload your company logos. These will appear on quotes, contracts, invoices, and other generated documents.
@@ -584,18 +552,12 @@ export const CompanySettings: React.FC = () => {
                 </Box>
               </Box>
             </Stack>
-          </ModernCard>
+          </Box>
 
           {/* Brand Colors Section */}
-          <Box sx={{ mt: 3 }}>
-          <ModernCard
-            variant="glass"
-            size="large"
-            color="primary"
-            animation="none"
-            title="Brand Colors"
-            subtitle="Configure colors used in PDFs and documents"
-          >
+          <Box sx={{ mt: 3, borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
+            <Typography variant="h6" fontWeight="600" sx={{ mb: 1 }}>Brand Colors</Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>Configure colors used in PDFs and documents</Typography>
             <Stack spacing={3}>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
                 These colors are used for generating PDFs (quotes, contracts, receipts) and other branded documents.
@@ -626,7 +588,7 @@ export const CompanySettings: React.FC = () => {
                       InputProps={{
                         startAdornment: (
                           <InputAdornment position="start">
-                            <PaletteIcon sx={{ color: formData.primary_color || tokens.color.primary[600] }} />
+                            <PaletteIcon sx={{ color: formData.primary_color || 'primary.main' }} />
                           </InputAdornment>
                         ),
                       }}
@@ -689,19 +651,12 @@ export const CompanySettings: React.FC = () => {
                 Color values should be in hex format (e.g., #2c5aa0). These colors are used in PDF generation for quotes, contracts, and other documents.
               </Alert>
             </Stack>
-          </ModernCard>
           </Box>
 
-          <Box sx={{ mt: 3 }}>
-            <ModernCard
-              variant="glass"
-              size="large"
-              color="secondary"
-              animation="none"
-              title="Social Media"
-              subtitle="Your company's social media presence"
-            >
-              <Stack spacing={3}>
+          <Box sx={{ mt: 3, borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
+            <Typography variant="h6" fontWeight="600" sx={{ mb: 1 }}>Social Media</Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>Your company's social media presence</Typography>
+            <Stack spacing={3}>
                 <TextField
                   fullWidth
                   label="Facebook URL"
@@ -736,20 +691,14 @@ export const CompanySettings: React.FC = () => {
                   }}
                 />
               </Stack>
-            </ModernCard>
           </Box>
         </TabPanel>
 
         {/* Contact Tab */}
         <TabPanel value={tabValue} index={2}>
-          <ModernCard
-            variant="glass"
-            size="large"
-            color="primary"
-            animation="none"
-            title="Contact Information"
-            subtitle="How clients can reach your company"
-          >
+          <Box sx={{ borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
+            <Typography variant="h6" fontWeight="600" sx={{ mb: 1 }}>Contact Information</Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>How clients can reach your company</Typography>
             <Stack spacing={3}>
               <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2 }}>
                 <TextField
@@ -763,7 +712,7 @@ export const CompanySettings: React.FC = () => {
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position="start">
-                        <Email sx={{ color: tokens.color.primary[600] }} />
+                        <Email color="primary" />
                       </InputAdornment>
                     ),
                   }}
@@ -779,7 +728,7 @@ export const CompanySettings: React.FC = () => {
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position="start">
-                        <Email sx={{ color: tokens.color.primary[600] }} />
+                        <Email color="primary" />
                       </InputAdornment>
                     ),
                   }}
@@ -797,7 +746,7 @@ export const CompanySettings: React.FC = () => {
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position="start">
-                        <Phone sx={{ color: tokens.color.primary[600] }} />
+                        <Phone color="primary" />
                       </InputAdornment>
                     ),
                   }}
@@ -812,24 +761,18 @@ export const CompanySettings: React.FC = () => {
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position="start">
-                        <Phone sx={{ color: tokens.color.primary[600] }} />
+                        <Phone color="primary" />
                       </InputAdornment>
                     ),
                   }}
                 />
               </Box>
             </Stack>
-          </ModernCard>
+          </Box>
 
-          <Box sx={{ mt: 3 }}>
-            <ModernCard
-              variant="glass"
-              size="large"
-              color="secondary"
-              animation="none"
-              title="Business Address"
-              subtitle="Your company's physical location"
-            >
+          <Box sx={{ mt: 3, borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
+            <Typography variant="h6" fontWeight="600" sx={{ mb: 1 }}>Business Address</Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>Your company's physical location</Typography>
               <Stack spacing={3}>
                 <TextField
                   fullWidth
@@ -841,7 +784,7 @@ export const CompanySettings: React.FC = () => {
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position="start">
-                        <LocationOn sx={{ color: tokens.color.secondary[600] }} />
+                        <LocationOn color="secondary" />
                       </InputAdornment>
                     ),
                   }}
@@ -894,20 +837,14 @@ export const CompanySettings: React.FC = () => {
                   />
                 </Box>
               </Stack>
-            </ModernCard>
           </Box>
         </TabPanel>
 
         {/* Banking Tab */}
         <TabPanel value={tabValue} index={3}>
-          <ModernCard
-            variant="glass"
-            size="large"
-            color="primary"
-            animation="none"
-            title="Bank Account Details"
-            subtitle="Bank information displayed on invoices and payment instructions"
-          >
+          <Box sx={{ borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
+            <Typography variant="h6" fontWeight="600" sx={{ mb: 1 }}>Bank Account Details</Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>Bank information displayed on invoices and payment instructions</Typography>
             <Stack spacing={3}>
               <TextField
                 fullWidth
@@ -919,7 +856,7 @@ export const CompanySettings: React.FC = () => {
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
-                      <AccountBalance sx={{ color: tokens.color.primary[600] }} />
+                      <AccountBalance color="primary" />
                     </InputAdornment>
                   ),
                 }}
@@ -968,19 +905,14 @@ export const CompanySettings: React.FC = () => {
                 Bank details are sensitive information. They will be displayed on invoices for clients to make payments.
               </Alert>
             </Stack>
-          </ModernCard>
+          </Box>
         </TabPanel>
 
         {/* Documents Tab */}
         <TabPanel value={tabValue} index={4}>
-          <ModernCard
-            variant="glass"
-            size="large"
-            color="primary"
-            animation="none"
-            title="PDF & Document Settings"
-            subtitle="Configure text that appears on generated PDFs"
-          >
+          <Box sx={{ borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
+            <Typography variant="h6" fontWeight="600" sx={{ mb: 1 }}>PDF & Document Settings</Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>Configure text that appears on generated PDFs</Typography>
             <Stack spacing={3}>
               <TextField
                 fullWidth
@@ -1018,7 +950,7 @@ export const CompanySettings: React.FC = () => {
                 sx={textFieldSx}
               />
             </Stack>
-          </ModernCard>
+          </Box>
         </TabPanel>
 
         {/* Save Button */}
@@ -1033,21 +965,6 @@ export const CompanySettings: React.FC = () => {
             variant="contained"
             disabled={isUpdating || !hasChanges}
             startIcon={isUpdating ? <CircularProgress size={16} color="inherit" /> : <SaveIcon />}
-            sx={{
-              background: `linear-gradient(135deg, ${tokens.color.primary[500]} 0%, ${tokens.color.primary[600]} 100%)`,
-              borderRadius: tokens.spacing.radius.full,
-              px: 4,
-              py: 1.25,
-              boxShadow: `0 8px 32px ${tokens.color.primary[500]}25`,
-              fontWeight: 600,
-              '&:hover': {
-                background: `linear-gradient(135deg, ${tokens.color.primary[600]} 0%, ${tokens.color.primary[700]} 100%)`,
-                boxShadow: `0 12px 40px ${tokens.color.primary[500]}35`,
-              },
-              '&.Mui-disabled': {
-                background: tokens.color.neutral[300],
-              },
-            }}
           >
             {isUpdating ? 'Saving...' : 'Save Changes'}
           </Button>
