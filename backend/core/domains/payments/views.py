@@ -110,7 +110,7 @@ class PaymentSettingsViewSet(viewsets.ModelViewSet):
 class PaymentViewSet(viewsets.ModelViewSet):
     """ViewSet for managing payments"""
     queryset = Payment.objects.select_related(
-        'event', 
+        'event',
         'event__client',
         'event__event_type',
         'payment_method',
@@ -119,8 +119,6 @@ class PaymentViewSet(viewsets.ModelViewSet):
         'processed_by',
         'quote',
         'invoice',
-        'installment',
-        'installment__payment_plan'
     ).prefetch_related(
         'transactions',
         'notifications',
