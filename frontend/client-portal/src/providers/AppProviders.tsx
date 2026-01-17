@@ -17,6 +17,7 @@ import { ContractsProvider } from '../contexts/ContractsContext';
 import { ToastProvider } from '../contexts/ToastContext';
 import { ConfirmDialogProvider } from '../components/common/ConfirmDialog';
 import { AccessibilityProvider } from '../components/accessibility/AccessibilityProvider';
+import { SEOProvider } from './SEOProvider';
 
 interface AppProvidersProps {
   children: React.ReactNode;
@@ -65,23 +66,25 @@ export const AppProviders: React.FC<AppProvidersProps> = ({ children }) => {
   // }, []);
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <ThemeProvider theme={theme}>
-        <CssBaseline />
-        <LocalizationProvider dateAdapter={AdapterDateFns}>
-          <ToastProvider>
-            <ConfirmDialogProvider>
-              <AccessibilityProvider>
-                <AuthProvider>
-                  <CoreApp>
-                    {children}
-                  </CoreApp>
-                </AuthProvider>
-              </AccessibilityProvider>
-            </ConfirmDialogProvider>
-          </ToastProvider>
-        </LocalizationProvider>
-      </ThemeProvider>
-    </QueryClientProvider>
+    <SEOProvider>
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider theme={theme}>
+          <CssBaseline />
+          <LocalizationProvider dateAdapter={AdapterDateFns}>
+            <ToastProvider>
+              <ConfirmDialogProvider>
+                <AccessibilityProvider>
+                  <AuthProvider>
+                    <CoreApp>
+                      {children}
+                    </CoreApp>
+                  </AuthProvider>
+                </AccessibilityProvider>
+              </ConfirmDialogProvider>
+            </ToastProvider>
+          </LocalizationProvider>
+        </ThemeProvider>
+      </QueryClientProvider>
+    </SEOProvider>
   );
 };

@@ -1,6 +1,6 @@
 // frontend/client-portal/src/App.tsx
 
-import React from 'react';
+import React, { Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { Box, CircularProgress, Typography } from '@mui/material';
 import { AppProviders } from './providers/AppProviders';
@@ -9,22 +9,36 @@ import { useToastActions } from './contexts/ToastContext';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { PublicLayout, BookingLayout, ClientLayout } from './components/layout';
 import { ProtectedRoute } from './components/auth';
+
+// Critical path imports - keep static for performance
 import { Home } from './pages/home';
 import { Login, Register, ForgotPassword, ResetPassword } from './pages/auth';
 import { Dashboard } from './pages/dashboard';
-import { EventsList, EventDetail } from './pages/events';
-import { Profile } from './pages/profile';
-import { FinancialPortal } from './pages/payments';
 import AcceptInvitation from './pages/auth/AcceptInvitation';
 import { BookingComplete, BookingPage } from './pages/booking';
-import { DocumentsPage } from './pages/documents/DocumentsPage';
-import { AboutPage } from './pages/about';
-import { FacilitiesPage } from './pages/facilities';
 
-// Action Center and Records imports
-import { ActionCenterPage } from './pages/actions/ActionCenterPage';
-import { RecordsPage } from './pages/records/RecordsPage';
-import { TermsPage, PrivacyPage } from './pages/legal';
+// Lazy-loaded page components for code splitting
+const AboutPage = React.lazy(() => import('./pages/about').then(m => ({ default: m.AboutPage })));
+const ServicesPage = React.lazy(() => import('./pages/services').then(m => ({ default: m.ServicesPage })));
+const RatesPage = React.lazy(() => import('./pages/rates').then(m => ({ default: m.RatesPage })));
+const FacilitiesPage = React.lazy(() => import('./pages/facilities').then(m => ({ default: m.FacilitiesPage })));
+const PartnerPage = React.lazy(() => import('./pages/partner').then(m => ({ default: m.PartnerPage })));
+const ReviewsPage = React.lazy(() => import('./pages/reviews').then(m => ({ default: m.ReviewsPage })));
+const ContactPage = React.lazy(() => import('./pages/contact').then(m => ({ default: m.ContactPage })));
+const PodcastsPage = React.lazy(() => import('./pages/podcasts').then(m => ({ default: m.PodcastsPage })));
+
+// Protected route lazy imports
+const Profile = React.lazy(() => import('./pages/profile').then(m => ({ default: m.Profile })));
+const FinancialPortal = React.lazy(() => import('./pages/payments').then(m => ({ default: m.FinancialPortal })));
+const EventsList = React.lazy(() => import('./pages/events').then(m => ({ default: m.EventsList })));
+const EventDetail = React.lazy(() => import('./pages/events').then(m => ({ default: m.EventDetail })));
+const DocumentsPage = React.lazy(() => import('./pages/documents/DocumentsPage').then(m => ({ default: m.DocumentsPage })));
+const RecordsPage = React.lazy(() => import('./pages/records/RecordsPage').then(m => ({ default: m.RecordsPage })));
+const ActionCenterPage = React.lazy(() => import('./pages/actions/ActionCenterPage').then(m => ({ default: m.ActionCenterPage })));
+
+// Legal pages lazy imports
+const TermsPage = React.lazy(() => import('./pages/legal').then(m => ({ default: m.TermsPage })));
+const PrivacyPage = React.lazy(() => import('./pages/legal').then(m => ({ default: m.PrivacyPage })));
 
 
 // Import booking components
@@ -68,7 +82,7 @@ const PlaceholderPage: React.FC<PlaceholderPageProps> = ({ title, description })
   <Box
     sx={{
       minHeight: 'calc(100vh - 160px)',
-      width: '100vw',
+      width: '100%',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
@@ -122,11 +136,12 @@ const AppRouter: React.FC = () => {
   }
 
   return (
-    <Routes>
-      {/* Public Routes with PublicLayout */}
-      <Route 
-        path="/" 
-        element={
+    <Suspense fallback={<LoadingSpinner />}>
+      <Routes>
+        {/* Public Routes with PublicLayout */}
+        <Route
+          path="/"
+          element={
           <PublicLayout 
             fullHeight
             onNavigateToLogin={handleNavigateToLogin}
@@ -176,28 +191,22 @@ const AppRouter: React.FC = () => {
         }
       />
       
-      <Route 
-        path="/services" 
+      <Route
+        path="/services"
         element={
-          <PublicLayout>
-            <PlaceholderPage 
-              title="Our Services" 
-              description="Comprehensive packages for weddings, retreats, team building, and camping"
-            />
+          <PublicLayout fullHeight>
+            <ServicesPage onNavigateToBooking={handleNavigateToBooking} />
           </PublicLayout>
-        } 
+        }
       />
       
-      <Route 
-        path="/rates" 
+      <Route
+        path="/rates"
         element={
-          <PublicLayout>
-            <PlaceholderPage 
-              title="Rates" 
-              description="Transparent pricing for all our services"
-            />
+          <PublicLayout fullHeight>
+            <RatesPage onNavigateToBooking={handleNavigateToBooking} />
           </PublicLayout>
-        } 
+        }
       />
       
       <Route
@@ -209,42 +218,42 @@ const AppRouter: React.FC = () => {
         }
       />
       
-      <Route 
-        path="/partner" 
+      <Route
+        path="/partner"
         element={
-          <PublicLayout>
-            <PlaceholderPage 
-              title="Partner With Us" 
-              description="Join our network of trusted event professionals"
-            />
+          <PublicLayout fullHeight>
+            <PartnerPage />
           </PublicLayout>
-        } 
+        }
       />
       
-      <Route 
-        path="/reviews" 
+      <Route
+        path="/reviews"
         element={
-          <PublicLayout>
-            <PlaceholderPage 
-              title="Reviews" 
-              description="See what our clients say about their experiences"
-            />
+          <PublicLayout fullHeight>
+            <ReviewsPage onNavigateToBooking={handleNavigateToBooking} />
           </PublicLayout>
-        } 
+        }
       />
       
-      <Route 
-        path="/contact" 
+      <Route
+        path="/contact"
         element={
-          <PublicLayout>
-            <PlaceholderPage 
-              title="Contact Us" 
-              description="Get in touch to discuss your event needs"
-            />
+          <PublicLayout fullHeight>
+            <ContactPage />
           </PublicLayout>
-        } 
+        }
       />
-      
+
+      <Route
+        path="/podcasts"
+        element={
+          <PublicLayout fullHeight>
+            <PodcastsPage />
+          </PublicLayout>
+        }
+      />
+
       {/* Auth routes - redirect if already authenticated */}
       <Route 
         path="/login" 
@@ -472,9 +481,10 @@ const AppRouter: React.FC = () => {
       />
 
 
-      {/* Catch all route - redirect to home */}
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+        {/* Catch all route - redirect to home */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </Suspense>
   );
 };
 

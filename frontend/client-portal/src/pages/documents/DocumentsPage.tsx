@@ -29,6 +29,7 @@ import {
   Photo as PhotoIcon,
   InsertDriveFile as OtherIcon,
 } from '@mui/icons-material';
+import { SEO } from '../../hooks/useSEO';
 import { useDocuments } from '../../hooks/useDocuments';
 import { useEvents } from '../../hooks/useEvents';
 import { contractsApi } from '../../apis/contracts.api';
@@ -191,8 +192,14 @@ export const DocumentsPage: React.FC = () => {
   }));
 
   return (
-    <Box sx={{ py: 3, px: { xs: 2, md: 3 } }}>
-      {/* Header */}
+    <>
+      <SEO
+        title="Documents | LifePlace Alfonso"
+        description="View and manage your documents."
+        noIndex={true}
+      />
+      <Box sx={{ py: 3, px: { xs: 2, md: 3 } }}>
+        {/* Header */}
       <Stack
         direction={{ xs: 'column', sm: 'row' }}
         justifyContent="space-between"
@@ -374,21 +381,22 @@ export const DocumentsPage: React.FC = () => {
         eventOptions={uploadEventOptions}
       />
 
-      {/* File Viewer Dialog */}
-      <FileViewerDialog
-        open={viewDialogOpen}
-        onClose={handleViewDialogClose}
-        file={viewingDocument ? {
-          id: viewingDocument.id,
-          name: viewingDocument.name,
-          fileType: viewingDocument.fileType,
-          fileSize: viewingDocument.fileSize,
-          downloadUrl: viewingDocument.downloadUrl,
-        } : null}
-        onDownload={viewingDocument ? () => handleDownload(viewingDocument) : undefined}
-        getFileBlob={getFileBlob}
-      />
-    </Box>
+        {/* File Viewer Dialog */}
+        <FileViewerDialog
+          open={viewDialogOpen}
+          onClose={handleViewDialogClose}
+          file={viewingDocument ? {
+            id: viewingDocument.id,
+            name: viewingDocument.name,
+            fileType: viewingDocument.fileType,
+            fileSize: viewingDocument.fileSize,
+            downloadUrl: viewingDocument.downloadUrl,
+          } : null}
+          onDownload={viewingDocument ? () => handleDownload(viewingDocument) : undefined}
+          getFileBlob={getFileBlob}
+        />
+      </Box>
+    </>
   );
 };
 

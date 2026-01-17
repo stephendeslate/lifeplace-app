@@ -29,7 +29,7 @@ import {
 import WarningIcon from '@mui/icons-material/Warning';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 
-import { KPICard } from '../../../components/analytics';
+import { KPICard, KPIGrid } from '../../../components/analytics';
 import {
   useQuestionnaireSummary,
   useQuestionnaireFieldHeatmap,
@@ -37,6 +37,7 @@ import {
 } from '../../../hooks/useAnalytics';
 import type { DateRange } from '../../../types/analytics.types';
 import { tokens } from '../../../design-system';
+import { formatPercent } from '../../../utils/formatters';
 
 interface QuestionnairesTabProps {
   dateRange: DateRange;
@@ -62,8 +63,6 @@ export const QuestionnairesTab: React.FC<QuestionnairesTabProps> = ({ dateRange 
     threshold
   );
 
-  const formatPercent = (value: number) => `${value.toFixed(1)}%`;
-
   return (
     <Box>
       {/* Overall Summary */}
@@ -78,17 +77,7 @@ export const QuestionnairesTab: React.FC<QuestionnairesTabProps> = ({ dateRange 
             ))}
           </Box>
         ) : summary?.overall ? (
-          <Box
-            display="flex"
-            gap={2}
-            sx={{
-              flexWrap: 'wrap',
-              '& > *': {
-                flex: '1 1 180px',
-                minWidth: 180,
-              },
-            }}
-          >
+          <KPIGrid>
             <KPICard
               title="Events with Responses"
               value={summary.overall.total_events_with_responses}
@@ -113,9 +102,9 @@ export const QuestionnairesTab: React.FC<QuestionnairesTabProps> = ({ dateRange 
               isLoading={summaryLoading}
               color={summary.overall.overall_completion_rate >= 80 ? 'success' : 'warning'}
             />
-          </Box>
+          </KPIGrid>
         ) : (
-          <ModernCard variant="glass" size="small" sx={{ textAlign: 'center' }}>
+          <ModernCard variant="flat" size="small" sx={{ textAlign: 'center' }}>
             <Typography color="text.secondary">
               No questionnaire data available for the selected period
             </Typography>
@@ -132,7 +121,7 @@ export const QuestionnairesTab: React.FC<QuestionnairesTabProps> = ({ dateRange 
           <Skeleton variant="rectangular" height={300} />
         ) : summary?.by_questionnaire && summary.by_questionnaire.length > 0 ? (
           <>
-            <ModernCard variant="glass" size="medium" sx={{ mb: 2 }}>
+            <ModernCard variant="flat" size="medium" sx={{ mb: 2 }}>
               <Box sx={{ width: '100%', height: 300 }}>
                 <ResponsiveContainer>
                   <BarChart
@@ -160,7 +149,7 @@ export const QuestionnairesTab: React.FC<QuestionnairesTabProps> = ({ dateRange 
                 </ResponsiveContainer>
               </Box>
             </ModernCard>
-            <ModernCard variant="glass" size="medium">
+            <ModernCard variant="flat" size="medium">
               <TableContainer>
               <Table size="small">
                 <TableHead>
@@ -236,7 +225,7 @@ export const QuestionnairesTab: React.FC<QuestionnairesTabProps> = ({ dateRange 
             </Typography>
           </>
         ) : (
-          <ModernCard variant="glass" size="small" sx={{ textAlign: 'center' }}>
+          <ModernCard variant="flat" size="small" sx={{ textAlign: 'center' }}>
             <Typography color="text.secondary">
               No questionnaire data available
             </Typography>
@@ -258,7 +247,7 @@ export const QuestionnairesTab: React.FC<QuestionnairesTabProps> = ({ dateRange 
           {heatmapLoading ? (
             <Skeleton variant="rectangular" height={300} />
           ) : heatmap && heatmap.length > 0 ? (
-            <ModernCard variant="glass" size="medium">
+            <ModernCard variant="flat" size="medium">
               <Box sx={{ width: '100%', height: Math.max(300, heatmap.length * 40) }}>
                 <ResponsiveContainer>
                   <BarChart
@@ -332,7 +321,7 @@ export const QuestionnairesTab: React.FC<QuestionnairesTabProps> = ({ dateRange 
               </TableContainer>
             </ModernCard>
           ) : (
-            <ModernCard variant="glass" size="small" sx={{ textAlign: 'center' }}>
+            <ModernCard variant="flat" size="small" sx={{ textAlign: 'center' }}>
               <Typography color="text.secondary">
                 No field data available for this questionnaire
               </Typography>
@@ -379,7 +368,7 @@ export const QuestionnairesTab: React.FC<QuestionnairesTabProps> = ({ dateRange 
               {problemFields.length} field{problemFields.length !== 1 ? 's' : ''} found with completion
               rate below {threshold}%. Consider simplifying these fields or making them optional.
             </Alert>
-            <ModernCard variant="glass" size="medium">
+            <ModernCard variant="flat" size="medium">
               <TableContainer>
                 <Table size="small">
                   <TableHead>
@@ -424,7 +413,7 @@ export const QuestionnairesTab: React.FC<QuestionnairesTabProps> = ({ dateRange 
             </ModernCard>
           </>
         ) : (
-          <ModernCard variant="glass" size="small" sx={{ textAlign: 'center' }}>
+          <ModernCard variant="flat" size="small" sx={{ textAlign: 'center' }}>
             <Box display="flex" alignItems="center" justifyContent="center" gap={1}>
               <CheckCircleIcon color="success" />
               <Typography color="success.main">

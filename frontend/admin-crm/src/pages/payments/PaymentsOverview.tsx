@@ -1,5 +1,4 @@
-// Modern Glassmorphic Payments Overview
-// Enhanced with world-class design patterns while preserving full functionality
+// Payments Overview - Flat design matching Analytics page style
 
 import React, { useEffect, useState } from 'react';
 import {
@@ -25,23 +24,22 @@ import {
   TablePagination,
   TextField,
   Typography,
+  CircularProgress,
 } from '@mui/material';
 import {
   Add as AddIcon,
   MoreVert as MoreVertIcon,
   Payment as PaymentIcon,
-  Person as PersonIcon,
-  Event as EventIcon,
-  Receipt as ReceiptIcon,
   Search as SearchIcon,
   Schedule as ScheduleIcon,
-  Warning as WarningIcon,
+  WarningAmberOutlined as WarningIcon,
   CheckCircle as CheckCircleIcon,
   Cancel as CancelIcon,
   AccountBalance as AccountBalanceIcon,
   HourglassEmpty as HourglassEmptyIcon,
   Replay as ReplayIcon,
   AddCircle as AddCircleIcon,
+  FileDownload as ExportIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useLayout } from '../../contexts/LayoutContext';
@@ -51,20 +49,7 @@ import { formatCurrency } from '../../utils/currency';
 import { PaymentForm } from '../../components/payments/PaymentForm';
 import type { Payment, PaymentFilters, CreatePaymentData, PaymentStatus } from '../../types/payments.types';
 import { PAYMENT_STATUSES } from '../../types/payments.types';
-
-// Modern Design System Components
-import {
-  ModernOverviewLayout,
-  ModernOverviewHeader,
-  ModernGlassCard,
-  ModernEmptyState,
-  ModernTableSkeleton,
-  createAddAction,
-  createExportAction,
-} from '../../components/common';
-import { tokens } from '../../design-system';
-import { glassPresets } from '../../design-system/utils/glassmorphism';
-import { createTransition } from '../../design-system/utils/animations';
+import { ModernPageLayout, ModernPageHeader, ModernEmptyState } from '../../components/common';
 
 export const PaymentsOverview: React.FC = () => {
   const navigate = useNavigate();
@@ -160,23 +145,6 @@ export const PaymentsOverview: React.FC = () => {
     }
   };
 
-  // Helper to get token color for border styling
-  const getStatusBorderColor = (status: PaymentStatus): string => {
-    switch (status) {
-      case 'PENDING':
-        return tokens.color.warning[500];
-      case 'PROCESSING':
-        return tokens.color.info[500];
-      case 'COMPLETED':
-        return tokens.color.success[500];
-      case 'FAILED':
-        return tokens.color.error[500];
-      case 'REFUNDED':
-        return tokens.color.secondary[500];
-      default:
-        return tokens.color.primary[500];
-    }
-  };
 
   const getStatusIcon = (status: PaymentStatus) => {
     switch (status) {
@@ -260,27 +228,20 @@ export const PaymentsOverview: React.FC = () => {
       }}
       size="large"
       color="primary"
-      illustration="gradient"
     />
   );
 
   const hasActiveFilters = Object.values(filters).some(value => value !== undefined);
   const filteredCount = totalPayments ?? 0;
 
-  // Loading state with modern skeleton
+  // Loading state
   if (isLoadingPayments) {
     return (
-      <ModernOverviewLayout>
-        <ModernOverviewHeader
-          title="Payments"
-          subtitle="Loading payment data..."
-          icon={<AccountBalanceIcon />}
-        />
-        <ModernTableSkeleton 
-          rows={8} 
-          columns={7}
-        />
-      </ModernOverviewLayout>
+      <ModernPageLayout backgroundPattern="default">
+        <Box display="flex" justifyContent="center" alignItems="center" minHeight={400}>
+          <CircularProgress />
+        </Box>
+      </ModernPageLayout>
     );
   }
 
@@ -295,35 +256,27 @@ export const PaymentsOverview: React.FC = () => {
   };
 
   return (
-    <ModernOverviewLayout>
-      {/* Modern Header */}
-      <ModernOverviewHeader
+    <ModernPageLayout backgroundPattern="default">
+      {/* Page Header - flat style */}
+      <ModernPageHeader
         title="Payments"
         subtitle={`${filteredCount} payment${filteredCount !== 1 ? 's' : ''} found`}
         icon={<AccountBalanceIcon />}
-        primaryAction={createAddAction('Add Payment', () => setCreateDialogOpen(true))}
+        size="medium"
+        primaryAction={{
+          label: 'Add Payment',
+          icon: <AddIcon />,
+          onClick: () => setCreateDialogOpen(true),
+          variant: 'contained',
+          color: 'primary',
+        }}
         secondaryActions={[
-          createExportAction(handleExport)
-        ]}
-        stats={[
-          { label: 'Total Payments', value: filteredCount },
-          { 
-            label: 'Completed', 
-            value: payments?.filter(p => p.status === 'COMPLETED').length || 0
-          },
-          { 
-            label: 'Pending', 
-            value: payments?.filter(p => p.status === 'PENDING').length || 0
-          },
           {
-            label: 'Overdue',
-            value: payments?.filter(p => {
-              if (p.status === 'COMPLETED') return false;
-              const due = new Date(p.due_date);
-              const today = new Date();
-              return due < today;
-            }).length || 0
-          }
+            label: 'Export',
+            icon: <ExportIcon />,
+            onClick: handleExport,
+            variant: 'outlined',
+          },
         ]}
       />
 
@@ -331,170 +284,56 @@ export const PaymentsOverview: React.FC = () => {
         renderNoPaymentsState()
       ) : (
         <>
-          {/* Modern Filters Card */}
-          <ModernGlassCard 
-            size="medium" 
-            sx={{ 
-              mb: 4,
-              position: 'relative',
-              '&::before': {
-                content: '""',
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                background: `linear-gradient(135deg, ${tokens.color.primary[500]}03 0%, ${tokens.color.success[500]}02 100%)`,
-                borderRadius: tokens.spacing.radius.xxl,
-                pointerEvents: 'none',
-              }
-            }}
-          >
-            <Box sx={{ position: 'relative', zIndex: 1 }}>
-              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems="center">
-                <TextField
-                  size="small"
-                  placeholder="Search payments..."
-                  value={searchValue}
-                  onChange={(e) => setSearchValue(e.target.value)}
-                  InputProps={{
-                    startAdornment: <SearchIcon color="action" sx={{ mr: 1 }} />
-                  }}
-                  sx={{ 
-                    flex: 1, 
-                    minWidth: 200,
-                    '& .MuiOutlinedInput-root': {
-                      ...glassPresets.light,
-                      border: `1px solid ${tokens.color.borders.glass}`,
-                      borderRadius: tokens.spacing.radius.full,
-                      transition: createTransition(['border-color', 'box-shadow'], 'fast'),
-                      
-                      '&:hover': {
-                        border: `1px solid ${tokens.color.primary[500]}40`,
-                      },
-                      
-                      '&.Mui-focused': {
-                        ...glassPresets.medium,
-                        border: `1px solid ${tokens.color.primary[500]}60`,
-                        boxShadow: `0 0 0 3px ${tokens.color.primary[500]}10`,
-                      }
-                    }
-                  }}
-                />
-                
-                <FormControl size="small" sx={{ minWidth: 130 }}>
-                  <InputLabel>Status</InputLabel>
-                  <Select
-                    value={filters.status || 'all'}
-                    label="Status"
-                    onChange={(e) => handleFilterChange('status', e.target.value)}
-                    sx={{
-                      '& .MuiOutlinedInput-root': {
-                        ...glassPresets.light,
-                        border: `1px solid ${tokens.color.borders.glass}`,
-                        borderRadius: tokens.spacing.radius.lg,
-                      }
-                    }}
-                  >
-                    <MenuItem value="all">All Status</MenuItem>
-                    {PAYMENT_STATUSES.map((status) => (
-                      <MenuItem key={status.value} value={status.value}>
-                        {status.label}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-                
-                {hasActiveFilters && (
-                  <Button 
-                    variant="outlined" 
-                    size="small" 
-                    onClick={() => {
-                      setFilters({});
-                      setSearchValue('');
-                    }}
-                    sx={{
-                      ...glassPresets.light,
-                      border: `1px solid ${tokens.color.warning[500]}30`,
-                      color: tokens.color.warning[600],
-                      borderRadius: tokens.spacing.radius.full,
-                      
-                      '&:hover': {
-                        ...glassPresets.medium,
-                        border: `1px solid ${tokens.color.warning[500]}50`,
-                      }
-                    }}
-                  >
-                    Clear Filters
-                  </Button>
-                )}
-              </Stack>
-            </Box>
-          </ModernGlassCard>
-
-          {/* Modern Payments Table Card */}
-          <ModernGlassCard 
-            size="medium"
-            sx={{
-              position: 'relative',
-              overflow: 'hidden',
-              
-              '&::before': {
-                content: '""',
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                background: `linear-gradient(135deg, ${tokens.color.primary[500]}02 0%, ${tokens.color.success[500]}01 100%)`,
-                borderRadius: tokens.spacing.radius.xxl,
-                pointerEvents: 'none',
-              }
-            }}
-          >
-            <Box sx={{ position: 'relative', zIndex: 1 }}>
-              <TableContainer 
-                sx={{
-                  '& .MuiTable-root': {
-                    '& .MuiTableHead-root': {
-                      '& .MuiTableCell-head': {
-                        backgroundColor: 'transparent',
-                        borderBottom: `1px solid ${tokens.color.borders.glass}`,
-                        fontWeight: 600,
-                        color: tokens.color.neutral[700],
-                        fontSize: '0.875rem',
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.05em',
-                        py: 2,
-                      }
-                    },
-                    
-                    '& .MuiTableBody-root': {
-                      '& .MuiTableRow-root': {
-                        transition: createTransition(['background-color', 'transform'], 'fast'),
-                        cursor: 'pointer',
-                        
-                        '&:hover': {
-                          backgroundColor: `${tokens.color.primary[50]}40`,
-                          transform: 'translateY(-1px)',
-                          
-                          '& .action-button': {
-                            opacity: 1,
-                            transform: 'scale(1)',
-                          }
-                        },
-                        
-                        '& .MuiTableCell-body': {
-                          borderBottom: `1px solid ${tokens.color.borders.subtle}`,
-                          py: 2,
-                          fontSize: '0.875rem',
-                        }
-                      }
-                    }
-                  }
+          {/* Filters - flat style */}
+          <Box sx={{ mb: 3, p: 2, borderRadius: 1, bgcolor: 'action.hover' }}>
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems="center">
+              <TextField
+                size="small"
+                placeholder="Search payments..."
+                value={searchValue}
+                onChange={(e) => setSearchValue(e.target.value)}
+                InputProps={{
+                  startAdornment: <SearchIcon color="action" sx={{ mr: 1 }} />
                 }}
-              >
-                <Table>
+                sx={{ flex: 1, minWidth: 200 }}
+              />
+
+              <FormControl size="small" sx={{ minWidth: 130 }}>
+                <InputLabel>Status</InputLabel>
+                <Select
+                  value={filters.status || 'all'}
+                  label="Status"
+                  onChange={(e) => handleFilterChange('status', e.target.value)}
+                >
+                  <MenuItem value="all">All Status</MenuItem>
+                  {PAYMENT_STATUSES.map((status) => (
+                    <MenuItem key={status.value} value={status.value}>
+                      {status.label}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+
+              {hasActiveFilters && (
+                <Button
+                  variant="outlined"
+                  size="small"
+                  color="warning"
+                  onClick={() => {
+                    setFilters({});
+                    setSearchValue('');
+                  }}
+                >
+                  Clear Filters
+                </Button>
+              )}
+            </Stack>
+          </Box>
+
+          {/* Payments Table - flat style */}
+          <Box sx={{ borderRadius: 1, bgcolor: 'background.paper', overflow: 'hidden' }}>
+              <TableContainer>
+                <Table size="small">
                   <TableHead>
                     <TableRow>
                       <TableCell>Status</TableCell>
@@ -509,17 +348,13 @@ export const PaymentsOverview: React.FC = () => {
                   <TableBody>
                     {Array.isArray(payments) && payments.map((payment) => {
                       const daysRemaining = getDaysRemaining(payment.due_date);
-                      
+
                       return (
-                        <TableRow 
-                          key={payment.id} 
-                          hover 
+                        <TableRow
+                          key={payment.id}
+                          hover
                           onClick={() => handleRowClick(payment)}
-                          sx={{
-                            '&:last-child .MuiTableCell-body': {
-                              borderBottom: 'none',
-                            }
-                          }}
+                          sx={{ cursor: 'pointer' }}
                         >
                           <TableCell>
                             <Chip
@@ -528,26 +363,17 @@ export const PaymentsOverview: React.FC = () => {
                               color={getStatusColor(payment.status)}
                               size="small"
                               variant="outlined"
-                              sx={{
-                                ...glassPresets.light,
-                                border: `1px solid ${getStatusBorderColor(payment.status)}30`,
-                                fontWeight: 600,
-                              }}
                             />
                           </TableCell>
-                          
+
                           <TableCell>
                             <Box>
-                              <Typography 
-                                variant="body2" 
-                                fontWeight="600"
-                                sx={{ color: tokens.color.neutral[800] }}
-                              >
+                              <Typography variant="body2" fontWeight="600">
                                 {new Date(payment.due_date).toLocaleDateString()}
                               </Typography>
-                              <Typography 
-                                variant="caption" 
-                                sx={{ 
+                              <Typography
+                                variant="caption"
+                                sx={{
                                   color: daysRemaining.color,
                                   fontWeight: daysRemaining.severity === 'overdue' ? 'bold' : 'normal'
                                 }}
@@ -556,101 +382,37 @@ export const PaymentsOverview: React.FC = () => {
                               </Typography>
                             </Box>
                           </TableCell>
-                          
+
                           <TableCell>
-                            <Box display="flex" alignItems="center" gap={1.5}>
-                              <Box
-                                sx={{
-                                  ...glassPresets.light,
-                                  borderRadius: '50%',
-                                  p: 0.75,
-                                  border: `1px solid ${tokens.color.info[500]}20`,
-                                  background: `${tokens.color.info[50]}60`,
-                                }}
-                              >
-                                <ReceiptIcon 
-                                  sx={{ 
-                                    fontSize: 16,
-                                    color: tokens.color.info[600] 
-                                  }} 
-                                />
-                              </Box>
-                              <Typography 
-                                variant="body2" 
-                                fontFamily="monospace"
-                                fontWeight="600"
-                                sx={{ color: tokens.color.neutral[700] }}
-                              >
-                                {payment.invoice_details?.invoice_id || payment.payment_number}
-                              </Typography>
-                            </Box>
+                            <Typography variant="body2" fontFamily="monospace" fontWeight="600">
+                              {payment.invoice_details?.invoice_id || payment.payment_number}
+                            </Typography>
                           </TableCell>
-                          
+
                           <TableCell>
-                            <Box display="flex" alignItems="center" gap={1}>
-                              <PersonIcon 
-                                sx={{ 
-                                  fontSize: 16,
-                                  color: tokens.color.neutral[500] 
-                                }} 
-                              />
-                              <Typography 
-                                variant="body2"
-                                sx={{ color: tokens.color.neutral[600] }}
-                              >
-                                {payment.event_details?.client_name || 'Unknown Client'}
-                              </Typography>
-                            </Box>
+                            <Typography variant="body2" color="text.secondary">
+                              {payment.event_details?.client_name || 'Unknown Client'}
+                            </Typography>
                           </TableCell>
-                          
+
                           <TableCell>
-                            <Box display="flex" alignItems="center" gap={1}>
-                              <EventIcon 
-                                sx={{ 
-                                  fontSize: 16,
-                                  color: tokens.color.neutral[500] 
-                                }} 
-                              />
-                              <Typography 
-                                variant="body2"
-                                sx={{ color: tokens.color.neutral[600] }}
-                              >
-                                {payment.event_details?.name || 'No Event'}
-                              </Typography>
-                            </Box>
+                            <Typography variant="body2" color="text.secondary">
+                              {payment.event_details?.name || 'No Event'}
+                            </Typography>
                           </TableCell>
-                          
+
                           <TableCell>
-                            <Typography 
-                              variant="body2" 
+                            <Typography
+                              variant="body2"
                               fontWeight="600"
-                              sx={{
-                                color: payment.status === 'COMPLETED' ? tokens.color.success[600] : tokens.color.neutral[800]
-                              }}
+                              color={payment.status === 'COMPLETED' ? 'success.main' : 'text.primary'}
                             >
                               {payment.status === 'COMPLETED' ? 'Paid' : formatPaymentAmount(payment)}
                             </Typography>
                           </TableCell>
-                          
+
                           <TableCell>
-                            <IconButton
-                              size="small"
-                              onClick={(e) => handleMenuOpen(e, payment)}
-                              className="action-button"
-                              sx={{
-                                ...glassPresets.light,
-                                border: `1px solid ${tokens.color.borders.glass}`,
-                                opacity: 0.7,
-                                transform: 'scale(0.9)',
-                                transition: createTransition(['opacity', 'transform', 'background'], 'fast'),
-                                
-                                '&:hover': {
-                                  ...glassPresets.medium,
-                                  opacity: 1,
-                                  transform: 'scale(1)',
-                                }
-                              }}
-                            >
+                            <IconButton size="small" onClick={(e) => handleMenuOpen(e, payment)}>
                               <MoreVertIcon sx={{ fontSize: 16 }} />
                             </IconButton>
                           </TableCell>
@@ -660,16 +422,9 @@ export const PaymentsOverview: React.FC = () => {
                   </TableBody>
                 </Table>
               </TableContainer>
-              
-              {/* Modern Pagination */}
-              <Box 
-                sx={{
-                  p: 2,
-                  borderTop: `1px solid ${tokens.color.borders.glass}`,
-                  background: `linear-gradient(135deg, ${tokens.color.neutral[50]}40 0%, ${tokens.color.primary[50]}10 100%)`,
-                  backdropFilter: 'blur(8px)',
-                }}
-              >
+
+              {/* Pagination */}
+              <Box sx={{ p: 2, borderTop: 1, borderColor: 'divider' }}>
                 <TablePagination
                   rowsPerPageOptions={[10, 25, 50, 100]}
                   component="div"
@@ -678,104 +433,37 @@ export const PaymentsOverview: React.FC = () => {
                   page={page}
                   onPageChange={handleChangePage}
                   onRowsPerPageChange={handleChangeRowsPerPage}
-                  sx={{
-                    '& .MuiTablePagination-toolbar': {
-                      color: tokens.color.neutral[600],
-                      fontSize: '0.875rem',
-                    },
-                    
-                    '& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows': {
-                      fontWeight: 500,
-                    },
-                    
-                    '& .MuiIconButton-root': {
-                      ...glassPresets.light,
-                      border: `1px solid ${tokens.color.borders.glass}`,
-                      borderRadius: tokens.spacing.radius.sm,
-                      mx: 0.25,
-                      
-                      '&:hover': {
-                        ...glassPresets.medium,
-                      },
-                      
-                      '&.Mui-disabled': {
-                        opacity: 0.4,
-                      }
-                    }
-                  }}
                 />
               </Box>
-            </Box>
-          </ModernGlassCard>
+          </Box>
         </>
       )}
 
-      {/* Modern Action Menu */}
+      {/* Action Menu */}
       <Menu
         anchorEl={menuAnchor}
         open={Boolean(menuAnchor)}
         onClose={handleMenuClose}
-        PaperProps={{
-          sx: {
-            ...glassPresets.medium,
-            border: `1px solid ${tokens.color.borders.glass}`,
-            borderRadius: tokens.spacing.radius.lg,
-            mt: 1,
-            minWidth: 180,
-            
-            '& .MuiMenuItem-root': {
-              borderRadius: tokens.spacing.radius.md,
-              mx: 1,
-              my: 0.5,
-              transition: createTransition(['background-color'], 'fast'),
-              
-              '&:hover': {
-                backgroundColor: `${tokens.color.primary[50]}60`,
-              }
-            }
-          }
-        }}
       >
-        <MenuItem 
+        <MenuItem
           onClick={() => {
             if (selectedPayment) navigate(`/payments/${selectedPayment.id}`);
             handleMenuClose();
           }}
-          sx={{ fontWeight: 500 }}
         >
-          <PaymentIcon sx={{ mr: 1.5, color: tokens.color.primary[600] }} />
+          <PaymentIcon sx={{ mr: 1.5 }} />
           View Payment
         </MenuItem>
       </Menu>
 
-      {/* Modern Create Payment Dialog */}
-      <Dialog 
-        open={createDialogOpen} 
-        onClose={() => setCreateDialogOpen(false)} 
-        maxWidth="md" 
+      {/* Create Payment Dialog */}
+      <Dialog
+        open={createDialogOpen}
+        onClose={() => setCreateDialogOpen(false)}
+        maxWidth="md"
         fullWidth
-        PaperProps={{
-          sx: {
-            ...glassPresets.medium,
-            border: `1px solid ${tokens.color.borders.glass}`,
-            borderRadius: tokens.spacing.radius.xxl,
-            background: `linear-gradient(135deg, ${tokens.color.primary[500]}06 0%, ${tokens.color.success[500]}04 100%)`,
-          }
-        }}
       >
-        <DialogTitle 
-          sx={{ 
-            background: `linear-gradient(135deg, ${tokens.color.primary[600]} 0%, ${tokens.color.primary[500]} 100%)`,
-            backgroundClip: 'text',
-            WebkitBackgroundClip: 'text',
-            color: 'transparent',
-            fontWeight: 700,
-            fontSize: '1.5rem',
-            pb: 2
-          }}
-        >
-          Create New Payment
-        </DialogTitle>
+        <DialogTitle>Create New Payment</DialogTitle>
         <DialogContent sx={{ pt: 2 }}>
           <PaymentForm
             onSubmit={(data) => {
@@ -788,6 +476,6 @@ export const PaymentsOverview: React.FC = () => {
           />
         </DialogContent>
       </Dialog>
-    </ModernOverviewLayout>
+    </ModernPageLayout>
   );
 };

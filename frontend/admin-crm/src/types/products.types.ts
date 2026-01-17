@@ -59,7 +59,9 @@ export interface ProductOption {
   event_days: number | null;
   sku: string | null;
   sort_order: number;
-  event_type: number | null;
+  // Event types - which booking flows this package is available for
+  event_type_ids: number[];
+  event_type_names: string[];
   // Images
   featured_image: string | null;
   gallery_images: string[];
@@ -89,7 +91,8 @@ export interface CreateProductData {
   event_days?: number | null;
   sku?: string | null;
   sort_order?: number;
-  event_type?: number | null;
+  // Event types - which booking flows this package is available for
+  event_type_ids?: number[];
   // Images
   featured_image?: string | null;
   gallery_images?: string[];
@@ -117,6 +120,8 @@ export interface ProductFormData {
   event_days: string;
   sku: string;
   sort_order: string;
+  // Event types - which booking flows this package is available for
+  event_type_ids: number[];
   // Images
   featured_image: File | string | null;
   gallery_images: (File | string)[];

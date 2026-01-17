@@ -8,7 +8,7 @@ export * from './spacing';
 import { baseColors, semanticColors, gradients, glassEffects, overlays } from './colors';
 import { shadows, blurs, glows } from './shadows';
 import { transitions, animations, keyframes, durations } from './animations';
-import { spacing, layout, borderRadius, zIndex } from './spacing';
+import { spacing, layout, layoutComponents, borderRadius, zIndex } from './spacing';
 
 export const tokens = {
   color: {
@@ -32,6 +32,7 @@ export const tokens = {
   spacing: {
     space: spacing,
     layout,
+    layoutComponents,
     radius: borderRadius,
     zIndex,
   },

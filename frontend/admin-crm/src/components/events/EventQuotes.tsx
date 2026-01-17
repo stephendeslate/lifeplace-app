@@ -248,7 +248,7 @@ export const EventQuotes: React.FC<EventQuotesProps> = ({ event }) => {
 
       {/* Quotes Table */}
       <TableContainer component={Paper}>
-        <Table>
+        <Table size="small">
           <TableHead>
             <TableRow>
               <TableCell>Version</TableCell>

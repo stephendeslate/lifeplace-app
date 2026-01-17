@@ -7,9 +7,11 @@ import {
   Tabs,
   Tab,
   Chip,
+  Typography,
   useTheme,
   useMediaQuery,
   Stack,
+  CircularProgress,
 } from '@mui/material';
 import {
   Assignment as TasksIcon,
@@ -17,25 +19,15 @@ import {
   Description,
   Payment,
   Email,
+  Refresh as RefreshIcon,
 } from '@mui/icons-material';
 import { useLayout } from '../../contexts/LayoutContext';
 import { useTasks } from '../../hooks/useTasks';
 import { useSendQuote } from '../../hooks/useSales';
 import { TaskSection } from '../../components/tasks';
-import type { TaskDomain } from '../../types/tasks.types';
-
-// Modern Design System Components
-import {
-  ModernOverviewLayout,
-  ModernOverviewHeader,
-  ModernGlassCard,
-  ModernEmptyState,
-  ModernLoadingSpinner,
-  createRefreshAction,
-} from '../../components/common/ModernDesignSystem';
+import { ModernPageLayout, ModernPageHeader, ModernEmptyState } from '../../components/common';
 import { tokens } from '../../design-system';
-import { glassPresets } from '../../design-system/utils/glassmorphism';
-import { createTransition } from '../../design-system/utils/animations';
+import type { TaskDomain } from '../../types/tasks.types';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -94,17 +86,22 @@ export const TasksPage: React.FC = () => {
     sendQuote(id);
   };
 
+  // Render empty state
+  const renderEmptyState = () => (
+    <ModernEmptyState
+      icon={TasksIcon}
+      title="No Pending Tasks"
+      description="You're all caught up! All quotes, contracts, payments, and communications are up to date."
+      size="medium"
+      color="success"
+    />
+  );
+
   // Render all tasks view (default)
   const renderAllTasks = () => (
     <Stack spacing={3}>
       {counts.total === 0 ? (
-        <ModernEmptyState
-          icon={TasksIcon}
-          title="No Pending Tasks"
-          description="You're all caught up! All quotes, contracts, payments, and communications are up to date."
-          size="medium"
-          illustration="gradient"
-        />
+        renderEmptyState()
       ) : (
         <>
           {counts.quotes > 0 && (
@@ -149,39 +146,96 @@ export const TasksPage: React.FC = () => {
 
   if (isLoading) {
     return (
-      <ModernOverviewLayout>
-        <ModernLoadingSpinner
-          size={48}
-          message="Loading tasks..."
-          variant="circular"
-          glass
-        />
-      </ModernOverviewLayout>
+      <ModernPageLayout backgroundPattern="default">
+        <Box display="flex" justifyContent="center" alignItems="center" minHeight={400}>
+          <CircularProgress />
+        </Box>
+      </ModernPageLayout>
     );
   }
 
   return (
-    <ModernOverviewLayout>
-      {/* Modern Overview Header */}
-      <ModernOverviewHeader
+    <ModernPageLayout backgroundPattern="default">
+      {/* Page Header - consistent with other overview pages */}
+      <ModernPageHeader
         title="Tasks"
         subtitle={`${counts.total} item${counts.total !== 1 ? 's' : ''} need${counts.total === 1 ? 's' : ''} attention`}
         icon={<TasksIcon />}
+        size="medium"
         secondaryActions={[
-          createRefreshAction(handleRefresh),
-        ]}
-        stats={[
-          { label: 'Total Tasks', value: counts.total },
-          { label: 'Quotes', value: counts.quotes },
-          { label: 'Contracts', value: counts.contracts },
-          { label: 'Payments', value: counts.payments },
+          {
+            label: 'Refresh',
+            icon: <RefreshIcon />,
+            onClick: handleRefresh,
+            variant: 'icon',
+            tooltip: 'Refresh tasks',
+          },
         ]}
       />
 
+      {/* Stats Row */}
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mb: 4 }}>
+        <Box
+          sx={{
+            px: 2,
+            py: 1,
+            borderRadius: tokens.spacing.radius.md,
+            bgcolor: 'background.paper',
+            border: '1px solid',
+            borderColor: 'divider',
+          }}
+        >
+          <Typography variant="body2" color="text.secondary">Total Tasks</Typography>
+          <Typography variant="h6" fontWeight="bold">{counts.total}</Typography>
+        </Box>
+        <Box
+          sx={{
+            px: 2,
+            py: 1,
+            borderRadius: tokens.spacing.radius.md,
+            bgcolor: 'background.paper',
+            border: '1px solid',
+            borderColor: 'divider',
+          }}
+        >
+          <Typography variant="body2" color="text.secondary">Quotes</Typography>
+          <Typography variant="h6" fontWeight="bold">{counts.quotes}</Typography>
+        </Box>
+        <Box
+          sx={{
+            px: 2,
+            py: 1,
+            borderRadius: tokens.spacing.radius.md,
+            bgcolor: 'background.paper',
+            border: '1px solid',
+            borderColor: 'divider',
+          }}
+        >
+          <Typography variant="body2" color="text.secondary">Contracts</Typography>
+          <Typography variant="h6" fontWeight="bold">{counts.contracts}</Typography>
+        </Box>
+        <Box
+          sx={{
+            px: 2,
+            py: 1,
+            borderRadius: tokens.spacing.radius.md,
+            bgcolor: 'background.paper',
+            border: '1px solid',
+            borderColor: 'divider',
+          }}
+        >
+          <Typography variant="body2" color="text.secondary">Payments</Typography>
+          <Typography variant="h6" fontWeight="bold">{counts.payments}</Typography>
+        </Box>
+      </Box>
+
       {/* Main Content Card */}
-      <ModernGlassCard
-        size="medium"
+      <Box
         sx={{
+          borderRadius: tokens.spacing.radius.md,
+          bgcolor: 'background.paper',
+          border: '1px solid',
+          borderColor: 'divider',
           overflow: 'visible',
           position: 'relative',
         }}
@@ -189,10 +243,8 @@ export const TasksPage: React.FC = () => {
         {/* Tab System */}
         <Box
           sx={{
-            borderBottom: `1px solid ${tokens.color.borders.glass}`,
-            position: 'relative',
-            ...glassPresets.light,
-            borderRadius: `${tokens.spacing.radius.xxl} ${tokens.spacing.radius.xxl} 0 0`,
+            borderBottom: 1,
+            borderColor: 'divider',
           }}
         >
           <Tabs
@@ -201,28 +253,6 @@ export const TasksPage: React.FC = () => {
             aria-label="tasks tabs"
             variant={isMobile ? 'scrollable' : 'standard'}
             scrollButtons="auto"
-            sx={{
-              '& .MuiTabs-indicator': {
-                backgroundColor: tokens.color.primary[500],
-                height: 3,
-                borderRadius: '3px 3px 0 0',
-              },
-              '& .MuiTab-root': {
-                fontWeight: 600,
-                textTransform: 'none',
-                borderRadius: `${tokens.spacing.radius.lg} ${tokens.spacing.radius.lg} 0 0`,
-                transition: createTransition(['background', 'color'], 'fast'),
-
-                '&:hover': {
-                  backgroundColor: `${tokens.color.primary[500]}08`,
-                },
-
-                '&.Mui-selected': {
-                  backgroundColor: `${tokens.color.primary[500]}12`,
-                  color: tokens.color.primary[700],
-                },
-              },
-            }}
           >
             <Tab
               label={
@@ -233,11 +263,10 @@ export const TasksPage: React.FC = () => {
                     <Chip
                       label={counts.total}
                       size="small"
+                      color="primary"
                       sx={{
                         height: 20,
                         fontSize: '0.75rem',
-                        background: `linear-gradient(135deg, ${tokens.color.primary[500]} 0%, ${tokens.color.primary[600]} 100%)`,
-                        color: 'white',
                         fontWeight: 600,
                       }}
                     />
@@ -256,11 +285,10 @@ export const TasksPage: React.FC = () => {
                       <Chip
                         label={counts[domain]}
                         size="small"
+                        variant="outlined"
                         sx={{
                           height: 20,
                           fontSize: '0.75rem',
-                          backgroundColor: `${tokens.color.neutral[500]}20`,
-                          color: tokens.color.neutral[700],
                           fontWeight: 600,
                         }}
                       />
@@ -283,7 +311,7 @@ export const TasksPage: React.FC = () => {
             </TabPanel>
           ))}
         </Box>
-      </ModernGlassCard>
-    </ModernOverviewLayout>
+      </Box>
+    </ModernPageLayout>
   );
 };

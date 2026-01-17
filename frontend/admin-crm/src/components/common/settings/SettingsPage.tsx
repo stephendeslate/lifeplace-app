@@ -225,8 +225,6 @@ export const SettingsPage = <T extends { id: string | number }>({
         secondaryActions={headerActions.length > 1 ? headerActions.slice(0, -1) : []}
         stats={stats}
         size="medium"
-        gradient
-        glass
       />
 
       <Box sx={{ mt: 3 }}>

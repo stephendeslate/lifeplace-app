@@ -248,6 +248,7 @@ export const VenueSelectionStep: React.FC<VenueSelectionStepProps> = ({
                     component="img"
                     image={venue.featured_image}
                     alt={venue.name}
+                    loading="lazy"
                     sx={{
                       width: { xs: '100%', sm: 200 },
                       height: { xs: 150, sm: 'auto' },

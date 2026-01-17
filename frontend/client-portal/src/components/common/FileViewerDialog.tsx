@@ -283,6 +283,8 @@ export const FileViewerDialog: React.FC<FileViewerDialogProps> = ({
             <img
               src={blobUrl}
               alt={file.name}
+              loading="lazy"
+              decoding="async"
               style={{
                 maxWidth: '100%',
                 maxHeight: '100%',

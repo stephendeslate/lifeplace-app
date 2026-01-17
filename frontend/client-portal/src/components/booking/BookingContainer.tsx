@@ -208,13 +208,13 @@ export const BookingContainer: React.FC<BookingContainerProps> = ({ children }) 
             />
           </Box>
 
-          {/* Step Navigation (integrated) */}
+          {/* Step Navigation - Desktop Stepper */}
           {!isMobile && state.currentFlow && (
             <Box sx={{ mt: 2 }}>
               <Stepper activeStep={stepIndex} alternativeLabel>
                 {state.currentFlow.enabled_steps.map(
                   (step, index) => (
-                    <Step 
+                    <Step
                       key={step.id}
                       completed={state.progress.completedSteps.includes(step.id)}
                     >
@@ -232,6 +232,49 @@ export const BookingContainer: React.FC<BookingContainerProps> = ({ children }) 
                   )
                 )}
               </Stepper>
+            </Box>
+          )}
+
+          {/* Mobile Progress Indicator */}
+          {isMobile && state.currentFlow && (
+            <Box
+              sx={{
+                mt: 2,
+                px: 2,
+                py: 1.5,
+                textAlign: 'center',
+                backgroundColor: alpha(theme.palette.primary.main, 0.05),
+                borderRadius: 2,
+              }}
+            >
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                sx={{ fontWeight: 500, mb: 1 }}
+              >
+                Step {stepIndex + 1} of {state.progress.totalSteps}
+              </Typography>
+              <Typography
+                variant="subtitle2"
+                color="primary.main"
+                sx={{ fontWeight: 600 }}
+              >
+                {stepName}
+              </Typography>
+              <LinearProgress
+                variant="determinate"
+                value={((stepIndex + 1) / state.progress.totalSteps) * 100}
+                sx={{
+                  mt: 1.5,
+                  borderRadius: 1,
+                  height: 8,
+                  backgroundColor: alpha(theme.palette.primary.main, 0.1),
+                  '& .MuiLinearProgress-bar': {
+                    borderRadius: 1,
+                    backgroundColor: theme.palette.primary.main,
+                  },
+                }}
+              />
             </Box>
           )}
         </Container>

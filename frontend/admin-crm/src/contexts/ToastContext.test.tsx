@@ -2,7 +2,7 @@
 
 import React from 'react'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { render, screen, act, waitFor, fireEvent } from '@testing-library/react'
+import { render, screen, act, fireEvent } from '@testing-library/react'
 import { ThemeProvider } from '@mui/material/styles'
 import { ToastProvider, useToast, useToastActions } from './ToastContext'
 import { modernTheme } from '../design-system/theme/modernTheme'

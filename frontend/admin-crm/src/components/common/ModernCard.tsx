@@ -13,12 +13,10 @@ import {
   Typography,
 } from '@mui/material';
 import { tokens } from '../../design-system';
-import { glassPresets } from '../../design-system/utils/glassmorphism';
-import { createTransition } from '../../design-system/utils/animations';
 
 interface ModernCardProps {
   children: React.ReactNode;
-  variant?: 'glass' | 'elevated' | 'outlined' | 'minimal';
+  variant?: 'flat' | 'outlined' | 'minimal';
   size?: 'small' | 'medium' | 'large';
   color?: 'default' | 'primary' | 'secondary' | 'success' | 'warning' | 'error';
   interactive?: boolean;
@@ -36,7 +34,7 @@ interface ModernCardProps {
 
 export const ModernCard: React.FC<ModernCardProps> = ({
   children,
-  variant = 'glass',
+  variant = 'flat',
   size = 'medium',
   color = 'default',
   interactive = false,
@@ -48,7 +46,7 @@ export const ModernCard: React.FC<ModernCardProps> = ({
   title,
   subtitle,
   actions,
-  borderRadius = 'xxl',
+  borderRadius = 'lg',
   animation = 'fade',
 }) => {
   const getPadding = () => {
@@ -67,7 +65,7 @@ export const ModernCard: React.FC<ModernCardProps> = ({
       case 'lg': return tokens.spacing.radius.lg;
       case 'xl': return tokens.spacing.radius.xl;
       case 'xxl': return tokens.spacing.radius.xxl;
-      default: return tokens.spacing.radius.xxl;
+      default: return tokens.spacing.radius.lg;
     }
   };
 
@@ -77,73 +75,40 @@ export const ModernCard: React.FC<ModernCardProps> = ({
       position: 'relative' as const,
       overflow: 'visible' as const,
       cursor: interactive || onClick ? 'pointer' : 'default',
-      transition: createTransition(['transform', 'box-shadow', 'background'], 'fast'),
+      transition: 'background-color 0.2s ease',
     };
 
     switch (variant) {
-      case 'glass':
+      case 'flat':
         return {
           ...baseStyles,
-          ...glassPresets.light,
-          border: `1px solid ${tokens.color.borders.glass}`,
-          
-          ...(color !== 'default' && {
-            '&::before': {
-              content: '""',
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              background: `linear-gradient(135deg, ${tokens.color[color][500]}06 0%, ${tokens.color[color][600]}04 100%)`,
-              borderRadius: getBorderRadius(),
-              pointerEvents: 'none',
-            }
-          }),
-          
-          '&:hover': (interactive || onClick) ? {
-            ...glassPresets.medium,
-            transform: 'translateY(-2px)',
-            boxShadow: tokens.shadow.glass.floating,
-          } : {},
-        };
-
-      case 'elevated':
-        return {
-          ...baseStyles,
-          backgroundColor: tokens.color.neutral[50],
-          boxShadow: tokens.shadow.elevation.sm,
+          bgcolor: 'background.paper',
           border: `1px solid ${tokens.color.borders.subtle}`,
-          
+
           '&:hover': (interactive || onClick) ? {
-            transform: 'translateY(-4px)',
-            boxShadow: tokens.shadow.elevation.lg,
+            bgcolor: tokens.color.neutral[50],
           } : {},
         };
 
       case 'outlined':
         return {
           ...baseStyles,
-          backgroundColor: 'transparent',
+          bgcolor: 'transparent',
           border: `1px solid ${tokens.color.borders.subtle}`,
-          
+
           '&:hover': (interactive || onClick) ? {
-            backgroundColor: tokens.color.neutral[50],
-            borderColor: tokens.color.borders.glass,
-            transform: 'translateY(-1px)',
+            bgcolor: tokens.color.neutral[50],
           } : {},
         };
 
       case 'minimal':
         return {
           ...baseStyles,
-          backgroundColor: 'transparent',
+          bgcolor: 'transparent',
           border: 'none',
-          boxShadow: 'none',
-          
+
           '&:hover': (interactive || onClick) ? {
-            backgroundColor: tokens.color.neutral[50],
-            transform: 'translateY(-1px)',
+            bgcolor: tokens.color.neutral[50],
           } : {},
         };
 
@@ -223,8 +188,7 @@ export const ModernCard: React.FC<ModernCardProps> = ({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            background: 'rgba(255, 255, 255, 0.8)',
-            backdropFilter: 'blur(4px)',
+            bgcolor: 'rgba(255, 255, 255, 0.8)',
             borderRadius: getBorderRadius(),
             zIndex: 10,
           }}
@@ -267,9 +231,9 @@ export const ModernCard: React.FC<ModernCardProps> = ({
   }
 };
 
-// Specialized card variants
+// Specialized card variants (keeping for backwards compatibility)
 export const ModernGlassCard: React.FC<Omit<ModernCardProps, 'variant'>> = (props) => (
-  <ModernCard {...props} variant="glass" />
+  <ModernCard {...props} variant="flat" />
 );
 
 // Metric card variant optimized for displaying metrics
@@ -298,7 +262,7 @@ export const ModernMetricCard: React.FC<ModernMetricCardProps> = ({
   size = 'medium',
 }) => (
   <ModernCard
-    variant="glass"
+    variant="flat"
     color={color}
     interactive={!!onClick}
     onClick={onClick}
@@ -307,9 +271,9 @@ export const ModernMetricCard: React.FC<ModernMetricCardProps> = ({
   >
     <Box display="flex" justifyContent="space-between" alignItems="flex-start">
       <Box flex={1} minWidth={0}>
-        <Typography 
-          variant="body2" 
-          sx={{ 
+        <Typography
+          variant="body2"
+          sx={{
             color: tokens.color.neutral[600],
             fontWeight: 500,
             letterSpacing: '0.025em',
@@ -320,26 +284,23 @@ export const ModernMetricCard: React.FC<ModernMetricCardProps> = ({
         >
           {title}
         </Typography>
-        
-        <Typography 
-          variant={size === 'large' ? 'h2' : size === 'small' ? 'h4' : 'h3'} 
-          sx={{ 
+
+        <Typography
+          variant={size === 'large' ? 'h2' : size === 'small' ? 'h4' : 'h3'}
+          sx={{
             fontWeight: 700,
-            background: `linear-gradient(135deg, ${tokens.color[color][600]} 0%, ${tokens.color[color][500]} 100%)`,
-            backgroundClip: 'text',
-            WebkitBackgroundClip: 'text',
-            color: 'transparent',
+            color: tokens.color[color][600],
             mb: 0.5,
             lineHeight: 1.2,
           }}
         >
           {value}
         </Typography>
-        
+
         {description && (
-          <Typography 
-            variant="body2" 
-            sx={{ 
+          <Typography
+            variant="body2"
+            sx={{
               color: tokens.color.neutral[500],
               fontWeight: 400,
               mb: trend ? 1 : 0
@@ -348,34 +309,32 @@ export const ModernMetricCard: React.FC<ModernMetricCardProps> = ({
             {description}
           </Typography>
         )}
-        
+
         {trend && (
-          <Box 
-            display="flex" 
-            alignItems="center" 
-            gap={1} 
+          <Box
+            display="flex"
+            alignItems="center"
+            gap={1}
             sx={{
-              ...glassPresets.light,
-              borderRadius: tokens.spacing.radius.lg,
+              bgcolor: trend.direction === 'up'
+                ? tokens.color.success[50]
+                : trend.direction === 'down'
+                  ? tokens.color.error[50]
+                  : tokens.color.neutral[100],
+              borderRadius: tokens.spacing.radius.md,
               px: 1.5,
               py: 0.5,
               width: 'fit-content',
-              border: `1px solid ${trend.direction === 'up' 
-                ? tokens.color.success[500] 
-                : trend.direction === 'down' 
-                  ? tokens.color.error[500] 
-                  : tokens.color.neutral[400]
-              }30`,
             }}
           >
-            <Typography 
-              variant="caption" 
+            <Typography
+              variant="caption"
               fontWeight="600"
               sx={{
-                color: trend.direction === 'up' 
-                  ? tokens.color.success[600] 
-                  : trend.direction === 'down' 
-                    ? tokens.color.error[600] 
+                color: trend.direction === 'up'
+                  ? tokens.color.success[600]
+                  : trend.direction === 'down'
+                    ? tokens.color.error[600]
                     : tokens.color.neutral[600]
               }}
             >
@@ -384,23 +343,21 @@ export const ModernMetricCard: React.FC<ModernMetricCardProps> = ({
           </Box>
         )}
       </Box>
-      
+
       {icon && (
-        <Box 
-          sx={{ 
-            p: size === 'large' ? 2.5 : size === 'small' ? 1.5 : 2, 
-            borderRadius: tokens.spacing.radius.xl,
-            background: `linear-gradient(135deg, ${tokens.color[color][500]}15 0%, ${tokens.color[color][600]}10 100%)`,
+        <Box
+          sx={{
+            p: size === 'large' ? 2.5 : size === 'small' ? 1.5 : 2,
+            borderRadius: tokens.spacing.radius.lg,
+            bgcolor: tokens.color[color][50],
             color: tokens.color[color][600],
-            border: `1px solid ${tokens.color[color][500]}20`,
-            backdropFilter: 'blur(10px)',
             ml: 2,
             minWidth: size === 'large' ? 64 : size === 'small' ? 48 : 56,
             height: size === 'large' ? 64 : size === 'small' ? 48 : 56,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            
+
             '& .MuiSvgIcon-root': {
               fontSize: size === 'large' ? '2rem' : size === 'small' ? '1.25rem' : '1.5rem',
             }

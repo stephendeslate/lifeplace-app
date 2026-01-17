@@ -587,7 +587,7 @@ export const BookingFlowPreviewPage: React.FC = () => {
 
         {/* Main Preview Card - Placeholder for actual preview component */}
         <ModernCard
-          variant="glass"
+          variant="flat"
           size="large"
           color="primary"
           animation="none"
@@ -614,7 +614,7 @@ export const BookingFlowPreviewPage: React.FC = () => {
             </Typography>
             
             <ModernCard
-              variant="glass"
+              variant="flat"
               color="primary"
               size="small"
               animation="none"

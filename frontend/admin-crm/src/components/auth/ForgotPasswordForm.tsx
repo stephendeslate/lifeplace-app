@@ -285,22 +285,19 @@ export const ForgotPasswordForm: React.FC = () => {
         disabled={isSubmitting}
         sx={{
           py: 1.5,
-          borderRadius: tokens.spacing.radius.lg,
-          background: `linear-gradient(135deg, ${tokens.color.primary[500]} 0%, ${tokens.color.primary[600]} 100%)`,
+          borderRadius: tokens.spacing.radius.md,
+          background: tokens.color.primary[600],
           textTransform: 'none',
           fontSize: '1rem',
           fontWeight: 600,
-          boxShadow: `0 4px 12px ${tokens.color.primary[500]}40`,
-          transition: createTransition(['all']),
+          transition: createTransition(['background']),
 
           '&:hover': {
-            background: `linear-gradient(135deg, ${tokens.color.primary[600]} 0%, ${tokens.color.primary[700]} 100%)`,
-            boxShadow: `0 6px 20px ${tokens.color.primary[500]}50`,
-            transform: 'translateY(-1px)',
+            background: tokens.color.primary[700],
           },
 
           '&:active': {
-            transform: 'translateY(0)',
+            background: tokens.color.primary[800],
           },
         }}
       >

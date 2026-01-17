@@ -33,6 +33,7 @@ import type {
   PackageVenuePublic,
 } from '../../../types/booking';
 import type { AvailabilitySlot, EventData } from '../../../design-system/visualizations/EventAvailabilityCalendar';
+import { availabilityConfig } from '../../../config/availability.config';
 
 
 
@@ -348,6 +349,8 @@ export const IntelligentDateTimeStep: React.FC<IntelligentDateTimeStepProps> = (
                 minRangeDays={minRangeDays}
                 maxRangeDays={maxRangeDays}
                 onRangeSelect={handleRangeSelect}
+                minAdvanceBookingDays={flow?.min_advance_booking_days ?? availabilityConfig.minAdvanceBookingDays}
+                maxAdvanceBookingDays={flow?.max_advance_booking_days ?? availabilityConfig.maxAdvanceBookingDays}
               />
 
               {selectedDate && (

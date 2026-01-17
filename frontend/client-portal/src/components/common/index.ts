@@ -11,3 +11,4 @@ export {
   TimelineSkeleton,
   MobileCardSkeleton
 } from './SkeletonLoaders';
+export { OptimizedImage } from './OptimizedImage';

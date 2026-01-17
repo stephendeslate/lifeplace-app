@@ -20,8 +20,13 @@ import {
   InputAdornment,
   CircularProgress,
   Alert,
+  Chip,
+  OutlinedInput,
+  Checkbox,
+  ListItemText,
 } from '@mui/material';
 import { useProductCategories } from '../../hooks/useProducts';
+import { useEventTypes } from '../../hooks/useEvents';
 import { ImageUploadField, GalleryUploadField } from '../common';
 import type {
   ProductOption,
@@ -59,6 +64,8 @@ const defaultFormData: ProductFormData = {
   event_days: '',
   sku: '',
   sort_order: '0',
+  // Event types - which booking flows this package is available for
+  event_type_ids: [],
   // Images
   featured_image: null,
   gallery_images: [],
@@ -75,6 +82,7 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const { categories, isLoadingCategories } = useProductCategories({ is_active: true });
+  const { eventTypes, isLoadingEventTypes } = useEventTypes({ is_active: true });
 
   useEffect(() => {
     if (open) {
@@ -99,6 +107,8 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
           event_days: editingProduct.event_days?.toString() || '',
           sku: editingProduct.sku || '',
           sort_order: editingProduct.sort_order?.toString() || '0',
+          // Event types - which booking flows this package is available for
+          event_type_ids: editingProduct.event_type_ids || [],
           // Images
           featured_image: editingProduct.featured_image || null,
           gallery_images: editingProduct.gallery_images || [],
@@ -149,6 +159,14 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
     setFormData(prev => ({
       ...prev,
       gallery_images: files,
+    }));
+  };
+
+  const handleEventTypesChange = (event: { target: { value: unknown } }) => {
+    const value = event.target.value as number[];
+    setFormData(prev => ({
+      ...prev,
+      event_type_ids: value,
     }));
   };
 
@@ -206,6 +224,8 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
       event_days: formData.event_days ? parseInt(formData.event_days) : null,
       sku: formData.sku || null,
       sort_order: parseInt(formData.sort_order) || 0,
+      // Event types - which booking flows this package is available for
+      event_type_ids: formData.event_type_ids,
     };
 
     // Check if we need to send FormData (for image uploads)
@@ -219,7 +239,12 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
       // Add all text fields
       Object.entries(submitData).forEach(([key, value]) => {
         if (value !== null && value !== undefined) {
-          formDataObj.append(key, String(value));
+          // Handle arrays specially (JSON stringify)
+          if (Array.isArray(value)) {
+            formDataObj.append(key, JSON.stringify(value));
+          } else {
+            formDataObj.append(key, String(value));
+          }
         }
       });
 
@@ -508,6 +533,53 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
                   />
                 </Box>
               </Box>
+
+              {/* Event Types (only for packages) */}
+              {formData.type === 'PACKAGE' && (
+                <>
+                  <Divider sx={{ my: 3 }} />
+
+                  <Typography variant="h6" gutterBottom>
+                    Available For Event Types
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                    Select which booking flows this package should appear in. If none selected, this package will not appear in any booking flow.
+                  </Typography>
+
+                  <FormControl fullWidth>
+                    <InputLabel id="event-types-label">Event Types</InputLabel>
+                    <Select
+                      labelId="event-types-label"
+                      multiple
+                      value={formData.event_type_ids}
+                      onChange={handleEventTypesChange}
+                      input={<OutlinedInput label="Event Types" />}
+                      disabled={isLoadingEventTypes}
+                      renderValue={(selected) => (
+                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                          {(selected as number[]).map((id) => {
+                            const eventType = eventTypes.find(et => et.id === id);
+                            return (
+                              <Chip
+                                key={id}
+                                label={eventType?.name || `ID: ${id}`}
+                                size="small"
+                              />
+                            );
+                          })}
+                        </Box>
+                      )}
+                    >
+                      {eventTypes.map((eventType) => (
+                        <MenuItem key={eventType.id} value={eventType.id}>
+                          <Checkbox checked={formData.event_type_ids.includes(eventType.id)} />
+                          <ListItemText primary={eventType.name} />
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </>
+              )}
 
               <Divider sx={{ my: 3 }} />
 

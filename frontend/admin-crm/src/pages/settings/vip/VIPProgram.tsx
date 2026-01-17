@@ -789,8 +789,6 @@ export const VIPProgram = () => {
           },
         ]}
         size="medium"
-        gradient
-        glass
       />
 
         <Box sx={{ borderBottom: 1, borderColor: 'divider', mt: 3 }}>

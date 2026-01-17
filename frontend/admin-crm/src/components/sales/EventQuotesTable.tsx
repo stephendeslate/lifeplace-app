@@ -31,7 +31,6 @@ import {
 } from '@mui/icons-material';
 import { formatDistanceToNow, format } from 'date-fns';
 import type { EventQuote, QuoteStatus } from '../../types/sales.types';
-import { tokens } from '../../design-system';
 
 interface EventQuotesTableProps {
   quotes: EventQuote[];
@@ -210,9 +209,9 @@ export const EventQuotesTable: React.FC<EventQuotesTableProps> = ({
         <QuoteIcon
           sx={{
             fontSize: 48,
-            color: tokens.color.neutral[400],
             mb: 2,
           }}
+          color="disabled"
         />
         <Typography variant="h6" color="text.secondary" gutterBottom>
           No Event Quotes Found
@@ -226,24 +225,26 @@ export const EventQuotesTable: React.FC<EventQuotesTableProps> = ({
 
   return (
     <>
-      <TableContainer 
-        component={Paper} 
-        sx={{ 
+      <TableContainer
+        component={Paper}
+        sx={{
           boxShadow: 'none',
-          border: `1px solid ${tokens.color.borders.subtle}`,
-          borderRadius: tokens.spacing.radius.lg,
+          border: 1,
+          borderColor: 'divider',
+          borderRadius: 1,
         }}
       >
-        <Table>
+        <Table size="small">
           <TableHead>
             <TableRow
               sx={{
                 '& .MuiTableCell-head': {
-                  backgroundColor: tokens.color.neutral[50],
-                  borderBottom: `1px solid ${tokens.color.borders.subtle}`,
+                  bgcolor: 'grey.50',
+                  borderBottom: 1,
+                  borderColor: 'divider',
                   fontWeight: 600,
                   fontSize: '0.875rem',
-                  color: tokens.color.neutral[700],
+                  color: 'text.secondary',
                 },
               }}
             >
@@ -265,10 +266,11 @@ export const EventQuotesTable: React.FC<EventQuotesTableProps> = ({
                 sx={{
                   cursor: 'pointer',
                   '&:hover': {
-                    backgroundColor: tokens.color.neutral[50],
+                    bgcolor: 'grey.50',
                   },
                   '& .MuiTableCell-root': {
-                    borderBottom: `1px solid ${tokens.color.borders.subtle}`,
+                    borderBottom: 1,
+                    borderColor: 'divider',
                   },
                 }}
               >
@@ -362,9 +364,9 @@ export const EventQuotesTable: React.FC<EventQuotesTableProps> = ({
         PaperProps={{
           sx: {
             mt: 1,
-            border: `1px solid ${tokens.color.borders.subtle}`,
-            borderRadius: tokens.spacing.radius.md,
-            boxShadow: tokens.shadow.elevation.lg,
+            border: 1,
+            borderColor: 'divider',
+            borderRadius: 1,
           },
         }}
       >
@@ -389,13 +391,13 @@ export const EventQuotesTable: React.FC<EventQuotesTableProps> = ({
               icon: <AcceptIcon sx={{ mr: 1.5, fontSize: 16 }} />,
               label: 'Accept Quote',
               onClick: handleAccept,
-              color: tokens.color.success[600],
+              color: 'success.main',
             },
             reject: {
               icon: <RejectIcon sx={{ mr: 1.5, fontSize: 16 }} />,
               label: 'Reject Quote',
               onClick: handleReject,
-              color: tokens.color.error[600],
+              color: 'error.main',
             },
             duplicate: {
               icon: <DuplicateIcon sx={{ mr: 1.5, fontSize: 16 }} />,
@@ -406,7 +408,7 @@ export const EventQuotesTable: React.FC<EventQuotesTableProps> = ({
               icon: <DeleteIcon sx={{ mr: 1.5, fontSize: 16 }} />,
               label: 'Delete Quote',
               onClick: handleDelete,
-              color: tokens.color.error[600],
+              color: 'error.main',
             },
           };
 

@@ -1,5 +1,5 @@
-// Modern App Layout with Glassmorphism - Bug Fixed
-// Enhanced layout system with modern design patterns
+// Modern App Layout with Clean, Flat Design
+// Enhanced layout system with simplified visual approach
 
 import React, { useState, useEffect } from 'react';
 import { Box, useTheme, Fade, Fab, Tooltip } from '@mui/material';
@@ -8,27 +8,23 @@ import { ModernHeader } from '../ModernHeader';
 import { ContextualContentArea } from '../ContextualContentArea';
 import { useLayout } from '../../../contexts/LayoutContext';
 import { tokens } from '../../../design-system';
-import { createGlassEffect } from '../../../design-system/utils/glassmorphism';
 import { createTransition } from '../../../design-system/utils/animations';
 
 interface ModernAppLayoutProps {
   children: React.ReactNode;
-  enableParallax?: boolean;
   enableScrollEffects?: boolean;
 }
 
-export const ModernAppLayout: React.FC<ModernAppLayoutProps> = ({ 
-  children, 
-  enableParallax = true,
-  enableScrollEffects = true 
+export const ModernAppLayout: React.FC<ModernAppLayoutProps> = ({
+  children,
+  enableScrollEffects = true
 }) => {
   const theme = useTheme();
-  
+
   const {
     headerHeight = 64,
   } = useLayout();
 
-  const [scrollY, setScrollY] = useState(0);
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [isScrolling, setIsScrolling] = useState(false);
 
@@ -37,10 +33,9 @@ export const ModernAppLayout: React.FC<ModernAppLayoutProps> = ({
     if (!enableScrollEffects) return;
 
     let scrollTimeout: NodeJS.Timeout;
-    
+
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
-      setScrollY(currentScrollY);
       setShowScrollTop(currentScrollY > 300);
       
       // Track scrolling state for performance
@@ -57,11 +52,6 @@ export const ModernAppLayout: React.FC<ModernAppLayoutProps> = ({
       clearTimeout(scrollTimeout);
     };
   }, [enableScrollEffects]);
-
-  // Parallax background effect
-  const parallaxStyle = enableParallax ? {
-    transform: `translateY(${scrollY * 0.1}px)`,
-  } : {};
 
   // Scroll to top function
   const scrollToTop = () => {
@@ -81,7 +71,7 @@ export const ModernAppLayout: React.FC<ModernAppLayoutProps> = ({
         overflow: 'hidden',
       }}
     >
-      {/* Animated Background */}
+      {/* Simple Background */}
       <Box
         sx={{
           position: 'fixed',
@@ -89,29 +79,8 @@ export const ModernAppLayout: React.FC<ModernAppLayoutProps> = ({
           left: 0,
           right: 0,
           bottom: 0,
-          background: tokens.color.backgrounds.default,
+          background: tokens.color.neutral[100],
           zIndex: -3,
-          ...parallaxStyle,
-        }}
-      />
-
-      {/* Subtle animated gradient overlay */}
-      <Box
-        sx={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: `
-            radial-gradient(circle at 20% 20%, ${tokens.color.primary[500]}08 0%, transparent 50%),
-            radial-gradient(circle at 80% 80%, ${tokens.color.success[500]}08 0%, transparent 50%),
-            radial-gradient(circle at 40% 60%, ${tokens.color.secondary[500]}05 0%, transparent 50%)
-          `,
-          opacity: isScrolling ? 0.3 : 0.6,
-          transition: createTransition('opacity', 'slow'),
-          zIndex: -2,
-          pointerEvents: 'none',
         }}
       />
 
@@ -146,24 +115,17 @@ export const ModernAppLayout: React.FC<ModernAppLayoutProps> = ({
               bottom: 24,
               right: 24,
               zIndex: theme.zIndex.fab,
-              ...createGlassEffect({
-                opacity: 0.9,
-                blur: 20,
-                borderOpacity: 0.3,
-                shadowIntensity: 'strong'
-              }),
-              background: 'rgba(255, 255, 255, 0.9)',
+              background: 'white',
+              border: `1px solid ${tokens.color.neutral[200]}`,
               color: tokens.color.primary[600],
-              transition: createTransition(['transform', 'box-shadow'], 'fast'),
-              
+              transition: createTransition(['background'], 'fast'),
+
               '&:hover': {
-                transform: 'translateY(-2px) scale(1.05)',
-                boxShadow: tokens.shadow.glass.floating,
-                background: 'rgba(255, 255, 255, 0.95)',
+                background: tokens.color.neutral[50],
               },
-              
+
               '&:active': {
-                transform: 'translateY(0) scale(0.95)',
+                background: tokens.color.neutral[100],
               }
             }}
           >
@@ -180,12 +142,9 @@ export const ModernAppLayout: React.FC<ModernAppLayoutProps> = ({
             top: headerHeight + 10,
             right: 10,
             zIndex: 9999,
-            ...createGlassEffect({
-              opacity: 0.8,
-              blur: 10,
-              borderOpacity: 0.2,
-            }),
-            borderRadius: tokens.spacing.radius.lg,
+            background: 'white',
+            border: `1px solid ${tokens.color.neutral[200]}`,
+            borderRadius: tokens.spacing.radius.md,
             px: 1,
             py: 0.5,
           }}
@@ -197,8 +156,8 @@ export const ModernAppLayout: React.FC<ModernAppLayoutProps> = ({
                 width: 8,
                 height: 8,
                 borderRadius: '50%',
-                backgroundColor: isScrolling 
-                  ? tokens.color.warning[500] 
+                backgroundColor: isScrolling
+                  ? tokens.color.warning[500]
                   : tokens.color.success[500],
                 transition: createTransition('background-color', 'fast'),
               }}

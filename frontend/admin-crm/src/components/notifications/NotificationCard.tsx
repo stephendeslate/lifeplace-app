@@ -12,7 +12,6 @@ import {
   ListItemIcon,
   ListItemText,
   Chip,
-  useTheme,
   Stack,
   Tooltip,
 } from '@mui/material';
@@ -48,7 +47,6 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
   onDelete,
   compact = false,
 }) => {
-  const theme = useTheme();
   const navigate = useNavigate();
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
   const [expanded, setExpanded] = useState(false);
@@ -150,59 +148,50 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
 
   return (
     <Card
-      elevation={notification.is_read ? 1 : (notification.notification_type_details?.priority === 'URGENT' ? 6 : 3)}
+      elevation={0}
       sx={{
         cursor: notification.action_url ? 'pointer' : 'default',
-        transition: 'all 0.2s ease-in-out',
+        transition: 'background-color 0.2s ease-in-out',
         position: 'relative',
         overflow: 'visible',
         // Base styling for all notifications
         bgcolor: notification.is_read ? 'background.paper' : 'background.paper',
         borderLeft: `4px solid ${getCategoryColor(notification.notification_type_details?.category || 'SYSTEM')}`,
-        
+        border: `1px solid ${tokens.color.neutral[200]}`,
+
         // Priority-based styling
         ...(notification.notification_type_details?.priority === 'URGENT' && {
           borderLeft: `6px solid ${tokens.color.error[600]}`,
-          bgcolor: notification.is_read ? 'error.50' : tokens.color.error[50],
-          border: `2px solid ${tokens.color.error[600]}`,
-          boxShadow: `0 0 0 2px ${tokens.color.error[100]}`,
+          bgcolor: notification.is_read ? tokens.color.error[50] : tokens.color.error[50],
+          border: `1px solid ${tokens.color.error[300]}`,
         }),
 
         ...(notification.notification_type_details?.priority === 'HIGH' && {
           borderLeft: `5px solid ${tokens.color.warning[600]}`,
-          bgcolor: notification.is_read ? 'warning.50' : tokens.color.warning[50],
+          bgcolor: notification.is_read ? tokens.color.warning[50] : tokens.color.warning[50],
+          border: `1px solid ${tokens.color.warning[300]}`,
         }),
 
         // Read/Unread styling
         ...(notification.is_read
           ? {
               opacity: 0.75,
-              filter: 'grayscale(0.2)'
             }
           : {
-              border: notification.notification_type_details?.priority !== 'URGENT' ? '1px solid' : undefined,
-              borderColor: notification.notification_type_details?.priority !== 'URGENT' ? 'primary.light' : undefined,
               bgcolor: notification.notification_type_details?.priority === 'URGENT'
                 ? tokens.color.error[50]
                 : notification.notification_type_details?.priority === 'HIGH'
                 ? tokens.color.warning[50]
-                : 'primary.50',
-              boxShadow: notification.notification_type_details?.priority === 'URGENT'
-                ? `0 4px 20px ${tokens.color.error[100]}`
-                : notification.notification_type_details?.priority === 'HIGH'
-                ? `0 2px 12px ${tokens.color.warning[100]}`
-                : theme.shadows[2]
+                : tokens.color.primary[50],
             }
         ),
-        
+
         '&:hover': {
-          elevation: notification.notification_type_details?.priority === 'URGENT' ? 8 : 4,
-          transform: 'translateY(-2px)',
-          boxShadow: notification.notification_type_details?.priority === 'URGENT' 
-            ? '0 8px 32px rgba(211, 47, 47, 0.2)' 
+          bgcolor: notification.notification_type_details?.priority === 'URGENT'
+            ? tokens.color.error[100]
             : notification.notification_type_details?.priority === 'HIGH'
-            ? '0 6px 24px rgba(245, 124, 0, 0.15)'
-            : theme.shadows[6],
+            ? tokens.color.warning[100]
+            : tokens.color.neutral[100],
         },
       }}
       onClick={handleCardClick}

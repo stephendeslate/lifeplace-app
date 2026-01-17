@@ -66,7 +66,7 @@ export const LocationContact: React.FC<Pick<AboutPageProps, 'onNavigateToBooking
         px: { xs: 3, sm: 4, md: 6 },
         background: theme.palette.primary.main,
         color: 'white',
-        width: '100vw',
+        width: '100%',
       }}
     >
       <Box sx={{ maxWidth: 1200, mx: 'auto' }}>

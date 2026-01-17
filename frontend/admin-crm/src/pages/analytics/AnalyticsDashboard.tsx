@@ -63,8 +63,6 @@ export const AnalyticsDashboard: React.FC = () => {
         subtitle="Track performance metrics and insights"
         icon={<AssessmentIcon />}
         size="medium"
-        gradient
-        glass
       />
 
       {/* Date Range Filter */}
@@ -168,7 +166,7 @@ export const AnalyticsDashboard: React.FC = () => {
       <Divider sx={{ mb: 3 }} />
 
       {/* Report Tabs */}
-      <ModernCard variant="glass" size="medium" sx={{ mb: 3 }}>
+      <ModernCard variant="flat" size="medium" sx={{ mb: 3 }}>
         <Tabs
           value={activeTab}
           onChange={(_, newValue) => setActiveTab(newValue)}

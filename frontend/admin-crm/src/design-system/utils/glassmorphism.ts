@@ -151,10 +151,46 @@ export const createGlassNavigation = (
   return styles[position];
 };
 
+// Standardized form input styles - removes the need for repetitive inline styling
+export const glassInputStyles = {
+  '& .MuiOutlinedInput-root': {
+    ...glassPresets.light,
+    borderRadius: tokens.spacing.radius.lg,
+    border: `1px solid ${tokens.color.borders.glass}`,
+    '&:hover': {
+      border: `1px solid ${tokens.color.primary[300]}`,
+    },
+    '&.Mui-focused': {
+      border: `1px solid ${tokens.color.primary[500]}`,
+      boxShadow: `0 0 0 3px ${tokens.color.primary[500]}15`,
+    },
+  },
+};
+
+// Standardized Select input styles
+export const glassSelectStyles = {
+  '& .MuiOutlinedInput-notchedOutline': {
+    borderColor: tokens.color.borders.glass,
+  },
+  '&:hover .MuiOutlinedInput-notchedOutline': {
+    borderColor: tokens.color.primary[300],
+  },
+  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+    borderColor: tokens.color.primary[500],
+    boxShadow: `0 0 0 3px ${tokens.color.primary[500]}15`,
+  },
+  '& .MuiSelect-select': {
+    ...glassPresets.light,
+    borderRadius: tokens.spacing.radius.lg,
+  },
+};
+
 export default {
   createGlassEffect,
   glassPresets,
   glassHoverEffect,
   createGlassCard,
   createGlassNavigation,
+  glassInputStyles,
+  glassSelectStyles,
 };

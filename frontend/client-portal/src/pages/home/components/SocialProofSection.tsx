@@ -17,7 +17,7 @@ export const SocialProofSection: React.FC = () => {
   };
 
   return (
-    <Box sx={{ py: { xs: 6, md: 8 }, px: { xs: 2, sm: 3, md: 4 }, backgroundColor: 'grey.50', width: '100vw' }}>
+    <Box sx={{ py: { xs: 6, md: 8 }, px: { xs: 2, sm: 3, md: 4 }, backgroundColor: 'grey.50', width: '100%' }}>
       <Box sx={{ maxWidth: 1200, mx: 'auto' }}>
         <AnimatedElement animation="fadeIn" delay={100}>
           <Stack spacing={4} alignItems="center">

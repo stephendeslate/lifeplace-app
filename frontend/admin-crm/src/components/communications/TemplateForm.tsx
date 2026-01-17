@@ -31,10 +31,7 @@ import { TemplateContentEditor, TemplateVariableInserter } from '../shared';
 import type { TemplateContentEditorHandle } from '../shared';
 import type { TemplateStarter, ContextType, TemplateEditorMode } from '../../types/templates.types';
 import { CONTEXT_TYPE_LABELS, CONTEXT_TYPE_DESCRIPTIONS } from '../../types/templates.types';
-import { tokens } from '../../design-system';
-import { glassPresets } from '../../design-system/utils/glassmorphism';
-import { 
-  ModernCard,
+import {
   ModernPageHeader,
   ModernPageLayout
 } from '../common';
@@ -254,393 +251,262 @@ The {{ site_name }} Team</p>`
         title={isEditing ? 'Edit Template' : 'Create Template'}
         subtitle={isEditing ? 'Modify your communication template' : 'Create a new communication template'}
         size="medium"
-        gradient
-        glass
       />
 
       <Box component="form" onSubmit={handleSubmit}>
         <Stack spacing={4}>
           {/* Basic Information */}
-          <ModernCard
-            variant="glass"
-            size="medium"
-            animation="none"
-          >
-              <Typography variant="h6" gutterBottom>
-                Basic Information
-              </Typography>
-              
-              <Stack spacing={2}>
-                <TextField
-                  label="Template Name"
-                  value={formData.name}
-                  onChange={(e) => handleInputChange('name', e.target.value)}
-                  required
-                  fullWidth
-                  disabled={template?.is_system}
-                  helperText="A descriptive name for this template"
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      ...glassPresets.light,
-                      borderRadius: tokens.spacing.radius.lg,
-                      border: `1px solid ${tokens.color.borders.glass}`,
-                      '&:hover': {
-                        border: `1px solid ${tokens.color.primary[300]}`,
-                      },
-                      '&.Mui-focused': {
-                        border: `1px solid ${tokens.color.primary[500]}`,
-                        boxShadow: `0 0 0 3px ${tokens.color.primary[500]}15`,
-                      },
-                    },
-                    '& .MuiInputLabel-root': {
-                      color: tokens.color.neutral[600],
-                      fontWeight: 500,
-                    },
-                  }}
-                />
+          <Box sx={{ borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
+            <Typography variant="h6" gutterBottom>
+              Basic Information
+            </Typography>
 
-                <Box display="flex" gap={2}>
-                  <FormControl fullWidth>
-                    <InputLabel sx={{ color: tokens.color.neutral[600], fontWeight: 500 }}>Channel</InputLabel>
-                    <Select
-                      value={formData.channel}
-                      label="Channel"
-                      onChange={(e) => {
-                        handleInputChange('channel', e.target.value);
-                        // Reset editor mode to visual when switching channels
-                        setEditorMode('visual');
-                      }}
-                      disabled={template?.is_system}
-                      sx={{
-                        '& .MuiOutlinedInput-notchedOutline': {
-                          borderColor: tokens.color.borders.glass,
-                        },
-                        '&:hover .MuiOutlinedInput-notchedOutline': {
-                          borderColor: tokens.color.primary[300],
-                        },
-                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                          borderColor: tokens.color.primary[500],
-                          boxShadow: `0 0 0 3px ${tokens.color.primary[500]}15`,
-                        },
-                        '& .MuiSelect-select': {
-                          ...glassPresets.light,
-                          borderRadius: tokens.spacing.radius.lg,
-                        },
-                      }}
-                    >
-                      <MenuItem value="EMAIL">Email</MenuItem>
-                      <MenuItem value="SMS">SMS</MenuItem>
-                    </Select>
-                  </FormControl>
+            <Stack spacing={2}>
+              <TextField
+                label="Template Name"
+                value={formData.name}
+                onChange={(e) => handleInputChange('name', e.target.value)}
+                required
+                fullWidth
+                disabled={template?.is_system}
+                helperText="A descriptive name for this template"
+              />
 
-                  <FormControl fullWidth>
-                    <InputLabel sx={{ color: tokens.color.neutral[600], fontWeight: 500 }}>Category</InputLabel>
-                    <Select
-                      value={formData.category}
-                      label="Category"
-                      onChange={(e) => handleInputChange('category', e.target.value)}
-                      disabled={template?.is_system}
-                      sx={{
-                        '& .MuiOutlinedInput-notchedOutline': {
-                          borderColor: tokens.color.borders.glass,
-                        },
-                        '&:hover .MuiOutlinedInput-notchedOutline': {
-                          borderColor: tokens.color.primary[300],
-                        },
-                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                          borderColor: tokens.color.primary[500],
-                          boxShadow: `0 0 0 3px ${tokens.color.primary[500]}15`,
-                        },
-                        '& .MuiSelect-select': {
-                          ...glassPresets.light,
-                          borderRadius: tokens.spacing.radius.lg,
-                        },
-                      }}
-                    >
-                      <MenuItem value="MANUAL">Manual</MenuItem>
-                      <MenuItem value="AUTO">Auto</MenuItem>
-                      <MenuItem value="SYSTEM">System</MenuItem>
-                    </Select>
-                  </FormControl>
-                </Box>
-
-                {/* Context Type Selector */}
+              <Box display="flex" gap={2}>
                 <FormControl fullWidth>
-                  <InputLabel sx={{ color: tokens.color.neutral[600], fontWeight: 500 }}>
-                    Context Type
-                    <Tooltip title="Determines which variables are available and what data is required when sending">
-                      <InfoIcon sx={{ fontSize: 14, ml: 0.5, verticalAlign: 'middle', color: 'text.secondary' }} />
-                    </Tooltip>
-                  </InputLabel>
+                  <InputLabel>Channel</InputLabel>
                   <Select
-                    value={formData.context_type}
-                    label="Context Type"
-                    onChange={(e) => handleInputChange('context_type', e.target.value)}
-                    disabled={template?.is_system}
-                    sx={{
-                      '& .MuiOutlinedInput-notchedOutline': {
-                        borderColor: tokens.color.borders.glass,
-                      },
-                      '&:hover .MuiOutlinedInput-notchedOutline': {
-                        borderColor: tokens.color.primary[300],
-                      },
-                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                        borderColor: tokens.color.primary[500],
-                        boxShadow: `0 0 0 3px ${tokens.color.primary[500]}15`,
-                      },
-                      '& .MuiSelect-select': {
-                        ...glassPresets.light,
-                        borderRadius: tokens.spacing.radius.lg,
-                      },
+                    value={formData.channel}
+                    label="Channel"
+                    onChange={(e) => {
+                      handleInputChange('channel', e.target.value);
+                      setEditorMode('visual');
                     }}
+                    disabled={template?.is_system}
                   >
-                    {Object.entries(CONTEXT_TYPE_LABELS).map(([value, label]) => (
-                      <MenuItem key={value} value={value}>
-                        <Box>
-                          <Typography variant="body2">{label}</Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            {CONTEXT_TYPE_DESCRIPTIONS[value as ContextType]}
-                          </Typography>
-                        </Box>
-                      </MenuItem>
-                    ))}
+                    <MenuItem value="EMAIL">Email</MenuItem>
+                    <MenuItem value="SMS">SMS</MenuItem>
                   </Select>
                 </FormControl>
 
-                {/* MANUAL context type options */}
-                {formData.context_type === 'MANUAL' && (
-                  <Paper variant="outlined" sx={{ p: 2, bgcolor: 'grey.50' }}>
-                    <Typography variant="subtitle2" gutterBottom>
-                      Optional Context
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
-                      Include additional variables when a client or event is provided at send time.
-                    </Typography>
-                    <Stack direction="row" spacing={2}>
-                      <FormControlLabel
-                        control={
-                          <Checkbox
-                            checked={formData.include_client_context}
-                            onChange={(e) => handleInputChange('include_client_context', e.target.checked)}
-                          />
-                        }
-                        label="Include client details"
-                      />
-                      <FormControlLabel
-                        control={
-                          <Checkbox
-                            checked={formData.include_event_context}
-                            onChange={(e) => handleInputChange('include_event_context', e.target.checked)}
-                          />
-                        }
-                        label="Include event details"
-                      />
-                    </Stack>
-                  </Paper>
-                )}
-              </Stack>
-          </ModernCard>
-
-          {/* Template Content */}
-          <ModernCard
-            variant="glass"
-            size="medium"
-            animation="none"
-          >
-              <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-                <Typography variant="h6">
-                  Template Content
-                </Typography>
-                <Button
-                  variant="outlined"
-                  startIcon={<PreviewIcon />}
-                  onClick={handlePreview}
-                  disabled={!formData.body_template || isPreviewing}
-                  sx={{
-                    ...glassPresets.light,
-                    border: `1px solid ${tokens.color.primary[300]}`,
-                    borderRadius: tokens.spacing.radius.full,
-                    px: 3,
-                    fontWeight: 600,
-                    color: tokens.color.primary[600],
-                    '&:hover': {
-                      ...glassPresets.medium,
-                      border: `1px solid ${tokens.color.primary[500]}`,
-                      background: `linear-gradient(135deg, ${tokens.color.primary[50]} 0%, ${tokens.color.primary[50]} 100%)`,
-                    },
-                  }}
-                >
-                  {isPreviewing ? <CircularProgress size={20} color="primary" /> : 'Preview'}
-                </Button>
+                <FormControl fullWidth>
+                  <InputLabel>Category</InputLabel>
+                  <Select
+                    value={formData.category}
+                    label="Category"
+                    onChange={(e) => handleInputChange('category', e.target.value)}
+                    disabled={template?.is_system}
+                  >
+                    <MenuItem value="MANUAL">Manual</MenuItem>
+                    <MenuItem value="AUTO">Auto</MenuItem>
+                    <MenuItem value="SYSTEM">System</MenuItem>
+                  </Select>
+                </FormControl>
               </Box>
 
-              <Stack spacing={2}>
-                {formData.channel === 'EMAIL' && (
-                  <TextField
-                    label="Subject Template"
-                    value={formData.subject_template}
-                    onChange={(e) => handleInputChange('subject_template', e.target.value)}
-                    required={formData.channel === 'EMAIL'}
-                    fullWidth
-                    placeholder="Use {{ variable_name }} for dynamic content"
-                    helperText="The subject line of your email"
-                    sx={{
-                      '& .MuiOutlinedInput-root': {
-                        ...glassPresets.light,
-                        borderRadius: tokens.spacing.radius.lg,
-                        border: `1px solid ${tokens.color.borders.glass}`,
-                        '&:hover': {
-                          border: `1px solid ${tokens.color.primary[300]}`,
-                        },
-                        '&.Mui-focused': {
-                          border: `1px solid ${tokens.color.primary[500]}`,
-                          boxShadow: `0 0 0 3px ${tokens.color.primary[500]}15`,
-                        },
-                      },
-                      '& .MuiInputLabel-root': {
-                        color: tokens.color.neutral[600],
-                        fontWeight: 500,
-                      },
-                    }}
-                  />
-                )}
+              {/* Context Type Selector */}
+              <FormControl fullWidth>
+                <InputLabel>
+                  Context Type
+                  <Tooltip title="Determines which variables are available and what data is required when sending">
+                    <InfoIcon sx={{ fontSize: 14, ml: 0.5, verticalAlign: 'middle', color: 'text.secondary' }} />
+                  </Tooltip>
+                </InputLabel>
+                <Select
+                  value={formData.context_type}
+                  label="Context Type"
+                  onChange={(e) => handleInputChange('context_type', e.target.value)}
+                  disabled={template?.is_system}
+                >
+                  {Object.entries(CONTEXT_TYPE_LABELS).map(([value, label]) => (
+                    <MenuItem key={value} value={value}>
+                      <Box>
+                        <Typography variant="body2">{label}</Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {CONTEXT_TYPE_DESCRIPTIONS[value as ContextType]}
+                        </Typography>
+                      </Box>
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
 
-                <TemplateContentEditor
-                  ref={editorRef}
-                  value={formData.body_template}
-                  onChange={(value) => handleInputChange('body_template', value)}
-                  mode={formData.channel === 'SMS' ? 'text' : editorMode}
-                  onModeChange={setEditorMode}
-                  showModeToggle={formData.channel === 'EMAIL'}
-                  availableModes={formData.channel === 'SMS' ? ['text'] : ['visual', 'html']}
-                  label={formData.channel === 'SMS' ? 'Message Content' : 'Email Body'}
-                  placeholder={
-                    formData.channel === 'SMS'
-                      ? 'Hi {{ first_name }}! Your message here...'
-                      : 'Start typing your email content... Use variables for dynamic content.'
-                  }
-                  minHeight={formData.channel === 'SMS' ? 100 : 300}
-                  rows={formData.channel === 'SMS' ? 4 : 12}
-                  showCharacterCount={formData.channel === 'SMS'}
-                  maxCharacters={formData.channel === 'SMS' ? 160 : undefined}
-                  helperText={
-                    formData.channel === 'SMS'
-                      ? 'Keep SMS messages under 160 characters for best delivery'
-                      : undefined
-                  }
+              {/* MANUAL context type options */}
+              {formData.context_type === 'MANUAL' && (
+                <Paper variant="outlined" sx={{ p: 2, bgcolor: 'grey.50' }}>
+                  <Typography variant="subtitle2" gutterBottom>
+                    Optional Context
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+                    Include additional variables when a client or event is provided at send time.
+                  </Typography>
+                  <Stack direction="row" spacing={2}>
+                    <FormControlLabel
+                      control={
+                        <Checkbox
+                          checked={formData.include_client_context}
+                          onChange={(e) => handleInputChange('include_client_context', e.target.checked)}
+                        />
+                      }
+                      label="Include client details"
+                    />
+                    <FormControlLabel
+                      control={
+                        <Checkbox
+                          checked={formData.include_event_context}
+                          onChange={(e) => handleInputChange('include_event_context', e.target.checked)}
+                        />
+                      }
+                      label="Include event details"
+                    />
+                  </Stack>
+                </Paper>
+              )}
+            </Stack>
+          </Box>
+
+          {/* Template Content */}
+          <Box sx={{ borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
+            <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+              <Typography variant="h6">
+                Template Content
+              </Typography>
+              <Button
+                variant="outlined"
+                startIcon={<PreviewIcon />}
+                onClick={handlePreview}
+                disabled={!formData.body_template || isPreviewing}
+                sx={{
+                  borderRadius: 1,
+                  px: 3,
+                  fontWeight: 600,
+                }}
+              >
+                {isPreviewing ? <CircularProgress size={20} color="primary" /> : 'Preview'}
+              </Button>
+            </Box>
+
+            <Stack spacing={2}>
+              {formData.channel === 'EMAIL' && (
+                <TextField
+                  label="Subject Template"
+                  value={formData.subject_template}
+                  onChange={(e) => handleInputChange('subject_template', e.target.value)}
+                  required={formData.channel === 'EMAIL'}
+                  fullWidth
+                  placeholder="Use {{ variable_name }} for dynamic content"
+                  helperText="The subject line of your email"
                 />
-              </Stack>
-          </ModernCard>
+              )}
+
+              <TemplateContentEditor
+                ref={editorRef}
+                value={formData.body_template}
+                onChange={(value) => handleInputChange('body_template', value)}
+                mode={formData.channel === 'SMS' ? 'text' : editorMode}
+                onModeChange={setEditorMode}
+                showModeToggle={formData.channel === 'EMAIL'}
+                availableModes={formData.channel === 'SMS' ? ['text'] : ['visual', 'html']}
+                label={formData.channel === 'SMS' ? 'Message Content' : 'Email Body'}
+                placeholder={
+                  formData.channel === 'SMS'
+                    ? 'Hi {{ first_name }}! Your message here...'
+                    : 'Start typing your email content... Use variables for dynamic content.'
+                }
+                minHeight={formData.channel === 'SMS' ? 100 : 300}
+                rows={formData.channel === 'SMS' ? 4 : 12}
+                showCharacterCount={formData.channel === 'SMS'}
+                maxCharacters={formData.channel === 'SMS' ? 160 : undefined}
+                helperText={
+                  formData.channel === 'SMS'
+                    ? 'Keep SMS messages under 160 characters for best delivery'
+                    : undefined
+                }
+              />
+            </Stack>
+          </Box>
 
           {/* Variable Helper */}
-          <ModernCard
-            variant="glass"
-            size="medium"
-            animation="none"
-          >
-              <TemplateVariableInserter
-                variableSchemas={variableSchemas}
-                contextType={formData.context_type}
-                onVariableInsert={handleVariableInsert}
-                onTemplateLoad={loadTemplate}
-                templateStarters={getTemplateStarters()}
-                showFormattingTips={formData.channel === 'EMAIL'}
-              />
-          </ModernCard>
+          <Box sx={{ borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
+            <TemplateVariableInserter
+              variableSchemas={variableSchemas}
+              contextType={formData.context_type}
+              onVariableInsert={handleVariableInsert}
+              onTemplateLoad={loadTemplate}
+              templateStarters={getTemplateStarters()}
+              showFormattingTips={formData.channel === 'EMAIL'}
+            />
+          </Box>
 
           {/* Preview */}
           {previewData && (
-            <ModernCard
-              variant="glass"
-              color="primary"
-              size="medium"
-              animation="none"
-            >
-                <Typography variant="h6" gutterBottom>
-                  Preview
-                </Typography>
-                
-                {previewData.subject && (
-                  <Box mb={2}>
-                    <Typography variant="subtitle2" gutterBottom>
-                      Subject:
-                    </Typography>
-                    <Paper variant="outlined" sx={{ p: 2, bgcolor: 'grey.50' }}>
-                      <Typography variant="body2" fontFamily="monospace">
-                        {previewData.subject}
-                      </Typography>
-                    </Paper>
-                  </Box>
-                )}
+            <Box sx={{ borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
+              <Typography variant="h6" gutterBottom>
+                Preview
+              </Typography>
 
-                <Typography variant="subtitle2" gutterBottom>
-                  {formData.channel === 'SMS' ? 'Message:' : 'Body:'}
-                </Typography>
-                <Paper variant="outlined" sx={{ p: 2, bgcolor: 'grey.50' }}>
-                  {formData.channel === 'EMAIL' ? (
-                    <Box 
-                      dangerouslySetInnerHTML={{ __html: sanitizeHTML(previewData.body, 'template') }}
-                      sx={{ 
-                        '& *': { maxWidth: '100%' },
-                        wordBreak: 'break-word',
-                        '& .variable-placeholder': {
-                          backgroundColor: '#4caf50',
-                          color: 'white',
-                          padding: '2px 4px',
-                          borderRadius: '3px',
-                          fontFamily: 'monospace',
-                          fontSize: '0.875em'
-                        }
-                      }}
-                    />
-                  ) : (
-                    <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
-                      {previewData.body}
+              {previewData.subject && (
+                <Box mb={2}>
+                  <Typography variant="subtitle2" gutterBottom>
+                    Subject:
+                  </Typography>
+                  <Paper variant="outlined" sx={{ p: 2, bgcolor: 'grey.50' }}>
+                    <Typography variant="body2" fontFamily="monospace">
+                      {previewData.subject}
                     </Typography>
-                  )}
-                </Paper>
+                  </Paper>
+                </Box>
+              )}
 
-                {formData.channel === 'SMS' && (
-                  <Alert severity="info" sx={{ mt: 2 }}>
-                    <Typography variant="body2">
-                      <strong>SMS Preview:</strong> Character count: {previewData.body.length}
-                      {previewData.body.length > 160 && (
-                        <span> - This message will be sent as multiple SMS parts.</span>
-                      )}
-                    </Typography>
-                  </Alert>
+              <Typography variant="subtitle2" gutterBottom>
+                {formData.channel === 'SMS' ? 'Message:' : 'Body:'}
+              </Typography>
+              <Paper variant="outlined" sx={{ p: 2, bgcolor: 'grey.50' }}>
+                {formData.channel === 'EMAIL' ? (
+                  <Box
+                    dangerouslySetInnerHTML={{ __html: sanitizeHTML(previewData.body, 'template') }}
+                    sx={{
+                      '& *': { maxWidth: '100%' },
+                      wordBreak: 'break-word',
+                      '& .variable-placeholder': {
+                        backgroundColor: '#4caf50',
+                        color: 'white',
+                        padding: '2px 4px',
+                        borderRadius: '3px',
+                        fontFamily: 'monospace',
+                        fontSize: '0.875em'
+                      }
+                    }}
+                  />
+                ) : (
+                  <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
+                    {previewData.body}
+                  </Typography>
                 )}
-            </ModernCard>
+              </Paper>
+
+              {formData.channel === 'SMS' && (
+                <Alert severity="info" sx={{ mt: 2 }}>
+                  <Typography variant="body2">
+                    <strong>SMS Preview:</strong> Character count: {previewData.body.length}
+                    {previewData.body.length > 160 && (
+                      <span> - This message will be sent as multiple SMS parts.</span>
+                    )}
+                  </Typography>
+                </Alert>
+              )}
+            </Box>
           )}
 
           {/* Actions */}
-          <ModernCard
-            variant="glass"
-            size="medium"
-            animation="none"
-            sx={{
-              background: `linear-gradient(135deg, ${tokens.color.neutral[50]} 0%, ${tokens.color.neutral[100]} 100%)`,
-              border: `1px solid ${tokens.color.borders.glass}`,
-            }}
-          >
+          <Box sx={{ borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
             <Box display="flex" gap={3} justifyContent="flex-end">
               <Button
                 variant="outlined"
                 startIcon={<CancelIcon />}
                 onClick={onCancel}
                 disabled={isLoading}
-                sx={{
-                  ...glassPresets.light,
-                  border: `1px solid ${tokens.color.neutral[300]}`,
-                  borderRadius: tokens.spacing.radius.full,
-                  px: 4,
-                  py: 1.5,
-                  fontWeight: 600,
-                  '&:hover': {
-                    ...glassPresets.medium,
-                    border: `1px solid ${tokens.color.neutral[400]}`,
-                  },
-                }}
+                sx={{ borderRadius: 1, px: 4, py: 1.5, fontWeight: 600 }}
               >
                 Cancel
               </Button>
@@ -649,22 +515,7 @@ The {{ site_name }} Team</p>`
                 variant="contained"
                 startIcon={<SaveIcon />}
                 disabled={isLoading}
-                sx={{
-                  background: `linear-gradient(135deg, ${tokens.color.primary[500]} 0%, ${tokens.color.primary[600]} 100%)`,
-                  borderRadius: tokens.spacing.radius.full,
-                  px: 4,
-                  py: 1.5,
-                  fontWeight: 600,
-                  boxShadow: `0 8px 32px ${tokens.color.primary[500]}25`,
-                  '&:hover': {
-                    background: `linear-gradient(135deg, ${tokens.color.primary[600]} 0%, ${tokens.color.primary[700]} 100%)`,
-                    boxShadow: `0 12px 40px ${tokens.color.primary[500]}35`,
-                  },
-                  '&:disabled': {
-                    background: tokens.color.neutral[300],
-                    boxShadow: 'none',
-                  },
-                }}
+                sx={{ borderRadius: 1, px: 4, py: 1.5, fontWeight: 600 }}
               >
                 {isLoading ? (
                   <CircularProgress size={20} color="inherit" />
@@ -673,7 +524,7 @@ The {{ site_name }} Team</p>`
                 )}
               </Button>
             </Box>
-          </ModernCard>
+          </Box>
         </Stack>
       </Box>
     </ModernPageLayout>

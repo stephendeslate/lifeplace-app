@@ -16,7 +16,7 @@ import {
 import { ModernCard } from '../../../components/common/ModernCard';
 import DownloadIcon from '@mui/icons-material/Download';
 
-import { KPICard, LeadSourceChart } from '../../../components/analytics';
+import { KPICard, KPIGrid, LeadSourceChart } from '../../../components/analytics';
 import {
   useLeadSources,
   useConversionRates,
@@ -25,6 +25,7 @@ import {
   exportLeadSources,
 } from '../../../hooks/useAnalytics';
 import type { DateRange } from '../../../types/analytics.types';
+import { formatCurrency } from '../../../utils/currency';
 
 interface CustomersReportsTabProps {
   dateRange: DateRange;
@@ -34,13 +35,6 @@ export const CustomersReportsTab: React.FC<CustomersReportsTabProps> = ({ dateRa
   const { data: leadSources, isLoading: leadSourcesLoading } = useLeadSources(dateRange);
   const { data: conversion, isLoading: conversionLoading } = useConversionRates(dateRange);
   const { data: customers, isLoading: customersLoading } = useCustomerList(dateRange, 20);
-
-  const formatCurrency = (value: number) =>
-    new Intl.NumberFormat('en-PH', {
-      style: 'currency',
-      currency: 'PHP',
-      minimumFractionDigits: 0,
-    }).format(value);
 
   const handleExportCustomers = async () => {
     try {
@@ -65,14 +59,7 @@ export const CustomersReportsTab: React.FC<CustomersReportsTabProps> = ({ dateRa
         <Typography variant="h6" mb={2}>
           Conversion Funnel
         </Typography>
-        <Box
-          display="flex"
-          gap={2}
-          sx={{
-            flexWrap: 'wrap',
-            '& > *': { flex: '1 1 180px', minWidth: 180 },
-          }}
-        >
+        <KPIGrid>
           <KPICard
             title="Total Inquiries"
             value={conversion?.total_inquiries ?? 0}
@@ -97,16 +84,8 @@ export const CustomersReportsTab: React.FC<CustomersReportsTabProps> = ({ dateRa
             isLoading={conversionLoading}
             color="warning"
           />
-        </Box>
-        <Box
-          display="flex"
-          gap={2}
-          mt={2}
-          sx={{
-            flexWrap: 'wrap',
-            '& > *': { flex: '1 1 200px', minWidth: 200 },
-          }}
-        >
+        </KPIGrid>
+        <KPIGrid columns={3} minCardWidth={200}>
           <KPICard
             title="Booking Conversion Rate"
             value={`${conversion?.booking_conversion_rate ?? 0}%`}
@@ -127,7 +106,7 @@ export const CustomersReportsTab: React.FC<CustomersReportsTabProps> = ({ dateRa
             isLoading={conversionLoading}
             color="error"
           />
-        </Box>
+        </KPIGrid>
       </Box>
 
       {/* Lead Sources */}
@@ -151,7 +130,7 @@ export const CustomersReportsTab: React.FC<CustomersReportsTabProps> = ({ dateRa
             {leadSourcesLoading ? (
               <Skeleton variant="rectangular" height={300} />
             ) : (
-              <ModernCard variant="glass" size="medium" sx={{ height: 300, overflow: 'auto' }}>
+              <ModernCard variant="flat" size="medium" sx={{ height: 300, overflow: 'auto' }}>
                 <TableContainer>
                   <Table size="small" stickyHeader>
                     <TableHead>
@@ -207,7 +186,7 @@ export const CustomersReportsTab: React.FC<CustomersReportsTabProps> = ({ dateRa
         {customersLoading ? (
           <Skeleton variant="rectangular" height={300} />
         ) : (
-          <ModernCard variant="glass" size="medium">
+          <ModernCard variant="flat" size="medium">
             <TableContainer>
               <Table size="small">
                 <TableHead>

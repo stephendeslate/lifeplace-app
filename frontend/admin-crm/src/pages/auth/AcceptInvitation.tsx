@@ -13,8 +13,6 @@ import {
   IconButton,
   Divider,
 } from '@mui/material';
-import { tokens } from '../../design-system';
-import { glassPresets } from '../../design-system/utils/glassmorphism';
 import {
   Visibility,
   VisibilityOff,
@@ -160,7 +158,7 @@ export const AcceptInvitation: React.FC = () => {
     } catch (error: unknown) {
       console.error('Error accepting invitation:', error);
       const apiError = error as { response?: { data?: { detail?: string; password?: string[]; non_field_errors?: string[] } } };
-      const message = apiError.response?.data?.detail || 
+      const message = apiError.response?.data?.detail ||
                      apiError.response?.data?.password?.[0] ||
                      apiError.response?.data?.non_field_errors?.[0] ||
                      'Failed to accept invitation';
@@ -186,19 +184,20 @@ export const AcceptInvitation: React.FC = () => {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          background: `linear-gradient(135deg, ${tokens.color.neutral[50]} 0%, ${tokens.color.primary[50]}40 100%)`,
+          bgcolor: 'grey.50',
         }}
       >
         <Box
           sx={{
             textAlign: 'center',
-            ...glassPresets.medium,
             p: 4,
-            borderRadius: tokens.spacing.radius.xxl,
-            border: `1px solid ${tokens.color.borders.glass}`,
+            borderRadius: 2,
+            border: '1px solid',
+            borderColor: 'divider',
+            bgcolor: 'background.paper',
           }}
         >
-          <CircularProgress size={48} sx={{ mb: 2, color: tokens.color.primary[500] }} />
+          <CircularProgress size={48} sx={{ mb: 2 }} />
           <Typography variant="body1" color="text.secondary">
             Loading invitation details...
           </Typography>
@@ -216,7 +215,7 @@ export const AcceptInvitation: React.FC = () => {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          background: `linear-gradient(135deg, ${tokens.color.neutral[50]} 0%, ${tokens.color.error[50]}40 100%)`,
+          bgcolor: 'grey.50',
           px: 2,
         }}
       >
@@ -224,21 +223,17 @@ export const AcceptInvitation: React.FC = () => {
           sx={{
             maxWidth: 500,
             width: '100%',
-            ...glassPresets.medium,
             p: 4,
-            borderRadius: tokens.spacing.radius.xxl,
-            border: `1px solid ${tokens.color.error[200]}40`,
+            borderRadius: 2,
+            border: '1px solid',
+            borderColor: 'divider',
             textAlign: 'center',
+            bgcolor: 'background.paper',
           }}
         >
           <Alert
             severity="error"
-            sx={{
-              mb: 3,
-              ...glassPresets.light,
-              border: `1px solid ${tokens.color.error[300]}30`,
-              borderRadius: tokens.spacing.radius.lg,
-            }}
+            sx={{ mb: 3 }}
           >
             <Typography variant="h6" gutterBottom>
               Invalid Invitation
@@ -250,15 +245,7 @@ export const AcceptInvitation: React.FC = () => {
           <Button
             variant="contained"
             onClick={() => navigate('/login')}
-            sx={{
-              mt: 2,
-              background: `linear-gradient(135deg, ${tokens.color.primary[500]} 0%, ${tokens.color.primary[600]} 100%)`,
-              borderRadius: tokens.spacing.radius.full,
-              px: 4,
-              '&:hover': {
-                background: `linear-gradient(135deg, ${tokens.color.primary[600]} 0%, ${tokens.color.primary[700]} 100%)`,
-              },
-            }}
+            sx={{ mt: 2 }}
           >
             Go to Login
           </Button>
@@ -275,7 +262,7 @@ export const AcceptInvitation: React.FC = () => {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        background: `linear-gradient(135deg, ${tokens.color.neutral[50]} 0%, ${tokens.color.primary[50]}40 100%)`,
+        bgcolor: 'grey.50',
         px: 2,
       }}
     >
@@ -283,18 +270,18 @@ export const AcceptInvitation: React.FC = () => {
         sx={{
           maxWidth: 500,
           width: '100%',
-          ...glassPresets.medium,
           p: 4,
-          borderRadius: tokens.spacing.radius.xxl,
-          border: `1px solid ${tokens.color.borders.glass}`,
-          boxShadow: tokens.shadow.glass.elevated,
+          borderRadius: 2,
+          border: '1px solid',
+          borderColor: 'divider',
+          bgcolor: 'background.paper',
         }}
       >
           {/* Header */}
           <Box sx={{ textAlign: 'center', mb: 4 }}>
-            <AdminPanelSettings 
-              color="primary" 
-              sx={{ fontSize: 48, mb: 2 }} 
+            <AdminPanelSettings
+              color="primary"
+              sx={{ fontSize: 48, mb: 2 }}
             />
             <Typography variant="h4" component="h1" fontWeight="bold" gutterBottom>
               Welcome to LifePlace Admin

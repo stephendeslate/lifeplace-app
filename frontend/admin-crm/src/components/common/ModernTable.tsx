@@ -21,7 +21,6 @@ import {
   Delete as DeleteIcon,
 } from '@mui/icons-material';
 import { tokens } from '../../design-system/tokens';
-import { glassPresets } from '../../design-system/utils/glassmorphism';
 
 export interface ModernTableColumn<T = Record<string, unknown>> {
   key: string;
@@ -102,11 +101,12 @@ export const ModernTable = <T extends Record<string, unknown>>({
 
   return (
     <>
-      <TableContainer 
+      <TableContainer
         className={className}
-        sx={{ 
-          background: 'transparent',
-          borderRadius: tokens.spacing.radius.xxl,
+        sx={{
+          bgcolor: 'background.paper',
+          borderRadius: tokens.spacing.radius.lg,
+          border: `1px solid ${tokens.color.borders.subtle}`,
           overflowX: 'auto',
           overflowY: 'visible',
           '&::-webkit-scrollbar': {
@@ -125,25 +125,25 @@ export const ModernTable = <T extends Record<string, unknown>>({
           },
         }}
       >
-        <Table sx={{ background: 'transparent' }}>
+        <Table>
           <TableHead>
             <TableRow
               sx={{
                 '& .MuiTableCell-head': {
-                  background: `linear-gradient(135deg, ${tokens.color.neutral[50]} 0%, ${tokens.color.neutral[100]} 100%)`,
+                  bgcolor: tokens.color.neutral[50],
                   fontWeight: 600,
                   color: tokens.color.neutral[700],
-                  borderBottom: `1px solid ${tokens.color.borders.glass}`,
+                  borderBottom: `1px solid ${tokens.color.borders.subtle}`,
                   fontSize: '0.875rem',
                   textTransform: 'uppercase',
                   letterSpacing: '0.5px',
-                  py: 2.5,
+                  py: 2,
                 },
               }}
             >
               {columns.map((column) => (
-                <TableCell 
-                  key={column.key} 
+                <TableCell
+                  key={column.key}
                   align={column.align || 'left'}
                   sx={{ width: column.width }}
                 >
@@ -178,32 +178,26 @@ export const ModernTable = <T extends Record<string, unknown>>({
           </TableHead>
           <TableBody>
             {data.map((row, index) => (
-              <TableRow 
+              <TableRow
                 key={(row as { id?: string | number }).id || index}
                 sx={{
                   cursor: onRowClick ? 'pointer' : 'default',
-                  background: index % 2 === 0 
-                    ? `linear-gradient(135deg, ${tokens.color.neutral[50]} 0%, ${tokens.color.neutral[100]} 100%)`
-                    : 'transparent',
-                  transition: 'all 0.2s ease-in-out',
                   '&:hover': {
-                    background: `linear-gradient(135deg, ${tokens.color.primary[50]} 0%, ${tokens.color.primary[100]} 100%)`,
-                    transform: 'translateY(-1px)',
-                    boxShadow: `0 4px 20px ${tokens.color.primary[500]}08`,
+                    bgcolor: tokens.color.neutral[50],
                   },
                   '& .MuiTableCell-root': {
-                    borderBottom: `1px solid ${tokens.color.borders.glass}`,
-                    py: 2.5,
+                    borderBottom: `1px solid ${tokens.color.borders.subtle}`,
+                    py: 2,
                   },
                 }}
                 onClick={() => onRowClick?.(row, index)}
               >
                 {columns.map((column) => (
-                  <TableCell 
-                    key={column.key} 
+                  <TableCell
+                    key={column.key}
                     align={column.align || 'left'}
                   >
-                    {column.render 
+                    {column.render
                       ? column.render(row[column.key], row, index)
                       : String(row[column.key] || '')
                     }
@@ -216,10 +210,8 @@ export const ModernTable = <T extends Record<string, unknown>>({
                       onClick={(e) => handleMenuOpen(e, row)}
                       sx={{
                         '&:hover': {
-                          background: `linear-gradient(135deg, ${tokens.color.primary[100]} 0%, ${tokens.color.secondary[100]} 100%)`,
-                          transform: 'scale(1.1)',
+                          bgcolor: tokens.color.neutral[100],
                         },
-                        transition: 'all 0.2s ease-in-out',
                       }}
                     >
                       <MoreVertIcon />
@@ -240,10 +232,11 @@ export const ModernTable = <T extends Record<string, unknown>>({
           onClose={handleMenuClose}
           PaperProps={{
             sx: {
-              ...glassPresets.medium,
-              borderRadius: tokens.spacing.radius.lg,
-              border: `1px solid ${tokens.color.borders.glass}`,
+              bgcolor: 'background.paper',
+              borderRadius: tokens.spacing.radius.md,
+              border: `1px solid ${tokens.color.borders.subtle}`,
               minWidth: 160,
+              boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
             },
           }}
         >
@@ -252,15 +245,15 @@ export const ModernTable = <T extends Record<string, unknown>>({
             if (!shouldShow) return null;
 
             return (
-              <MenuItem 
+              <MenuItem
                 key={index}
                 onClick={() => handleActionClick(action)}
                 sx={{
                   color: action.color === 'error' ? 'error.main' : 'inherit',
                   '&:hover': {
-                    background: action.color === 'error' 
-                      ? `linear-gradient(135deg, ${tokens.color.error[50]} 0%, ${tokens.color.error[100]} 100%)`
-                      : `linear-gradient(135deg, ${tokens.color.primary[50]} 0%, ${tokens.color.secondary[50]} 100%)`,
+                    bgcolor: action.color === 'error'
+                      ? tokens.color.error[50]
+                      : tokens.color.neutral[50],
                   },
                 }}
               >

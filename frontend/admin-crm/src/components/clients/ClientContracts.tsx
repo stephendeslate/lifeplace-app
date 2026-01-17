@@ -156,7 +156,7 @@ export const ClientContracts: React.FC<ClientContractsProps> = ({ client }) => {
       </Box>
 
       <TableContainer component={Paper}>
-        <Table>
+        <Table size="small">
           <TableHead>
             <TableRow>
               <TableCell>Event</TableCell>

@@ -14,7 +14,6 @@ import {
   Avatar,
   Divider,
 } from '@mui/material';
-import { ModernCard } from '../../common/ModernCard';
 import {
   Preview as PreviewIcon,
   NavigateNext as NextIcon,
@@ -38,9 +37,6 @@ import {
   Info as IntroIcon,
   Schedule as PricingIcon,
 } from '@mui/icons-material';
-// Modern Design System imports
-import { tokens } from '../../../design-system';
-import { glassPresets } from '../../../design-system/utils/glassmorphism';
 import { formatCurrency } from '../../../utils/currency';
 import type { 
   BookingFlowDetail, 
@@ -325,11 +321,12 @@ const StepPreview: React.FC<StepPreviewProps> = ({
             <Typography variant="subtitle1" gutterBottom>
               Pricing Summary
             </Typography>
-            <Box sx={{ 
-              p: 2, 
-              ...glassPresets.light,
-              border: `1px solid ${tokens.color.borders.glass}`,
-              borderRadius: tokens.spacing.radius.lg
+            <Box sx={{
+              p: 2,
+              borderRadius: 1,
+              bgcolor: 'background.paper',
+              border: 1,
+              borderColor: 'divider'
             }}>
               <Stack spacing={1}>
                 <Box display="flex" justifyContent="space-between">
@@ -531,12 +528,13 @@ const StepPreview: React.FC<StepPreviewProps> = ({
       </Box>
       
       {isActive && !compact && (
-        <Box sx={{ 
-          p: 2, 
-          mb: 2, 
-          ...glassPresets.light,
-          border: `1px solid ${tokens.color.borders.glass}`,
-          borderRadius: tokens.spacing.radius.lg
+        <Box sx={{
+          p: 2,
+          mb: 2,
+          borderRadius: 1,
+          bgcolor: 'background.paper',
+          border: 1,
+          borderColor: 'divider'
         }}>
           {getStepContent()}
         </Box>
@@ -584,7 +582,7 @@ export const BookingFlowPreview: React.FC<BookingFlowPreviewProps> = ({
 
   if (!flow.steps || flow.steps.length === 0) {
     return (
-      <ModernCard variant="glass" size="large">
+      <Box sx={{ borderRadius: 1, bgcolor: 'background.paper' }}>
         <Box sx={{ textAlign: 'center', py: 4 }}>
           <PreviewIcon sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }} />
           <Typography variant="h6" color="text.secondary" gutterBottom>
@@ -594,39 +592,38 @@ export const BookingFlowPreview: React.FC<BookingFlowPreviewProps> = ({
             Add steps to this booking flow to see the preview
           </Typography>
         </Box>
-      </ModernCard>
+      </Box>
     );
   }
 
   if (enabledSteps.length === 0) {
     return (
-      <ModernCard variant="glass" size="large" color="warning">
+      <Box sx={{ borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
         <Alert severity="warning">
           All steps in this booking flow are disabled. Enable at least one step to preview the client experience.
         </Alert>
         {hasDeprecatedSteps && (
           <Alert severity="error" sx={{ mt: 2 }}>
-            This flow contains deprecated step types (availability_check, event_details). 
+            This flow contains deprecated step types (availability_check, event_details).
             Please migrate or remove these steps for the flow to function properly.
           </Alert>
         )}
-      </ModernCard>
+      </Box>
     );
   }
 
   return (
-    <ModernCard 
-      variant="glass" 
-      size="large" 
-      color="primary"
+    <Box
       sx={{
+        borderRadius: 1,
+        bgcolor: 'background.paper',
         maxWidth: isMobileView ? 375 : '100%',
         mx: isMobileView ? 'auto' : 0,
         transition: 'max-width 0.3s ease-in-out'
       }}
     >
       {/* Preview Header */}
-      <Box sx={{ p: 3, borderBottom: 1, borderColor: tokens.color.borders.glass }}>
+      <Box sx={{ p: 3, borderBottom: 1, borderColor: 'divider' }}>
         <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
           <Box display="flex" alignItems="center" gap={1}>
             <Avatar sx={{ bgcolor: 'primary.main', width: 32, height: 32 }}>
@@ -791,6 +788,6 @@ export const BookingFlowPreview: React.FC<BookingFlowPreviewProps> = ({
           </Typography>
         </Alert>
       </Box>
-    </ModernCard>
+    </Box>
   );
 };

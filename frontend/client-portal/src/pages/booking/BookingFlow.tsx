@@ -29,6 +29,7 @@ import {
   Home as HomeIcon,
   Dashboard as DashboardIcon,
 } from '@mui/icons-material';
+import { SEO } from '../../hooks/useSEO';
 import { BookingProvider, useBooking } from '../../contexts/BookingContext';
 import { BookingContainer } from '../../components/booking/BookingContainer';
 import { StepRenderer } from '../../components/booking/StepRenderer';
@@ -134,10 +135,16 @@ const BookingFlowContent: React.FC = () => {
 // Main booking page designed to work within PublicLayout
 export const BookingPage: React.FC = () => {
   return (
-    <BookingProvider>
-      {/* No background styling here - handled by PublicLayout */}
-      <BookingFlowContent />
-    </BookingProvider>
+    <>
+      <SEO
+        title="Book Your Event | LifePlace Alfonso"
+        description="Book your event at LifePlace Alfonso. Easy online booking for retreats, weddings, and corporate events."
+      />
+      <BookingProvider>
+        {/* No background styling here - handled by PublicLayout */}
+        <BookingFlowContent />
+      </BookingProvider>
+    </>
   );
 };
 

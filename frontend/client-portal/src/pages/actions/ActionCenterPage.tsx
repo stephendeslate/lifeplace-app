@@ -32,6 +32,7 @@ import {
   Payment as PaymentIcon,
   Close as ClearIcon,
 } from '@mui/icons-material';
+import { SEO } from '../../hooks/useSEO';
 import { useNavigate } from 'react-router-dom';
 import { useActionCenter } from '../../hooks/useActionCenter';
 import { ActionCardList } from '../../components/actions';
@@ -189,8 +190,14 @@ export const ActionCenterPage: React.FC = () => {
   };
 
   return (
-    <Box sx={{ py: 3, px: { xs: 2, md: 3 } }}>
-      {/* Header */}
+    <>
+      <SEO
+        title="Action Center | LifePlace Alfonso"
+        description="View items requiring your attention."
+        noIndex={true}
+      />
+      <Box sx={{ py: 3, px: { xs: 2, md: 3 } }}>
+        {/* Header */}
       <Stack
         direction={{ xs: 'column', sm: 'row' }}
         justifyContent="space-between"
@@ -455,16 +462,17 @@ export const ActionCenterPage: React.FC = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Invoice Payment Dialog */}
-      {selectedInvoiceForPayment && (
-        <InvoicePaymentDialog
-          open={invoicePaymentDialogOpen}
-          invoice={selectedInvoiceForPayment}
-          onClose={handleCloseInvoicePaymentDialog}
-          onPaymentSuccess={handleInvoicePaymentSuccess}
-        />
-      )}
-    </Box>
+        {/* Invoice Payment Dialog */}
+        {selectedInvoiceForPayment && (
+          <InvoicePaymentDialog
+            open={invoicePaymentDialogOpen}
+            invoice={selectedInvoiceForPayment}
+            onClose={handleCloseInvoicePaymentDialog}
+            onPaymentSuccess={handleInvoicePaymentSuccess}
+          />
+        )}
+      </Box>
+    </>
   );
 };
 

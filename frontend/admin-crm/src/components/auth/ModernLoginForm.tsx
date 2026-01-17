@@ -1,5 +1,5 @@
 // Modern Login Form Component
-// Enhanced login form with glassmorphic design and modern interactions
+// Clean login form with flat design
 
 import React, { useState } from 'react';
 import {
@@ -29,7 +29,6 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useToastActions } from '../../contexts/ToastContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { tokens } from '../../design-system';
-import { glassPresets } from '../../design-system/utils/glassmorphism';
 import { createTransition } from '../../design-system/utils/animations';
 import type { LoginCredentials } from '../../types/auth.types';
 
@@ -151,10 +150,9 @@ export const ModernLoginForm: React.FC<ModernLoginFormProps> = ({ onSuccess }) =
           <Box
             sx={{
               p: 2.5,
-              borderRadius: tokens.spacing.radius.xl,
-              ...glassPresets.light,
-              backgroundImage: `linear-gradient(135deg, ${tokens.color.primary[500]}15 0%, ${tokens.color.secondary[500]}10 100%)`,
-              borderColor: `${tokens.color.primary[500]}20`,
+              borderRadius: tokens.spacing.radius.lg,
+              background: tokens.color.primary[50],
+              border: `1px solid ${tokens.color.primary[200]}`,
               color: tokens.color.primary[600],
               mb: 2,
             }}
@@ -163,15 +161,12 @@ export const ModernLoginForm: React.FC<ModernLoginFormProps> = ({ onSuccess }) =
           </Box>
         </Box>
 
-        <Typography 
-          variant="h3" 
-          component="h1" 
+        <Typography
+          variant="h3"
+          component="h1"
           sx={{
             fontWeight: 700,
-            background: `linear-gradient(135deg, ${tokens.color.primary[700]} 0%, ${tokens.color.primary[500]} 50%, ${tokens.color.secondary[600]} 100%)`,
-            backgroundClip: 'text',
-            WebkitBackgroundClip: 'text',
-            color: 'transparent',
+            color: tokens.color.primary[700],
             mb: 1,
             letterSpacing: '-0.02em',
           }}
@@ -193,12 +188,11 @@ export const ModernLoginForm: React.FC<ModernLoginFormProps> = ({ onSuccess }) =
 
       {/* Error Alert */}
       {submitError && (
-        <Alert 
-          severity="error" 
-          sx={{ 
-            borderRadius: tokens.spacing.radius.lg,
-            ...glassPresets.light,
-            border: `1px solid ${tokens.color.error[500]}30`,
+        <Alert
+          severity="error"
+          sx={{
+            borderRadius: tokens.spacing.radius.md,
+            border: `1px solid ${tokens.color.error[200]}`,
             '& .MuiAlert-message': {
               fontWeight: 500,
             }
@@ -236,65 +230,58 @@ export const ModernLoginForm: React.FC<ModernLoginFormProps> = ({ onSuccess }) =
         }}
         sx={{
           '& .MuiOutlinedInput-root': {
-            borderRadius: tokens.spacing.radius.lg,
-            backgroundColor: isDarkMode ? 'rgba(30, 30, 35, 0.8)' : 'rgba(255, 255, 255, 0.8)',
-            backdropFilter: 'blur(12px)',
-            border: `1px solid ${tokens.color.borders.subtle}`,
-            transition: createTransition(['border-color', 'background-color', 'box-shadow'], 'fast'),
+            borderRadius: tokens.spacing.radius.md,
+            backgroundColor: isDarkMode ? tokens.color.neutral[800] : 'white',
+            border: `1px solid ${isDarkMode ? tokens.color.neutral[700] : tokens.color.neutral[300]}`,
+            transition: createTransition(['border-color', 'background-color'], 'fast'),
             padding: '2px 0',
             color: isDarkMode ? tokens.color.neutral[200] : tokens.color.neutral[800],
-            
+
             '& input': {
               color: isDarkMode ? tokens.color.neutral[200] : tokens.color.neutral[800],
               '&::placeholder': {
                 color: isDarkMode ? tokens.color.neutral[500] : tokens.color.neutral[400],
               },
             },
-            
+
             '&:hover': {
-              backgroundColor: isDarkMode ? 'rgba(30, 30, 35, 0.9)' : 'rgba(255, 255, 255, 0.9)',
               borderColor: tokens.color.primary[300],
             },
-            
+
             '&.Mui-focused': {
-              backgroundColor: isDarkMode ? 'rgba(30, 30, 35, 0.95)' : 'rgba(255, 255, 255, 0.95)',
               borderColor: tokens.color.primary[500],
-              boxShadow: `0 0 0 3px ${tokens.color.primary[500]}15`,
             },
-            
+
             '&.Mui-error': {
               borderColor: tokens.color.error[500],
-              '&.Mui-focused': {
-                boxShadow: `0 0 0 3px ${tokens.color.error[500]}15`,
-              }
             },
-            
+
             '& fieldset': {
               border: 'none',
             },
           },
-          
+
           '& .MuiInputLabel-root': {
             color: isDarkMode ? tokens.color.neutral[400] : tokens.color.neutral[600],
             fontWeight: 500,
             backgroundColor: 'transparent',
             padding: '0 4px',
-            
+
             '&.Mui-focused': {
               color: tokens.color.primary[isDarkMode ? 400 : 600],
             },
-            
+
             '&.Mui-error': {
               color: tokens.color.error[600],
             },
-            
+
             '&.MuiInputLabel-shrink': {
               transform: 'translate(14px, -9px) scale(0.75)',
               backgroundColor: isDarkMode ? muiTheme.palette.background.paper : 'white',
               padding: '0 8px',
             },
           },
-          
+
           '& .MuiFormHelperText-root': {
             marginLeft: 0,
             marginTop: 1,
@@ -349,65 +336,58 @@ export const ModernLoginForm: React.FC<ModernLoginFormProps> = ({ onSuccess }) =
         }}
         sx={{
           '& .MuiOutlinedInput-root': {
-            borderRadius: tokens.spacing.radius.lg,
-            backgroundColor: isDarkMode ? 'rgba(30, 30, 35, 0.8)' : 'rgba(255, 255, 255, 0.8)',
-            backdropFilter: 'blur(12px)',
-            border: `1px solid ${tokens.color.borders.subtle}`,
-            transition: createTransition(['border-color', 'background-color', 'box-shadow'], 'fast'),
+            borderRadius: tokens.spacing.radius.md,
+            backgroundColor: isDarkMode ? tokens.color.neutral[800] : 'white',
+            border: `1px solid ${isDarkMode ? tokens.color.neutral[700] : tokens.color.neutral[300]}`,
+            transition: createTransition(['border-color', 'background-color'], 'fast'),
             padding: '2px 0',
             color: isDarkMode ? tokens.color.neutral[200] : tokens.color.neutral[800],
-            
+
             '& input': {
               color: isDarkMode ? tokens.color.neutral[200] : tokens.color.neutral[800],
               '&::placeholder': {
                 color: isDarkMode ? tokens.color.neutral[500] : tokens.color.neutral[400],
               },
             },
-            
+
             '&:hover': {
-              backgroundColor: isDarkMode ? 'rgba(30, 30, 35, 0.9)' : 'rgba(255, 255, 255, 0.9)',
               borderColor: tokens.color.primary[300],
             },
-            
+
             '&.Mui-focused': {
-              backgroundColor: isDarkMode ? 'rgba(30, 30, 35, 0.95)' : 'rgba(255, 255, 255, 0.95)',
               borderColor: tokens.color.primary[500],
-              boxShadow: `0 0 0 3px ${tokens.color.primary[500]}15`,
             },
-            
+
             '&.Mui-error': {
               borderColor: tokens.color.error[500],
-              '&.Mui-focused': {
-                boxShadow: `0 0 0 3px ${tokens.color.error[500]}15`,
-              }
             },
-            
+
             '& fieldset': {
               border: 'none',
             },
           },
-          
+
           '& .MuiInputLabel-root': {
             color: isDarkMode ? tokens.color.neutral[400] : tokens.color.neutral[600],
             fontWeight: 500,
             backgroundColor: 'transparent',
             padding: '0 4px',
-            
+
             '&.Mui-focused': {
               color: tokens.color.primary[isDarkMode ? 400 : 600],
             },
-            
+
             '&.Mui-error': {
               color: tokens.color.error[600],
             },
-            
+
             '&.MuiInputLabel-shrink': {
               transform: 'translate(14px, -9px) scale(0.75)',
               backgroundColor: isDarkMode ? muiTheme.palette.background.paper : 'white',
               padding: '0 8px',
             },
           },
-          
+
           '& .MuiFormHelperText-root': {
             marginLeft: 0,
             marginTop: 1,
@@ -507,37 +487,32 @@ export const ModernLoginForm: React.FC<ModernLoginFormProps> = ({ onSuccess }) =
         disabled={isLoading}
         sx={{
           py: { xs: 1.5, sm: 2 },
-          borderRadius: tokens.spacing.radius.lg,
+          borderRadius: tokens.spacing.radius.md,
           fontWeight: 600,
           fontSize: '1.1rem',
           letterSpacing: '0.025em',
           textTransform: 'none',
           position: 'relative',
           overflow: 'hidden',
-          
-          // Glassmorphic button with gradient
-          backgroundImage: `linear-gradient(135deg, ${tokens.color.primary[600]} 0%, ${tokens.color.primary[500]} 50%, ${tokens.color.secondary[600]} 100%)`,
-          borderColor: `${tokens.color.primary[500]}30`,
+
+          // Simple button styling
+          background: tokens.color.primary[600],
           color: 'white',
-          boxShadow: `0 4px 20px ${tokens.color.primary[500]}30`,
-          
+
           '&:hover': !isLoading ? {
-            backgroundImage: `linear-gradient(135deg, ${tokens.color.primary[700]} 0%, ${tokens.color.primary[600]} 50%, ${tokens.color.secondary[700]} 100%)`,
-            transform: 'translateY(-1px)',
-            boxShadow: `0 8px 32px ${tokens.color.primary[500]}40`,
+            background: tokens.color.primary[700],
           } : {},
-          
+
           '&:active': {
-            transform: 'translateY(0)',
+            background: tokens.color.primary[800],
           },
-          
+
           '&:disabled': {
             background: tokens.color.neutral[300],
             color: tokens.color.neutral[500],
-            boxShadow: 'none',
           },
-          
-          transition: createTransition(['background', 'transform', 'box-shadow'], 'fast'),
+
+          transition: createTransition(['background'], 'fast'),
         }}
       >
         {isLoading ? (

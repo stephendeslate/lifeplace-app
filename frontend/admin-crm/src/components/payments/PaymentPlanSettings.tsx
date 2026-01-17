@@ -32,14 +32,10 @@ import {
 } from '@mui/icons-material';
 import IconButton from '@mui/material/IconButton';
 import { useForm, Controller } from 'react-hook-form';
-import { ModernCard } from '../common/ModernCard';
 import { usePaymentSettings, useUpdatePaymentSettings } from '../../hooks/usePayments';
 import { useCurrentCurrency } from '../../hooks/useCurrency';
 import { PAYMENT_FREQUENCIES } from '../../types/payments.types';
 import type { UpdatePaymentSettingsData, ChildPricingTier } from '../../types/payments.types';
-import { tokens } from '../../design-system';
-import { glassPresets } from '../../design-system/utils/glassmorphism';
-import { createTransition } from '../../design-system/utils/animations';
 
 interface PaymentPlanFormData {
   balance_due_days: string;
@@ -384,35 +380,12 @@ export const PaymentPlanSettings: React.FC = () => {
       {/* Header Section */}
       <Box sx={{ mb: 4 }}>
         <Box display="flex" alignItems="center" gap={2} mb={2}>
-          <Box
-            sx={{
-              p: 2,
-              borderRadius: tokens.spacing.radius.xl,
-              background: `linear-gradient(135deg, ${tokens.color.primary[500]}15 0%, ${tokens.color.primary[600]}10 100%)`,
-              color: tokens.color.primary[600],
-              border: `1px solid ${tokens.color.primary[500]}20`,
-              backdropFilter: 'blur(10px)',
-            }}
-          >
-            <SettingsIcon />
-          </Box>
+          <SettingsIcon color="primary" />
           <Box>
-            <Typography
-              variant="h6"
-              fontWeight="700"
-              sx={{
-                color: tokens.color.neutral[800],
-                mb: 0.5,
-              }}
-            >
+            <Typography variant="h6" fontWeight="700" color="text.primary" sx={{ mb: 0.5 }}>
               Payment Plan Configuration
             </Typography>
-            <Typography
-              variant="body2"
-              sx={{
-                color: tokens.color.neutral[600],
-              }}
-            >
+            <Typography variant="body2" color="text.secondary">
               Configure global payment settings including payment plans, refund policies, and gateway defaults
             </Typography>
           </Box>
@@ -422,20 +395,13 @@ export const PaymentPlanSettings: React.FC = () => {
       <form onSubmit={handleSubmit(onSubmit)}>
         <Stack spacing={4}>
           {/* Balance Due Settings */}
-          <ModernCard
-            variant="glass"
-            size="medium"
-            animation="fade"
-            title="Balance Due Settings"
-            sx={{
-              '&::before': {
-                background: `linear-gradient(135deg, ${tokens.color.primary[500]}04 0%, ${tokens.color.primary[600]}03 100%)`,
-              },
-            }}
-          >
+          <Box sx={{ borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
+            <Typography variant="h6" fontWeight={600} gutterBottom>
+              Balance Due Settings
+            </Typography>
             <Stack spacing={3}>
               <Box display="flex" alignItems="center" gap={1.5} mb={2}>
-                <MoneyIcon sx={{ color: tokens.color.primary[600] }} />
+                <MoneyIcon color="primary" />
                 <Typography variant="subtitle2" color="text.secondary">
                   Configure when payment balance becomes due
                 </Typography>
@@ -460,41 +426,20 @@ export const PaymentPlanSettings: React.FC = () => {
                     InputProps={{
                       endAdornment: <InputAdornment position="end">days</InputAdornment>,
                     }}
-                    sx={{
-                      '& .MuiOutlinedInput-root': {
-                        ...glassPresets.light,
-                        borderRadius: tokens.spacing.radius.lg,
-                        border: `1px solid ${tokens.color.borders.glass}`,
-                        '&:hover': {
-                          border: `1px solid ${tokens.color.primary[300]}`,
-                        },
-                        '&.Mui-focused': {
-                          border: `1px solid ${tokens.color.primary[500]}`,
-                          boxShadow: `0 0 0 3px ${tokens.color.primary[500]}15`,
-                        },
-                      },
-                    }}
                   />
                 )}
               />
             </Stack>
-          </ModernCard>
+          </Box>
 
           {/* Grace Period & Late Fees */}
-          <ModernCard
-            variant="glass"
-            size="medium"
-            animation="fade"
-            title="Grace Period & Late Fees"
-            sx={{
-              '&::before': {
-                background: `linear-gradient(135deg, ${tokens.color.warning[500]}04 0%, ${tokens.color.warning[600]}03 100%)`,
-              },
-            }}
-          >
+          <Box sx={{ borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
+            <Typography variant="h6" fontWeight={600} gutterBottom>
+              Grace Period & Late Fees
+            </Typography>
             <Stack spacing={3}>
               <Box display="flex" alignItems="center" gap={1.5} mb={2}>
-                <ScheduleIcon sx={{ color: tokens.color.warning[600] }} />
+                <ScheduleIcon color="warning" />
                 <Typography variant="subtitle2" color="text.secondary">
                   Configure grace periods and late fee policies
                 </Typography>
@@ -519,20 +464,6 @@ export const PaymentPlanSettings: React.FC = () => {
                     InputProps={{
                       endAdornment: <InputAdornment position="end">days</InputAdornment>,
                     }}
-                    sx={{
-                      '& .MuiOutlinedInput-root': {
-                        ...glassPresets.light,
-                        borderRadius: tokens.spacing.radius.lg,
-                        border: `1px solid ${tokens.color.borders.glass}`,
-                        '&:hover': {
-                          border: `1px solid ${tokens.color.primary[300]}`,
-                        },
-                        '&.Mui-focused': {
-                          border: `1px solid ${tokens.color.primary[500]}`,
-                          boxShadow: `0 0 0 3px ${tokens.color.primary[500]}15`,
-                        },
-                      },
-                    }}
                   />
                 )}
               />
@@ -546,14 +477,7 @@ export const PaymentPlanSettings: React.FC = () => {
                       <Switch
                         {...field}
                         checked={field.value}
-                        sx={{
-                          '& .MuiSwitch-switchBase.Mui-checked': {
-                            color: tokens.color.warning[500],
-                            '& + .MuiSwitch-track': {
-                              backgroundColor: tokens.color.warning[500],
-                            },
-                          },
-                        }}
+                        color="warning"
                       />
                     }
                     label="Enable Late Fees"
@@ -573,20 +497,6 @@ export const PaymentPlanSettings: React.FC = () => {
                         select
                         label="Late Fee Type"
                         helperText="Choose whether late fee is a fixed amount or percentage of invoice"
-                        sx={{
-                          '& .MuiOutlinedInput-root': {
-                            ...glassPresets.light,
-                            borderRadius: tokens.spacing.radius.lg,
-                            border: `1px solid ${tokens.color.borders.glass}`,
-                            '&:hover': {
-                              border: `1px solid ${tokens.color.primary[300]}`,
-                            },
-                            '&.Mui-focused': {
-                              border: `1px solid ${tokens.color.primary[500]}`,
-                              boxShadow: `0 0 0 3px ${tokens.color.primary[500]}15`,
-                            },
-                          },
-                        }}
                       >
                         <MenuItem value="FIXED">Fixed Amount</MenuItem>
                         <MenuItem value="PERCENTAGE">Percentage of Invoice</MenuItem>
@@ -613,20 +523,6 @@ export const PaymentPlanSettings: React.FC = () => {
                           InputProps={{
                             startAdornment: <InputAdornment position="start">{currencyConfig.symbol}</InputAdornment>,
                           }}
-                          sx={{
-                            '& .MuiOutlinedInput-root': {
-                              ...glassPresets.light,
-                              borderRadius: tokens.spacing.radius.lg,
-                              border: `1px solid ${tokens.color.borders.glass}`,
-                              '&:hover': {
-                                border: `1px solid ${tokens.color.primary[300]}`,
-                              },
-                              '&.Mui-focused': {
-                                border: `1px solid ${tokens.color.primary[500]}`,
-                                boxShadow: `0 0 0 3px ${tokens.color.primary[500]}15`,
-                              },
-                            },
-                          }}
                         />
                       )}
                     />
@@ -650,20 +546,6 @@ export const PaymentPlanSettings: React.FC = () => {
                           InputProps={{
                             endAdornment: <InputAdornment position="end">%</InputAdornment>,
                           }}
-                          sx={{
-                            '& .MuiOutlinedInput-root': {
-                              ...glassPresets.light,
-                              borderRadius: tokens.spacing.radius.lg,
-                              border: `1px solid ${tokens.color.borders.glass}`,
-                              '&:hover': {
-                                border: `1px solid ${tokens.color.primary[300]}`,
-                              },
-                              '&.Mui-focused': {
-                                border: `1px solid ${tokens.color.primary[500]}`,
-                                boxShadow: `0 0 0 3px ${tokens.color.primary[500]}15`,
-                              },
-                            },
-                          }}
                         />
                       )}
                     />
@@ -671,23 +553,16 @@ export const PaymentPlanSettings: React.FC = () => {
                 </>
               )}
             </Stack>
-          </ModernCard>
+          </Box>
 
           {/* Default Installment Settings */}
-          <ModernCard
-            variant="glass"
-            size="medium"
-            animation="fade"
-            title="Default Installment Settings"
-            sx={{
-              '&::before': {
-                background: `linear-gradient(135deg, ${tokens.color.success[500]}04 0%, ${tokens.color.success[600]}03 100%)`,
-              },
-            }}
-          >
+          <Box sx={{ borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
+            <Typography variant="h6" fontWeight={600} gutterBottom>
+              Default Installment Settings
+            </Typography>
             <Stack spacing={3}>
               <Box display="flex" alignItems="center" gap={1.5} mb={2}>
-                <PaymentIcon sx={{ color: tokens.color.success[600] }} />
+                <PaymentIcon color="success" />
                 <Typography variant="subtitle2" color="text.secondary">
                   Set default installment plan configuration
                 </Typography>
@@ -710,20 +585,6 @@ export const PaymentPlanSettings: React.FC = () => {
                       type="number"
                       error={!!errors.default_installments}
                       helperText={errors.default_installments?.message || 'Default number of payment installments'}
-                      sx={{
-                        '& .MuiOutlinedInput-root': {
-                          ...glassPresets.light,
-                          borderRadius: tokens.spacing.radius.lg,
-                          border: `1px solid ${tokens.color.borders.glass}`,
-                          '&:hover': {
-                            border: `1px solid ${tokens.color.primary[300]}`,
-                          },
-                          '&.Mui-focused': {
-                            border: `1px solid ${tokens.color.primary[500]}`,
-                            boxShadow: `0 0 0 3px ${tokens.color.primary[500]}15`,
-                          },
-                        },
-                      }}
                     />
                   )}
                 />
@@ -740,20 +601,6 @@ export const PaymentPlanSettings: React.FC = () => {
                       label="Default Installment Frequency"
                       error={!!errors.default_installment_frequency}
                       helperText={errors.default_installment_frequency?.message || 'How often installments are due'}
-                      sx={{
-                        '& .MuiOutlinedInput-root': {
-                          ...glassPresets.light,
-                          borderRadius: tokens.spacing.radius.lg,
-                          border: `1px solid ${tokens.color.borders.glass}`,
-                          '&:hover': {
-                            border: `1px solid ${tokens.color.primary[300]}`,
-                          },
-                          '&.Mui-focused': {
-                            border: `1px solid ${tokens.color.primary[500]}`,
-                            boxShadow: `0 0 0 3px ${tokens.color.primary[500]}15`,
-                          },
-                        },
-                      }}
                     >
                       {PAYMENT_FREQUENCIES.map((freq) => (
                         <MenuItem key={freq.value} value={freq.value}>
@@ -765,23 +612,16 @@ export const PaymentPlanSettings: React.FC = () => {
                 />
               </Box>
             </Stack>
-          </ModernCard>
+          </Box>
 
           {/* Deposit Settings (Enhanced) */}
-          <ModernCard
-            variant="glass"
-            size="medium"
-            animation="fade"
-            title="Reservation Deposit Settings"
-            sx={{
-              '&::before': {
-                background: `linear-gradient(135deg, ${tokens.color.secondary[500]}04 0%, ${tokens.color.secondary[600]}03 100%)`,
-              },
-            }}
-          >
+          <Box sx={{ borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
+            <Typography variant="h6" fontWeight={600} gutterBottom>
+              Reservation Deposit Settings
+            </Typography>
             <Stack spacing={3}>
               <Box display="flex" alignItems="center" gap={1.5} mb={2}>
-                <MoneyIcon sx={{ color: tokens.color.secondary[600] }} />
+                <MoneyIcon color="secondary" />
                 <Typography variant="subtitle2" color="text.secondary">
                   Configure reservation deposit requirements and behavior
                 </Typography>
@@ -797,20 +637,6 @@ export const PaymentPlanSettings: React.FC = () => {
                     select
                     label="Deposit Type"
                     helperText="Choose whether deposit is a percentage of total or a fixed amount"
-                    sx={{
-                      '& .MuiOutlinedInput-root': {
-                        ...glassPresets.light,
-                        borderRadius: tokens.spacing.radius.lg,
-                        border: `1px solid ${tokens.color.borders.glass}`,
-                        '&:hover': {
-                          border: `1px solid ${tokens.color.primary[300]}`,
-                        },
-                        '&.Mui-focused': {
-                          border: `1px solid ${tokens.color.primary[500]}`,
-                          boxShadow: `0 0 0 3px ${tokens.color.primary[500]}15`,
-                        },
-                      },
-                    }}
                   >
                     <MenuItem value="PERCENTAGE">Percentage of Total</MenuItem>
                     <MenuItem value="FIXED">Fixed Amount</MenuItem>
@@ -838,20 +664,6 @@ export const PaymentPlanSettings: React.FC = () => {
                       InputProps={{
                         endAdornment: <InputAdornment position="end">%</InputAdornment>,
                       }}
-                      sx={{
-                        '& .MuiOutlinedInput-root': {
-                          ...glassPresets.light,
-                          borderRadius: tokens.spacing.radius.lg,
-                          border: `1px solid ${tokens.color.borders.glass}`,
-                          '&:hover': {
-                            border: `1px solid ${tokens.color.primary[300]}`,
-                          },
-                          '&.Mui-focused': {
-                            border: `1px solid ${tokens.color.primary[500]}`,
-                            boxShadow: `0 0 0 3px ${tokens.color.primary[500]}15`,
-                          },
-                        },
-                      }}
                     />
                   )}
                 />
@@ -874,20 +686,6 @@ export const PaymentPlanSettings: React.FC = () => {
                       InputProps={{
                         startAdornment: <InputAdornment position="start">{currencyConfig.symbol}</InputAdornment>,
                       }}
-                      sx={{
-                        '& .MuiOutlinedInput-root': {
-                          ...glassPresets.light,
-                          borderRadius: tokens.spacing.radius.lg,
-                          border: `1px solid ${tokens.color.borders.glass}`,
-                          '&:hover': {
-                            border: `1px solid ${tokens.color.primary[300]}`,
-                          },
-                          '&.Mui-focused': {
-                            border: `1px solid ${tokens.color.primary[500]}`,
-                            boxShadow: `0 0 0 3px ${tokens.color.primary[500]}15`,
-                          },
-                        },
-                      }}
                     />
                   )}
                 />
@@ -903,14 +701,7 @@ export const PaymentPlanSettings: React.FC = () => {
                         <Switch
                           {...field}
                           checked={field.value}
-                          sx={{
-                            '& .MuiSwitch-switchBase.Mui-checked': {
-                              color: tokens.color.success[500],
-                              '& + .MuiSwitch-track': {
-                                backgroundColor: tokens.color.success[500],
-                              },
-                            },
-                          }}
+                          color="success"
                         />
                       }
                       label="Deposit is Refundable"
@@ -927,14 +718,7 @@ export const PaymentPlanSettings: React.FC = () => {
                         <Switch
                           {...field}
                           checked={field.value}
-                          sx={{
-                            '& .MuiSwitch-switchBase.Mui-checked': {
-                              color: tokens.color.success[500],
-                              '& + .MuiSwitch-track': {
-                                backgroundColor: tokens.color.success[500],
-                              },
-                            },
-                          }}
+                          color="success"
                         />
                       }
                       label="Deposit is Deductible from Total"
@@ -951,14 +735,7 @@ export const PaymentPlanSettings: React.FC = () => {
                         <Switch
                           {...field}
                           checked={field.value}
-                          sx={{
-                            '& .MuiSwitch-switchBase.Mui-checked': {
-                              color: tokens.color.success[500],
-                              '& + .MuiSwitch-track': {
-                                backgroundColor: tokens.color.success[500],
-                              },
-                            },
-                          }}
+                          color="success"
                         />
                       }
                       label="Waive Deposit on Full Payment"
@@ -967,23 +744,16 @@ export const PaymentPlanSettings: React.FC = () => {
                 />
               </Box>
             </Stack>
-          </ModernCard>
+          </Box>
 
           {/* Payment Schedule Settings */}
-          <ModernCard
-            variant="glass"
-            size="medium"
-            animation="fade"
-            title="Payment Schedule Settings"
-            sx={{
-              '&::before': {
-                background: `linear-gradient(135deg, ${tokens.color.primary[500]}04 0%, ${tokens.color.primary[600]}03 100%)`,
-              },
-            }}
-          >
+          <Box sx={{ borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
+            <Typography variant="h6" fontWeight={600} gutterBottom>
+              Payment Schedule Settings
+            </Typography>
             <Stack spacing={3}>
               <Box display="flex" alignItems="center" gap={1.5} mb={2}>
-                <ScheduleIcon sx={{ color: tokens.color.primary[600] }} />
+                <ScheduleIcon color="primary" />
                 <Typography variant="subtitle2" color="text.secondary">
                   Configure downpayment and balance due schedule
                 </Typography>
@@ -1009,20 +779,6 @@ export const PaymentPlanSettings: React.FC = () => {
                       InputProps={{
                         endAdornment: <InputAdornment position="end">%</InputAdornment>,
                       }}
-                      sx={{
-                        '& .MuiOutlinedInput-root': {
-                          ...glassPresets.light,
-                          borderRadius: tokens.spacing.radius.lg,
-                          border: `1px solid ${tokens.color.borders.glass}`,
-                          '&:hover': {
-                            border: `1px solid ${tokens.color.primary[300]}`,
-                          },
-                          '&.Mui-focused': {
-                            border: `1px solid ${tokens.color.primary[500]}`,
-                            boxShadow: `0 0 0 3px ${tokens.color.primary[500]}15`,
-                          },
-                        },
-                      }}
                     />
                   )}
                 />
@@ -1045,20 +801,6 @@ export const PaymentPlanSettings: React.FC = () => {
                       InputProps={{
                         endAdornment: <InputAdornment position="end">days</InputAdornment>,
                       }}
-                      sx={{
-                        '& .MuiOutlinedInput-root': {
-                          ...glassPresets.light,
-                          borderRadius: tokens.spacing.radius.lg,
-                          border: `1px solid ${tokens.color.borders.glass}`,
-                          '&:hover': {
-                            border: `1px solid ${tokens.color.primary[300]}`,
-                          },
-                          '&.Mui-focused': {
-                            border: `1px solid ${tokens.color.primary[500]}`,
-                            boxShadow: `0 0 0 3px ${tokens.color.primary[500]}15`,
-                          },
-                        },
-                      }}
                     />
                   )}
                 />
@@ -1074,20 +816,6 @@ export const PaymentPlanSettings: React.FC = () => {
                     select
                     label="Balance Due Type"
                     helperText="When the remaining balance is due"
-                    sx={{
-                      '& .MuiOutlinedInput-root': {
-                        ...glassPresets.light,
-                        borderRadius: tokens.spacing.radius.lg,
-                        border: `1px solid ${tokens.color.borders.glass}`,
-                        '&:hover': {
-                          border: `1px solid ${tokens.color.primary[300]}`,
-                        },
-                        '&.Mui-focused': {
-                          border: `1px solid ${tokens.color.primary[500]}`,
-                          boxShadow: `0 0 0 3px ${tokens.color.primary[500]}15`,
-                        },
-                      },
-                    }}
                   >
                     <MenuItem value="DAYS_BEFORE">Specific Days Before Event</MenuItem>
                     <MenuItem value="DAY_BEFORE">Day Before Event</MenuItem>
@@ -1095,23 +823,16 @@ export const PaymentPlanSettings: React.FC = () => {
                 )}
               />
             </Stack>
-          </ModernCard>
+          </Box>
 
           {/* Date Blocking Policy Settings */}
-          <ModernCard
-            variant="glass"
-            size="medium"
-            animation="fade"
-            title="Date Blocking Policy"
-            sx={{
-              '&::before': {
-                background: `linear-gradient(135deg, ${tokens.color.secondary[500]}04 0%, ${tokens.color.secondary[600]}03 100%)`,
-              },
-            }}
-          >
+          <Box sx={{ borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
+            <Typography variant="h6" fontWeight={600} gutterBottom>
+              Date Blocking Policy
+            </Typography>
             <Stack spacing={3}>
               <Box display="flex" alignItems="center" gap={1.5} mb={2}>
-                <CalendarIcon sx={{ color: tokens.color.secondary[600] }} />
+                <CalendarIcon color="secondary" />
                 <Typography variant="subtitle2" color="text.secondary">
                   Configure when dates become blocked for other bookings
                 </Typography>
@@ -1133,20 +854,6 @@ export const PaymentPlanSettings: React.FC = () => {
                     select
                     label="Date Blocking Policy"
                     helperText="When should dates become unavailable to other clients?"
-                    sx={{
-                      '& .MuiOutlinedInput-root': {
-                        ...glassPresets.light,
-                        borderRadius: tokens.spacing.radius.lg,
-                        border: `1px solid ${tokens.color.borders.glass}`,
-                        '&:hover': {
-                          border: `1px solid ${tokens.color.primary[300]}`,
-                        },
-                        '&.Mui-focused': {
-                          border: `1px solid ${tokens.color.primary[500]}`,
-                          boxShadow: `0 0 0 3px ${tokens.color.primary[500]}15`,
-                        },
-                      },
-                    }}
                   >
                     <MenuItem value="IMMEDIATE">Block Immediately on Booking</MenuItem>
                     <MenuItem value="ON_DOWNPAYMENT">Block When Downpayment Received</MenuItem>
@@ -1166,20 +873,6 @@ export const PaymentPlanSettings: React.FC = () => {
                         select
                         label="Downpayment Due Reference Point"
                         helperText="When is the downpayment due date calculated from?"
-                        sx={{
-                          '& .MuiOutlinedInput-root': {
-                            ...glassPresets.light,
-                            borderRadius: tokens.spacing.radius.lg,
-                            border: `1px solid ${tokens.color.borders.glass}`,
-                            '&:hover': {
-                              border: `1px solid ${tokens.color.primary[300]}`,
-                            },
-                            '&.Mui-focused': {
-                              border: `1px solid ${tokens.color.primary[500]}`,
-                              boxShadow: `0 0 0 3px ${tokens.color.primary[500]}15`,
-                            },
-                          },
-                        }}
                       >
                         <MenuItem value="DAYS_AFTER_BOOKING">Days After Booking</MenuItem>
                         <MenuItem value="DAYS_BEFORE_EVENT">Days Before Event</MenuItem>
@@ -1204,43 +897,22 @@ export const PaymentPlanSettings: React.FC = () => {
                         InputProps={{
                           endAdornment: <InputAdornment position="end">days</InputAdornment>,
                         }}
-                        sx={{
-                          '& .MuiOutlinedInput-root': {
-                            ...glassPresets.light,
-                            borderRadius: tokens.spacing.radius.lg,
-                            border: `1px solid ${tokens.color.borders.glass}`,
-                            '&:hover': {
-                              border: `1px solid ${tokens.color.primary[300]}`,
-                            },
-                            '&.Mui-focused': {
-                              border: `1px solid ${tokens.color.primary[500]}`,
-                              boxShadow: `0 0 0 3px ${tokens.color.primary[500]}15`,
-                            },
-                          },
-                        }}
                       />
                     )}
                   />
                 </>
               )}
             </Stack>
-          </ModernCard>
+          </Box>
 
           {/* Service Charge Settings */}
-          <ModernCard
-            variant="glass"
-            size="medium"
-            animation="fade"
-            title="Service Charge Settings"
-            sx={{
-              '&::before': {
-                background: `linear-gradient(135deg, ${tokens.color.info[500]}04 0%, ${tokens.color.info[600]}03 100%)`,
-              },
-            }}
-          >
+          <Box sx={{ borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
+            <Typography variant="h6" fontWeight={600} gutterBottom>
+              Service Charge Settings
+            </Typography>
             <Stack spacing={3}>
               <Box display="flex" alignItems="center" gap={1.5} mb={2}>
-                <ReceiptIcon sx={{ color: tokens.color.info[600] }} />
+                <ReceiptIcon color="info" />
                 <Typography variant="subtitle2" color="text.secondary">
                   Configure service charge applied to bookings (separate from tax)
                 </Typography>
@@ -1255,14 +927,7 @@ export const PaymentPlanSettings: React.FC = () => {
                       <Switch
                         {...field}
                         checked={field.value}
-                        sx={{
-                          '& .MuiSwitch-switchBase.Mui-checked': {
-                            color: tokens.color.info[500],
-                            '& + .MuiSwitch-track': {
-                              backgroundColor: tokens.color.info[500],
-                            },
-                          },
-                        }}
+                        color="info"
                       />
                     }
                     label="Enable Service Charge"
@@ -1290,42 +955,21 @@ export const PaymentPlanSettings: React.FC = () => {
                       InputProps={{
                         endAdornment: <InputAdornment position="end">%</InputAdornment>,
                       }}
-                      sx={{
-                        '& .MuiOutlinedInput-root': {
-                          ...glassPresets.light,
-                          borderRadius: tokens.spacing.radius.lg,
-                          border: `1px solid ${tokens.color.borders.glass}`,
-                          '&:hover': {
-                            border: `1px solid ${tokens.color.primary[300]}`,
-                          },
-                          '&.Mui-focused': {
-                            border: `1px solid ${tokens.color.primary[500]}`,
-                            boxShadow: `0 0 0 3px ${tokens.color.primary[500]}15`,
-                          },
-                        },
-                      }}
-                    />
+                                          />
                   )}
                 />
               )}
             </Stack>
-          </ModernCard>
+          </Box>
 
           {/* Rescheduling Fee Settings */}
-          <ModernCard
-            variant="glass"
-            size="medium"
-            animation="fade"
-            title="Rescheduling Fee Settings"
-            sx={{
-              '&::before': {
-                background: `linear-gradient(135deg, ${tokens.color.warning[500]}04 0%, ${tokens.color.warning[600]}03 100%)`,
-              },
-            }}
-          >
+          <Box sx={{ borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
+            <Typography variant="h6" fontWeight={600} gutterBottom>
+              Rescheduling Fee Settings
+            </Typography>
             <Stack spacing={3}>
               <Box display="flex" alignItems="center" gap={1.5} mb={2}>
-                <RescheduleIcon sx={{ color: tokens.color.warning[600] }} />
+                <RescheduleIcon color="warning" />
                 <Typography variant="subtitle2" color="text.secondary">
                   Configure fee when client changes event date after booking
                 </Typography>
@@ -1340,14 +984,7 @@ export const PaymentPlanSettings: React.FC = () => {
                       <Switch
                         {...field}
                         checked={field.value}
-                        sx={{
-                          '& .MuiSwitch-switchBase.Mui-checked': {
-                            color: tokens.color.warning[500],
-                            '& + .MuiSwitch-track': {
-                              backgroundColor: tokens.color.warning[500],
-                            },
-                          },
-                        }}
+                        color="warning"
                       />
                     }
                     label="Enable Rescheduling Fee"
@@ -1367,21 +1004,7 @@ export const PaymentPlanSettings: React.FC = () => {
                         select
                         label="Rescheduling Fee Type"
                         helperText="Choose whether fee is a percentage or fixed amount"
-                        sx={{
-                          '& .MuiOutlinedInput-root': {
-                            ...glassPresets.light,
-                            borderRadius: tokens.spacing.radius.lg,
-                            border: `1px solid ${tokens.color.borders.glass}`,
-                            '&:hover': {
-                              border: `1px solid ${tokens.color.primary[300]}`,
-                            },
-                            '&.Mui-focused': {
-                              border: `1px solid ${tokens.color.primary[500]}`,
-                              boxShadow: `0 0 0 3px ${tokens.color.primary[500]}15`,
-                            },
-                          },
-                        }}
-                      >
+                                              >
                         <MenuItem value="PERCENTAGE">Percentage of Contract</MenuItem>
                         <MenuItem value="FIXED">Fixed Amount</MenuItem>
                       </TextField>
@@ -1408,21 +1031,7 @@ export const PaymentPlanSettings: React.FC = () => {
                           InputProps={{
                             endAdornment: <InputAdornment position="end">%</InputAdornment>,
                           }}
-                          sx={{
-                            '& .MuiOutlinedInput-root': {
-                              ...glassPresets.light,
-                              borderRadius: tokens.spacing.radius.lg,
-                              border: `1px solid ${tokens.color.borders.glass}`,
-                              '&:hover': {
-                                border: `1px solid ${tokens.color.primary[300]}`,
-                              },
-                              '&.Mui-focused': {
-                                border: `1px solid ${tokens.color.primary[500]}`,
-                                boxShadow: `0 0 0 3px ${tokens.color.primary[500]}15`,
-                              },
-                            },
-                          }}
-                        />
+                                                  />
                       )}
                     />
                   ) : (
@@ -1444,21 +1053,7 @@ export const PaymentPlanSettings: React.FC = () => {
                           InputProps={{
                             startAdornment: <InputAdornment position="start">{currencyConfig.symbol}</InputAdornment>,
                           }}
-                          sx={{
-                            '& .MuiOutlinedInput-root': {
-                              ...glassPresets.light,
-                              borderRadius: tokens.spacing.radius.lg,
-                              border: `1px solid ${tokens.color.borders.glass}`,
-                              '&:hover': {
-                                border: `1px solid ${tokens.color.primary[300]}`,
-                              },
-                              '&.Mui-focused': {
-                                border: `1px solid ${tokens.color.primary[500]}`,
-                                boxShadow: `0 0 0 3px ${tokens.color.primary[500]}15`,
-                              },
-                            },
-                          }}
-                        />
+                                                  />
                       )}
                     />
                   )}
@@ -1480,43 +1075,22 @@ export const PaymentPlanSettings: React.FC = () => {
                         InputProps={{
                           endAdornment: <InputAdornment position="end">hours</InputAdornment>,
                         }}
-                        sx={{
-                          '& .MuiOutlinedInput-root': {
-                            ...glassPresets.light,
-                            borderRadius: tokens.spacing.radius.lg,
-                            border: `1px solid ${tokens.color.borders.glass}`,
-                            '&:hover': {
-                              border: `1px solid ${tokens.color.primary[300]}`,
-                            },
-                            '&.Mui-focused': {
-                              border: `1px solid ${tokens.color.primary[500]}`,
-                              boxShadow: `0 0 0 3px ${tokens.color.primary[500]}15`,
-                            },
-                          },
-                        }}
-                      />
+                                              />
                     )}
                   />
                 </>
               )}
             </Stack>
-          </ModernCard>
+          </Box>
 
           {/* Late Checkout Fee Settings */}
-          <ModernCard
-            variant="glass"
-            size="medium"
-            animation="fade"
-            title="Late Checkout Fee Settings"
-            sx={{
-              '&::before': {
-                background: `linear-gradient(135deg, ${tokens.color.error[500]}04 0%, ${tokens.color.error[600]}03 100%)`,
-              },
-            }}
-          >
+          <Box sx={{ borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
+            <Typography variant="h6" fontWeight={600} gutterBottom>
+              Late Checkout Fee Settings
+            </Typography>
             <Stack spacing={3}>
               <Box display="flex" alignItems="center" gap={1.5} mb={2}>
-                <LateCheckoutIcon sx={{ color: tokens.color.error[600] }} />
+                <LateCheckoutIcon color="error" />
                 <Typography variant="subtitle2" color="text.secondary">
                   Configure fee for checkout beyond scheduled end time
                 </Typography>
@@ -1531,14 +1105,7 @@ export const PaymentPlanSettings: React.FC = () => {
                       <Switch
                         {...field}
                         checked={field.value}
-                        sx={{
-                          '& .MuiSwitch-switchBase.Mui-checked': {
-                            color: tokens.color.error[500],
-                            '& + .MuiSwitch-track': {
-                              backgroundColor: tokens.color.error[500],
-                            },
-                          },
-                        }}
+                        color="error"
                       />
                     }
                     label="Enable Late Checkout Fee"
@@ -1558,21 +1125,7 @@ export const PaymentPlanSettings: React.FC = () => {
                         select
                         label="Late Checkout Fee Type"
                         helperText="Choose how the late checkout fee is calculated"
-                        sx={{
-                          '& .MuiOutlinedInput-root': {
-                            ...glassPresets.light,
-                            borderRadius: tokens.spacing.radius.lg,
-                            border: `1px solid ${tokens.color.borders.glass}`,
-                            '&:hover': {
-                              border: `1px solid ${tokens.color.primary[300]}`,
-                            },
-                            '&.Mui-focused': {
-                              border: `1px solid ${tokens.color.primary[500]}`,
-                              boxShadow: `0 0 0 3px ${tokens.color.primary[500]}15`,
-                            },
-                          },
-                        }}
-                      >
+                                              >
                         <MenuItem value="FIXED">Fixed Amount</MenuItem>
                         <MenuItem value="HOURLY">Per Hour</MenuItem>
                         <MenuItem value="PERCENTAGE">Percentage of Contract</MenuItem>
@@ -1600,21 +1153,7 @@ export const PaymentPlanSettings: React.FC = () => {
                           InputProps={{
                             endAdornment: <InputAdornment position="end">%</InputAdornment>,
                           }}
-                          sx={{
-                            '& .MuiOutlinedInput-root': {
-                              ...glassPresets.light,
-                              borderRadius: tokens.spacing.radius.lg,
-                              border: `1px solid ${tokens.color.borders.glass}`,
-                              '&:hover': {
-                                border: `1px solid ${tokens.color.primary[300]}`,
-                              },
-                              '&.Mui-focused': {
-                                border: `1px solid ${tokens.color.primary[500]}`,
-                                boxShadow: `0 0 0 3px ${tokens.color.primary[500]}15`,
-                              },
-                            },
-                          }}
-                        />
+                                                  />
                       )}
                     />
                   ) : (
@@ -1636,21 +1175,7 @@ export const PaymentPlanSettings: React.FC = () => {
                           InputProps={{
                             startAdornment: <InputAdornment position="start">{currencyConfig.symbol}</InputAdornment>,
                           }}
-                          sx={{
-                            '& .MuiOutlinedInput-root': {
-                              ...glassPresets.light,
-                              borderRadius: tokens.spacing.radius.lg,
-                              border: `1px solid ${tokens.color.borders.glass}`,
-                              '&:hover': {
-                                border: `1px solid ${tokens.color.primary[300]}`,
-                              },
-                              '&.Mui-focused': {
-                                border: `1px solid ${tokens.color.primary[500]}`,
-                                boxShadow: `0 0 0 3px ${tokens.color.primary[500]}15`,
-                              },
-                            },
-                          }}
-                        />
+                                                  />
                       )}
                     />
                   )}
@@ -1673,21 +1198,7 @@ export const PaymentPlanSettings: React.FC = () => {
                           InputProps={{
                             endAdornment: <InputAdornment position="end">min</InputAdornment>,
                           }}
-                          sx={{
-                            '& .MuiOutlinedInput-root': {
-                              ...glassPresets.light,
-                              borderRadius: tokens.spacing.radius.lg,
-                              border: `1px solid ${tokens.color.borders.glass}`,
-                              '&:hover': {
-                                border: `1px solid ${tokens.color.primary[300]}`,
-                              },
-                              '&.Mui-focused': {
-                                border: `1px solid ${tokens.color.primary[500]}`,
-                                boxShadow: `0 0 0 3px ${tokens.color.primary[500]}15`,
-                              },
-                            },
-                          }}
-                        />
+                                                  />
                       )}
                     />
 
@@ -1708,44 +1219,23 @@ export const PaymentPlanSettings: React.FC = () => {
                           InputProps={{
                             endAdornment: <InputAdornment position="end">hours</InputAdornment>,
                           }}
-                          sx={{
-                            '& .MuiOutlinedInput-root': {
-                              ...glassPresets.light,
-                              borderRadius: tokens.spacing.radius.lg,
-                              border: `1px solid ${tokens.color.borders.glass}`,
-                              '&:hover': {
-                                border: `1px solid ${tokens.color.primary[300]}`,
-                              },
-                              '&.Mui-focused': {
-                                border: `1px solid ${tokens.color.primary[500]}`,
-                                boxShadow: `0 0 0 3px ${tokens.color.primary[500]}15`,
-                              },
-                            },
-                          }}
-                        />
+                                                  />
                       )}
                     />
                   </Box>
                 </>
               )}
             </Stack>
-          </ModernCard>
+          </Box>
 
           {/* Date Holding Settings */}
-          <ModernCard
-            variant="glass"
-            size="medium"
-            animation="fade"
-            title="Date Holding Settings"
-            sx={{
-              '&::before': {
-                background: `linear-gradient(135deg, ${tokens.color.secondary[500]}04 0%, ${tokens.color.secondary[600]}03 100%)`,
-              },
-            }}
-          >
+          <Box sx={{ borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
+            <Typography variant="h6" fontWeight={600} gutterBottom>
+              Date Holding Settings
+            </Typography>
             <Stack spacing={3}>
               <Box display="flex" alignItems="center" gap={1.5} mb={2}>
-                <DateHoldIcon sx={{ color: tokens.color.secondary[600] }} />
+                <DateHoldIcon color="secondary" />
                 <Typography variant="subtitle2" color="text.secondary">
                   Configure temporary date holds that expire if payment not received
                 </Typography>
@@ -1765,14 +1255,7 @@ export const PaymentPlanSettings: React.FC = () => {
                       <Switch
                         {...field}
                         checked={field.value}
-                        sx={{
-                          '& .MuiSwitch-switchBase.Mui-checked': {
-                            color: tokens.color.secondary[500],
-                            '& + .MuiSwitch-track': {
-                              backgroundColor: tokens.color.secondary[500],
-                            },
-                          },
-                        }}
+                        color="secondary"
                       />
                     }
                     label="Enable Date Holding"
@@ -1800,21 +1283,7 @@ export const PaymentPlanSettings: React.FC = () => {
                         InputProps={{
                           endAdornment: <InputAdornment position="end">days</InputAdornment>,
                         }}
-                        sx={{
-                          '& .MuiOutlinedInput-root': {
-                            ...glassPresets.light,
-                            borderRadius: tokens.spacing.radius.lg,
-                            border: `1px solid ${tokens.color.borders.glass}`,
-                            '&:hover': {
-                              border: `1px solid ${tokens.color.primary[300]}`,
-                            },
-                            '&.Mui-focused': {
-                              border: `1px solid ${tokens.color.primary[500]}`,
-                              boxShadow: `0 0 0 3px ${tokens.color.primary[500]}15`,
-                            },
-                          },
-                        }}
-                      />
+                                              />
                     )}
                   />
 
@@ -1834,21 +1303,7 @@ export const PaymentPlanSettings: React.FC = () => {
                           label="Maximum Extensions Allowed"
                           type="number"
                           helperText="How many times client can extend the hold"
-                          sx={{
-                            '& .MuiOutlinedInput-root': {
-                              ...glassPresets.light,
-                              borderRadius: tokens.spacing.radius.lg,
-                              border: `1px solid ${tokens.color.borders.glass}`,
-                              '&:hover': {
-                                border: `1px solid ${tokens.color.primary[300]}`,
-                              },
-                              '&.Mui-focused': {
-                                border: `1px solid ${tokens.color.primary[500]}`,
-                                boxShadow: `0 0 0 3px ${tokens.color.primary[500]}15`,
-                              },
-                            },
-                          }}
-                        />
+                                                  />
                       )}
                     />
 
@@ -1870,44 +1325,23 @@ export const PaymentPlanSettings: React.FC = () => {
                           InputProps={{
                             endAdornment: <InputAdornment position="end">days</InputAdornment>,
                           }}
-                          sx={{
-                            '& .MuiOutlinedInput-root': {
-                              ...glassPresets.light,
-                              borderRadius: tokens.spacing.radius.lg,
-                              border: `1px solid ${tokens.color.borders.glass}`,
-                              '&:hover': {
-                                border: `1px solid ${tokens.color.primary[300]}`,
-                              },
-                              '&.Mui-focused': {
-                                border: `1px solid ${tokens.color.primary[500]}`,
-                                boxShadow: `0 0 0 3px ${tokens.color.primary[500]}15`,
-                              },
-                            },
-                          }}
-                        />
+                                                  />
                       )}
                     />
                   </Box>
                 </>
               )}
             </Stack>
-          </ModernCard>
+          </Box>
 
           {/* Child/Youth Pricing Settings */}
-          <ModernCard
-            variant="glass"
-            size="medium"
-            animation="fade"
-            title="Child/Youth Pricing"
-            sx={{
-              '&::before': {
-                background: `linear-gradient(135deg, ${tokens.color.success[500]}04 0%, ${tokens.color.success[600]}03 100%)`,
-              },
-            }}
-          >
+          <Box sx={{ borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
+            <Typography variant="h6" fontWeight={600} gutterBottom>
+              Child/Youth Pricing
+            </Typography>
             <Stack spacing={3}>
               <Box display="flex" alignItems="center" gap={1.5} mb={2}>
-                <ChildCareIcon sx={{ color: tokens.color.success[600] }} />
+                <ChildCareIcon color="success" />
                 <Typography variant="subtitle2" color="text.secondary">
                   Configure age-based pricing tiers for discounts
                 </Typography>
@@ -1922,14 +1356,7 @@ export const PaymentPlanSettings: React.FC = () => {
                       <Switch
                         {...field}
                         checked={field.value}
-                        sx={{
-                          '& .MuiSwitch-switchBase.Mui-checked': {
-                            color: tokens.color.success[500],
-                            '& + .MuiSwitch-track': {
-                              backgroundColor: tokens.color.success[500],
-                            },
-                          },
-                        }}
+                        color="success"
                       />
                     }
                     label="Enable Child/Youth Pricing"
@@ -1959,9 +1386,10 @@ export const PaymentPlanSettings: React.FC = () => {
                         gap: 2,
                         alignItems: 'center',
                         p: 2,
-                        borderRadius: tokens.spacing.radius.lg,
-                        ...glassPresets.light,
-                        border: `1px solid ${tokens.color.borders.glass}`,
+                        borderRadius: 1,
+                        bgcolor: 'grey.50',
+                        border: 1,
+                        borderColor: 'divider',
                       }}
                     >
                       <TextField
@@ -2023,23 +1451,16 @@ export const PaymentPlanSettings: React.FC = () => {
                 </>
               )}
             </Stack>
-          </ModernCard>
+          </Box>
 
           {/* Security Deposit Settings */}
-          <ModernCard
-            variant="glass"
-            size="medium"
-            animation="fade"
-            title="Security Deposit Settings"
-            sx={{
-              '&::before': {
-                background: `linear-gradient(135deg, ${tokens.color.info[500]}04 0%, ${tokens.color.info[600]}03 100%)`,
-              },
-            }}
-          >
+          <Box sx={{ borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
+            <Typography variant="h6" fontWeight={600} gutterBottom>
+              Security Deposit Settings
+            </Typography>
             <Stack spacing={3}>
               <Box display="flex" alignItems="center" gap={1.5} mb={2}>
-                <MoneyIcon sx={{ color: tokens.color.info[600] }} />
+                <MoneyIcon color="info" />
                 <Typography variant="subtitle2" color="text.secondary">
                   Configure security/damage deposit requirements
                 </Typography>
@@ -2054,14 +1475,7 @@ export const PaymentPlanSettings: React.FC = () => {
                       <Switch
                         {...field}
                         checked={field.value}
-                        sx={{
-                          '& .MuiSwitch-switchBase.Mui-checked': {
-                            color: tokens.color.info[500],
-                            '& + .MuiSwitch-track': {
-                              backgroundColor: tokens.color.info[500],
-                            },
-                          },
-                        }}
+                        color="info"
                       />
                     }
                     label="Enable Security Deposit"
@@ -2089,21 +1503,7 @@ export const PaymentPlanSettings: React.FC = () => {
                         InputProps={{
                           startAdornment: <InputAdornment position="start">{currencyConfig.symbol}</InputAdornment>,
                         }}
-                        sx={{
-                          '& .MuiOutlinedInput-root': {
-                            ...glassPresets.light,
-                            borderRadius: tokens.spacing.radius.lg,
-                            border: `1px solid ${tokens.color.borders.glass}`,
-                            '&:hover': {
-                              border: `1px solid ${tokens.color.primary[300]}`,
-                            },
-                            '&.Mui-focused': {
-                              border: `1px solid ${tokens.color.primary[500]}`,
-                              boxShadow: `0 0 0 3px ${tokens.color.primary[500]}15`,
-                            },
-                          },
-                        }}
-                      />
+                                              />
                     )}
                   />
 
@@ -2118,9 +1518,9 @@ export const PaymentPlanSettings: React.FC = () => {
                             checked={field.value}
                             sx={{
                               '& .MuiSwitch-switchBase.Mui-checked': {
-                                color: tokens.color.success[500],
+                                color: 'success.main',
                                 '& + .MuiSwitch-track': {
-                                  backgroundColor: tokens.color.success[500],
+                                  bgcolor: 'success.main',
                                 },
                               },
                             }}
@@ -2141,43 +1541,22 @@ export const PaymentPlanSettings: React.FC = () => {
                         label="Security Deposit Description"
                         placeholder="e.g., Collected upon check-in, refunded after inspection"
                         helperText="Optional description shown in contracts"
-                        sx={{
-                          '& .MuiOutlinedInput-root': {
-                            ...glassPresets.light,
-                            borderRadius: tokens.spacing.radius.lg,
-                            border: `1px solid ${tokens.color.borders.glass}`,
-                            '&:hover': {
-                              border: `1px solid ${tokens.color.primary[300]}`,
-                            },
-                            '&.Mui-focused': {
-                              border: `1px solid ${tokens.color.primary[500]}`,
-                              boxShadow: `0 0 0 3px ${tokens.color.primary[500]}15`,
-                            },
-                          },
-                        }}
-                      />
+                                              />
                     )}
                   />
                 </>
               )}
             </Stack>
-          </ModernCard>
+          </Box>
 
           {/* Cancellation Settings */}
-          <ModernCard
-            variant="glass"
-            size="medium"
-            animation="fade"
-            title="Cancellation Settings"
-            sx={{
-              '&::before': {
-                background: `linear-gradient(135deg, ${tokens.color.error[500]}04 0%, ${tokens.color.error[600]}03 100%)`,
-              },
-            }}
-          >
+          <Box sx={{ borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
+            <Typography variant="h6" fontWeight={600} gutterBottom>
+              Cancellation Settings
+            </Typography>
             <Stack spacing={3}>
               <Box display="flex" alignItems="center" gap={1.5} mb={2}>
-                <RefundIcon sx={{ color: tokens.color.error[600] }} />
+                <RefundIcon color="error" />
                 <Typography variant="subtitle2" color="text.secondary">
                   Configure cancellation administrative fees
                 </Typography>
@@ -2201,41 +1580,20 @@ export const PaymentPlanSettings: React.FC = () => {
                     InputProps={{
                       endAdornment: <InputAdornment position="end">%</InputAdornment>,
                     }}
-                    sx={{
-                      '& .MuiOutlinedInput-root': {
-                        ...glassPresets.light,
-                        borderRadius: tokens.spacing.radius.lg,
-                        border: `1px solid ${tokens.color.borders.glass}`,
-                        '&:hover': {
-                          border: `1px solid ${tokens.color.primary[300]}`,
-                        },
-                        '&.Mui-focused': {
-                          border: `1px solid ${tokens.color.primary[500]}`,
-                          boxShadow: `0 0 0 3px ${tokens.color.primary[500]}15`,
-                        },
-                      },
-                    }}
-                  />
+                                      />
                 )}
               />
             </Stack>
-          </ModernCard>
+          </Box>
 
           {/* Auto Payment Settings */}
-          <ModernCard
-            variant="glass"
-            size="medium"
-            animation="fade"
-            title="Auto Payment Settings"
-            sx={{
-              '&::before': {
-                background: `linear-gradient(135deg, ${tokens.color.error[500]}04 0%, ${tokens.color.error[600]}03 100%)`,
-              },
-            }}
-          >
+          <Box sx={{ borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
+            <Typography variant="h6" fontWeight={600} gutterBottom>
+              Auto Payment Settings
+            </Typography>
             <Stack spacing={3}>
               <Box display="flex" alignItems="center" gap={1.5} mb={2}>
-                <AutoPayIcon sx={{ color: tokens.color.error[600] }} />
+                <AutoPayIcon color="error" />
                 <Typography variant="subtitle2" color="text.secondary">
                   Configure automatic payment retry behavior
                 </Typography>
@@ -2258,21 +1616,7 @@ export const PaymentPlanSettings: React.FC = () => {
                       type="number"
                       error={!!errors.auto_payment_retry_attempts}
                       helperText={errors.auto_payment_retry_attempts?.message || 'Number of times to retry failed automatic payments'}
-                      sx={{
-                        '& .MuiOutlinedInput-root': {
-                          ...glassPresets.light,
-                          borderRadius: tokens.spacing.radius.lg,
-                          border: `1px solid ${tokens.color.borders.glass}`,
-                          '&:hover': {
-                            border: `1px solid ${tokens.color.primary[300]}`,
-                          },
-                          '&.Mui-focused': {
-                            border: `1px solid ${tokens.color.primary[500]}`,
-                            boxShadow: `0 0 0 3px ${tokens.color.primary[500]}15`,
-                          },
-                        },
-                      }}
-                    />
+                                          />
                   )}
                 />
 
@@ -2295,42 +1639,21 @@ export const PaymentPlanSettings: React.FC = () => {
                       InputProps={{
                         endAdornment: <InputAdornment position="end">days</InputAdornment>,
                       }}
-                      sx={{
-                        '& .MuiOutlinedInput-root': {
-                          ...glassPresets.light,
-                          borderRadius: tokens.spacing.radius.lg,
-                          border: `1px solid ${tokens.color.borders.glass}`,
-                          '&:hover': {
-                            border: `1px solid ${tokens.color.primary[300]}`,
-                          },
-                          '&.Mui-focused': {
-                            border: `1px solid ${tokens.color.primary[500]}`,
-                            boxShadow: `0 0 0 3px ${tokens.color.primary[500]}15`,
-                          },
-                        },
-                      }}
-                    />
+                                          />
                   )}
                 />
               </Box>
             </Stack>
-          </ModernCard>
+          </Box>
 
           {/* PHASE 2: Refund Policy Settings */}
-          <ModernCard
-            variant="glass"
-            size="medium"
-            animation="fade"
-            title="Refund Policy Settings"
-            sx={{
-              '&::before': {
-                background: `linear-gradient(135deg, ${tokens.color.warning[500]}04 0%, ${tokens.color.warning[600]}03 100%)`,
-              },
-            }}
-          >
+          <Box sx={{ borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
+            <Typography variant="h6" fontWeight={600} gutterBottom>
+              Refund Policy Settings
+            </Typography>
             <Stack spacing={3}>
               <Box display="flex" alignItems="center" gap={1.5} mb={2}>
-                <RefundIcon sx={{ color: tokens.color.warning[600] }} />
+                <RefundIcon color="warning" />
                 <Typography variant="subtitle2" color="text.secondary">
                   Configure global refund policy for all booking flows
                 </Typography>
@@ -2345,14 +1668,7 @@ export const PaymentPlanSettings: React.FC = () => {
                       <Switch
                         {...field}
                         checked={field.value}
-                        sx={{
-                          '& .MuiSwitch-switchBase.Mui-checked': {
-                            color: tokens.color.success[500],
-                            '& + .MuiSwitch-track': {
-                              backgroundColor: tokens.color.success[500],
-                            },
-                          },
-                        }}
+                        color="success"
                       />
                     }
                     label="Allow Refunds"
@@ -2381,21 +1697,7 @@ export const PaymentPlanSettings: React.FC = () => {
                         InputProps={{
                           endAdornment: <InputAdornment position="end">hours</InputAdornment>,
                         }}
-                        sx={{
-                          '& .MuiOutlinedInput-root': {
-                            ...glassPresets.light,
-                            borderRadius: tokens.spacing.radius.lg,
-                            border: `1px solid ${tokens.color.borders.glass}`,
-                            '&:hover': {
-                              border: `1px solid ${tokens.color.primary[300]}`,
-                            },
-                            '&.Mui-focused': {
-                              border: `1px solid ${tokens.color.primary[500]}`,
-                              boxShadow: `0 0 0 3px ${tokens.color.primary[500]}15`,
-                            },
-                          },
-                        }}
-                      />
+                                              />
                     )}
                   />
 
@@ -2418,21 +1720,7 @@ export const PaymentPlanSettings: React.FC = () => {
                         InputProps={{
                           endAdornment: <InputAdornment position="end">%</InputAdornment>,
                         }}
-                        sx={{
-                          '& .MuiOutlinedInput-root': {
-                            ...glassPresets.light,
-                            borderRadius: tokens.spacing.radius.lg,
-                            border: `1px solid ${tokens.color.borders.glass}`,
-                            '&:hover': {
-                              border: `1px solid ${tokens.color.primary[300]}`,
-                            },
-                            '&.Mui-focused': {
-                              border: `1px solid ${tokens.color.primary[500]}`,
-                              boxShadow: `0 0 0 3px ${tokens.color.primary[500]}15`,
-                            },
-                          },
-                        }}
-                      />
+                                              />
                     )}
                   />
 
@@ -2448,27 +1736,13 @@ export const PaymentPlanSettings: React.FC = () => {
                         label="Refund Policy Text"
                         helperText="Optional custom refund policy text to display to clients"
                         placeholder="e.g., Full refund available up to 48 hours before your event..."
-                        sx={{
-                          '& .MuiOutlinedInput-root': {
-                            ...glassPresets.light,
-                            borderRadius: tokens.spacing.radius.lg,
-                            border: `1px solid ${tokens.color.borders.glass}`,
-                            '&:hover': {
-                              border: `1px solid ${tokens.color.primary[300]}`,
-                            },
-                            '&.Mui-focused': {
-                              border: `1px solid ${tokens.color.primary[500]}`,
-                              boxShadow: `0 0 0 3px ${tokens.color.primary[500]}15`,
-                            },
-                          },
-                        }}
-                      />
+                                              />
                     )}
                   />
                 </>
               )}
             </Stack>
-          </ModernCard>
+          </Box>
 
           {/* Save Button */}
           <Box sx={{ display: 'flex', justifyContent: 'flex-end', pt: 2 }}>
@@ -2478,23 +1752,18 @@ export const PaymentPlanSettings: React.FC = () => {
               startIcon={<SaveIcon />}
               disabled={!isDirty || isLoading}
               sx={{
-                background: `linear-gradient(135deg, ${tokens.color.primary[500]} 0%, ${tokens.color.primary[600]} 100%)`,
-                borderRadius: tokens.spacing.radius.full,
+                bgcolor: 'primary.main',
+                borderRadius: 1,
                 fontWeight: 600,
                 px: 4,
                 py: 1.5,
-                boxShadow: `0 8px 32px ${tokens.color.primary[500]}25`,
-                transition: createTransition(['transform', 'box-shadow'], 'fast'),
-
                 '&:hover': {
-                  background: `linear-gradient(135deg, ${tokens.color.primary[600]} 0%, ${tokens.color.primary[700]} 100%)`,
-                  transform: 'translateY(-2px)',
-                  boxShadow: `0 12px 40px ${tokens.color.primary[500]}35`,
+                  bgcolor: 'primary.dark',
                 },
 
                 '&:disabled': {
-                  background: tokens.color.neutral[300],
-                  color: tokens.color.neutral[500],
+                  bgcolor: 'grey.300',
+                  color: 'grey.500',
                   transform: 'none',
                   boxShadow: 'none',
                 },
@@ -2511,10 +1780,7 @@ export const PaymentPlanSettings: React.FC = () => {
         <Alert
           severity="success"
           sx={{
-            ...glassPresets.light,
-            borderRadius: tokens.spacing.radius.lg,
-            border: `1px solid ${tokens.color.success[500]}20`,
-            backgroundColor: `${tokens.color.success[50]}80`,
+            borderRadius: 1,
           }}
         >
           <strong>DRY Compliance Achieved!</strong> These global settings serve as the single source of truth for all payment-related configuration. Refund policies and deposit amounts are now consistently applied across all booking flows, eliminating configuration duplication.

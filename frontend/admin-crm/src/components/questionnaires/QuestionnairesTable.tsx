@@ -188,7 +188,6 @@ export const QuestionnairesTable: React.FC<QuestionnaireTableProps> = ({
         title="No questionnaires found"
         description="Create your first questionnaire template to gather client information"
         size="medium"
-        illustration="gradient"
         tip={{
           text: "Questionnaires help collect structured information from clients during booking",
           type: "info"

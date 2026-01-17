@@ -21,8 +21,6 @@ import {
   LinearProgress,
   Stack,
 } from '@mui/material';
-// Modern Design System imports
-import { ModernCard } from '../../common/ModernCard';
 import {
   Analytics as AnalyticsIcon,
   TrendingUp as TrendingUpIcon,
@@ -35,14 +33,13 @@ import {
   Download as DownloadIcon,
 } from '@mui/icons-material';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
-import type { 
+import type {
   BookingFlowDetail,
   BookingFlowAnalytics,
 } from '../../../types/bookingflows.types';
 import { useBookingFlowAnalytics, useBookingSessions } from '../../../hooks/useBookingFlows';
 import { formatCurrency } from '../../../utils/currency';
 import { useCurrencySettings } from '../../../hooks/useCurrency';
-import { tokens } from '../../../design-system';
 
 interface SessionAnalyticsProps {
   flow: BookingFlowDetail;
@@ -259,9 +256,9 @@ export const SessionAnalytics: React.FC<SessionAnalyticsProps> = ({ flow }) => {
   }));
 
   const sessionStatusData = [
-    { name: 'Completed', value: metrics.completedBookings, color: tokens.color.success[500] },
-    { name: 'Abandoned', value: metrics.abandonedSessions, color: tokens.color.error[500] },
-    { name: 'In Progress', value: Math.max(0, metrics.totalSessions - metrics.completedBookings - metrics.abandonedSessions), color: tokens.color.warning[500] },
+    { name: 'Completed', value: metrics.completedBookings, color: '#4caf50' },
+    { name: 'Abandoned', value: metrics.abandonedSessions, color: '#f44336' },
+    { name: 'In Progress', value: Math.max(0, metrics.totalSessions - metrics.completedBookings - metrics.abandonedSessions), color: '#ff9800' },
   ];
 
   const formatDuration = (seconds: number): string => {
@@ -353,7 +350,7 @@ export const SessionAnalytics: React.FC<SessionAnalyticsProps> = ({ flow }) => {
           {/* Key Metrics */}
           <Box display="flex" flexWrap="wrap" gap={3}>
             <Box flex="1 1 200px" minWidth={200}>
-              <ModernCard variant="glass" size="medium" animation="none">
+              <Box sx={{ borderRadius: 1, bgcolor: 'background.paper' }}>
                 <Box sx={{ p: 3 }}>
                   <Box display="flex" alignItems="center" gap={1} mb={1}>
                     <PeopleIcon color="primary" />
@@ -371,11 +368,11 @@ export const SessionAnalytics: React.FC<SessionAnalyticsProps> = ({ flow }) => {
                     </Typography>
                   </Box>
                 </Box>
-              </ModernCard>
+              </Box>
             </Box>
 
             <Box flex="1 1 200px" minWidth={200}>
-              <ModernCard variant="glass" size="medium" animation="none">
+              <Box sx={{ borderRadius: 1, bgcolor: 'background.paper' }}>
                 <Box sx={{ p: 3 }}>
                   <Box display="flex" alignItems="center" gap={1} mb={1}>
                     <CompleteIcon color="success" />
@@ -393,11 +390,11 @@ export const SessionAnalytics: React.FC<SessionAnalyticsProps> = ({ flow }) => {
                     </Typography>
                   </Box>
                 </Box>
-              </ModernCard>
+              </Box>
             </Box>
 
             <Box flex="1 1 200px" minWidth={200}>
-              <ModernCard variant="glass" size="medium" animation="none">
+              <Box sx={{ borderRadius: 1, bgcolor: 'background.paper' }}>
                 <Box sx={{ p: 3 }}>
                   <Box display="flex" alignItems="center" gap={1} mb={1}>
                     <RevenueIcon color="success" />
@@ -415,11 +412,11 @@ export const SessionAnalytics: React.FC<SessionAnalyticsProps> = ({ flow }) => {
                     </Typography>
                   </Box>
                 </Box>
-              </ModernCard>
+              </Box>
             </Box>
 
             <Box flex="1 1 200px" minWidth={200}>
-              <ModernCard variant="glass" size="medium" animation="none">
+              <Box sx={{ borderRadius: 1, bgcolor: 'background.paper' }}>
                 <Box sx={{ p: 3 }}>
                   <Box display="flex" alignItems="center" gap={1} mb={1}>
                     <TimeIcon color="info" />
@@ -437,7 +434,7 @@ export const SessionAnalytics: React.FC<SessionAnalyticsProps> = ({ flow }) => {
                     </Typography>
                   </Box>
                 </Box>
-              </ModernCard>
+              </Box>
             </Box>
           </Box>
 
@@ -445,7 +442,7 @@ export const SessionAnalytics: React.FC<SessionAnalyticsProps> = ({ flow }) => {
           <Box display="flex" flexWrap="wrap" gap={3}>
             {/* Trend Chart */}
             <Box flex="1 1 600px" minWidth={300}>
-              <ModernCard variant="glass" size="medium" animation="none">
+              <Box sx={{ borderRadius: 1, bgcolor: 'background.paper' }}>
                 <Box sx={{ p: 3 }}>
                   <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
                     <Typography variant="h6">Performance Trends</Typography>
@@ -460,7 +457,7 @@ export const SessionAnalytics: React.FC<SessionAnalyticsProps> = ({ flow }) => {
                       </Select>
                     </FormControl>
                   </Box>
-                  
+
                   <ResponsiveContainer width="100%" height={300}>
                     <LineChart data={chartData}>
                       <CartesianGrid strokeDasharray="3 3" />
@@ -470,22 +467,22 @@ export const SessionAnalytics: React.FC<SessionAnalyticsProps> = ({ flow }) => {
                       <Line
                         type="monotone"
                         dataKey={selectedMetric}
-                        stroke={tokens.color.charts.series[0]}
+                        stroke="#1976d2"
                         strokeWidth={2}
-                        dot={{ fill: tokens.color.charts.series[0] }}
+                        dot={{ fill: '#1976d2' }}
                       />
                     </LineChart>
                   </ResponsiveContainer>
                 </Box>
-              </ModernCard>
+              </Box>
             </Box>
 
             {/* Session Status Distribution */}
             <Box flex="1 1 300px" minWidth={300}>
-              <ModernCard variant="glass" size="medium" animation="none">
+              <Box sx={{ borderRadius: 1, bgcolor: 'background.paper' }}>
                 <Box sx={{ p: 3 }}>
                   <Typography variant="h6" gutterBottom>Session Status</Typography>
-                  
+
                   <ResponsiveContainer width="100%" height={300}>
                     <PieChart>
                       <Pie
@@ -504,17 +501,17 @@ export const SessionAnalytics: React.FC<SessionAnalyticsProps> = ({ flow }) => {
                       <RechartsTooltip />
                     </PieChart>
                   </ResponsiveContainer>
-                  
+
                   <Box mt={2}>
                     {sessionStatusData.map((entry) => (
                       <Box key={entry.name} display="flex" alignItems="center" gap={1} mb={1}>
-                        <Box 
-                          sx={{ 
-                            width: 12, 
-                            height: 12, 
-                            borderRadius: '50%', 
-                            backgroundColor: entry.color 
-                          }} 
+                        <Box
+                          sx={{
+                            width: 12,
+                            height: 12,
+                            borderRadius: '50%',
+                            backgroundColor: entry.color
+                          }}
                         />
                         <Typography variant="body2">
                           {entry.name}: {entry.value}
@@ -523,15 +520,15 @@ export const SessionAnalytics: React.FC<SessionAnalyticsProps> = ({ flow }) => {
                     ))}
                   </Box>
                 </Box>
-              </ModernCard>
+              </Box>
             </Box>
           </Box>
 
           {/* Conversion Funnel */}
-          <ModernCard variant="glass" size="medium" animation="none">
+          <Box sx={{ borderRadius: 1, bgcolor: 'background.paper' }}>
             <Box sx={{ p: 3 }}>
               <Typography variant="h6" gutterBottom>Conversion Funnel</Typography>
-              
+
               <ResponsiveContainer width="100%" height={400}>
                 <BarChart
                   data={conversionFunnelData}
@@ -543,19 +540,19 @@ export const SessionAnalytics: React.FC<SessionAnalyticsProps> = ({ flow }) => {
                   <RechartsTooltip
                     formatter={(value: number) => [`${value}%`, 'Completion Rate']}
                   />
-                  <Bar dataKey="completionRate" fill={tokens.color.charts.series[0]} />
+                  <Bar dataKey="completionRate" fill="#1976d2" />
                 </BarChart>
               </ResponsiveContainer>
             </Box>
-          </ModernCard>
+          </Box>
 
           {/* Step Analytics Table */}
-          <ModernCard variant="glass" size="medium" animation="none">
+          <Box sx={{ borderRadius: 1, bgcolor: 'background.paper' }}>
             <Box sx={{ p: 3 }}>
               <Typography variant="h6" gutterBottom>Step Performance</Typography>
-              
-              <TableContainer component={ModernCard} variant="glass" size="small" animation="none"  sx={{ '&.MuiTableContainer-root': { p: 0, borderRadius: 2, boxShadow: 'none', border: '1px solid', borderColor: 'divider' } }}>
-                <Table>
+
+              <TableContainer sx={{ borderRadius: 1, border: '1px solid', borderColor: 'divider' }}>
+                <Table size="small">
                   <TableHead>
                     <TableRow>
                       <TableCell>Step</TableCell>
@@ -623,15 +620,15 @@ export const SessionAnalytics: React.FC<SessionAnalyticsProps> = ({ flow }) => {
                 </Table>
               </TableContainer>
             </Box>
-          </ModernCard>
+          </Box>
 
           {/* Additional Metrics */}
           <Box display="flex" flexWrap="wrap" gap={3}>
             <Box flex="1 1 300px" minWidth={300}>
-              <ModernCard variant="glass" size="medium" animation="none">
+              <Box sx={{ borderRadius: 1, bgcolor: 'background.paper' }}>
                 <Box sx={{ p: 3 }}>
                   <Typography variant="h6" gutterBottom>Key Performance Indicators</Typography>
-                  
+
                   <Stack spacing={2}>
                     <Box display="flex" justifyContent="space-between" alignItems="center">
                       <Typography variant="body2">Average Booking Value</Typography>
@@ -639,21 +636,21 @@ export const SessionAnalytics: React.FC<SessionAnalyticsProps> = ({ flow }) => {
                         {formatAnalyticsCurrency(metrics.averageBookingValue)}
                       </Typography>
                     </Box>
-                    
+
                     <Box display="flex" justifyContent="space-between" alignItems="center">
                       <Typography variant="body2">Bounce Rate</Typography>
                       <Typography variant="body2" fontWeight="medium">
                         {metrics.bounceRate.toFixed(1)}%
                       </Typography>
                     </Box>
-                    
+
                     <Box display="flex" justifyContent="space-between" alignItems="center">
                       <Typography variant="body2">Completed Bookings</Typography>
                       <Typography variant="body2" fontWeight="medium">
                         {metrics.completedBookings}
                       </Typography>
                     </Box>
-                    
+
                     <Box display="flex" justifyContent="space-between" alignItems="center">
                       <Typography variant="body2">Abandoned Sessions</Typography>
                       <Typography variant="body2" fontWeight="medium" color="error">
@@ -662,14 +659,14 @@ export const SessionAnalytics: React.FC<SessionAnalyticsProps> = ({ flow }) => {
                     </Box>
                   </Stack>
                 </Box>
-              </ModernCard>
+              </Box>
             </Box>
 
             <Box flex="1 1 300px" minWidth={300}>
-              <ModernCard variant="glass" size="medium" animation="none">
+              <Box sx={{ borderRadius: 1, bgcolor: 'background.paper' }}>
                 <Box sx={{ p: 3 }}>
                   <Typography variant="h6" gutterBottom>Optimization Suggestions</Typography>
-                  
+
                   <Stack spacing={2}>
                     {stepAnalytics
                       .filter(step => step.dropOffRate > 30)
@@ -677,12 +674,12 @@ export const SessionAnalytics: React.FC<SessionAnalyticsProps> = ({ flow }) => {
                       .map(step => (
                         <Alert key={step.stepId} severity="warning" variant="outlined">
                           <Typography variant="body2">
-                            <strong>{step.stepName}</strong> has a high drop-off rate ({step.dropOffRate.toFixed(1)}%). 
+                            <strong>{step.stepName}</strong> has a high drop-off rate ({step.dropOffRate.toFixed(1)}%).
                             Consider simplifying this step or adding guidance.
                           </Typography>
                         </Alert>
                       ))}
-                    
+
                     {metrics.conversionRate < 20 && (
                       <Alert severity="info" variant="outlined">
                         <Typography variant="body2">
@@ -690,7 +687,7 @@ export const SessionAnalytics: React.FC<SessionAnalyticsProps> = ({ flow }) => {
                         </Typography>
                       </Alert>
                     )}
-                    
+
                     {parseDurationToSeconds(metrics.averageCompletionTime) > 900 && (
                       <Alert severity="info" variant="outlined">
                         <Typography variant="body2">
@@ -698,9 +695,9 @@ export const SessionAnalytics: React.FC<SessionAnalyticsProps> = ({ flow }) => {
                         </Typography>
                       </Alert>
                     )}
-                    
-                    {stepAnalytics.filter(s => s.dropOffRate > 30).length === 0 && 
-                     metrics.conversionRate >= 20 && 
+
+                    {stepAnalytics.filter(s => s.dropOffRate > 30).length === 0 &&
+                     metrics.conversionRate >= 20 &&
                      parseDurationToSeconds(metrics.averageCompletionTime) <= 900 && (
                       <Alert severity="success" variant="outlined">
                         <Typography variant="body2">
@@ -710,7 +707,7 @@ export const SessionAnalytics: React.FC<SessionAnalyticsProps> = ({ flow }) => {
                     )}
                   </Stack>
                 </Box>
-              </ModernCard>
+              </Box>
             </Box>
           </Box>
         </Stack>

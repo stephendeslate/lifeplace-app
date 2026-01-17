@@ -30,8 +30,6 @@ import {
   List as OptionsIcon,
 } from '@mui/icons-material';
 import type { QuestionnaireFieldTableProps, QuestionnaireField } from '../../types/questionnaires.types';
-import { tokens } from '../../design-system';
-import { glassPresets } from '../../design-system/utils/glassmorphism';
 import { ModernEmptyState } from '../common/ModernEmptyState';
 import ModernLoadingStates from '../common/ModernLoadingStates';
 
@@ -123,7 +121,6 @@ export const QuestionnaireFieldsTable: React.FC<QuestionnaireFieldTableProps> = 
         title="No fields configured"
         description="Add fields to this questionnaire to start collecting client information"
         size="small"
-        illustration="gradient"
         tip={{
           text: "Fields define what information you collect from clients",
           type: "info"
@@ -134,10 +131,10 @@ export const QuestionnaireFieldsTable: React.FC<QuestionnaireFieldTableProps> = 
 
   return (
     <>
-      <TableContainer 
-        sx={{ 
+      <TableContainer
+        sx={{
           background: 'transparent',
-          borderRadius: tokens.spacing.radius.xxl,
+          borderRadius: 1,
           overflow: 'hidden',
         }}
       >
@@ -146,10 +143,11 @@ export const QuestionnaireFieldsTable: React.FC<QuestionnaireFieldTableProps> = 
             <TableRow
               sx={{
                 '& .MuiTableCell-head': {
-                  background: `linear-gradient(135deg, ${tokens.color.neutral[50]} 0%, ${tokens.color.neutral[100]} 100%)`,
+                  bgcolor: 'grey.50',
                   fontWeight: 600,
-                  color: tokens.color.neutral[700],
-                  borderBottom: `1px solid ${tokens.color.borders.glass}`,
+                  color: 'text.secondary',
+                  borderBottom: 1,
+                  borderColor: 'divider',
                   fontSize: '0.8rem',
                   textTransform: 'uppercase',
                   letterSpacing: '0.5px',
@@ -159,19 +157,7 @@ export const QuestionnaireFieldsTable: React.FC<QuestionnaireFieldTableProps> = 
             >
               <TableCell width="30px"></TableCell>
               <TableCell>
-                <TableSortLabel
-                  sx={{
-                    '& .MuiTableSortLabel-icon': {
-                      color: `${tokens.color.primary[500]} !important`,
-                    },
-                    '&:hover': {
-                      color: tokens.color.primary[600],
-                    },
-                    '&.Mui-active': {
-                      color: tokens.color.primary[600],
-                    },
-                  }}
-                >
+                <TableSortLabel>
                   Field Name
                 </TableSortLabel>
               </TableCell>
@@ -184,21 +170,17 @@ export const QuestionnaireFieldsTable: React.FC<QuestionnaireFieldTableProps> = 
           </TableHead>
           <TableBody>
             {fields.map((field, index) => (
-              <TableRow 
-                key={field.id} 
+              <TableRow
+                key={field.id}
                 sx={{
                   cursor: 'pointer',
-                  background: index % 2 === 0 
-                    ? `linear-gradient(135deg, ${tokens.color.neutral[50]} 0%, ${tokens.color.neutral[100]} 100%)`
-                    : 'transparent',
-                  transition: 'all 0.2s ease-in-out',
+                  bgcolor: index % 2 === 0 ? 'grey.50' : 'transparent',
                   '&:hover': {
-                    background: `linear-gradient(135deg, ${tokens.color.primary[50]} 0%, ${tokens.color.primary[100]} 100%)`,
-                    transform: 'translateY(-1px)',
-                    boxShadow: `0 4px 20px ${tokens.color.primary[500]}08`,
+                    bgcolor: 'action.hover',
                   },
                   '& .MuiTableCell-root': {
-                    borderBottom: `1px solid ${tokens.color.borders.glass}`,
+                    borderBottom: 1,
+                    borderColor: 'divider',
                     py: 1.5,
                   },
                 }}
@@ -245,25 +227,11 @@ export const QuestionnaireFieldsTable: React.FC<QuestionnaireFieldTableProps> = 
                     size="small"
                     onClick={(e) => handleMenuOpen(e, field)}
                     disabled={isDeleting}
-                    sx={{
-                      ...glassPresets.light,
-                      border: `1px solid ${tokens.color.borders.glass}`,
-                      borderRadius: tokens.spacing.radius.full,
-                      transition: 'all 0.2s ease-in-out',
-                      '&:hover': {
-                        ...glassPresets.medium,
-                        transform: 'scale(1.05)',
-                        border: `1px solid ${tokens.color.primary[300]}`,
-                      },
-                      '&:disabled': {
-                        opacity: 0.5,
-                      },
-                    }}
                   >
                     {isDeleting && selectedField?.id === field.id ? (
                       <CircularProgress size={16} color="primary" />
                     ) : (
-                      <MoreVertIcon fontSize="small" sx={{ color: tokens.color.neutral[600] }} />
+                      <MoreVertIcon fontSize="small" />
                     )}
                   </IconButton>
                 </TableCell>
@@ -280,73 +248,42 @@ export const QuestionnaireFieldsTable: React.FC<QuestionnaireFieldTableProps> = 
         onClose={handleMenuClose}
         PaperProps={{
           sx: {
-            backdropFilter: 'blur(20px)',
-            borderRadius: tokens.spacing.radius.lg,
-            border: `1px solid ${tokens.color.borders.glass}`,
-            background: `linear-gradient(135deg, ${tokens.color.neutral[50]} 0%, ${tokens.color.neutral[100]} 100%)`,
-            boxShadow: `0 25px 80px ${tokens.color.neutral[900]}15`,
+            borderRadius: 1,
+            border: 1,
+            borderColor: 'divider',
             minWidth: 200,
           },
         }}
       >
-        <MenuItem 
+        <MenuItem
           onClick={handleEdit}
           sx={{
-            borderRadius: tokens.spacing.radius.md,
+            borderRadius: 1,
             mx: 1,
             my: 0.5,
-            transition: 'all 0.2s ease-in-out',
-            '&:hover': {
-              background: `linear-gradient(135deg, ${tokens.color.primary[50]} 0%, ${tokens.color.primary[100]} 100%)`,
-              transform: 'translateX(4px)',
-            },
           }}
         >
           <ListItemIcon>
-            <EditIcon 
-              fontSize="small" 
-              sx={{ color: tokens.color.primary[600] }} 
-            />
+            <EditIcon fontSize="small" color="primary" />
           </ListItemIcon>
-          <ListItemText 
-            sx={{ 
-              '& .MuiTypography-root': { 
-                fontWeight: 500,
-                color: tokens.color.neutral[700],
-              } 
-            }}
-          >
+          <ListItemText>
             Edit Field
           </ListItemText>
         </MenuItem>
-        
-        <MenuItem 
+
+        <MenuItem
           onClick={handleDelete}
           sx={{
-            borderRadius: tokens.spacing.radius.md,
+            borderRadius: 1,
             mx: 1,
             my: 0.5,
-            transition: 'all 0.2s ease-in-out',
-            '&:hover': {
-              background: `linear-gradient(135deg, ${tokens.color.error[50]} 0%, ${tokens.color.error[100]} 100%)`,
-              transform: 'translateX(4px)',
-            },
+            color: 'error.main',
           }}
         >
           <ListItemIcon>
-            <DeleteIcon 
-              fontSize="small" 
-              sx={{ color: tokens.color.error[600] }} 
-            />
+            <DeleteIcon fontSize="small" color="error" />
           </ListItemIcon>
-          <ListItemText 
-            sx={{ 
-              '& .MuiTypography-root': { 
-                fontWeight: 500,
-                color: tokens.color.error[600],
-              } 
-            }}
-          >
+          <ListItemText>
             Delete Field
           </ListItemText>
         </MenuItem>

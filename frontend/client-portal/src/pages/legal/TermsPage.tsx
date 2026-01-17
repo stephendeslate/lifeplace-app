@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { Box, Typography, Container, CircularProgress, Alert, Paper } from '@mui/material';
+import { SEO } from '../../hooks/useSEO';
 import { useLegalDocument } from '../../hooks/useLegalDocument';
 
 export const TermsPage: React.FC = () => {
@@ -9,28 +10,48 @@ export const TermsPage: React.FC = () => {
 
   if (isLoading) {
     return (
-      <Container maxWidth="md" sx={{ py: 4 }}>
-        <Box display="flex" justifyContent="center" py={4}>
-          <CircularProgress />
-        </Box>
-      </Container>
+      <>
+        <SEO
+          title="Terms of Service | LifePlace Alfonso"
+          description="Terms of service for LifePlace Alfonso event bookings."
+          noIndex={true}
+        />
+        <Container maxWidth="md" sx={{ py: 4 }}>
+          <Box display="flex" justifyContent="center" py={4}>
+            <CircularProgress />
+          </Box>
+        </Container>
+      </>
     );
   }
 
   if (error || !document) {
     return (
-      <Container maxWidth="md" sx={{ py: 4 }}>
-        <Paper sx={{ p: 4 }}>
-          <Alert severity="info">
-            Terms of Service content is not available at this time.
-          </Alert>
-        </Paper>
-      </Container>
+      <>
+        <SEO
+          title="Terms of Service | LifePlace Alfonso"
+          description="Terms of service for LifePlace Alfonso event bookings."
+          noIndex={true}
+        />
+        <Container maxWidth="md" sx={{ py: 4 }}>
+          <Paper sx={{ p: 4 }}>
+            <Alert severity="info">
+              Terms of Service content is not available at this time.
+            </Alert>
+          </Paper>
+        </Container>
+      </>
     );
   }
 
   return (
-    <Container maxWidth="md" sx={{ py: 4 }}>
+    <>
+      <SEO
+        title="Terms of Service | LifePlace Alfonso"
+        description="Terms of service for LifePlace Alfonso event bookings."
+        noIndex={true}
+      />
+      <Container maxWidth="md" sx={{ py: 4 }}>
       <Paper sx={{ p: 4 }}>
         <Typography variant="h3" gutterBottom sx={{ fontWeight: 600 }}>
           {document.title || 'Terms of Service'}
@@ -49,6 +70,7 @@ export const TermsPage: React.FC = () => {
           dangerouslySetInnerHTML={{ __html: document.content }}
         />
       </Paper>
-    </Container>
+      </Container>
+    </>
   );
 };

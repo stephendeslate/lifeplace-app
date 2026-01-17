@@ -229,7 +229,7 @@ export const ClientQuotes: React.FC<ClientQuotesProps> = ({ client }) => {
       </Box>
 
       <TableContainer component={Paper}>
-        <Table>
+        <Table size="small">
           <TableHead>
             <TableRow>
               <TableCell>Event</TableCell>

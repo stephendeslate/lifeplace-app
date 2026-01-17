@@ -29,12 +29,9 @@ import type { LegalDocument, LegalDocumentUpdateData } from '../../../types/sett
 
 // Modern Design System imports
 import { ModernSettingsLayout } from '../../../components/common/ModernPageLayout';
-import { ModernCard } from '../../../components/common/ModernCard';
 import { ModernPageHeader } from '../../../components/common/ModernPageHeader';
 import { TemplateContentEditor } from '../../../components/shared';
 import type { TemplateEditorMode } from '../../../types/templates.types';
-import { tokens } from '../../../design-system';
-import { glassPresets } from '../../../design-system/utils/glassmorphism';
 
 interface DocumentFormData {
   title: string;
@@ -88,30 +85,8 @@ const LegalDocumentEditor: React.FC<{
     return document.document_type === 'TERMS_OF_SERVICE' ? <Gavel /> : <Security />;
   };
 
-  const getDocumentColor = () => {
-    return document.document_type === 'TERMS_OF_SERVICE' ? 'primary' : 'secondary';
-  };
-
   return (
-    <ModernCard
-      variant="glass"
-      size="large"
-      color={getDocumentColor()}
-      animation="none"
-      sx={{
-        '&::before': {
-          background: `linear-gradient(135deg, ${
-            document.document_type === 'TERMS_OF_SERVICE'
-              ? tokens.color.primary[500]
-              : tokens.color.secondary[500]
-          }04 0%, ${
-            document.document_type === 'TERMS_OF_SERVICE'
-              ? tokens.color.primary[600]
-              : tokens.color.secondary[600]
-          }03 100%)`,
-        },
-      }}
-    >
+    <Box sx={{ borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
       <Box>
         {/* Header */}
         <Box
@@ -131,38 +106,19 @@ const LegalDocumentEditor: React.FC<{
                 justifyContent: 'center',
                 width: 48,
                 height: 48,
-                borderRadius: tokens.spacing.radius.md,
-                background: `linear-gradient(135deg, ${
-                  document.document_type === 'TERMS_OF_SERVICE'
-                    ? tokens.color.primary[500]
-                    : tokens.color.secondary[500]
-                }15 0%, ${
-                  document.document_type === 'TERMS_OF_SERVICE'
-                    ? tokens.color.primary[600]
-                    : tokens.color.secondary[600]
-                }20 100%)`,
+                borderRadius: 2,
+                bgcolor: document.document_type === 'TERMS_OF_SERVICE' ? 'primary.light' : 'secondary.light',
               }}
             >
               {getDocumentIcon()}
             </Box>
             <Box>
-              <Typography
-                variant="h6"
-                sx={{
-                  color: tokens.color.neutral[800],
-                  fontWeight: 600,
-                }}
-              >
+              <Typography variant="h6" fontWeight="600">
                 {document.document_type_display}
               </Typography>
-              <Typography
-                variant="body2"
-                sx={{
-                  color: tokens.color.neutral[600],
-                }}
-              >
-                Version {document.version} • {document.is_published ? 'Published' : 'Draft'}
-                {document.last_updated_by_name && ` • Updated by ${document.last_updated_by_name}`}
+              <Typography variant="body2" color="text.secondary">
+                Version {document.version} - {document.is_published ? 'Published' : 'Draft'}
+                {document.last_updated_by_name && ` - Updated by ${document.last_updated_by_name}`}
               </Typography>
             </Box>
           </Box>
@@ -174,7 +130,7 @@ const LegalDocumentEditor: React.FC<{
         {/* Expanded Form */}
         <Collapse in={isExpanded}>
           <Box sx={{ pt: 3 }}>
-            <Divider sx={{ mb: 3, borderColor: tokens.color.borders.glass }} />
+            <Divider sx={{ mb: 3 }} />
 
             {isUpdating && (
               <Box
@@ -201,32 +157,6 @@ const LegalDocumentEditor: React.FC<{
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                   disabled={isUpdating}
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      ...glassPresets.light,
-                      borderRadius: tokens.spacing.radius.lg,
-                      border: `1px solid ${tokens.color.borders.glass}`,
-                      '&:hover': {
-                        border: `1px solid ${
-                          document.document_type === 'TERMS_OF_SERVICE'
-                            ? tokens.color.primary[300]
-                            : tokens.color.secondary[300]
-                        }`,
-                      },
-                      '&.Mui-focused': {
-                        border: `1px solid ${
-                          document.document_type === 'TERMS_OF_SERVICE'
-                            ? tokens.color.primary[500]
-                            : tokens.color.secondary[500]
-                        }`,
-                        boxShadow: `0 0 0 3px ${
-                          document.document_type === 'TERMS_OF_SERVICE'
-                            ? tokens.color.primary[500]
-                            : tokens.color.secondary[500]
-                        }15`,
-                      },
-                    },
-                  }}
                 />
 
                 {/* Version and Effective Date */}
@@ -237,32 +167,6 @@ const LegalDocumentEditor: React.FC<{
                     value={formData.version}
                     onChange={(e) => setFormData({ ...formData, version: e.target.value })}
                     disabled={isUpdating}
-                    sx={{
-                      '& .MuiOutlinedInput-root': {
-                        ...glassPresets.light,
-                        borderRadius: tokens.spacing.radius.lg,
-                        border: `1px solid ${tokens.color.borders.glass}`,
-                        '&:hover': {
-                          border: `1px solid ${
-                            document.document_type === 'TERMS_OF_SERVICE'
-                              ? tokens.color.primary[300]
-                              : tokens.color.secondary[300]
-                          }`,
-                        },
-                        '&.Mui-focused': {
-                          border: `1px solid ${
-                            document.document_type === 'TERMS_OF_SERVICE'
-                              ? tokens.color.primary[500]
-                              : tokens.color.secondary[500]
-                          }`,
-                          boxShadow: `0 0 0 3px ${
-                            document.document_type === 'TERMS_OF_SERVICE'
-                              ? tokens.color.primary[500]
-                              : tokens.color.secondary[500]
-                          }15`,
-                        },
-                      },
-                    }}
                   />
 
                   <DatePicker
@@ -273,32 +177,6 @@ const LegalDocumentEditor: React.FC<{
                     slotProps={{
                       textField: {
                         fullWidth: true,
-                        sx: {
-                          '& .MuiOutlinedInput-root': {
-                            ...glassPresets.light,
-                            borderRadius: tokens.spacing.radius.lg,
-                            border: `1px solid ${tokens.color.borders.glass}`,
-                            '&:hover': {
-                              border: `1px solid ${
-                                document.document_type === 'TERMS_OF_SERVICE'
-                                  ? tokens.color.primary[300]
-                                  : tokens.color.secondary[300]
-                              }`,
-                            },
-                            '&.Mui-focused': {
-                              border: `1px solid ${
-                                document.document_type === 'TERMS_OF_SERVICE'
-                                  ? tokens.color.primary[500]
-                                  : tokens.color.secondary[500]
-                              }`,
-                              boxShadow: `0 0 0 3px ${
-                                document.document_type === 'TERMS_OF_SERVICE'
-                                  ? tokens.color.primary[500]
-                                  : tokens.color.secondary[500]
-                              }15`,
-                            },
-                          },
-                        },
                       },
                     }}
                   />
@@ -327,20 +205,6 @@ const LegalDocumentEditor: React.FC<{
                       checked={formData.is_published}
                       onChange={(e) => setFormData({ ...formData, is_published: e.target.checked })}
                       disabled={isUpdating}
-                      sx={{
-                        '& .MuiSwitch-switchBase.Mui-checked': {
-                          color:
-                            document.document_type === 'TERMS_OF_SERVICE'
-                              ? tokens.color.primary[500]
-                              : tokens.color.secondary[500],
-                        },
-                        '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
-                          backgroundColor:
-                            document.document_type === 'TERMS_OF_SERVICE'
-                              ? tokens.color.primary[500]
-                              : tokens.color.secondary[500],
-                        },
-                      }}
                     />
                   }
                   label={
@@ -348,7 +212,7 @@ const LegalDocumentEditor: React.FC<{
                       <Typography variant="body2" sx={{ fontWeight: 600 }}>
                         Published
                       </Typography>
-                      <Typography variant="caption" sx={{ color: tokens.color.neutral[600] }}>
+                      <Typography variant="caption" color="text.secondary">
                         Make this document visible to users
                       </Typography>
                     </Box>
@@ -362,42 +226,6 @@ const LegalDocumentEditor: React.FC<{
                     variant="contained"
                     disabled={isUpdating}
                     startIcon={isUpdating ? <CircularProgress size={16} color="inherit" /> : <SaveIcon />}
-                    sx={{
-                      background: `linear-gradient(135deg, ${
-                        document.document_type === 'TERMS_OF_SERVICE'
-                          ? tokens.color.primary[500]
-                          : tokens.color.secondary[500]
-                      } 0%, ${
-                        document.document_type === 'TERMS_OF_SERVICE'
-                          ? tokens.color.primary[600]
-                          : tokens.color.secondary[600]
-                      } 100%)`,
-                      borderRadius: tokens.spacing.radius.full,
-                      px: 4,
-                      py: 1.25,
-                      boxShadow: `0 8px 32px ${
-                        document.document_type === 'TERMS_OF_SERVICE'
-                          ? tokens.color.primary[500]
-                          : tokens.color.secondary[500]
-                      }25`,
-                      fontWeight: 600,
-                      '&:hover': {
-                        background: `linear-gradient(135deg, ${
-                          document.document_type === 'TERMS_OF_SERVICE'
-                            ? tokens.color.primary[600]
-                            : tokens.color.secondary[600]
-                        } 0%, ${
-                          document.document_type === 'TERMS_OF_SERVICE'
-                            ? tokens.color.primary[700]
-                            : tokens.color.secondary[700]
-                        } 100%)`,
-                        boxShadow: `0 12px 40px ${
-                          document.document_type === 'TERMS_OF_SERVICE'
-                            ? tokens.color.primary[500]
-                            : tokens.color.secondary[500]
-                        }35`,
-                      },
-                    }}
                   >
                     {isUpdating ? 'Saving...' : 'Save Changes'}
                   </Button>
@@ -407,7 +235,7 @@ const LegalDocumentEditor: React.FC<{
           </Box>
         </Collapse>
       </Box>
-    </ModernCard>
+    </Box>
   );
 };
 
@@ -441,7 +269,7 @@ export const LegalDocumentsPage: React.FC = () => {
 
   return (
     <ModernSettingsLayout>
-      {/* Modern Header */}
+      {/* Header */}
       <ModernPageHeader
         title="Legal Documents"
         subtitle="Manage your Terms of Service and Privacy Policy"
@@ -452,8 +280,6 @@ export const LegalDocumentsPage: React.FC = () => {
           { label: 'Legal Documents' },
         ]}
         size="medium"
-        gradient
-        glass
       />
 
       {/* Document Editors */}
@@ -468,16 +294,16 @@ export const LegalDocumentsPage: React.FC = () => {
         ))}
 
         {legalDocuments.length === 0 && (
-          <ModernCard variant="glass" size="large">
+          <Box sx={{ borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
             <Box sx={{ textAlign: 'center', py: 6 }}>
-              <Typography variant="h6" sx={{ color: tokens.color.neutral[600], mb: 1 }}>
+              <Typography variant="h6" color="text.secondary" sx={{ mb: 1 }}>
                 No Legal Documents Found
               </Typography>
-              <Typography variant="body2" sx={{ color: tokens.color.neutral[500] }}>
+              <Typography variant="body2" color="text.secondary">
                 Legal documents will appear here once they are created.
               </Typography>
             </Box>
-          </ModernCard>
+          </Box>
         )}
       </Stack>
     </ModernSettingsLayout>

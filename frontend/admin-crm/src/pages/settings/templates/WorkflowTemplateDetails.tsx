@@ -396,8 +396,6 @@ export const WorkflowTemplateDetails: React.FC = () => {
             onClick: () => navigate('/settings/templates/workflow-templates'),
           },
         ]}
-        glass
-        gradient
       />
 
       {/* Tabs */}

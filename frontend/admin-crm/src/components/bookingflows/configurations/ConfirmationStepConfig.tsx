@@ -14,8 +14,6 @@ import {
   CircularProgress,
 } from '@mui/material';
 
-// Modern Design System imports
-import { ModernCard } from '../../common/ModernCard';
 import {
   CheckCircle as ConfirmIcon,
   Email as EmailIcon,
@@ -193,11 +191,10 @@ export const ConfirmationStepConfig: React.FC<ConfirmationStepConfigProps> = ({
 
       <Stack spacing={3}>
         {/* Confirmation Message */}
-        <ModernCard variant="glass" size="medium" animation="none">
-          <Box sx={{ p: 3 }}>
-            <Typography variant="subtitle1" gutterBottom>
-              Confirmation Message
-            </Typography>
+        <Box sx={{ borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
+          <Typography variant="subtitle1" gutterBottom>
+            Confirmation Message
+          </Typography>
             
             <Stack spacing={2}>
               <TextField
@@ -224,15 +221,13 @@ export const ConfirmationStepConfig: React.FC<ConfirmationStepConfigProps> = ({
                 disabled={isSubmitting}
               />
             </Stack>
-          </Box>
-        </ModernCard>
+        </Box>
 
         {/* Display Options */}
-        <ModernCard variant="glass" size="medium" animation="none">
-          <Box sx={{ p: 3 }}>
-            <Typography variant="subtitle1" gutterBottom>
-              Display Options
-            </Typography>
+        <Box sx={{ borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
+          <Typography variant="subtitle1" gutterBottom>
+            Display Options
+          </Typography>
             
             <Stack spacing={2}>
               <Box display="flex" alignItems="center" gap={1}>
@@ -283,15 +278,13 @@ export const ConfirmationStepConfig: React.FC<ConfirmationStepConfigProps> = ({
                 />
               )}
             </Stack>
-          </Box>
-        </ModernCard>
+        </Box>
 
         {/* Automated Actions */}
-        <ModernCard variant="glass" size="medium" animation="none">
-          <Box sx={{ p: 3 }}>
-            <Typography variant="subtitle1" gutterBottom>
-              Automated Actions
-            </Typography>
+        <Box sx={{ borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
+          <Typography variant="subtitle1" gutterBottom>
+            Automated Actions
+          </Typography>
             
             <Stack spacing={2}>
               <Box display="flex" alignItems="center" gap={1}>
@@ -347,18 +340,16 @@ export const ConfirmationStepConfig: React.FC<ConfirmationStepConfigProps> = ({
                 Automatically create an event record in the system upon booking completion
               </Typography>
             </Stack>
-          </Box>
-        </ModernCard>
+        </Box>
 
         {/* Preview */}
-        <ModernCard variant="glass" size="medium" animation="none">
-          <Box sx={{ p: 3 }}>
-            <Box display="flex" alignItems="center" gap={1} mb={2}>
-              <PreviewIcon color="primary" />
-              <Typography variant="subtitle1">
-                Live Preview
-              </Typography>
-            </Box>
+        <Box sx={{ borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
+          <Box display="flex" alignItems="center" gap={1} mb={2}>
+            <PreviewIcon color="primary" />
+            <Typography variant="subtitle1">
+              Live Preview
+            </Typography>
+          </Box>
             
             <Box 
               sx={{ 
@@ -405,15 +396,13 @@ export const ConfirmationStepConfig: React.FC<ConfirmationStepConfigProps> = ({
                 </Box>
               )}
             </Box>
-          </Box>
-        </ModernCard>
+        </Box>
 
         {/* Configuration Summary */}
-        <ModernCard variant="glass" size="medium" animation="none">
-          <Box sx={{ p: 3 }}>
-            <Typography variant="subtitle1" gutterBottom>
-              Configuration Summary
-            </Typography>
+        <Box sx={{ borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
+          <Typography variant="subtitle1" gutterBottom>
+            Configuration Summary
+          </Typography>
             
             <Stack spacing={1}>
               <Typography variant="body2">
@@ -439,8 +428,7 @@ export const ConfirmationStepConfig: React.FC<ConfirmationStepConfigProps> = ({
                 </Typography>
               )}
             </Stack>
-          </Box>
-        </ModernCard>
+        </Box>
 
         {/* Actions */}
         <Box display="flex" gap={2}>

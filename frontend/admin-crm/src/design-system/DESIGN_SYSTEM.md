@@ -201,7 +201,7 @@ Versatile card component with multiple variants.
 
 ```tsx
 <ModernCard
-  variant="glass"
+  variant="flat"  // Options: 'flat' | 'outlined' | 'minimal'
   size="large"
   color="primary"
   animation="fade"
@@ -629,10 +629,9 @@ import { Fade } from '@mui/material';
   <ModernPageHeader
     title="Page Title"
     icon={<PageIcon />}
-    gradient
-    glass
+    size="medium"
   />
-  <ModernCard variant="glass" size="large" animation="fade">
+  <ModernCard variant="flat" size="large" animation="fade">
     {/* Content */}
   </ModernCard>
 </ModernPageLayout>
@@ -686,11 +685,11 @@ import { Fade } from '@mui/material';
 
 1. Replace `<Box>` wrapper with `<ModernPageLayout backgroundPattern="default">`
 2. Replace manual headers with `<ModernPageHeader>`
-3. Replace `<Paper sx={{ p: N }}>` with `<ModernCard variant="glass" size="large">`
+3. Replace `<Paper sx={{ p: N }}>` with `<ModernCard variant="flat" size="large">`
 4. Apply glass styling to form fields using `glassTextFieldSx`
 5. Apply gradient styling to primary buttons using `gradientButtonSx`
 6. Apply cancel styling to secondary buttons using `cancelButtonSx`
-7. Replace `<TableContainer component={Paper}>` with `<ModernCard variant="glass">`
+7. Replace `<TableContainer component={Paper}>` with `<ModernCard variant="flat">`
 8. Standardize dialog paddings to `p: 4`
 9. Add `Fade` animations with staggered timeouts for lists
 10. Use design tokens for all colors and spacing

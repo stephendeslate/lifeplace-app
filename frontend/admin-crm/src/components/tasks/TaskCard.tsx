@@ -14,10 +14,8 @@ import {
   AccessTime,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
-import type { Task, TaskDomain } from '../../types/tasks.types';
 import { tokens } from '../../design-system';
-import { glassPresets } from '../../design-system/utils/glassmorphism';
-import { createTransition } from '../../design-system/utils/animations';
+import type { Task, TaskDomain } from '../../types/tasks.types';
 
 interface TaskCardProps {
   task: Task;
@@ -34,17 +32,11 @@ const domainIcons: Record<TaskDomain, React.ElementType> = {
   communications: Email,
 };
 
-const domainColors: Record<TaskDomain, string> = {
-  quotes: tokens.color.info[500],
-  contracts: tokens.color.warning[500],
-  payments: tokens.color.success[500],
-  communications: tokens.color.secondary[500],
-};
-
-const priorityColors = {
-  high: tokens.color.error[500],
-  medium: tokens.color.warning[500],
-  low: tokens.color.success[500],
+const domainColors: Record<TaskDomain, 'info' | 'warning' | 'success' | 'secondary'> = {
+  quotes: 'info',
+  contracts: 'warning',
+  payments: 'success',
+  communications: 'secondary',
 };
 
 const formatTimeAgo = (dateString: string): string => {
@@ -71,7 +63,6 @@ export const TaskCard: React.FC<TaskCardProps> = ({
   const navigate = useNavigate();
   const DomainIcon = domainIcons[task.domain];
   const domainColor = domainColors[task.domain];
-  const priorityColor = priorityColors[task.priority];
 
   const handleViewEvent = () => {
     if (task.eventId) {
@@ -109,10 +100,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
                     e.stopPropagation();
                     onSendQuote(task.entityId as number);
                   }}
-                  sx={{
-                    color: tokens.color.primary[600],
-                    '&:hover': { backgroundColor: `${tokens.color.primary[500]}15` },
-                  }}
+                  color="primary"
                 >
                   <Send fontSize="small" />
                 </IconButton>
@@ -124,10 +112,6 @@ export const TaskCard: React.FC<TaskCardProps> = ({
                 onClick={(e) => {
                   e.stopPropagation();
                   if (task.eventId) navigate(`/events/${task.eventId}`);
-                }}
-                sx={{
-                  color: tokens.color.neutral[600],
-                  '&:hover': { backgroundColor: `${tokens.color.neutral[500]}15` },
                 }}
               >
                 <Edit fontSize="small" />
@@ -146,10 +130,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
                     e.stopPropagation();
                     onSendContractReminder(task.entityId as number);
                   }}
-                  sx={{
-                    color: tokens.color.primary[600],
-                    '&:hover': { backgroundColor: `${tokens.color.primary[500]}15` },
-                  }}
+                  color="primary"
                 >
                   <Send fontSize="small" />
                 </IconButton>
@@ -161,10 +142,6 @@ export const TaskCard: React.FC<TaskCardProps> = ({
                 onClick={(e) => {
                   e.stopPropagation();
                   navigate(`/contracts/${task.entityId}`);
-                }}
-                sx={{
-                  color: tokens.color.neutral[600],
-                  '&:hover': { backgroundColor: `${tokens.color.neutral[500]}15` },
                 }}
               >
                 <Visibility fontSize="small" />
@@ -183,10 +160,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
                     e.stopPropagation();
                     onRecordPayment(task.entityId as number);
                   }}
-                  sx={{
-                    color: tokens.color.success[600],
-                    '&:hover': { backgroundColor: `${tokens.color.success[500]}15` },
-                  }}
+                  color="success"
                 >
                   <Payment fontSize="small" />
                 </IconButton>
@@ -198,10 +172,6 @@ export const TaskCard: React.FC<TaskCardProps> = ({
                 onClick={(e) => {
                   e.stopPropagation();
                   navigate(`/payments/${task.entityId}`);
-                }}
-                sx={{
-                  color: tokens.color.neutral[600],
-                  '&:hover': { backgroundColor: `${tokens.color.neutral[500]}15` },
                 }}
               >
                 <Visibility fontSize="small" />
@@ -220,10 +190,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
                     e.stopPropagation();
                     onRetryCommunication(task.entityId as string);
                   }}
-                  sx={{
-                    color: tokens.color.warning[600],
-                    '&:hover': { backgroundColor: `${tokens.color.warning[500]}15` },
-                  }}
+                  color="warning"
                 >
                   <Refresh fontSize="small" />
                 </IconButton>
@@ -235,10 +202,6 @@ export const TaskCard: React.FC<TaskCardProps> = ({
                 onClick={(e) => {
                   e.stopPropagation();
                   navigate('/records');
-                }}
-                sx={{
-                  color: tokens.color.neutral[600],
-                  '&:hover': { backgroundColor: `${tokens.color.neutral[500]}15` },
                 }}
               >
                 <Visibility fontSize="small" />
@@ -255,18 +218,16 @@ export const TaskCard: React.FC<TaskCardProps> = ({
     <Box
       onClick={handleViewEntity}
       sx={{
-        ...glassPresets.light,
-        borderRadius: tokens.spacing.radius.xl,
+        borderRadius: tokens.spacing.radius.md,
         p: 3,
-        border: `1px solid ${domainColor}20`,
-        borderLeft: `4px solid ${domainColor}`,
+        border: 1,
+        borderColor: 'divider',
+        borderLeft: 4,
+        borderLeftColor: `${domainColor}.main`,
         cursor: 'pointer',
-        transition: createTransition(['transform', 'box-shadow', 'border-color'], 'fast'),
-
+        bgcolor: 'grey.50',
         '&:hover': {
-          transform: 'translateY(-2px)',
-          boxShadow: tokens.shadow.glass.medium,
-          borderColor: `${domainColor}40`,
+          borderColor: `${domainColor}.light`,
         },
       }}
     >
@@ -276,14 +237,13 @@ export const TaskCard: React.FC<TaskCardProps> = ({
           {/* Icon */}
           <Box
             sx={{
-              ...glassPresets.light,
-              borderRadius: tokens.spacing.radius.lg,
+              borderRadius: tokens.spacing.radius.md,
               p: 1.5,
-              background: `${domainColor}10`,
+              bgcolor: `${domainColor}.50`,
               flexShrink: 0,
             }}
           >
-            <DomainIcon sx={{ fontSize: 20, color: domainColor }} />
+            <DomainIcon sx={{ fontSize: 20 }} color={domainColor} />
           </Box>
 
           {/* Content */}
@@ -292,8 +252,8 @@ export const TaskCard: React.FC<TaskCardProps> = ({
               <Typography
                 variant="subtitle1"
                 fontWeight={600}
+                color="text.primary"
                 sx={{
-                  color: tokens.color.neutral[800],
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
                   whiteSpace: 'nowrap',
@@ -304,26 +264,24 @@ export const TaskCard: React.FC<TaskCardProps> = ({
               <Chip
                 label={task.type}
                 size="small"
+                color={domainColor}
+                variant="outlined"
                 sx={{
                   height: 20,
                   fontSize: '0.7rem',
                   fontWeight: 600,
-                  backgroundColor: `${domainColor}15`,
-                  color: domainColor,
-                  border: `1px solid ${domainColor}30`,
                 }}
               />
               {task.priority === 'high' && (
                 <Chip
                   label="Urgent"
                   size="small"
+                  color="error"
+                  variant="outlined"
                   sx={{
                     height: 20,
                     fontSize: '0.7rem',
                     fontWeight: 600,
-                    backgroundColor: `${priorityColor}15`,
-                    color: priorityColor,
-                    border: `1px solid ${priorityColor}30`,
                   }}
                 />
               )}
@@ -331,8 +289,8 @@ export const TaskCard: React.FC<TaskCardProps> = ({
 
             <Typography
               variant="body2"
+              color="text.secondary"
               sx={{
-                color: tokens.color.neutral[600],
                 mb: 1,
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
@@ -344,7 +302,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
 
             <Stack direction="row" spacing={2} alignItems="center">
               {task.clientName && (
-                <Typography variant="caption" sx={{ color: tokens.color.neutral[500] }}>
+                <Typography variant="caption" color="text.secondary">
                   {task.clientName}
                 </Typography>
               )}
@@ -352,18 +310,18 @@ export const TaskCard: React.FC<TaskCardProps> = ({
                 <Chip
                   label={`${task.domain === 'payments' ? '' : 'Value: '}${task.amount}`}
                   size="small"
+                  color="success"
+                  variant="outlined"
                   sx={{
                     height: 18,
                     fontSize: '0.65rem',
                     fontWeight: 600,
-                    backgroundColor: tokens.color.success[50],
-                    color: tokens.color.success[700],
                   }}
                 />
               )}
               <Box display="flex" alignItems="center" gap={0.5}>
-                <AccessTime sx={{ fontSize: 12, color: tokens.color.neutral[400] }} />
-                <Typography variant="caption" sx={{ color: tokens.color.neutral[500] }}>
+                <AccessTime sx={{ fontSize: 12 }} color="disabled" />
+                <Typography variant="caption" color="text.secondary">
                   {formatTimeAgo(task.createdAt)}
                 </Typography>
               </Box>
@@ -382,10 +340,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
                   e.stopPropagation();
                   handleViewEvent();
                 }}
-                sx={{
-                  color: tokens.color.primary[600],
-                  '&:hover': { backgroundColor: `${tokens.color.primary[500]}15` },
-                }}
+                color="primary"
               >
                 <Visibility fontSize="small" />
               </IconButton>

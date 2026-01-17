@@ -165,7 +165,7 @@ export const ClientInvoices: React.FC<ClientInvoicesProps> = ({ client }) => {
       </Box>
 
       <TableContainer component={Paper}>
-        <Table>
+        <Table size="small">
           <TableHead>
             <TableRow>
               <TableCell>Invoice #</TableCell>

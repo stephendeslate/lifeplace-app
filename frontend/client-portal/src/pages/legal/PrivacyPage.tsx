@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { Box, Typography, Container, CircularProgress, Alert, Paper } from '@mui/material';
+import { SEO } from '../../hooks/useSEO';
 import { useLegalDocument } from '../../hooks/useLegalDocument';
 
 export const PrivacyPage: React.FC = () => {
@@ -9,28 +10,48 @@ export const PrivacyPage: React.FC = () => {
 
   if (isLoading) {
     return (
-      <Container maxWidth="md" sx={{ py: 4 }}>
-        <Box display="flex" justifyContent="center" py={4}>
-          <CircularProgress />
-        </Box>
-      </Container>
+      <>
+        <SEO
+          title="Privacy Policy | LifePlace Alfonso"
+          description="Privacy policy for LifePlace Alfonso."
+          noIndex={true}
+        />
+        <Container maxWidth="md" sx={{ py: 4 }}>
+          <Box display="flex" justifyContent="center" py={4}>
+            <CircularProgress />
+          </Box>
+        </Container>
+      </>
     );
   }
 
   if (error || !document) {
     return (
-      <Container maxWidth="md" sx={{ py: 4 }}>
-        <Paper sx={{ p: 4 }}>
-          <Alert severity="info">
-            Privacy Policy content is not available at this time.
-          </Alert>
-        </Paper>
-      </Container>
+      <>
+        <SEO
+          title="Privacy Policy | LifePlace Alfonso"
+          description="Privacy policy for LifePlace Alfonso."
+          noIndex={true}
+        />
+        <Container maxWidth="md" sx={{ py: 4 }}>
+          <Paper sx={{ p: 4 }}>
+            <Alert severity="info">
+              Privacy Policy content is not available at this time.
+            </Alert>
+          </Paper>
+        </Container>
+      </>
     );
   }
 
   return (
-    <Container maxWidth="md" sx={{ py: 4 }}>
+    <>
+      <SEO
+        title="Privacy Policy | LifePlace Alfonso"
+        description="Privacy policy for LifePlace Alfonso."
+        noIndex={true}
+      />
+      <Container maxWidth="md" sx={{ py: 4 }}>
       <Paper sx={{ p: 4 }}>
         <Typography variant="h3" gutterBottom sx={{ fontWeight: 600 }}>
           {document.title || 'Privacy Policy'}
@@ -49,6 +70,7 @@ export const PrivacyPage: React.FC = () => {
           dangerouslySetInnerHTML={{ __html: document.content }}
         />
       </Paper>
-    </Container>
+      </Container>
+    </>
   );
 };

@@ -23,8 +23,6 @@ import {
   InputLabel,
 } from '@mui/material';
 
-// Modern Design System imports
-import { ModernCard } from '../../common/ModernCard';
 import {
   ExpandMore as ExpandMoreIcon,
   CalendarMonth as CalendarIcon,
@@ -32,11 +30,13 @@ import {
   CheckCircle as AvailabilityIcon,
   Sync as SyncIcon,
 } from '@mui/icons-material';
-import type { 
-  BookingFlowStep, 
-  DateTimeStepConfiguration 
+import type {
+  BookingFlowStep,
+  DateTimeStepConfiguration
 } from '../../../types/bookingflows.types';
 import { useBookingFlowStepConfiguration } from '../../../hooks/useBookingFlows';
+import { useFormHandlers } from '../../../hooks/useFormHandlers';
+import { ConfigSection } from '../../common';
 
 interface DateTimeStepConfigProps {
   step: BookingFlowStep;
@@ -138,6 +138,13 @@ export const DateTimeStepConfig: React.FC<DateTimeStepConfigProps> = ({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [newBlockedDate, setNewBlockedDate] = useState('');
 
+  // Use centralized form handlers (keeping custom handleInputChange for numeric parsing)
+  const { handleSwitchChange } = useFormHandlers(
+    setFormData,
+    errors,
+    setErrors
+  );
+
   const {
     updateConfiguration,
     isUpdatingConfiguration,
@@ -188,15 +195,6 @@ export const DateTimeStepConfig: React.FC<DateTimeStepConfigProps> = ({
         [field]: '',
       }));
     }
-  };
-
-  const handleSwitchChange = (field: keyof DateTimeConfigFormData) => (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: event.target.checked,
-    }));
   };
 
   const handleDaysOfWeekChange = (value: number[]) => {
@@ -277,13 +275,8 @@ export const DateTimeStepConfig: React.FC<DateTimeStepConfigProps> = ({
 
       <Stack spacing={3}>
         {/* Calendar Settings */}
-        <ModernCard variant="glass" size="medium" animation="none">
-          <Box sx={{ p: 3 }}>
-            <Typography variant="subtitle1" gutterBottom>
-              Calendar Settings
-            </Typography>
-
-            <Stack spacing={2}>
+        <ConfigSection title="Calendar Settings">
+          <Stack spacing={2}>
               <Box display="flex" alignItems="center" gap={1}>
                 <CalendarIcon color="primary" />
                 <FormControlLabel
@@ -345,15 +338,10 @@ export const DateTimeStepConfig: React.FC<DateTimeStepConfigProps> = ({
                 </Box>
               )}
             </Stack>
-          </Box>
-        </ModernCard>
+        </ConfigSection>
 
         {/* Enhanced Availability Settings */}
-        <ModernCard variant="glass" size="medium" animation="none">
-          <Box sx={{ p: 3 }}>
-            <Typography variant="subtitle1" gutterBottom>
-              Real-Time Availability
-            </Typography>
+        <ConfigSection title="Real-Time Availability">
             
             <Stack spacing={2}>
               <Box display="flex" alignItems="center" gap={1}>
@@ -465,15 +453,10 @@ export const DateTimeStepConfig: React.FC<DateTimeStepConfigProps> = ({
                 </FormControl>
               </Box>
             </Stack>
-          </Box>
-        </ModernCard>
+        </ConfigSection>
 
         {/* Availability Checking Configuration */}
-        <ModernCard variant="glass" size="medium" animation="none">
-          <Box sx={{ p: 3 }}>
-            <Typography variant="subtitle1" gutterBottom>
-              Availability Checking
-            </Typography>
+        <ConfigSection title="Availability Checking">
             
             <Stack spacing={2}>
               <FormControlLabel
@@ -509,15 +492,10 @@ export const DateTimeStepConfig: React.FC<DateTimeStepConfigProps> = ({
                 label="Check Staff Availability"
               />
             </Stack>
-          </Box>
-        </ModernCard>
+        </ConfigSection>
 
         {/* Conflict Resolution */}
-        <ModernCard variant="glass" size="medium" animation="none">
-          <Box sx={{ p: 3 }}>
-            <Typography variant="subtitle1" gutterBottom>
-              Conflict Resolution
-            </Typography>
+        <ConfigSection title="Conflict Resolution">
             
             <Stack spacing={2}>
               <FormControlLabel
@@ -546,18 +524,10 @@ export const DateTimeStepConfig: React.FC<DateTimeStepConfigProps> = ({
                 />
               )}
             </Stack>
-          </Box>
-        </ModernCard>
+        </ConfigSection>
 
         {/* Calendar Integration */}
-        <ModernCard variant="glass" size="medium" animation="none">
-          <Box sx={{ p: 3 }}>
-            <Box display="flex" alignItems="center" gap={1} mb={2}>
-              <SyncIcon color="primary" />
-              <Typography variant="subtitle1">
-                Calendar Integration
-              </Typography>
-            </Box>
+        <ConfigSection title="Calendar Integration" icon={<SyncIcon />}>
             
             <Stack spacing={2}>
               <FormControlLabel
@@ -602,8 +572,7 @@ export const DateTimeStepConfig: React.FC<DateTimeStepConfigProps> = ({
                 </FormControl>
               )}
             </Stack>
-          </Box>
-        </ModernCard>
+        </ConfigSection>
 
         {/* Advanced Settings */}
         <Accordion>
@@ -706,13 +675,8 @@ export const DateTimeStepConfig: React.FC<DateTimeStepConfigProps> = ({
         </Accordion>
 
         {/* Configuration Summary */}
-        <ModernCard variant="glass" size="medium" animation="none">
-          <Box sx={{ p: 3 }}>
-            <Typography variant="subtitle1" gutterBottom>
-              Configuration Summary
-            </Typography>
-
-            <Stack spacing={1}>
+        <ConfigSection title="Configuration Summary">
+          <Stack spacing={1}>
               <Typography variant="body2">
                 <strong>Display:</strong>{' '}
                 {[
@@ -765,8 +729,7 @@ export const DateTimeStepConfig: React.FC<DateTimeStepConfigProps> = ({
                 </Typography>
               )}
             </Stack>
-          </Box>
-        </ModernCard>
+        </ConfigSection>
 
         {/* Actions */}
         <Box display="flex" gap={2}>

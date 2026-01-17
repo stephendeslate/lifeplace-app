@@ -505,7 +505,7 @@ export const EnterpriseEventsCalendar: React.FC = () => {
     }
 
     return (
-      <ModernCard variant="glass" size="large">
+      <ModernCard variant="flat" size="large">
         <Box sx={{ p: 2 }}>
           {/* Calendar Header */}
           <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 1, mb: 2 }}>
@@ -647,7 +647,7 @@ export const EnterpriseEventsCalendar: React.FC = () => {
   // Enhanced week view renderer
   const renderEnhancedWeekView = () => {
     return (
-      <ModernCard variant="glass" size="large">
+      <ModernCard variant="flat" size="large">
         <Box sx={{ p: 2 }}>
           {/* Week Header */}
           <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 1, mb: 2 }}>
@@ -805,7 +805,6 @@ export const EnterpriseEventsCalendar: React.FC = () => {
           size={40}
           message="Loading calendar..."
           variant="circular"
-          glass
         />
       </ModernPageLayout>
     );
@@ -824,13 +823,11 @@ export const EnterpriseEventsCalendar: React.FC = () => {
         primaryAction={primaryAction}
         secondaryActions={secondaryActions}
         size="medium"
-        gradient
-        glass
       />
 
       {/* Availability Stats */}
       {settings.showAvailabilityStats && availabilityStats && (
-        <ModernCard variant="glass" size="medium" sx={{ mb: 3 }}>
+        <ModernCard variant="flat" size="medium" sx={{ mb: 3 }}>
             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={3} alignItems="center">
               <Box>
                 <Typography variant="h6" color="primary">
@@ -904,7 +901,7 @@ export const EnterpriseEventsCalendar: React.FC = () => {
       )}
 
       {/* Calendar Controls */}
-      <ModernCard variant="glass" size="medium" sx={{ mb: 3 }}>
+      <ModernCard variant="flat" size="medium" sx={{ mb: 3 }}>
           <Stack 
             direction={{ xs: 'column', sm: 'row' }} 
             spacing={2} 
@@ -1057,7 +1054,7 @@ export const EnterpriseEventsCalendar: React.FC = () => {
       {view === 'month' ? renderEnhancedMonthView() : renderEnhancedWeekView()}
 
       {/* Legend */}
-      <ModernCard variant="glass" size="medium" sx={{ mt: 3 }}>
+      <ModernCard variant="flat" size="medium" sx={{ mt: 3 }}>
           <Stack direction={{ xs: 'column', md: 'row' }} spacing={3}>
             <Box>
               <Typography variant="subtitle2" gutterBottom>

@@ -28,7 +28,7 @@ export const ClientLayout: React.FC<ClientLayoutProps> = ({ children }) => {
       overlay={true}
       sx={{ 
         minHeight: '100vh',
-        width: '100vw',
+        width: '100%',
         position: 'relative',
         overflow: 'hidden',
       }}

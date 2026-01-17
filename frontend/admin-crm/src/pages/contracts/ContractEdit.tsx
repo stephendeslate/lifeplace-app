@@ -8,7 +8,9 @@ import {
   TextField,
   Stack,
   Alert,
-  Fade,
+  Button,
+  Chip,
+  CircularProgress,
 } from '@mui/material';
 import {
   ArrowBack as ArrowBackIcon,
@@ -21,14 +23,6 @@ import { useEventContract, useUpdateEventContract } from '../../hooks/useContrac
 import { useToast } from '../../contexts/ToastContext';
 import { useLayout } from '../../contexts/LayoutContext';
 import type { UpdateEventContractData } from '../../types/contracts.types';
-
-// Modern Design System imports
-import { ModernPageLayout } from '../../components/common/ModernPageLayout';
-import { ModernCard } from '../../components/common/ModernCard';
-import { ModernPageHeader, type HeaderAction } from '../../components/common/ModernPageHeader';
-import ModernLoadingStates from '../../components/common/ModernLoadingStates';
-import { tokens } from '../../design-system';
-import { glassPresets } from '../../design-system/utils/glassmorphism';
 
 export const ContractEdit: React.FC = () => {
   const { contractId } = useParams<{ contractId: string }>();
@@ -105,55 +99,28 @@ export const ContractEdit: React.FC = () => {
     );
   };
 
-  // Glass text field styling
-  const glassTextFieldSx = {
-    '& .MuiOutlinedInput-root': {
-      ...glassPresets.light,
-      borderRadius: tokens.spacing.radius.lg,
-      border: `1px solid ${tokens.color.borders.glass}`,
-      '&:hover': {
-        border: `1px solid ${tokens.color.primary[300]}`,
-      },
-      '&.Mui-focused': {
-        border: `1px solid ${tokens.color.primary[500]}`,
-        boxShadow: `0 0 0 3px ${tokens.color.primary[500]}15`,
-      },
-    },
-  };
-
-  // Loading state with modern design
+  // Loading state
   if (isLoading) {
     return (
-      <ModernPageLayout backgroundPattern="default">
-        <ModernLoadingStates.ModernLoadingSpinner
-          size={40}
-          message="Loading contract..."
-          variant="circular"
-          glass
-        />
-      </ModernPageLayout>
+      <Box sx={{ p: 3 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', py: 8 }}>
+          <CircularProgress size={40} />
+          <Typography variant="body1" color="text.secondary" sx={{ ml: 2 }}>
+            Loading contract...
+          </Typography>
+        </Box>
+      </Box>
     );
   }
 
-  // Error state with modern design
+  // Error state
   if (error || !contract) {
     return (
-      <ModernPageLayout backgroundPattern="default">
-        <ModernCard variant="glass" size="large" color="error" animation="fade">
-          <Alert
-            severity="error"
-            sx={{
-              background: 'transparent',
-              border: 'none',
-              '& .MuiAlert-message': {
-                color: tokens.color.error[700],
-              },
-            }}
-          >
-            Failed to load contract. Please try again.
-          </Alert>
-        </ModernCard>
-      </ModernPageLayout>
+      <Box sx={{ p: 3 }}>
+        <Alert severity="error">
+          Failed to load contract. Please try again.
+        </Alert>
+      </Box>
     );
   }
 
@@ -167,150 +134,144 @@ export const ContractEdit: React.FC = () => {
     }
   };
 
-  // Build header actions
-  const secondaryActions: HeaderAction[] = [
-    {
-      icon: <ArrowBackIcon />,
-      label: 'Cancel',
-      onClick: handleBackToContract,
-      variant: 'outlined',
-      tooltip: 'Return to contract without saving',
-    },
-  ];
-
-  const primaryAction: HeaderAction = {
-    icon: <SaveIcon />,
-    label: isUpdating ? 'Saving...' : 'Save Changes',
-    onClick: handleSave,
-    variant: 'contained',
-    color: 'primary',
-    disabled: isUpdating,
-  };
-
   return (
-    <ModernPageLayout backgroundPattern="default">
-      {/* Modern Header */}
-      <ModernPageHeader
-        title={`Edit Contract #${contract.id}`}
-        subtitle={`Template: ${contract.template_name}`}
-        icon={<EditIcon />}
-        status={{
-          label: contract.status_display || contract.status,
-          color: getStatusColor(),
+    <Box sx={{ p: 3 }}>
+      {/* Header */}
+      <Box
+        sx={{
+          mb: 4,
+          p: 3,
+          borderRadius: 1,
+          bgcolor: 'background.paper',
+          border: '1px solid',
+          borderColor: 'divider',
         }}
-        primaryAction={primaryAction}
-        secondaryActions={secondaryActions}
-        size="medium"
-        gradient
-        glass
-      />
+      >
+        <Box
+          display="flex"
+          flexDirection={{ xs: 'column', md: 'row' }}
+          justifyContent="space-between"
+          alignItems={{ xs: 'flex-start', md: 'center' }}
+          gap={2}
+        >
+          <Box display="flex" alignItems="center" gap={2}>
+            <EditIcon color="primary" sx={{ fontSize: 32 }} />
+            <Box>
+              <Box display="flex" alignItems="center" gap={2}>
+                <Typography variant="h4" component="h1" fontWeight="bold">
+                  Edit Contract #{contract.id}
+                </Typography>
+                <Chip
+                  label={contract.status_display || contract.status}
+                  color={getStatusColor()}
+                  size="small"
+                />
+              </Box>
+              <Typography variant="body1" color="text.secondary">
+                Template: {contract.template_name}
+              </Typography>
+            </Box>
+          </Box>
+          <Stack direction="row" spacing={2}>
+            <Button
+              variant="outlined"
+              startIcon={<ArrowBackIcon />}
+              onClick={handleBackToContract}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="contained"
+              startIcon={isUpdating ? <CircularProgress size={20} color="inherit" /> : <SaveIcon />}
+              onClick={handleSave}
+              disabled={isUpdating}
+            >
+              {isUpdating ? 'Saving...' : 'Save Changes'}
+            </Button>
+          </Stack>
+        </Box>
+      </Box>
 
       {/* Edit Form */}
       <Stack spacing={3}>
         {/* Contract Details */}
-        <Fade in timeout={300}>
-          <div>
-            <ModernCard
-              variant="glass"
-              size="large"
-              color="primary"
-              animation="none"
-              sx={{
-                '&::before': {
-                  background: `linear-gradient(135deg, ${tokens.color.primary[500]}04 0%, ${tokens.color.primary[600]}03 100%)`,
-                },
-              }}
-            >
-              {/* Section Header with Icon */}
-              <Box display="flex" alignItems="center" gap={1.5} mb={3}>
-                <Box
-                  sx={{
-                    p: 1.5,
-                    borderRadius: tokens.spacing.radius.lg,
-                    background: `linear-gradient(135deg, ${tokens.color.primary[500]}15 0%, ${tokens.color.primary[600]}10 100%)`,
-                    border: `1px solid ${tokens.color.primary[500]}20`,
-                  }}
-                >
-                  <DetailsIcon sx={{ color: tokens.color.primary[600], fontSize: '1.25rem' }} />
-                </Box>
-                <Typography variant="h6" fontWeight="600" sx={{ color: tokens.color.neutral[800] }}>
-                  Contract Details
-                </Typography>
-              </Box>
+        <Box
+          sx={{
+            p: 3,
+            borderRadius: 1,
+            bgcolor: 'background.paper',
+            border: '1px solid',
+            borderColor: 'divider',
+          }}
+        >
+          {/* Section Header with Icon */}
+          <Box display="flex" alignItems="center" gap={1.5} mb={3}>
+            <DetailsIcon color="primary" />
+            <Typography variant="h6" fontWeight="600">
+              Contract Details
+            </Typography>
+          </Box>
 
-              <Stack spacing={3}>
-                <Box display="flex" gap={3} flexWrap="wrap">
-                  <TextField
-                    label="Contract Value"
-                    value={contractValue}
-                    onChange={(e) => setContractValue(e.target.value)}
-                    placeholder="e.g., 50000.00"
-                    helperText="Optional contract value"
-                    sx={{ minWidth: 200, flex: 1, ...glassTextFieldSx }}
-                  />
-                  <TextField
-                    label="Valid Until"
-                    type="date"
-                    value={validUntil}
-                    onChange={(e) => setValidUntil(e.target.value)}
-                    slotProps={{ inputLabel: { shrink: true } }}
-                    helperText="Leave empty for no expiration"
-                    sx={{ minWidth: 200, flex: 1, ...glassTextFieldSx }}
-                  />
-                </Box>
-              </Stack>
-            </ModernCard>
-          </div>
-        </Fade>
+          <Stack spacing={3}>
+            <Box display="flex" gap={3} flexWrap="wrap">
+              <TextField
+                label="Contract Value"
+                value={contractValue}
+                onChange={(e) => setContractValue(e.target.value)}
+                placeholder="e.g., 50000.00"
+                helperText="Optional contract value"
+                sx={{ minWidth: 200, flex: 1 }}
+              />
+              <TextField
+                label="Valid Until"
+                type="date"
+                value={validUntil}
+                onChange={(e) => setValidUntil(e.target.value)}
+                slotProps={{ inputLabel: { shrink: true } }}
+                helperText="Leave empty for no expiration"
+                sx={{ minWidth: 200, flex: 1 }}
+              />
+            </Box>
+          </Stack>
+        </Box>
 
         {/* Contract Content */}
-        <Fade in timeout={400}>
-          <div>
-            <ModernCard
-              variant="glass"
-              size="large"
-              color="default"
-              animation="none"
-            >
-              {/* Section Header with Icon */}
-              <Box display="flex" alignItems="center" gap={1.5} mb={3}>
-                <Box
-                  sx={{
-                    p: 1.5,
-                    borderRadius: tokens.spacing.radius.lg,
-                    background: `linear-gradient(135deg, ${tokens.color.neutral[500]}15 0%, ${tokens.color.neutral[600]}10 100%)`,
-                    border: `1px solid ${tokens.color.neutral[400]}20`,
-                  }}
-                >
-                  <ContentIcon sx={{ color: tokens.color.neutral[600], fontSize: '1.25rem' }} />
-                </Box>
-                <Typography variant="h6" fontWeight="600" sx={{ color: tokens.color.neutral[800] }}>
-                  Contract Content
-                </Typography>
-              </Box>
+        <Box
+          sx={{
+            p: 3,
+            borderRadius: 1,
+            bgcolor: 'background.paper',
+            border: '1px solid',
+            borderColor: 'divider',
+          }}
+        >
+          {/* Section Header with Icon */}
+          <Box display="flex" alignItems="center" gap={1.5} mb={3}>
+            <ContentIcon color="action" />
+            <Typography variant="h6" fontWeight="600">
+              Contract Content
+            </Typography>
+          </Box>
 
-              <TextField
-                fullWidth
-                multiline
-                minRows={20}
-                maxRows={30}
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                placeholder="Enter contract content..."
-                helperText="Edit the contract content. You can use HTML formatting."
-                sx={{
-                  ...glassTextFieldSx,
-                  '& .MuiInputBase-input': {
-                    fontFamily: 'monospace',
-                    fontSize: '14px',
-                    lineHeight: 1.5,
-                  },
-                }}
-              />
-            </ModernCard>
-          </div>
-        </Fade>
+          <TextField
+            fullWidth
+            multiline
+            minRows={20}
+            maxRows={30}
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            placeholder="Enter contract content..."
+            helperText="Edit the contract content. You can use HTML formatting."
+            sx={{
+              '& .MuiInputBase-input': {
+                fontFamily: 'monospace',
+                fontSize: '14px',
+                lineHeight: 1.5,
+              },
+            }}
+          />
+        </Box>
       </Stack>
-    </ModernPageLayout>
+    </Box>
   );
 };

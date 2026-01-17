@@ -1,6 +1,6 @@
 // Modern Smart Sidebar Component
-// Completely redesigned with modern glassmorphism design system
-// Maintains full functionality while enhancing visual consistency
+// Clean, flat design with simple styling
+// Maintains full functionality with simplified visual approach
 
 import React, { useEffect, useState, useMemo } from 'react';
 import {
@@ -22,8 +22,8 @@ import {
   Zoom,
   Fade,
 } from '@mui/material';
-import { 
-  ExpandLess, 
+import {
+  ExpandLess,
   ExpandMore,
   AutoAwesome,
   Settings,
@@ -37,11 +37,6 @@ import { useLayout } from '../../../contexts/LayoutContext';
 import { useAuth } from '../../../contexts/AuthContext';
 import { filterNavigationByRole } from '../../../config/navigation';
 import { tokens } from '../../../design-system';
-import { 
-  glassPresets, 
-  createGlassNavigation,
-  createGlassCard 
-} from '../../../design-system/utils/glassmorphism';
 import { createTransition } from '../../../design-system/utils/animations';
 import type { NavigationGroup, NavigationItem } from '../../../types/layout.types';
 
@@ -71,27 +66,12 @@ export const SmartSidebar: React.FC = () => {
     return user?.role ? filterNavigationByRole(user.role) : [];
   }, [user?.role]);
 
-  // Modern glass effect for sidebar - enhanced consistency
-  const sidebarGlassStyle = {
-    ...createGlassNavigation('sidebar'),
-    background: 'rgba(248, 251, 255, 0.98)', // Slightly cooler tone
-    backdropFilter: 'blur(40px) saturate(1.2)', // More intense blur
-    borderRight: sidebarCollapsed ? 'none' : `1px solid ${tokens.color.borders.glass}`, // Remove border when collapsed
+  // Simple flat sidebar style
+  const sidebarStyle = {
+    background: tokens.color.neutral[50],
+    borderRight: sidebarCollapsed ? 'none' : `1px solid ${tokens.color.neutral[200]}`,
     position: 'relative' as const,
     overflow: 'hidden',
-    
-    // Subtle gradient overlay for depth
-    '&::before': {
-      content: '""',
-      position: 'absolute',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      background: 'linear-gradient(180deg, rgba(0, 135, 255, 0.015) 0%, rgba(16, 185, 129, 0.015) 50%, rgba(168, 85, 247, 0.01) 100%)',
-      pointerEvents: 'none',
-      zIndex: -1,
-    },
   };
 
   // Set active item based on current path
@@ -195,51 +175,37 @@ export const SmartSidebar: React.FC = () => {
           overflow: 'visible', // Allow for glow effects
           border: '1px solid transparent',
 
-          // Inactive state with refined hover
+          // Inactive state with simple hover
           '&:not(.Mui-selected)': {
             background: 'transparent',
             color: tokens.color.neutral[700],
-            
+
             '&:hover': {
-              ...glassPresets.medium,
-              transform: sidebarCollapsed ? 'scale(1.05)' : 'translateX(6px)',
-              border: `1px solid ${tokens.color.borders.glass}`,
-              boxShadow: tokens.shadow.glass.light,
-              
+              background: tokens.color.neutral[100],
+              transform: sidebarCollapsed ? 'scale(1.02)' : 'translateX(4px)',
+
               '&::before': {
                 opacity: 1,
                 transform: 'scaleX(1)',
               },
-              
-              '&::after': {
-                opacity: 0.6,
-              }
             },
           },
 
-          // Enhanced active state with modern styling
+          // Active state with flat styling
           '&.Mui-selected': {
-            background: 'linear-gradient(135deg, rgba(0, 135, 255, 0.12) 0%, rgba(16, 185, 129, 0.08) 100%)',
-            backdropFilter: 'blur(20px)',
-            border: `1px solid ${tokens.color.primary[500]}40`,
+            background: tokens.color.primary[50],
+            border: `1px solid ${tokens.color.primary[200]}`,
             color: tokens.color.primary[700],
-            boxShadow: `0 8px 32px ${tokens.color.primary[500]}20, inset 0 1px 0 rgba(255, 255, 255, 0.3)`,
-            transform: sidebarCollapsed ? 'scale(1.1)' : 'translateX(8px)',
+            transform: sidebarCollapsed ? 'scale(1.02)' : 'translateX(4px)',
             fontWeight: 600,
-            
+
             '&:hover': {
-              background: 'linear-gradient(135deg, rgba(0, 135, 255, 0.16) 0%, rgba(16, 185, 129, 0.12) 100%)',
-              transform: sidebarCollapsed ? 'scale(1.12)' : 'translateX(8px) scale(1.02)',
-              boxShadow: `0 12px 40px ${tokens.color.primary[500]}25, inset 0 1px 0 rgba(255, 255, 255, 0.4)`,
+              background: tokens.color.primary[100],
             },
-            
+
             '& .MuiListItemIcon-root': {
               color: tokens.color.primary[600],
             },
-            
-            '&::after': {
-              opacity: 1,
-            }
           },
 
           // Disabled state
@@ -256,28 +222,13 @@ export const SmartSidebar: React.FC = () => {
             left: 0,
             width: 3,
             height: 0,
-            background: `linear-gradient(180deg, ${tokens.color.primary[500]} 0%, ${tokens.color.success[500]} 100%)`,
+            background: tokens.color.primary[500],
             borderRadius: '0 2px 2px 0',
             opacity: 0,
             transform: 'translateY(-50%) scaleX(0)',
             transformOrigin: 'left center',
             transition: createTransition(['opacity', 'height', 'transform'], 'fast'),
             zIndex: 1,
-          },
-
-          // Glow effect for active items
-          '&::after': {
-            content: '""',
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: `radial-gradient(ellipse at center, ${tokens.color.primary[500]}08 0%, transparent 70%)`,
-            opacity: 0,
-            transition: createTransition('opacity', 'fast'),
-            pointerEvents: 'none',
-            borderRadius: 'inherit',
           },
 
           '&:hover::before': {
@@ -327,15 +278,12 @@ export const SmartSidebar: React.FC = () => {
                   badgeContent={item.badge}
                   sx={{
                     '& .MuiBadge-badge': {
-                      ...glassPresets.medium,
-                      background: `linear-gradient(135deg, ${tokens.color.primary[500]} 0%, ${tokens.color.success[500]} 100%)`,
+                      background: tokens.color.primary[500],
                       color: 'white',
                       fontWeight: 700,
                       fontSize: '0.7rem',
                       height: 18,
                       minWidth: 18,
-                      border: `1px solid ${tokens.color.borders.glass}`,
-                      boxShadow: tokens.shadow.glass.primary,
                     }
                   }}
                 >
@@ -416,15 +364,12 @@ export const SmartSidebar: React.FC = () => {
             sx: {
               zIndex: theme.zIndex.tooltip + 10, // Ensure tooltip is above header
               '& .MuiTooltip-tooltip': {
-                ...glassPresets.strong,
-                borderRadius: tokens.spacing.radius.xl,
-                border: `1px solid ${tokens.color.borders.glass}`,
-                boxShadow: tokens.shadow.component.tooltip,
-                backdropFilter: 'blur(25px)',
+                background: tokens.color.neutral[800],
+                borderRadius: tokens.spacing.radius.md,
                 maxWidth: 200,
               },
               '& .MuiTooltip-arrow': {
-                color: 'rgba(248, 250, 252, 0.95)',
+                color: tokens.color.neutral[800],
               },
             },
           }}
@@ -601,46 +546,27 @@ export const SmartSidebar: React.FC = () => {
 
     return (
       <Box sx={{ px: 2, py: 1.5, mb: 2.5 }}>
-        <Box 
-          sx={{ 
-            ...createGlassCard('light', 'medium', tokens.spacing.radius.xxl),
+        <Box
+          sx={{
             p: 2.5,
-            border: `1px solid ${tokens.color.primary[500]}30`,
-            background: `linear-gradient(135deg, ${tokens.color.primary[500]}06 0%, ${tokens.color.success[500]}04 50%, ${tokens.color.secondary[500]}03 100%)`,
-            position: 'relative',
-            overflow: 'hidden',
-            
-            '&::before': {
-              content: '""',
-              position: 'absolute',
-              top: -1,
-              left: -1,
-              right: -1,
-              bottom: -1,
-              background: `linear-gradient(135deg, ${tokens.color.primary[500]}20 0%, ${tokens.color.success[500]}15 100%)`,
-              borderRadius: 'inherit',
-              zIndex: -1,
-            },
+            borderRadius: tokens.spacing.radius.lg,
+            border: `1px solid ${tokens.color.neutral[200]}`,
+            background: tokens.color.neutral[100],
           }}
         >
-          {/* Header with animation */}
-          <Box display="flex" alignItems="center" gap={1.5} mb={2}>            
+          {/* Header */}
+          <Box display="flex" alignItems="center" gap={1.5} mb={2}>
             <Box sx={{
               p: 1,
-              borderRadius: tokens.spacing.radius.lg,
-              background: `linear-gradient(135deg, ${tokens.color.primary[500]}15 0%, ${tokens.color.success[500]}10 100%)`,
+              borderRadius: tokens.spacing.radius.md,
+              background: tokens.color.primary[100],
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
             }}>
-              <AutoAwesome sx={{ 
-                fontSize: 18, 
+              <AutoAwesome sx={{
+                fontSize: 18,
                 color: tokens.color.primary[600],
-                animation: 'sparkle 2s ease-in-out infinite',
-                '@keyframes sparkle': {
-                  '0%, 100%': { transform: 'scale(1) rotate(0deg)' },
-                  '50%': { transform: 'scale(1.1) rotate(180deg)' },
-                },
               }} />
             </Box>
             <Box>
@@ -683,17 +609,16 @@ export const SmartSidebar: React.FC = () => {
                   alignItems: 'center',
                   gap: 1.5,
                   p: 1.5,
-                  borderRadius: tokens.spacing.radius.xl,
+                  borderRadius: tokens.spacing.radius.md,
                   cursor: 'pointer',
                   transition: createTransition(['background', 'transform'], 'fast'),
                   mb: index < suggestions.length - 1 ? 1 : 0,
                   border: '1px solid transparent',
-                  
+
                   '&:hover': {
-                    background: tokens.color.glass.primaryGlass,
-                    transform: 'translateX(4px) scale(1.02)',
-                    border: `1px solid ${tokens.color.primary[500]}20`,
-                    boxShadow: `0 4px 20px ${tokens.color.primary[500]}15`,
+                    background: tokens.color.primary[50],
+                    transform: 'translateX(2px)',
+                    border: `1px solid ${tokens.color.primary[200]}`,
                   }
                 }}
               >
@@ -749,22 +674,11 @@ export const SmartSidebar: React.FC = () => {
         height: '100%',
         display: 'flex',
         flexDirection: 'column',
-        ...sidebarGlassStyle,
+        ...sidebarStyle,
         position: 'relative',
-        
+
         // Add top padding to account for header floating above
         paddingTop: isMobile ? 0 : `${headerHeight}px`,
-        
-        '&::before': {
-          content: '""',
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'linear-gradient(180deg, rgba(0, 135, 255, 0.02) 0%, rgba(16, 185, 129, 0.02) 100%)',
-          pointerEvents: 'none',
-        },
       }}
     >
       {/* Smart Suggestions */}
@@ -786,11 +700,11 @@ export const SmartSidebar: React.FC = () => {
             background: 'transparent',
           },
           '&::-webkit-scrollbar-thumb': {
-            background: tokens.color.glass.medium,
+            background: tokens.color.neutral[300],
             borderRadius: '3px',
           },
           '&::-webkit-scrollbar-thumb:hover': {
-            background: tokens.color.glass.strong,
+            background: tokens.color.neutral[400],
           },
         }}
       >
@@ -799,47 +713,33 @@ export const SmartSidebar: React.FC = () => {
         </List>
       </Box>
 
-      {/* Modern Enhanced Footer */}
+      {/* Footer */}
       <Fade in={!sidebarCollapsed} timeout={300}>
         <Box
           sx={{
             p: !sidebarCollapsed ? 2.5 : 0,
-            borderTop: !sidebarCollapsed ? `1px solid ${tokens.color.borders.glass}` : 'none',
-            ...glassPresets.strong,
-            position: 'relative',
-            overflow: 'hidden',
-            
-            '&::before': {
-              content: '""',
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              height: 1,
-              background: `linear-gradient(90deg, transparent 0%, ${tokens.color.primary[500]}40 50%, transparent 100%)`,
-            },
+            borderTop: !sidebarCollapsed ? `1px solid ${tokens.color.neutral[200]}` : 'none',
+            background: tokens.color.neutral[100],
           }}
         >
           {!sidebarCollapsed && (
             <>
               {/* User Profile Section */}
-              <Box 
-                display="flex" 
-                alignItems="center" 
-                gap={2.5} 
+              <Box
+                display="flex"
+                alignItems="center"
+                gap={2.5}
                 mb={2.5}
                 sx={{
                   p: 1.5,
-                  borderRadius: tokens.spacing.radius.xl,
-                  background: 'rgba(255, 255, 255, 0.5)',
-                  backdropFilter: 'blur(10px)',
-                  border: `1px solid ${tokens.color.borders.glass}`,
-                  transition: createTransition(['background', 'transform'], 'fast'),
+                  borderRadius: tokens.spacing.radius.md,
+                  background: 'white',
+                  border: `1px solid ${tokens.color.neutral[200]}`,
+                  transition: createTransition(['background'], 'fast'),
                   cursor: 'pointer',
-                  
+
                   '&:hover': {
-                    background: 'rgba(255, 255, 255, 0.7)',
-                    transform: 'translateY(-1px)',
+                    background: tokens.color.neutral[50],
                   }
                 }}
                 onClick={() => navigate('/settings/account')}
@@ -848,11 +748,9 @@ export const SmartSidebar: React.FC = () => {
                   sx={{
                     width: 40,
                     height: 40,
-                    background: tokens.color.backgrounds.primaryGradient,
+                    background: tokens.color.primary[500],
                     fontSize: '0.875rem',
                     fontWeight: 700,
-                    border: `2px solid ${tokens.color.borders.glass}`,
-                    boxShadow: tokens.shadow.glass.primary,
                   }}
                 >
                   {user?.first_name?.[0] || user?.email?.[0] || 'U'}
@@ -892,15 +790,14 @@ export const SmartSidebar: React.FC = () => {
                       navigate('/settings');
                     }}
                     sx={{
-                      ...glassPresets.light,
                       width: 32,
                       height: 32,
-                      borderRadius: tokens.spacing.radius.lg,
-                      transition: createTransition(['background', 'transform'], 'fast'),
-                      
+                      borderRadius: tokens.spacing.radius.md,
+                      background: tokens.color.neutral[100],
+                      transition: createTransition(['background'], 'fast'),
+
                       '&:hover': {
-                        ...glassPresets.medium,
-                        transform: 'scale(1.1)',
+                        background: tokens.color.neutral[200],
                       }
                     }}
                   >
@@ -994,12 +891,12 @@ export const SmartSidebar: React.FC = () => {
             background: 'transparent',
           },
           '&::-webkit-scrollbar-thumb': {
-            background: tokens.color.glass.medium,
+            background: tokens.color.neutral[300],
             borderRadius: 3,
             border: 'none',
           },
           '&::-webkit-scrollbar-thumb:hover': {
-            background: tokens.color.glass.strong,
+            background: tokens.color.neutral[400],
           },
           
           // Smooth reveal animation
