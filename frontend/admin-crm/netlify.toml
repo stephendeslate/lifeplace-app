@@ -1,6 +1,6 @@
-# lifeplace-app/frontend/client-portal/netlify.toml
+# lifeplace-app/frontend/admin-crm/netlify.toml
 [build]
-  base = "frontend/client-portal"
+  base = "frontend/admin-crm"
   publish = "dist"
   command = "npm run build"
 
@@ -13,5 +13,5 @@
   status = 200
 
 [context.production.environment]
-  VITE_API_URL = "https://your-backend-app.railway.app"
+  VITE_API_URL = "https://lifeplace-api.fly.dev"
   VITE_APP_ENV = "production"

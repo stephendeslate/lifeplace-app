@@ -13,7 +13,7 @@ from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
-# Use sessions cache (Redis database 0)
+# Use sessions cache (key prefix: lifeplace:session:)
 session_cache = caches['sessions']
 
 class BookingFlowSessionService:

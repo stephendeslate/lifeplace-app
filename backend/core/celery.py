@@ -17,20 +17,21 @@ app.config_from_object('django.conf:settings', namespace='CELERY')
 # Load task modules from all registered Django apps.
 app.autodiscover_tasks()
 
-# Configure Redis as the message broker for Celery
-# Redis database allocation:
-# DB 0: Django cache (default)
-# DB 1: Celery broker
-# DB 2: Celery results
-# DB 3: Django Channels (WebSocket)
-# DB 4: Sessions cache
-# DB 5: Analytics cache
-redis_url = getattr(settings, 'REDIS_URL', 'redis://localhost:6379')
+# =============================================================================
+# CELERY REDIS CONFIGURATION (Upstash Compatible - Single Database)
+# =============================================================================
+# Upstash only supports a single Redis database (DB 0). All isolation is
+# achieved through key prefixes instead of separate databases.
+#
+# Key prefixes are configured in Django settings:
+# - Broker: lifeplace:celery:
+# - Results: lifeplace:celery-results:
+#
+# The broker_url and result_backend are inherited from Django settings
+# via the CELERY namespace (CELERY_BROKER_URL, CELERY_RESULT_BACKEND).
+# =============================================================================
+
 app.conf.update(
-    # Broker configuration
-    broker_url=redis_url + '/1',  # Use Redis database 1 for Celery broker
-    result_backend=redis_url + '/2',  # Use Redis database 2 for results
-    
     # Task execution settings
     task_serializer='json',
     accept_content=['json'],

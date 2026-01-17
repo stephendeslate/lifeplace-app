@@ -13,5 +13,5 @@
   status = 200
 
 [context.production.environment]
-  VITE_API_URL = "https://your-backend-app.railway.app"
+  VITE_API_URL = "https://lifeplace-api.fly.dev"
   VITE_APP_ENV = "production"

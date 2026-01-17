@@ -305,7 +305,27 @@ COMMUNICATIONS_ENFORCE_WEBHOOK_SIGNATURE = not DEBUG
 # Brevo webhook secret (should be set in environment for production)
 BREVO_WEBHOOK_SECRET = os.getenv('BREVO_WEBHOOK_SECRET', None)
 
-# Cache configuration with Redis
+# =============================================================================
+# REDIS CONFIGURATION (Upstash Compatible - Single Database)
+# =============================================================================
+# Upstash only supports a single Redis database (DB 0). All isolation is
+# achieved through key prefixes instead of separate databases.
+#
+# KEY PREFIX REFERENCE:
+# ┌─────────────────────────────────────────────────────────────────────────┐
+# │ Service              │ Key Prefix                  │ Purpose            │
+# ├─────────────────────────────────────────────────────────────────────────┤
+# │ Django Cache         │ lifeplace:cache:            │ General app cache  │
+# │ Django Sessions      │ lifeplace:session:          │ User sessions      │
+# │ Analytics Cache      │ lifeplace:analytics:        │ Analytics data     │
+# │ Django Channels      │ lifeplace:channels:         │ WebSocket layers   │
+# │ Celery Broker        │ lifeplace:celery:           │ Task queue         │
+# │ Celery Results       │ lifeplace:celery-results:   │ Task results       │
+# └─────────────────────────────────────────────────────────────────────────┘
+#
+# All services use the same REDIS_URL without database suffix (e.g., /0, /1).
+# =============================================================================
+
 REDIS_URL = os.getenv('REDIS_URL', 'redis://localhost:6379')
 
 # Detect if using SSL (Upstash uses rediss:// for secure connections)
@@ -325,10 +345,26 @@ if REDIS_USE_SSL:
 import urllib.parse
 redis_parsed = urllib.parse.urlparse(REDIS_URL)
 
+# Ensure REDIS_URL doesn't have a database suffix (Upstash compatibility)
+# Strip any existing database number from the URL
+if redis_parsed.path and redis_parsed.path not in ('', '/'):
+    # URL has a database number, strip it for Upstash compatibility
+    REDIS_URL_CLEAN = f"{redis_parsed.scheme}://"
+    if redis_parsed.username:
+        REDIS_URL_CLEAN += f"{redis_parsed.username}"
+        if redis_parsed.password:
+            REDIS_URL_CLEAN += f":{redis_parsed.password}"
+        REDIS_URL_CLEAN += "@"
+    REDIS_URL_CLEAN += f"{redis_parsed.hostname}"
+    if redis_parsed.port:
+        REDIS_URL_CLEAN += f":{redis_parsed.port}"
+else:
+    REDIS_URL_CLEAN = REDIS_URL
+
 CACHES = {
     'default': {
         'BACKEND': 'django_redis.cache.RedisCache',
-        'LOCATION': REDIS_URL + '/0',  # Use Redis database 0
+        'LOCATION': REDIS_URL_CLEAN,  # Upstash: No database suffix needed
         'OPTIONS': {
             'CLIENT_CLASS': 'django_redis.client.DefaultClient',
             'CONNECTION_POOL_KWARGS': REDIS_CONNECTION_POOL_KWARGS,
@@ -339,27 +375,27 @@ CACHES = {
             'COMPRESSOR': 'django_redis.compressors.zlib.ZlibCompressor',  # Compress cached data
             'IGNORE_EXCEPTIONS': True,  # Fallback gracefully if Redis is down
         },
-        'KEY_PREFIX': 'lifeplace:cache',  # Prefix all cache keys with namespace
+        'KEY_PREFIX': 'lifeplace:cache',  # Isolates general cache keys
         'TIMEOUT': 300,  # Default timeout 5 minutes
     },
     'sessions': {
         'BACKEND': 'django_redis.cache.RedisCache',
-        'LOCATION': REDIS_URL + '/4',  # Use Redis database 4 (Sessions)
+        'LOCATION': REDIS_URL_CLEAN,  # Upstash: No database suffix needed
         'OPTIONS': {
             'CLIENT_CLASS': 'django_redis.client.DefaultClient',
             'CONNECTION_POOL_KWARGS': REDIS_CONNECTION_POOL_KWARGS,
         },
-        'KEY_PREFIX': 'lifeplace:session',  # Prefix with namespace to avoid collisions
+        'KEY_PREFIX': 'lifeplace:session',  # Isolates session keys
         'TIMEOUT': 86400,  # Sessions last 24 hours
     },
     'analytics': {
         'BACKEND': 'django_redis.cache.RedisCache',
-        'LOCATION': REDIS_URL + '/5',  # Use Redis database 5 (Analytics cache)
+        'LOCATION': REDIS_URL_CLEAN,  # Upstash: No database suffix needed
         'OPTIONS': {
             'CLIENT_CLASS': 'django_redis.client.DefaultClient',
             'CONNECTION_POOL_KWARGS': REDIS_CONNECTION_POOL_KWARGS,
         },
-        'KEY_PREFIX': 'lifeplace:analytics',  # Prefix with namespace to avoid collisions
+        'KEY_PREFIX': 'lifeplace:analytics',  # Isolates analytics keys
         'TIMEOUT': 3600,  # Analytics cache for 1 hour
     },
 }
@@ -368,12 +404,13 @@ CACHES = {
 SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
 SESSION_CACHE_ALIAS = 'sessions'
 
-# Django Channels Layer Configuration
+# Django Channels Layer Configuration (Upstash Compatible)
 CHANNEL_LAYERS = {
     'default': {
         'BACKEND': 'channels_redis.core.RedisChannelLayer',
         'CONFIG': {
-            'hosts': [REDIS_URL + '/3'],  # Use Redis database 3 (Django Channels)
+            'hosts': [REDIS_URL_CLEAN],  # Upstash: No database suffix needed
+            'prefix': 'lifeplace:channels:',  # Isolates WebSocket channel keys
             'capacity': 1500,  # Maximum number of messages to buffer in each channel
             'expiry': 60,  # How long to keep message in seconds
         },
@@ -573,15 +610,11 @@ if DEBUG:
     LOGGING['loggers']['core.domains.notifications']['level'] = 'DEBUG'
     LOGGING['loggers']['']['level'] = 'INFO'
 
-# Celery Configuration
-# Redis database allocation:
-# DB 0: Django cache (default)
-# DB 1: Celery broker
-# DB 2: Celery results
-# DB 3: Django Channels (WebSocket)
-# DB 4: Sessions cache
-CELERY_BROKER_URL = REDIS_URL + '/1'  # Use Redis database 1 (Celery broker)
-CELERY_RESULT_BACKEND = REDIS_URL + '/2'  # Use Redis database 2 (Celery results)
+# Celery Configuration (Upstash Compatible - Single Database)
+# All Celery keys are isolated via key prefixes instead of separate databases.
+# See Redis key prefix reference at the top of the Redis configuration section.
+CELERY_BROKER_URL = REDIS_URL_CLEAN  # Upstash: No database suffix needed
+CELERY_RESULT_BACKEND = REDIS_URL_CLEAN  # Upstash: No database suffix needed
 CELERY_TIMEZONE = TIME_ZONE
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_ACCEPT_CONTENT = ['json']
@@ -590,6 +623,15 @@ CELERY_TASK_ALWAYS_EAGER = False  # Set to True for synchronous testing
 CELERY_TASK_EAGER_PROPAGATES = True
 CELERY_WORKER_SEND_TASK_EVENTS = True
 CELERY_TASK_SEND_SENT_EVENT = True
+
+# Celery key prefix configuration (Upstash compatibility)
+# These prefixes isolate Celery keys from other Redis data in the same database
+CELERY_BROKER_TRANSPORT_OPTIONS = {
+    'global_keyprefix': 'lifeplace:celery:',  # Prefix for all broker keys
+}
+CELERY_RESULT_BACKEND_TRANSPORT_OPTIONS = {
+    'global_keyprefix': 'lifeplace:celery-results:',  # Prefix for all result keys
+}
 
 # Add SSL configuration for Celery if using rediss://
 if REDIS_USE_SSL:
