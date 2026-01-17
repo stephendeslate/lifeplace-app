@@ -180,16 +180,14 @@ jobs:
         cd frontend/admin-crm
         npm run build
 
-    - name: Deploy to Netlify
-      uses: nwtgck/actions-netlify@v3.0
+    - name: Deploy to Cloudflare Pages
+      uses: cloudflare/pages-action@v1
       with:
-        publish-dir: './frontend/admin-crm/dist'
-        production-branch: main
-        production-deploy: true
-        netlify-config-path: './frontend/admin-crm/netlify.toml'
-      env:
-        NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-        NETLIFY_SITE_ID: ${{ secrets.NETLIFY_ADMIN_SITE_ID }}
+        apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        projectName: lifeplace-admin
+        directory: frontend/admin-crm/dist
+        gitHubToken: ${{ secrets.GITHUB_TOKEN }}
 
   # Job 4: Deploy Client Portal (only on main branch)
   deploy-client-portal:
@@ -219,16 +217,14 @@ jobs:
         cd frontend/client-portal
         npm run build
 
-    - name: Deploy to Netlify
-      uses: nwtgck/actions-netlify@v3.0
+    - name: Deploy to Cloudflare Pages
+      uses: cloudflare/pages-action@v1
       with:
-        publish-dir: './frontend/client-portal/dist'
-        production-branch: main
-        production-deploy: true
-        netlify-config-path: './frontend/client-portal/netlify.toml'
-      env:
-        NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-        NETLIFY_SITE_ID: ${{ secrets.NETLIFY_CLIENT_SITE_ID }}
+        apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        projectName: lifeplace-client
+        directory: frontend/client-portal/dist
+        gitHubToken: ${{ secrets.GITHUB_TOKEN }}
 
   # Job 5: Notify on Success/Failure
   notify:
@@ -240,7 +236,7 @@ jobs:
     - name: Deployment Status
       run: |
         if [[ "${{ needs.deploy-admin-crm.result }}" == "success" && "${{ needs.deploy-client-portal.result }}" == "success" ]]; then
-          echo "✅ Frontend deployments successful! Backend is deployed via Fly.io."
+          echo "✅ Frontend deployments to Cloudflare Pages successful! Backend is deployed via Fly.io."
         else
           echo "❌ Some deployments failed"
           exit 1

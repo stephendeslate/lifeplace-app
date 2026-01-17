@@ -14,7 +14,7 @@ afterEach(() => {
 // Mock environment variables
 Object.defineProperty(import.meta, 'env', {
   value: {
-    VITE_API_BASE_URL: 'http://localhost:8000/api',
+    VITE_API_URL: 'http://localhost:8000',
     VITE_STRIPE_PUBLIC_KEY: 'pk_test_mock',
     VITE_ENV: 'test',
     MODE: 'test',
