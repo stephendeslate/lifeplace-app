@@ -1,14 +1,15 @@
 # LifePlace Pre-Production TODO List
 
 **Generated:** 2025-12-29
-**Last Updated:** 2026-01-16 (Comprehensive verification - all systems audited)
+**Last Updated:** 2026-01-16
 **Status:** Complete production roadmap for Backend, Admin-CRM, Client-Portal, and Mobile App
+**Target Platform:** Fly.io + Fly Postgres + Upstash + Netlify
 
 ---
 
 ## Overview
 
-This document contains **everything required** to deploy LifePlace to production. Items are verified against actual codebase analysis.
+This document contains **everything required** to deploy LifePlace to production.
 
 | System | Current State | Blocking Issues |
 |--------|--------------|-----------------|
@@ -29,11 +30,12 @@ These accounts must be created before deployment:
 
 | Service | Purpose | Cost | Action |
 |---------|---------|------|--------|
+| Fly.io | Backend Hosting | ~$19/mo | Create account, install CLI |
+| Upstash | Redis Cache/Queue | $0-5/mo | Create account, create Redis database |
 | Stripe | Payments | 2.9% + $0.30/txn | Create account, complete business verification |
-| Brevo | Email/SMS | Free-$25/mo | Create account, verify sender identity |
+| Brevo | Email/SMS | Free-$9/mo | Create account, verify sender identity |
 | Cloudflare | R2 Storage | ~$5/mo | Create account for file storage |
 | Sentry | Error Tracking | Free-$29/mo | Create Django + React projects |
-| Render | Backend Hosting | ~$94/mo | Create account |
 | Netlify | Frontend Hosting | Free-$19/mo | Create account |
 | Apple Developer | iOS App Store | $99/year | Enroll in developer program |
 | Google Play | Android Store | $25 one-time | Create developer account |
@@ -71,7 +73,7 @@ git push origin --force --all
 echo ".env.production" >> .gitignore
 ```
 
-**Never commit secrets to version control. Use environment variable injection in deployment.**
+**Never commit secrets to version control. Use Fly.io secrets for production.**
 
 ### P0-B1: Remove Debug Code (CRITICAL)
 
@@ -79,7 +81,7 @@ echo ".env.production" >> .gitignore
 
 | File | Issue | Action |
 |------|-------|--------|
-| `backend/core/domains/bookingflow/services/booking_session_service.py` | 75 `print()` statements (lines 158, 163, 172, 225, 230, 292, 300, 306, etc.) | Remove all print statements |
+| `backend/core/domains/bookingflow/services/booking_session_service.py` | 75 `print()` statements | Remove all print statements |
 
 ```bash
 # Find all print statements
@@ -92,8 +94,8 @@ grep -n "print(" backend/core/domains/bookingflow/services/booking_session_servi
 
 | File | Line | Fix |
 |------|------|-----|
-| `backend/core/domains/payments/services/gateway_service.py` | 227 | Use `FRONTEND_URL` env var |
-| `backend/core/domains/communications/context_service.py` | 429, 582, 609, 713, 778 | Use `FRONTEND_URL` env var |
+| `backend/core/domains/payments/services/gateway_service.py` | 227 | Use `CLIENT_FRONTEND_URL` env var |
+| `backend/core/domains/communications/context_service.py` | 429, 582, 609, 713, 778 | Use `CLIENT_FRONTEND_URL` env var |
 
 **Required Change:**
 ```python
@@ -125,7 +127,7 @@ INSTALLED_APPS = [
 **Step 3: Add R2 configuration to `backend/core/settings.py` (after line 192):**
 ```python
 # Cloud Storage Configuration (Production)
-if ENV == 'production':
+if IS_PRODUCTION:
     DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
     AWS_ACCESS_KEY_ID = os.getenv('R2_ACCESS_KEY_ID')
     AWS_SECRET_ACCESS_KEY = os.getenv('R2_SECRET_ACCESS_KEY')
@@ -142,42 +144,46 @@ if ENV == 'production':
 
 ### P0-B4: Backend Environment Variables
 
-**All required for production:**
+**All required for production (set via `fly secrets set`):**
 
-```env
+```bash
 # Core (CRITICAL - app won't start without these)
-SECRET_KEY=<generate-50-chars-random>
-JWT_SIGNING_KEY=<generate-64-chars-random>
-FIELD_ENCRYPTION_KEY=<generate-32-chars-random>
-ENV=production
-DEBUG=False
-DATABASE_URL=postgres://user:pass@host:5432/dbname
-REDIS_URL=redis://...
+fly secrets set SECRET_KEY="<generate-50-chars-random>"
+fly secrets set JWT_SIGNING_KEY="<generate-64-chars-random>"
+fly secrets set FIELD_ENCRYPTION_KEY="<generate-32-chars-random>"
+fly secrets set ENV=production
+fly secrets set DEBUG=False
+
+# Database (auto-set by fly postgres attach)
+# DATABASE_URL is set automatically
+
+# Redis (Upstash)
+fly secrets set REDIS_URL="rediss://default:xxxxx@xxxxx.upstash.io:6379"
 
 # Security (CRITICAL - frontend requests will be blocked)
-ALLOWED_HOSTS=api.yourdomain.com
-CSRF_TRUSTED_ORIGINS=https://api.yourdomain.com,https://admin.yourdomain.com,https://book.yourdomain.com
-CORS_ALLOWED_ORIGINS=https://admin.yourdomain.com,https://book.yourdomain.com
+fly secrets set ALLOWED_HOSTS="api.yourdomain.com"
+fly secrets set CSRF_TRUSTED_ORIGINS="https://api.yourdomain.com,https://admin.yourdomain.com,https://book.yourdomain.com"
+fly secrets set CORS_ALLOWED_ORIGINS="https://admin.yourdomain.com,https://book.yourdomain.com"
 
 # Communications (required for emails/SMS)
-BREVO_API_KEY=xkeysib-xxxxx
-BREVO_WEBHOOK_SECRET=xxxxx
-DEFAULT_FROM_EMAIL=noreply@yourdomain.com
-DEFAULT_FROM_NAME=LifePlace
+fly secrets set BREVO_API_KEY="xkeysib-xxxxx"
+fly secrets set BREVO_WEBHOOK_SECRET="xxxxx"
+fly secrets set DEFAULT_FROM_EMAIL="noreply@yourdomain.com"
+fly secrets set DEFAULT_FROM_NAME="LifePlace"
 
 # Monitoring (recommended)
-SENTRY_DSN=https://xxxxx@sentry.io/xxxxx
+fly secrets set SENTRY_DSN="https://xxxxx@sentry.io/xxxxx"
 
 # Cloud Storage (CRITICAL - files will be lost without this)
-R2_ACCESS_KEY_ID=xxxxx
-R2_SECRET_ACCESS_KEY=xxxxx
-R2_BUCKET_NAME=lifeplace-media
-R2_ENDPOINT_URL=https://xxxxx.r2.cloudflarestorage.com
-R2_PUBLIC_URL=pub-xxxxx.r2.dev
+fly secrets set R2_ACCESS_KEY_ID="xxxxx"
+fly secrets set R2_SECRET_ACCESS_KEY="xxxxx"
+fly secrets set R2_BUCKET_NAME="lifeplace-media"
+fly secrets set R2_ENDPOINT_URL="https://xxxxx.r2.cloudflarestorage.com"
+fly secrets set R2_PUBLIC_URL="pub-xxxxx.r2.dev"
 
 # Frontend URLs (for email links)
-ADMIN_FRONTEND_URL=https://admin.yourdomain.com
-CLIENT_FRONTEND_URL=https://book.yourdomain.com
+fly secrets set ADMIN_FRONTEND_URL="https://admin.yourdomain.com"
+fly secrets set CLIENT_FRONTEND_URL="https://book.yourdomain.com"
 ```
 
 ---
@@ -186,12 +192,22 @@ CLIENT_FRONTEND_URL=https://book.yourdomain.com
 
 **Time:** 2-3 hours
 
-### P0-B5: Run Migrations & Seed Data
+### P0-B5: Create Fly Postgres & Run Migrations
 
 ```bash
-cd backend
-source ../venv/bin/activate
-python manage.py migrate
+# Create Postgres cluster in Singapore
+fly postgres create \
+  --name lifeplace-db \
+  --region sin \
+  --vm-size shared-cpu-1x \
+  --initial-cluster-size 1 \
+  --volume-size 10
+
+# Attach to your app (sets DATABASE_URL automatically)
+fly postgres attach lifeplace-db --app lifeplace-api
+
+# Run migrations
+fly ssh console -C "python manage.py migrate"
 ```
 
 **This automatically creates:**
@@ -207,7 +223,7 @@ python manage.py migrate
 ### P0-B6: Create Superuser
 
 ```bash
-python manage.py createsuperuser
+fly ssh console -C "python manage.py createsuperuser"
 ```
 
 ### P0-B7: Configure Stripe in Django Admin (CRITICAL)
@@ -241,12 +257,13 @@ python manage.py createsuperuser
 
 Or load fixtures if available:
 ```bash
-python manage.py loaddata fixtures/products.json
+fly ssh console -C "python manage.py loaddata fixtures/products.json"
 ```
 
 ### P0-B9: Verify Data Setup
 
 ```bash
+fly ssh console
 python manage.py shell
 ```
 ```python
@@ -302,7 +319,7 @@ Add these DNS records:
 Also configure webhook:
 1. Brevo Dashboard → Settings → Webhooks
 2. Add endpoint: `https://api.yourdomain.com/api/communications/webhooks/brevo/`
-3. Copy secret to `BREVO_WEBHOOK_SECRET` env var
+3. Copy secret to `BREVO_WEBHOOK_SECRET` via `fly secrets set`
 
 ### P1-B3: Cloudflare R2 Bucket Setup
 
@@ -312,13 +329,22 @@ Also configure webhook:
    - Permissions: Object Read & Write
    - Specify bucket: `lifeplace-media`
 4. Enable public access in bucket settings
-5. Copy credentials to environment variables
+5. Copy credentials and set via `fly secrets set`
 
-### P1-B4: DNS Configuration
+### P1-B4: Upstash Redis Setup
+
+1. Upstash Console → Create Database
+2. Name: `lifeplace-redis`
+3. Region: Singapore (ap-southeast-1)
+4. TLS: Enabled (default)
+5. Copy the Redis URL (starts with `rediss://`)
+6. Set via `fly secrets set REDIS_URL="rediss://..."`
+
+### P1-B5: DNS Configuration
 
 | Type | Name | Value |
 |------|------|-------|
-| CNAME | `api` | `lifeplace-api.onrender.com` |
+| CNAME | `api` | `lifeplace-api.fly.dev` |
 | CNAME | `admin` | `admin-crm.netlify.app` |
 | CNAME | `book` | `client-portal.netlify.app` |
 
@@ -378,7 +404,7 @@ grep -rn "console\." frontend/client-portal/src/apis/
 
 ### P0-F4: Frontend Environment Variables
 
-**Both apps missing Stripe key in .env.production:**
+**Both apps need `.env.production`:**
 
 **`frontend/admin-crm/.env.production`:**
 ```env
@@ -517,36 +543,78 @@ eas credentials
 
 **Time:** 2-4 hours
 
-### Backend Deployment (Render)
+### Backend Deployment (Fly.io)
 
-**Service 1: Web API**
-- Name: `lifeplace-api`
-- Start Command: `daphne -b 0.0.0.0 -p $PORT core.asgi:application`
-- Health Check: `/api/health/`
-- Plan: Standard ($25/mo)
-
-**Service 2: Celery Worker**
-- Name: `lifeplace-worker`
-- Start Command: `celery -A core worker --loglevel=info --queues=celery,communications,notifications,analytics,events,payments,contracts,sales`
-- Plan: Standard ($25/mo)
-
-**Service 3: Celery Beat**
-- Name: `lifeplace-beat`
-- Start Command: `celery -A core beat --loglevel=info`
-- Plan: Starter ($7/mo)
-- **WARNING:** Only run ONE instance to avoid duplicate tasks
-
-**Database:**
-- PostgreSQL Basic ($20/mo)
-
-**Redis:**
-- Starter ($10/mo)
-
-**Post-Deploy:**
+**Step 1: Install Fly CLI**
 ```bash
-# In Render shell
-python manage.py migrate
-python manage.py createsuperuser
+# macOS
+brew install flyctl
+
+# Linux
+curl -L https://fly.io/install.sh | sh
+```
+
+**Step 2: Create and Configure App**
+```bash
+cd backend
+fly auth login
+fly apps create lifeplace-api --org personal
+```
+
+**Step 3: Create fly.toml**
+```toml
+app = "lifeplace-api"
+primary_region = "sin"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  ENV = "production"
+  PORT = "8000"
+
+[http_service]
+  internal_port = 8000
+  force_https = true
+  auto_stop_machines = false
+  auto_start_machines = true
+  min_machines_running = 1
+
+[[http_service.checks]]
+  grace_period = "10s"
+  interval = "30s"
+  method = "GET"
+  path = "/api/health/"
+  timeout = "5s"
+
+[[vm]]
+  cpu_kind = "shared"
+  cpus = 1
+  memory_mb = 512
+```
+
+**Step 4: Create Postgres**
+```bash
+fly postgres create --name lifeplace-db --region sin
+fly postgres attach lifeplace-db
+```
+
+**Step 5: Set Secrets**
+```bash
+fly secrets set SECRET_KEY="..."
+fly secrets set JWT_SIGNING_KEY="..."
+# ... all other secrets from Phase 1
+```
+
+**Step 6: Deploy**
+```bash
+fly deploy
+```
+
+**Step 7: Run Migrations**
+```bash
+fly ssh console -C "python manage.py migrate"
+fly ssh console -C "python manage.py createsuperuser"
 ```
 
 ### Frontend Deployment (Netlify)
@@ -593,16 +661,16 @@ eas submit --platform android
 
 **Time:** 4-8 hours (if implementing local payment methods)
 
-### What's Already Configured for Philippines ✅
+### What's Already Configured for Philippines
 
 | Aspect | Status | Configuration |
 |--------|--------|---------------|
-| Currency (PHP) | ✅ Ready | ₱ symbol, 0 decimals, ₱29 Stripe minimum |
-| Timezone | ✅ Ready | Asia/Manila (UTC+8) |
-| Phone Format | ✅ Ready | +63 XXX XXX XXXX |
-| DPA Compliance | ✅ Ready | Full data subject rights, consent, breach notification |
-| 3D Secure | ✅ Ready | Properly handles card authentication |
-| Stripe PHP | ✅ Ready | Correct minimum charge, webhook handling |
+| Currency (PHP) | Ready | PHP symbol, 0 decimals, PHP29 Stripe minimum |
+| Timezone | Ready | Asia/Manila (UTC+8) |
+| Phone Format | Ready | +63 XXX XXX XXXX |
+| DPA Compliance | Ready | Full data subject rights, consent, breach notification |
+| 3D Secure | Ready | Properly handles card authentication |
+| Stripe PHP | Ready | Correct minimum charge, webhook handling |
 
 ### Payment Methods Gap (IMPORTANT)
 
@@ -618,38 +686,7 @@ eas submit --platform android
 2. **Integrate Paymongo** - Supports GCash, Maya, bank transfers
 3. **Integrate Xendit** - Alternative local payment gateway
 
-**If implementing local e-wallets:**
-```bash
-# Paymongo integration (recommended for Philippines)
-pip install paymongo
-
-# Add to requirements.txt
-paymongo==1.0.0
-```
-
 **Decision Required:** Document whether GCash/Maya will be Phase 1 or Phase 2 feature.
-
-### PayPal Integration Status
-
-**Current State:** PayPal webhooks have 4 TODO items - NOT FULLY IMPLEMENTED
-
-**Options:**
-1. Complete PayPal implementation (4-8 hours)
-2. Disable PayPal as payment option (30 minutes)
-
-**If disabling PayPal:**
-- Remove from PaymentGateway options in Django admin
-- Remove from frontend payment method selector
-
-### Chargeback Handling
-
-**Current State:** Not implemented (TODO in webhook processor)
-
-**Impact:** Disputed payments require manual handling
-
-**Minimum for Launch:**
-- Monitor Stripe dashboard manually for disputes
-- Implement automated handling in Phase 2
 
 ---
 
@@ -683,7 +720,7 @@ paymongo==1.0.0
 ### Before Going Live
 
 **Backend:**
-- [ ] All 15+ env vars set
+- [ ] All secrets set via `fly secrets set`
 - [ ] Migrations run successfully
 - [ ] 22 communication templates exist
 - [ ] 5 booking flows active
@@ -766,24 +803,25 @@ paymongo==1.0.0
 - App Store review: 1-7 days
 - Play Store review: 1-3 days
 
-**Note on Phase 7:** Time depends on whether you implement GCash/Maya (add 4-8 hours) or launch with cards only (0 hours).
-
 ---
 
 ## Monthly Operating Costs
 
 | Service | Cost |
 |---------|------|
-| Render API (Standard) | $25 |
-| Render Worker (Standard) | $25 |
-| Render Beat (Starter) | $7 |
-| PostgreSQL (Basic) | $20 |
-| Redis (Starter) | $10 |
-| Brevo (Starter) | $9 |
-| Cloudflare R2 | ~$5 |
+| Fly.io API Machine | ~$5 |
+| Fly.io WebSocket Machine | ~$3 |
+| Fly.io Worker Machine | ~$5 |
+| Fly.io Beat Machine | ~$2 |
+| Fly Postgres | ~$7 |
+| Upstash Redis | ~$0-5 |
+| Netlify (2 frontends) | $0 |
+| Brevo (Starter) | $0-9 |
+| Cloudflare R2 | ~$2-5 |
+| Sentry (Free) | $0 |
 | Apple Developer (annualized) | $8 |
 | Google Play (annualized) | $2 |
-| **Total** | **~$111/month** |
+| **Total** | **~$34-51/month** |
 
 **Variable Costs:**
 - Stripe: 2.9% + $0.30 per transaction
@@ -792,4 +830,4 @@ paymongo==1.0.0
 ---
 
 *Last updated: 2026-01-16*
-*Verified against actual codebase analysis*
+*Target Platform: Fly.io + Fly Postgres + Upstash + Netlify*

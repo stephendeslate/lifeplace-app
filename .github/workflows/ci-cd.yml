@@ -240,7 +240,7 @@ jobs:
     - name: Deployment Status
       run: |
         if [[ "${{ needs.deploy-admin-crm.result }}" == "success" && "${{ needs.deploy-client-portal.result }}" == "success" ]]; then
-          echo "✅ Frontend deployments successful! Backend deployed automatically by Railway."
+          echo "✅ Frontend deployments successful! Backend is deployed via Fly.io."
         else
           echo "❌ Some deployments failed"
           exit 1
