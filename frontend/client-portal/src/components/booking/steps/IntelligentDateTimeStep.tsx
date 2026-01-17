@@ -140,7 +140,7 @@ export const IntelligentDateTimeStep: React.FC<IntelligentDateTimeStepProps> = (
   // Subscribe to real-time availability updates via WebSocket
   const {
     isConnected: wsConnected,
-    selectedDateBlocked,
+    selectedDateBlocked: _selectedDateBlocked,
     clearBlockedDate,
   } = useAvailabilityWebSocket({
     enabled: true,

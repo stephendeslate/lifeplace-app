@@ -1,7 +1,8 @@
 // frontend/client-portal/src/test/utils/renderHook.tsx
-import React, { ReactNode } from 'react';
-import { renderHook, RenderHookOptions, RenderHookResult } from '@testing-library/react';
+import type { ReactNode } from 'react';
+import { renderHook, type RenderHookOptions, type RenderHookResult } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { vi } from 'vitest';
 
 // Create a test query client
 export const createTestQueryClient = () =>

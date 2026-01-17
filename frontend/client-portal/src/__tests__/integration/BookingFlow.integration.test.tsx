@@ -1,7 +1,7 @@
 // frontend/client-portal/src/__tests__/integration/BookingFlow.integration.test.tsx
 
 import React from 'react';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -174,7 +174,7 @@ const theme = createTheme();
 // Simplified booking flow test component
 const BookingFlowTest: React.FC = () => {
   const [currentStep, setCurrentStep] = React.useState(0);
-  const [selectedEventType, setSelectedEventType] = React.useState<number | null>(null);
+  const [_selectedEventType, setSelectedEventType] = React.useState<number | null>(null);
   const [selectedVenue, setSelectedVenue] = React.useState<number | null>(null);
   const [selectedPackage, setSelectedPackage] = React.useState<number | null>(null);
   const [selectedAddons, setSelectedAddons] = React.useState<number[]>([]);
@@ -191,7 +191,7 @@ const BookingFlowTest: React.FC = () => {
       try {
         const types = await BookingCoreApi.getEventTypes();
         setEventTypes(types);
-      } catch (err) {
+      } catch (_err) {
         setError('Failed to load event types');
       } finally {
         setIsLoading(false);
@@ -207,7 +207,7 @@ const BookingFlowTest: React.FC = () => {
       const venueData = await VenuesApi.getAvailableVenues();
       setVenues(venueData);
       setCurrentStep(1);
-    } catch (err) {
+    } catch (_err) {
       setError('Failed to start booking session');
     }
   };
@@ -261,7 +261,7 @@ const BookingFlowTest: React.FC = () => {
       await BookingCoreApi.completeSession('session-123');
       setIsComplete(true);
       setCurrentStep(8);
-    } catch (err) {
+    } catch (_err) {
       setError('Payment failed');
     }
   };

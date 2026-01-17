@@ -86,12 +86,12 @@ export const resetStripeMocks = () => {
  * Configure Stripe to return an error
  */
 export const mockStripeError = (errorMessage: string) => {
-  mockStripe.confirmPayment.mockResolvedValueOnce({
+  const errorResponse = {
     error: { message: errorMessage, type: 'card_error' },
-  });
-  mockStripe.confirmCardPayment.mockResolvedValueOnce({
-    error: { message: errorMessage, type: 'card_error' },
-  });
+    paymentIntent: undefined,
+  };
+  mockStripe.confirmPayment.mockResolvedValueOnce(errorResponse as never);
+  mockStripe.confirmCardPayment.mockResolvedValueOnce(errorResponse as never);
 };
 
 /**

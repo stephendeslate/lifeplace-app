@@ -166,7 +166,7 @@ const ContractFlowTest: React.FC = () => {
       try {
         const data = await contractsApi.getContracts();
         setContracts(data);
-      } catch (err) {
+      } catch (_err) {
         setError('Failed to load contracts');
       } finally {
         setIsLoading(false);
@@ -181,7 +181,7 @@ const ContractFlowTest: React.FC = () => {
       const data = await contractsApi.getContract(contractId);
       setSelectedContract(data);
       setDisclosureAccepted(data.disclosure_accepted || false);
-    } catch (err) {
+    } catch (_err) {
       setError('Failed to load contract');
     } finally {
       setIsLoading(false);
@@ -193,7 +193,7 @@ const ContractFlowTest: React.FC = () => {
     try {
       await contractsApi.acceptDisclosure(selectedContract.id);
       setDisclosureAccepted(true);
-    } catch (err) {
+    } catch (_err) {
       setError('Failed to accept disclosure');
     }
   };
@@ -209,7 +209,7 @@ const ContractFlowTest: React.FC = () => {
       await contractsApi.signContract(selectedContract.id, { signature: signatureData });
       setIsComplete(true);
       setShowSignatureDialog(false);
-    } catch (err) {
+    } catch (_err) {
       setError('Failed to sign contract');
     } finally {
       setIsSigning(false);
@@ -220,7 +220,7 @@ const ContractFlowTest: React.FC = () => {
     if (!selectedContract) return;
     try {
       await contractsApi.downloadContract(selectedContract.id);
-    } catch (err) {
+    } catch (_err) {
       setError('Failed to download contract');
     }
   };
