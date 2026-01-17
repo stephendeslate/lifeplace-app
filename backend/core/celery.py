@@ -168,22 +168,7 @@ app.conf.update(
             'schedule': 24 * 60 * 60,  # Daily
             'options': {'queue': 'notifications'}
         },
-        # Payment automation tasks
-        'process-autopay-installments': {
-            'task': 'core.domains.payments.tasks.process_due_autopay_installments',
-            'schedule': 24 * 60 * 60,  # Daily
-            'options': {'queue': 'payments'}
-        },
-        'send-payment-reminders': {
-            'task': 'core.domains.payments.tasks.send_payment_reminders',
-            'schedule': 24 * 60 * 60,  # Daily
-            'options': {'queue': 'payments'}
-        },
-        'process-overdue-payments': {
-            'task': 'core.domains.payments.tasks.process_overdue_payments',
-            'schedule': 24 * 60 * 60,  # Daily
-            'options': {'queue': 'payments'}
-        },
+        # Payment gateway health monitoring
         'check-gateway-health': {
             'task': 'core.domains.payments.tasks.check_gateway_health',
             'schedule': 15 * 60,  # Every 15 minutes
