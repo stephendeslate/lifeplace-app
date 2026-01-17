@@ -140,7 +140,7 @@ export const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
     clearDateUnavailableError();
     // Navigate back to the date/time step
     // Find the date_time step ID from the current flow
-    const dateTimeStep = state.currentFlow?.steps?.find(
+    const dateTimeStep = state.currentFlow?.enabled_steps?.find(
       (step: { step_type: string }) => step.step_type === 'date_time'
     );
     if (dateTimeStep) {
@@ -148,7 +148,7 @@ export const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
       // For now, we'll just reload the page which will restart the flow
       window.location.reload();
     }
-  }, [clearDateUnavailableError, state.currentFlow?.steps]);
+  }, [clearDateUnavailableError, state.currentFlow?.enabled_steps]);
 
   // Computed values
   const isCompleted = useMemo(() =>

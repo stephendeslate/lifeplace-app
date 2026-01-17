@@ -536,7 +536,7 @@ export const QuestionnaireStep: React.FC<QuestionnaireStepProps> = ({
           </FormControl>
         );
 
-      case 'guests':
+      case 'guests': {
         // Guest count field with optional categories
         const categories = field.options && field.options.length > 0 ? field.options : null;
 
@@ -594,6 +594,7 @@ export const QuestionnaireStep: React.FC<QuestionnaireStepProps> = ({
             inputProps={{ min: 0 }}
           />
         );
+      }
 
       default:
         return (

@@ -16,9 +16,6 @@ import {
   TextField,
   FormControl,
   FormControlLabel,
-  FormLabel,
-  RadioGroup,
-  Radio,
   Checkbox,
   Select,
   MenuItem,
@@ -191,19 +188,6 @@ const EventQuestionnaires: React.FC<EventQuestionnairesProps> = ({ eventId }) =>
           />
         );
 
-      case 'textarea':
-        return (
-          <TextField
-            fullWidth
-            multiline
-            rows={3}
-            value={value}
-            onChange={(e) => handleFieldChange(field.id, e.target.value)}
-            required={field.required}
-            helperText={field.help_text}
-          />
-        );
-
       case 'number':
         return (
           <TextField
@@ -319,29 +303,6 @@ const EventQuestionnaires: React.FC<EventQuestionnairesProps> = ({ eventId }) =>
                 </MenuItem>
               ))}
             </Select>
-            {field.help_text && (
-              <FormHelperText>{field.help_text}</FormHelperText>
-            )}
-          </FormControl>
-        );
-
-      case 'radio':
-        return (
-          <FormControl>
-            <FormLabel component="legend">{field.name}</FormLabel>
-            <RadioGroup
-              value={value}
-              onChange={(e) => handleFieldChange(field.id, e.target.value)}
-            >
-              {field.options?.map((option) => (
-                <FormControlLabel
-                  key={option}
-                  value={option}
-                  control={<Radio />}
-                  label={option}
-                />
-              ))}
-            </RadioGroup>
             {field.help_text && (
               <FormHelperText>{field.help_text}</FormHelperText>
             )}
