@@ -8,7 +8,7 @@ import {
   Paper,
   Link,
   Slide,
-  SlideProps,
+  type SlideProps,
 } from '@mui/material';
 import CookieIcon from '@mui/icons-material/Cookie';
 

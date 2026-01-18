@@ -1,0 +1,14 @@
+# Load Testing Dependencies for LifePlace
+# Install with: pip install -r requirements.txt
+
+# Core load testing framework
+locust>=2.24.0
+
+# WebSocket support for availability testing
+websocket-client>=1.7.0
+
+# Data generation for realistic test data
+Faker>=22.0.0
+
+# Environment variable management
+python-dotenv>=1.0.0

@@ -1,11 +1,10 @@
 // frontend/client-portal/src/components/contracts/__tests__/ContractSigningDialog.test.tsx
-import { render, screen, waitFor } from '../../../test/utils';
-import userEvent from '@testing-library/user-event';
+import { render, screen, waitFor as _waitFor } from '../../../test/utils';
+import _userEvent from '@testing-library/user-event';
 import ContractSigningDialog from '../ContractSigningDialog';
 import type { Contract } from '../../../types/contracts.types';
 
 import { vi } from 'vitest';
-/* eslint-disable @typescript-eslint/no-explicit-any */
 
 // Mock signed contract for testing
 const mockSignedContract = {
@@ -68,7 +67,7 @@ vi.mock('../../../apis/contracts.api', async (importOriginal) => {
 
 // Mock dependencies
 vi.mock('../EnhancedSignaturePad', () => ({
-  default: function MockEnhancedSignaturePad({ onSignatureChange }: any) {
+  default: function MockEnhancedSignaturePad({ onSignatureChange }: { onSignatureChange: (data: string) => void }) {
     return (
       <div data-testid="enhanced-signature-pad">
         <button onClick={() => onSignatureChange('mock-signature-data')}>

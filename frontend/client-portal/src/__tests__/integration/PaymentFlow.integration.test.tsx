@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import _userEvent from '@testing-library/user-event';
 import { vi } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter } from 'react-router-dom';
@@ -124,7 +124,7 @@ const mockPaymentMethods = [
   }
 ];
 
-const mockPaymentPlan = {
+const _mockPaymentPlan = {
   id: 1,
   event: 1,
   quote: 1,

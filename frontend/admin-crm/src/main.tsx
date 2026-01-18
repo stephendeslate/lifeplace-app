@@ -68,7 +68,7 @@ window.addEventListener('error', (event) => {
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <Sentry.ErrorBoundary
-      fallback={({ error, resetError }) => (
+      fallback={({ error, resetError }: { error: unknown; componentStack: string; eventId: string; resetError: () => void }) => (
         <div style={{
           display: 'flex',
           flexDirection: 'column',
@@ -111,7 +111,7 @@ createRoot(document.getElementById('root')!).render(
           )}
         </div>
       )}
-      onError={(error) => {
+      onError={(error: unknown) => {
         console.error('React Error Boundary caught error:', error);
       }}
     >
