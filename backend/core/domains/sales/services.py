@@ -389,12 +389,9 @@ class QuoteService:
                         try:
                             line_item = QuoteLineItem.objects.get(id=item_id, quote=quote)
 
-                            # Check if recalculation should be skipped (user override)
-                            skip_recalculation = item_data.pop('skip_recalculation', False)
-
-                            # Check if we should recalculate pricing
-                            # Skip if user explicitly overrode values
-                            should_recalculate = not skip_recalculation and (
+                            # Always recalculate pricing server-side when product or quantity changes
+                            # Security: Never allow client to skip price recalculation
+                            should_recalculate = (
                                 (product_id and product_id != line_item.product_id) or
                                 ('quantity' in item_data and item_data.get('quantity') != line_item.quantity and (product_id or line_item.product_id))
                             )

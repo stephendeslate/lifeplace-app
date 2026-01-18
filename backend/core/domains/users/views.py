@@ -712,7 +712,7 @@ def active_sessions(request):
                 jwt_auth.get_raw_token(jwt_auth.get_header(request))
             )
             current_token_jti = validated_token.get('jti')
-        except:
+        except Exception:
             pass
 
         for token in outstanding_tokens:

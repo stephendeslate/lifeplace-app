@@ -70,3 +70,194 @@ button:focus-visible {
     background-color: #f9f9f9;
   }
 }
+
+/* =============================================================================
+   Print Styles (Section 14.2)
+   ============================================================================= */
+
+@media print {
+  /* Reset colors for printing */
+  :root {
+    color: #000000 !important;
+    background-color: #ffffff !important;
+  }
+
+  /* Hide non-essential elements for print */
+  nav,
+  header:not(.printable),
+  footer:not(.printable),
+  aside,
+  .sidebar,
+  .navigation,
+  .nav-drawer,
+  .app-bar,
+  .toolbar,
+  .MuiAppBar-root,
+  .MuiDrawer-root,
+  .MuiBottomNavigation-root,
+  .MuiSpeedDial-root,
+  .MuiFab-root,
+  .no-print,
+  [data-no-print],
+  .print-hide {
+    display: none !important;
+  }
+
+  /* Expand main content area */
+  main,
+  .main-content,
+  .content-area,
+  .MuiContainer-root {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* Reset body */
+  body {
+    margin: 0;
+    padding: 0;
+    background: #ffffff !important;
+    color: #000000 !important;
+    font-size: 12pt;
+    line-height: 1.4;
+  }
+
+  /* Page setup */
+  @page {
+    margin: 1cm;
+    size: A4;
+  }
+
+  /* Page break control */
+  .page-break-before {
+    page-break-before: always;
+  }
+
+  .page-break-after {
+    page-break-after: always;
+  }
+
+  .avoid-page-break {
+    page-break-inside: avoid;
+  }
+
+  /* Tables for invoices */
+  table {
+    width: 100% !important;
+    border-collapse: collapse;
+    page-break-inside: avoid;
+  }
+
+  th,
+  td {
+    padding: 8px 12px;
+    text-align: left;
+    border: 1px solid #ddd;
+  }
+
+  th {
+    background-color: #f5f5f5 !important;
+    font-weight: bold;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Invoice-specific styles */
+  .invoice-container,
+  .receipt-container,
+  .contract-container {
+    padding: 20px;
+    background: #ffffff !important;
+  }
+
+  .invoice-header,
+  .receipt-header,
+  .contract-header {
+    margin-bottom: 30px;
+    page-break-inside: avoid;
+  }
+
+  .invoice-totals,
+  .receipt-totals {
+    page-break-inside: avoid;
+    margin-top: 20px;
+  }
+
+  /* Typography adjustments for print */
+  h1 {
+    font-size: 18pt;
+  }
+
+  h2 {
+    font-size: 16pt;
+  }
+
+  h3 {
+    font-size: 14pt;
+  }
+
+  h4,
+  h5,
+  h6 {
+    font-size: 12pt;
+  }
+
+  p {
+    font-size: 11pt;
+  }
+
+  /* Links */
+  a {
+    color: #000000 !important;
+    text-decoration: underline;
+  }
+
+  a[href]::after {
+    content: " (" attr(href) ")";
+    font-size: 9pt;
+    color: #666666;
+  }
+
+  /* Don't show URLs for internal links */
+  a[href^="#"]::after,
+  a[href^="javascript:"]::after,
+  a.no-print-url::after {
+    content: "";
+  }
+
+  /* Images */
+  img {
+    max-width: 100% !important;
+    page-break-inside: avoid;
+  }
+
+  /* Show print-only elements */
+  .print-only {
+    display: block !important;
+  }
+
+  /* Buttons and interactive elements */
+  button,
+  .MuiButton-root,
+  .MuiIconButton-root,
+  input[type="button"],
+  input[type="submit"] {
+    display: none !important;
+  }
+
+  /* Form elements */
+  input,
+  select,
+  textarea {
+    border: 1px solid #999 !important;
+    background: #ffffff !important;
+  }
+
+  /* Disable shadows */
+  * {
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+}

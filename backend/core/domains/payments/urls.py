@@ -13,6 +13,7 @@ from .views import (
     PaymentTransactionViewSet,
     PaymentViewSet,
     RefundViewSet,
+    StripeWebhookView,
     TaxRateViewSet,
 )
 from .client_views import (
@@ -56,4 +57,6 @@ urlpatterns = [
     path('', include(router.urls)),
     path('client/', include(client_router.urls)),
     path('public/', include(public_router.urls)),
+    # Stripe webhook endpoint
+    path('webhooks/stripe/', StripeWebhookView.as_view(), name='stripe-webhook'),
 ]

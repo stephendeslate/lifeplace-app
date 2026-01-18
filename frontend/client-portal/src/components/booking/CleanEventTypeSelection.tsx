@@ -190,17 +190,31 @@ export const CleanEventTypeSelection: React.FC<CleanEventTypeSelectionProps> = (
               <GlassCard
                 variant="light"
                 intensity="medium"
+                role="button"
+                tabIndex={0}
+                aria-label={`Select ${eventType.name} event type. ${eventType.description || ''}`}
+                onKeyDown={(e: React.KeyboardEvent) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    handleCardClick(eventType);
+                  }
+                }}
                 sx={{
                   height: '100%',
                   cursor: 'pointer',
                   backgroundColor: alpha('#fff', 0.08),
                   border: `1px solid ${alpha('#fff', 0.1)}`,
                   transition: 'all 0.3s ease',
-                  '&:hover': {
+                  '&:hover, &:focus': {
                     transform: 'translateY(-8px)',
                     backgroundColor: alpha(getEventTypeColor(eventType), 0.05),
                     border: `2px solid ${alpha(getEventTypeColor(eventType), 0.3)}`,
                     boxShadow: `0 12px 40px ${alpha(getEventTypeColor(eventType), 0.2)}`,
+                    outline: 'none',
+                  },
+                  '&:focus-visible': {
+                    outline: `2px solid ${getEventTypeColor(eventType)}`,
+                    outlineOffset: '2px',
                   },
                 }}
                 onClick={() => handleCardClick(eventType)}

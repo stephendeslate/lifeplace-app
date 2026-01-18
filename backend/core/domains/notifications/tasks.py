@@ -90,7 +90,7 @@ def create_notification_async(
             try:
                 from core.domains.events.models import Event
                 event = Event.objects.get(id=event_id)
-            except:
+            except Exception:
                 logger.warning(f"Event not found: {event_id}")
         
         if client_id:

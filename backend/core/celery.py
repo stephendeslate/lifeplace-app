@@ -174,6 +174,24 @@ app.conf.update(
             'schedule': 15 * 60,  # Every 15 minutes
             'options': {'queue': 'payments'}
         },
+        # Webhook retry with exponential backoff (Section 10.4)
+        'process-failed-webhooks': {
+            'task': 'core.domains.payments.tasks.process_failed_webhooks',
+            'schedule': 5 * 60,  # Every 5 minutes
+            'options': {'queue': 'payments'}
+        },
+        # Orphaned payment detection (Section 11.1)
+        'detect-orphaned-payments': {
+            'task': 'core.domains.payments.tasks.detect_orphaned_payments',
+            'schedule': 24 * 60 * 60,  # Daily
+            'options': {'queue': 'payments'}
+        },
+        # Payment reconciliation with Stripe (Section 11.2)
+        'reconcile-payments-with-stripe': {
+            'task': 'core.domains.payments.tasks.reconcile_payments_with_stripe',
+            'schedule': 24 * 60 * 60,  # Daily
+            'options': {'queue': 'payments'}
+        },
         # Analytics tasks
         'update-booking-flow-analytics': {
             'task': 'core.domains.analytics.tasks.update_all_booking_flow_analytics',
@@ -184,6 +202,22 @@ app.conf.update(
             'task': 'core.domains.analytics.tasks.cache_daily_kpis',
             'schedule': 60 * 60,  # Hourly
             'options': {'queue': 'analytics'}
+        },
+        # Data retention cleanup tasks
+        'cleanup-security-logs': {
+            'task': 'core.domains.security.tasks.cleanup_security_logs',
+            'schedule': 24 * 60 * 60,  # Daily
+            'options': {'queue': 'notifications'}
+        },
+        'cleanup-expired-account-data': {
+            'task': 'core.domains.security.tasks.cleanup_expired_account_data',
+            'schedule': 24 * 60 * 60,  # Daily
+            'options': {'queue': 'notifications'}
+        },
+        'monitor-data-retention-compliance': {
+            'task': 'core.domains.security.tasks.monitor_data_retention_compliance',
+            'schedule': 7 * 24 * 60 * 60,  # Weekly
+            'options': {'queue': 'notifications'}
         },
     },
 )
@@ -196,6 +230,81 @@ def debug_task(self):
 
 # Configure logging for Celery tasks
 logger = logging.getLogger(__name__)
+
+
+# =============================================================================
+# Dead Letter Queue Integration
+# =============================================================================
+# When a task fails permanently (exceeds max retries), send it to the DLQ
+# for manual review and potential replay.
+
+from celery.signals import task_failure, task_retry
+import traceback as tb
+
+
+@task_failure.connect
+def handle_task_failure(sender=None, task_id=None, exception=None,
+                        args=None, kwargs=None, traceback=None,
+                        einfo=None, **kw):
+    """
+    Handle permanently failed tasks by recording them in the Dead Letter Queue.
+
+    This signal is called when a task fails without being retried
+    (i.e., it has exceeded its max retry limit or raised an exception
+    that should not be retried).
+    """
+    try:
+        # Import here to avoid circular imports
+        from core.infrastructure.models import FailedTask
+
+        # Get task info
+        task_name = sender.name if sender else 'unknown'
+        queue = getattr(sender, 'queue', 'celery') or 'celery'
+
+        # Get retry information
+        # The 'retries' attr is the number of times it has been retried
+        request = getattr(sender, 'request', None)
+        retry_count = getattr(request, 'retries', 0) if request else 0
+        max_retries = getattr(sender, 'max_retries', 3) or 3
+
+        # Format traceback
+        traceback_str = ''
+        if traceback:
+            traceback_str = ''.join(tb.format_tb(traceback))
+        elif einfo:
+            traceback_str = str(einfo)
+
+        # Record to DLQ
+        FailedTask.record_failure(
+            task_id=str(task_id),
+            task_name=task_name,
+            args=list(args) if args else [],
+            kwargs=dict(kwargs) if kwargs else {},
+            exception=exception,
+            traceback_str=traceback_str,
+            retry_count=retry_count,
+            max_retries=max_retries,
+            queue=queue,
+        )
+
+    except Exception as e:
+        # Don't let DLQ recording failures break task processing
+        logger.error(f"Failed to record task to DLQ: {e}")
+
+
+# Add beat task for DLQ monitoring
+app.conf.beat_schedule['monitor-dead-letter-queue'] = {
+    'task': 'core.infrastructure.tasks.monitor_dlq',
+    'schedule': 60 * 60,  # Hourly
+    'options': {'queue': 'notifications'}
+}
+
+app.conf.beat_schedule['cleanup-old-failed-tasks'] = {
+    'task': 'core.infrastructure.tasks.cleanup_old_failed_tasks',
+    'schedule': 24 * 60 * 60,  # Daily
+    'options': {'queue': 'notifications'}
+}
+
 
 if __name__ == '__main__':
     app.start()

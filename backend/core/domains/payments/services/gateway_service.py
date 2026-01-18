@@ -9,11 +9,18 @@ import stripe
 from django.db import transaction
 from django.utils import timezone
 
+from core.infrastructure.circuit_breaker import (
+    stripe_circuit_breaker,
+    CircuitBreakerError,
+)
+
 from ..exceptions import (
     PaymentAlreadyCompletedException,
     PaymentGatewayException,
     PaymentMethodNotFoundException,
     PaymentNotFoundException,
+    StripeUserFriendlyError,
+    get_user_friendly_stripe_error,
 )
 from ..models import (
     Payment,
@@ -341,7 +348,15 @@ class PaymentGatewayService:
                     'client_email': payment.event.client.email if payment.event.client else '',
                 }
                 
-                logger.info(f"Creating Stripe PaymentIntent with data: {intent_data}")
+                # Log only safe fields - never log payment methods or customer data
+                logger.info(f"Creating Stripe PaymentIntent: amount={intent_data.get('amount')}, currency={intent_data.get('currency')}")
+
+                # Check circuit breaker before making Stripe API call
+                if not stripe_circuit_breaker.can_execute():
+                    logger.warning("Stripe circuit breaker is OPEN, failing fast")
+                    raise PaymentGatewayException(
+                        "Payment service is temporarily unavailable. Please try again in a few minutes."
+                    )
 
                 try:
                     start_time = time.time()
@@ -350,7 +365,16 @@ class PaymentGatewayService:
                     elapsed = time.time() - start_time
                     logger.info(f"⏱️  Stripe PaymentIntent.create completed in {elapsed:.2f}s")
                     logger.info(f"PaymentIntent created successfully: {intent.id} (status: {intent.status})")
+
+                    # Record success with circuit breaker
+                    stripe_circuit_breaker.record_success()
+
                 except stripe.error.StripeError as stripe_error:
+                    # Record failure with circuit breaker (only for server/network errors)
+                    # Don't count card declines or validation errors as circuit breaker failures
+                    if not isinstance(stripe_error, (stripe.error.CardError, stripe.error.InvalidRequestError)):
+                        stripe_circuit_breaker.record_failure(stripe_error)
+
                     logger.error(f"Stripe API error: {stripe_error}")
                     raise
                 
@@ -397,7 +421,10 @@ class PaymentGatewayService:
                 return transaction_record
                 
             except stripe.error.StripeError as e:
-                # Handle Stripe errors
+                # Get user-friendly error details
+                error_info = get_user_friendly_stripe_error(e)
+
+                # Handle Stripe errors - store technical details in DB, not in response
                 transaction_record = PaymentTransaction.objects.create(
                     payment=payment,
                     gateway=gateway,
@@ -405,15 +432,25 @@ class PaymentGatewayService:
                     amount=payment.amount,
                     currency=payment_currency,
                     status='FAILED',
-                    error_message=str(e),
-                    response_data={'error': str(e), 'error_type': type(e).__name__},
+                    error_message=error_info['message'],  # User-friendly message
+                    response_data={
+                        'error_code': error_info['code'],
+                        'error_type': type(e).__name__,
+                        'recoverable': error_info['recoverable'],
+                        # Store technical details for debugging but not in user-facing message
+                        'technical_details': str(e) if not isinstance(e, stripe.error.AuthenticationError) else 'auth_error',
+                    },
                     is_test=payment_data.get('is_test', False)
                 )
-                
+
                 payment.status = 'FAILED'
                 payment.save()
-                
-                raise PaymentGatewayException(f"Stripe error: {str(e)}")
+
+                # Raise user-friendly error instead of exposing raw Stripe error
+                raise StripeUserFriendlyError(
+                    e,
+                    log_details=f"payment_id={payment.id}, gateway={gateway.code}"
+                )
 
     @staticmethod
     def _process_paypal_payment(payment_id, payment_data, user):

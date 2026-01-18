@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { Box, Typography, Container, CircularProgress, Alert, Paper } from '@mui/material';
+import DOMPurify from 'dompurify';
 import { SEO } from '../../hooks/useSEO';
 import { useLegalDocument } from '../../hooks/useLegalDocument';
 
@@ -67,7 +68,7 @@ export const PrivacyPage: React.FC = () => {
             '& h1, & h2, & h3, & h4': { mt: 3, mb: 1 },
             '& ul, & ol': { pl: 3 }
           }}
-          dangerouslySetInnerHTML={{ __html: document.content }}
+          dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(document.content) }}
         />
       </Paper>
       </Container>

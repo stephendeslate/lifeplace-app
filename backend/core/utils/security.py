@@ -162,16 +162,26 @@ def validate_password_strength(password: str) -> Dict[str, Any]:
     else:
         result['messages'].append("Password should contain numbers")
     
-    if re.search(r'[!@#$%^&*(),.?":{}|<>]', password):
+    if re.search(r'[!@#$%^&*(),.?":{}|<>_\-+=\[\]\\;\'`~]', password):
         result['score'] += 1
-        result['messages'].append("Great! Password contains special characters")
     else:
-        result['messages'].append("Password should contain special characters")
-    
-    # Common password check
+        result['is_valid'] = False
+        result['messages'].append("Password must contain at least one special character (!@#$%^&*(),.?\":{}|<>)")
+
+    # Common password check - expanded dictionary
     common_passwords = [
         'password', '123456', 'password123', 'admin', 'qwerty',
-        'letmein', 'welcome', 'monkey', '1234567890'
+        'letmein', 'welcome', 'monkey', '1234567890', 'password1',
+        'iloveyou', 'sunshine', 'princess', 'football', 'baseball',
+        '12345678', '123456789', 'qwerty123', 'abc123', 'dragon',
+        'master', 'hello', 'freedom', 'whatever', 'trustno1',
+        'starwars', 'passw0rd', 'batman', 'login', 'mustang',
+        'shadow', 'michael', 'jennifer', 'jessica', 'superman',
+        '1234567', 'hunter', 'killer', 'charlie', 'andrew',
+        'anthony', 'joshua', 'matthew', 'jordan', 'daniel',
+        'pepper', 'harley', 'buster', 'ginger', 'summer',
+        'soccer', 'hockey', 'basketball', 'tennis', 'golf',
+        'ranger', 'thomas', 'robert', 'secret', 'access'
     ]
     if password.lower() in common_passwords:
         result['is_valid'] = False
@@ -374,3 +384,104 @@ class SecurityMiddleware:
             response['Content-Security-Policy'] = "; ".join(csp_directives)
 
         return response
+
+
+class AdminLoggingMiddleware:
+    """
+    Middleware to log all admin panel operations.
+
+    This middleware captures requests to the Django admin panel and logs them
+    for audit purposes. It works in conjunction with the AdminLoggingMixin
+    and signal handlers in admin_logging.py for comprehensive coverage.
+    """
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+        self.admin_path = '/admin/'
+
+    def __call__(self, request):
+        # Check if this is an admin request
+        is_admin_request = request.path.startswith(self.admin_path)
+
+        # Store request info for logging
+        if is_admin_request and request.method in ('POST', 'PUT', 'PATCH', 'DELETE'):
+            self._log_admin_request(request)
+
+        response = self.get_response(request)
+
+        # Log admin response status for write operations
+        if is_admin_request and request.method in ('POST', 'PUT', 'PATCH', 'DELETE'):
+            self._log_admin_response(request, response)
+
+        return response
+
+    def _log_admin_request(self, request):
+        """Log incoming admin requests."""
+        from core.utils.security_logging import (
+            security_logger,
+            SecurityEventType,
+            SecuritySeverity,
+        )
+
+        user = getattr(request, 'user', None)
+        if not user or not user.is_authenticated:
+            return
+
+        # Extract action from POST data if available
+        action = request.POST.get('action', '')
+
+        details = {
+            'path': request.path,
+            'method': request.method,
+            'action': action,
+            'query_string': request.META.get('QUERY_STRING', ''),
+        }
+
+        # Determine severity based on action type
+        severity = SecuritySeverity.LOW
+        if action in ('delete_selected', 'delete'):
+            severity = SecuritySeverity.MEDIUM
+        elif 'user' in request.path.lower() or 'permission' in request.path.lower():
+            severity = SecuritySeverity.MEDIUM
+
+        security_logger.log_event(
+            event_type=SecurityEventType.ADMIN_ACTION,
+            description=f"Admin request: {request.method} {request.path}",
+            request=request,
+            user=user,
+            severity=severity,
+            details=details,
+            risk_score=20
+        )
+
+    def _log_admin_response(self, request, response):
+        """Log admin response status for tracking."""
+        # Only log errors or important status codes
+        if response.status_code >= 400:
+            from core.utils.security_logging import (
+                security_logger,
+                SecurityEventType,
+                SecuritySeverity,
+            )
+
+            user = getattr(request, 'user', None)
+            if not user or not user.is_authenticated:
+                return
+
+            details = {
+                'path': request.path,
+                'method': request.method,
+                'status_code': response.status_code,
+            }
+
+            severity = SecuritySeverity.MEDIUM if response.status_code >= 500 else SecuritySeverity.LOW
+
+            security_logger.log_event(
+                event_type=SecurityEventType.ADMIN_ACTION,
+                description=f"Admin request failed: {request.method} {request.path} - {response.status_code}",
+                request=request,
+                user=user,
+                severity=severity,
+                details=details,
+                risk_score=30
+            )

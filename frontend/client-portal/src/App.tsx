@@ -40,6 +40,8 @@ const ActionCenterPage = React.lazy(() => import('./pages/actions/ActionCenterPa
 const TermsPage = React.lazy(() => import('./pages/legal').then(m => ({ default: m.TermsPage })));
 const PrivacyPage = React.lazy(() => import('./pages/legal').then(m => ({ default: m.PrivacyPage })));
 
+// NotFound page (404) lazy import
+const NotFound = React.lazy(() => import('./pages/NotFound').then(m => ({ default: m.NotFound })));
 
 // Import booking components
 
@@ -481,8 +483,8 @@ const AppRouter: React.FC = () => {
       />
 
 
-        {/* Catch all route - redirect to home */}
-        <Route path="*" element={<Navigate to="/" replace />} />
+        {/* 404 Not Found - Better for SEO than redirect */}
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </Suspense>
   );

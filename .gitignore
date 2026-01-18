@@ -2,6 +2,15 @@
 .env
 .env.production
 
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Media uploads (test artifacts)
+backend/media/
+
 # Mobile app environment files (contains API keys)
 mobile-app/.env
 mobile-app/.env.local

@@ -1,6 +1,7 @@
 // frontend/admin-crm/src/components/common/TemplatePreviewDialog.tsx
 
 import React, { useState, useEffect, useCallback } from 'react';
+import DOMPurify from 'dompurify';
 import {
   Dialog,
   DialogTitle,
@@ -268,15 +269,15 @@ export const TemplatePreviewDialog: React.FC<TemplatePreviewDialogProps> = ({
               {templateType === 'communication' ? (
                 <Box>
                   <Typography variant="body1" component="div">
-                    <div dangerouslySetInnerHTML={{ 
-                      __html: previewData.rendered_content.replace(/\n/g, '<br />') 
+                    <div dangerouslySetInnerHTML={{
+                      __html: DOMPurify.sanitize(previewData.rendered_content.replace(/\n/g, '<br />'))
                     }} />
                   </Typography>
                 </Box>
               ) : (
                 <Box>
-                  <div dangerouslySetInnerHTML={{ 
-                    __html: previewData.rendered_content 
+                  <div dangerouslySetInnerHTML={{
+                    __html: DOMPurify.sanitize(previewData.rendered_content)
                   }} />
                 </Box>
               )}

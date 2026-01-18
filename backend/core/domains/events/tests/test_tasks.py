@@ -543,20 +543,14 @@ class TestSendEventDateReminder:
         assert result['status'] == 'skipped'
         assert result['reason'] == 'already_sent'
 
+    @pytest.mark.skip(reason="Event.client is now NOT NULL - events always have a client")
     def test_skip_no_client(self, event_factory, user_factory, mocker):
-        """Test reminder skips events without client."""
-        event = event_factory()
-        # Patch the client to be None
-        mocker.patch.object(Event.objects, 'select_related', return_value=Event.objects)
-        Event.objects.filter(id=event.id).update(client=None)
+        """Test reminder skips events without client.
 
-        # Refetch the event
-        event.refresh_from_db()
-
-        result = send_event_date_reminder(event.id, days_before_event=7)
-
-        assert result['status'] == 'skipped'
-        # Could be 'no_client' or 'no_booking_flow' depending on order of checks
+        Note: This test is obsolete as Event.client is now a required field (NOT NULL).
+        Events are always created with a client.
+        """
+        pass
 
     def test_skip_no_booking_flow(self, event_factory):
         """Test reminder skips if no booking flow found."""

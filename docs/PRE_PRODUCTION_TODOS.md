@@ -1,413 +1,507 @@
-# LifePlace Pre-Production TODO List
+# LifePlace Pre-Production Checklist - External Services
 
-**Generated:** 2025-12-29
-**Last Updated:** 2026-01-17
-**Status:** Complete production roadmap - VERIFIED and AUDITED (Rev 3)
-**Audit Status:** All critical backend security fixes COMPLETED
-**Target Platform:** Fly.io + Fly Postgres + Upstash + Cloudflare Pages
+> **Items requiring external service configuration, accounts, or third-party setup**
+> **Target Region: Philippines**
+> **Generated: January 2026**
 
 ---
 
-## Overview
+## Table of Contents
 
-This document contains **everything required** to deploy LifePlace to production.
-
-| System | Current State | Blocking Issues |
-|--------|--------------|-----------------|
-| Backend | 90% Ready | Environment variables (P0-B12), external service config only |
-| Admin-CRM | 98% Ready | Environment variables only (dependencies fixed) |
-| Client-Portal | 98% Ready | Environment variables only (dependencies fixed) |
-| Mobile App | 85% Ready | Security placeholders (SSL cert hashes), crash reporting |
-
-**Estimated Total Time:** 9-18 hours (excluding external account setup and store review times)
+1. [Infrastructure & Deployment](#1-infrastructure--deployment)
+2. [Payment Processing](#2-payment-processing)
+3. [Communications Setup](#3-communications-setup)
+4. [Error Monitoring](#4-error-monitoring)
+5. [Mobile Application](#5-mobile-application)
+6. [Security - Key Rotation](#6-security---key-rotation)
+7. [Legal & Compliance](#7-legal--compliance)
+8. [Pre-Launch Verification](#8-pre-launch-verification)
 
 ---
 
-## Phase 0: External Account Setup (Before Code Changes)
+## 1. Infrastructure & Deployment
 
-**Time:** 2-4 hours | Done outside codebase
+### 1.1 Backend Hosting (Fly.io)
 
-These accounts must be created before deployment:
+| Item | Status | Action Required |
+|------|--------|-----------------|
+| Fly.io account created | Pending | Create account at fly.io |
+| App created (`lifeplace-api`) | Pending | `fly apps create lifeplace-api --org personal` |
+| Singapore region configured | Ready | `primary_region = "sin"` in fly.toml |
 
-| Service | Purpose | Cost | Action |
-|---------|---------|------|--------|
-| Fly.io | Backend Hosting | ~$19/mo | Create account, install CLI |
-| Upstash | Redis Cache/Queue | $0-5/mo | Create account, create Redis database |
-| Stripe | Payments | 2.9% + $0.30/txn | Create account, complete business verification |
-| Brevo | Email/SMS | Free-$9/mo | Create account, verify sender identity |
-| Cloudflare | R2 Storage + Pages | ~$5/mo | Create account for file storage and frontend hosting |
-| Sentry | Error Tracking | Free-$29/mo | Create Django + React projects |
-| Apple Developer | iOS App Store | $99/year | Enroll in developer program |
-| Google Play | Android Store | $25 one-time | Create developer account |
-| Expo | Mobile Builds | Free | Create account, link to EAS |
+**Checklist:**
+- [ ] Create Fly.io account
+- [ ] Install Fly CLI (`brew install flyctl`)
+- [ ] Create application (`fly apps create lifeplace-api`)
+- [ ] Deploy initial build (`fly deploy`)
+- [ ] Configure custom domain (`fly certs create api.yourdomain.com`)
+- [ ] Verify health endpoint responds
 
-**Also Required:**
-- [ ] Host privacy policy at `https://yourdomain.com/privacy`
-- [ ] Host terms of service at `https://yourdomain.com/terms`
-- [ ] Decide on production domain (e.g., `api.lifeplace.com`, `admin.lifeplace.com`, `book.lifeplace.com`)
+### 1.2 Database (Fly Postgres)
 
----
+**Checklist:**
+- [ ] Create Postgres cluster (`fly postgres create --name lifeplace-db --region sin`)
+- [ ] Attach to app (`fly postgres attach lifeplace-db`)
+- [ ] Run migrations (`fly ssh console -C "python manage.py migrate"`)
+- [ ] Create superuser (`fly ssh console -C "python manage.py createsuperuser"`)
+- [ ] Verify backup policy (daily automatic)
+- [ ] Define explicit retention policy (recommend 30 days minimum)
+- [ ] Schedule regular backup verification tests
+- [ ] Document Redis backup/persistence strategy
+- [ ] Create runbook for disaster recovery
 
-## Phase 1: Backend Critical Fixes
+### 1.3 Redis Cache (Upstash)
 
-**Status:** ✅ ALL CODE FIXES COMPLETED - Only environment variable configuration remains
+**Checklist:**
+- [ ] Create Upstash account (console.upstash.com)
+- [ ] Create Redis database (Singapore region)
+- [ ] Copy Redis URL (starts with `rediss://`)
+- [ ] Set environment variable (`fly secrets set REDIS_URL="..."`)
+- [ ] Verify connection (`python manage.py shell` → test cache)
 
-### P0-B12: Backend Environment Variables
+### 1.4 File Storage (Cloudflare R2)
 
-**All required for production (set via `fly secrets set`):**
+**Checklist:**
+- [ ] Create Cloudflare R2 bucket (`lifeplace-media`)
+- [ ] Create API token (Object Read & Write)
+- [ ] Set R2 environment variables:
+  - [ ] `R2_ACCESS_KEY_ID`
+  - [ ] `R2_SECRET_ACCESS_KEY`
+  - [ ] `R2_BUCKET_NAME`
+  - [ ] `R2_ENDPOINT_URL`
+  - [ ] `R2_PUBLIC_URL`
+- [ ] Test file upload/download
+- [ ] Configure CORS on bucket
+
+### 1.5 Frontend Hosting (Cloudflare Pages)
+
+**Checklist:**
+- [ ] Create Cloudflare Pages project for admin-crm
+- [ ] Create Cloudflare Pages project for client-portal
+- [ ] Configure environment variables in Cloudflare dashboard
+- [ ] Create `_redirects` file (`/* /index.html 200`)
+- [ ] Configure custom domains
+- [ ] Verify SSL certificates provisioned
+
+### 1.6 Environment Variables
+
+**Critical Backend Variables (Must Set in Fly.io Secrets):**
 
 ```bash
-# Core (CRITICAL - app won't start without these)
-fly secrets set SECRET_KEY="<generate-50-chars-random>"
-fly secrets set JWT_SIGNING_KEY="<generate-64-chars-random>"
-fly secrets set FIELD_ENCRYPTION_KEY="<generate-32-chars-random>"
-fly secrets set ENV=production
-fly secrets set DEBUG=False
+# Core Security (REQUIRED)
+SECRET_KEY="<generate-50-char-key>"
+JWT_SIGNING_KEY="<generate-64-char-key>"
+FIELD_ENCRYPTION_KEY="<generate-32-char-key>"
+ENCRYPTION_SALT="<generate-unique-salt>"
+
+# Environment
+ENV=production
+DEBUG=False
 
 # Database (auto-set by fly postgres attach)
-# DATABASE_URL is set automatically
+DATABASE_URL="postgres://..."
 
-# Redis (Upstash)
-fly secrets set REDIS_URL="rediss://default:xxxxx@xxxxx.upstash.io:6379"
+# Redis
+REDIS_URL="rediss://..."
 
-# Security (CRITICAL - frontend requests will be blocked)
-fly secrets set ALLOWED_HOSTS="api.yourdomain.com"
-fly secrets set CSRF_TRUSTED_ORIGINS="https://api.yourdomain.com,https://admin.yourdomain.com,https://book.yourdomain.com"
-fly secrets set CORS_ALLOWED_ORIGINS="https://admin.yourdomain.com,https://book.yourdomain.com"
+# Security
+ALLOWED_HOSTS="api.yourdomain.com"
+CSRF_TRUSTED_ORIGINS="https://api.yourdomain.com,https://admin.yourdomain.com,https://book.yourdomain.com"
+CORS_ALLOWED_ORIGINS="https://admin.yourdomain.com,https://book.yourdomain.com"
 
-# Communications (required for emails/SMS)
-fly secrets set BREVO_API_KEY="xkeysib-xxxxx"
-fly secrets set BREVO_WEBHOOK_SECRET="xxxxx"
-fly secrets set DEFAULT_FROM_EMAIL="noreply@yourdomain.com"
-fly secrets set DEFAULT_FROM_NAME="LifePlace"
+# Communications
+BREVO_API_KEY="xkeysib-..."
+BREVO_WEBHOOK_SECRET="..."
+DEFAULT_FROM_EMAIL="noreply@yourdomain.com"
+DEFAULT_FROM_NAME="LifePlace"
 
-# Monitoring (recommended)
-fly secrets set SENTRY_DSN="https://xxxxx@sentry.io/xxxxx"
+# Frontend URLs
+ADMIN_FRONTEND_URL="https://admin.yourdomain.com"
+CLIENT_FRONTEND_URL="https://book.yourdomain.com"
 
-# Cloud Storage (CRITICAL - files will be lost without this)
-fly secrets set R2_ACCESS_KEY_ID="xxxxx"
-fly secrets set R2_SECRET_ACCESS_KEY="xxxxx"
-fly secrets set R2_BUCKET_NAME="lifeplace-media"
-fly secrets set R2_ENDPOINT_URL="https://xxxxx.r2.cloudflarestorage.com"
-fly secrets set R2_PUBLIC_URL="pub-xxxxx.r2.dev"
+# Error Monitoring
+SENTRY_DSN="https://...@sentry.io/..."
 
-# Frontend URLs (for email links)
-fly secrets set ADMIN_FRONTEND_URL="https://admin.yourdomain.com"
-fly secrets set CLIENT_FRONTEND_URL="https://book.yourdomain.com"
+# File Storage
+R2_ACCESS_KEY_ID="..."
+R2_SECRET_ACCESS_KEY="..."
+R2_BUCKET_NAME="lifeplace-media"
+R2_ENDPOINT_URL="https://....r2.cloudflarestorage.com"
+R2_PUBLIC_URL="pub-....r2.dev"
+
+# Philippines Compliance
+DPO_EMAIL="dpo@yourdomain.com"
+SECURITY_TEAM_EMAIL="security@yourdomain.com"
 ```
 
----
-
-## Phase 2: Database & Initial Data Setup
-
-**Time:** 2-3 hours
-
-### P0-DB1: Create Fly Postgres & Run Migrations
-
+**Key Generation Commands:**
 ```bash
-# Create Postgres cluster in Singapore
-fly postgres create \
-  --name lifeplace-db \
-  --region sin \
-  --vm-size shared-cpu-1x \
-  --initial-cluster-size 1 \
-  --volume-size 10
+# Django Secret Key
+python -c "import secrets; print(secrets.token_urlsafe(50))"
 
-# Attach to your app (sets DATABASE_URL automatically)
-fly postgres attach lifeplace-db --app lifeplace-api
+# JWT Signing Key
+python -c "import secrets; print(secrets.token_urlsafe(48))"
 
-# Run migrations
-fly ssh console -C "python manage.py migrate"
-```
-
-### P0-DB2: Create Superuser
-
-```bash
-fly ssh console -C "python manage.py createsuperuser"
-```
-
-### P0-DB3: Configure Stripe in Django Admin (CRITICAL)
-
-**Payments will NOT work without this step.**
-
-1. Go to `https://api.yourdomain.com/admin/`
-2. Login with superuser credentials
-3. Navigate to: Payments → Payment Gateways
-4. Edit the "Stripe" gateway
-5. Add configuration:
-```json
-{
-  "secret_key": "sk_live_xxxxx",
-  "publishable_key": "pk_live_xxxxx",
-  "webhook_secret": "whsec_xxxxx"
-}
-```
-6. Save
-
-### P0-DB4: Create Products/Packages (NOT AUTO-SEEDED)
-
-**At least one package must exist for bookings to work.**
-
-1. Go to Django Admin → Products → Product Options
-2. Create packages for each EventType
-
----
-
-## Phase 3: External Service Configuration
-
-**Time:** 3-5 hours
-
-### P1-B1: Register Stripe Webhook (CRITICAL)
-
-**Without this, payments won't auto-confirm.**
-
-1. Go to Stripe Dashboard → Developers → Webhooks
-2. Click "Add endpoint"
-3. URL: `https://api.yourdomain.com/api/payments/webhooks/stripe/`
-4. Select events:
-   - `payment_intent.succeeded`
-   - `payment_intent.payment_failed`
-   - `payment_intent.canceled`
-   - `charge.refunded`
-   - `charge.dispute.created`
-5. Click "Add endpoint"
-6. Copy the signing secret (starts with `whsec_`)
-7. Add to PaymentGateway config in Django admin
-
-### P1-B2: Brevo Domain Verification
-
-**Required for email deliverability. Can take up to 24 hours.**
-
-Add these DNS records:
-
-| Type | Name | Value |
-|------|------|-------|
-| TXT | `@` | `v=spf1 include:sendinblue.com ~all` |
-| TXT | `mail._domainkey` | *(Get from Brevo dashboard)* |
-| TXT | `_dmarc` | `v=DMARC1; p=none; rua=mailto:dmarc@yourdomain.com` |
-
-### P1-B3: Cloudflare R2 Bucket Setup
-
-1. Cloudflare Dashboard → R2 → Create bucket
-2. Name: `lifeplace-media`
-3. Create API token with Object Read & Write permissions
-4. Enable public access in bucket settings
-5. Copy credentials and set via `fly secrets set`
-
-### P1-B4: Upstash Redis Setup
-
-1. Upstash Console → Create Database
-2. Name: `lifeplace-redis`
-3. Region: Singapore (ap-southeast-1)
-4. TLS: Enabled
-5. Copy the Redis URL (starts with `rediss://`)
-6. Set via `fly secrets set REDIS_URL="rediss://..."`
-
----
-
-## Phase 4: Frontend Fixes
-
-**Time:** 2-3 hours
-
-### P0-F4: Frontend Environment Variables
-
-**Both apps need `.env.production`:**
-
-**`frontend/admin-crm/.env.production`:**
-```env
-VITE_API_URL=https://api.yourdomain.com
-VITE_STRIPE_PUBLIC_KEY=pk_live_xxxxx
-VITE_SENTRY_DSN=https://xxxxx@sentry.io/xxxxx
-VITE_ENV=production
-```
-
-**`frontend/client-portal/.env.production`:**
-```env
-VITE_API_URL=https://api.yourdomain.com
-VITE_STRIPE_PUBLIC_KEY=pk_live_xxxxx
-VITE_SENTRY_DSN=https://xxxxx@sentry.io/xxxxx
-VITE_ENV=production
+# Encryption Key
+python -c "import secrets; print(secrets.token_urlsafe(24))"
 ```
 
 ---
 
-## Phase 5: Mobile App Fixes
+## 2. Payment Processing
 
-**Time:** 4-6 hours
+### 2.1 Stripe Integration
 
-### P0-M1: Security Configuration Placeholders (CRITICAL)
+**Checklist:**
+- [ ] Create Stripe account and complete verification
+- [ ] Get production API keys (pk_live, sk_live)
+- [ ] Configure PaymentGateway in Django admin with encrypted config
+- [ ] Set up webhook endpoint: `https://api.yourdomain.com/api/payments/webhooks/stripe/`
+- [ ] Register webhook events in Stripe Dashboard:
+  - [ ] payment_intent.succeeded
+  - [ ] payment_intent.payment_failed
+  - [ ] payment_intent.canceled
+  - [ ] charge.refunded
+  - [ ] charge.dispute.created
+- [ ] Get webhook signing secret from Stripe dashboard
+- [ ] Set `STRIPE_WEBHOOK_SECRET` environment variable
+- [ ] Test complete payment flow with test card
+- [ ] Test refund flow
+- [ ] Test 3D Secure authentication
+- [ ] Switch to live keys for production
 
-| File | Line | Current Value | Required Action |
-|------|------|---------------|-----------------|
-| `mobile-app/src/utils/sslPinning.ts` | 54-56 | `sha256/AAAA...` | Replace with real API cert hash |
-| `mobile-app/src/utils/sslPinning.ts` | 62-64 | `sha256/BBBB...` | Replace with real backup cert hash |
+### 2.2 Philippine Payment Considerations
 
-**Note:** The file `mobile-app/src/services/securityChecks.ts` does NOT exist. Remove references to it.
+**Checklist:**
+- [ ] Verify PHP is default currency in settings
+- [ ] Test PHP currency formatting (no decimals)
+- [ ] Consider GCash/PayMaya integration for future
 
-**Generate SSL Certificate Hash:**
-```bash
-openssl s_client -connect api.yourdomain.com:443 2>/dev/null | \
-  openssl x509 -pubkey -noout | \
-  openssl pkey -pubin -outform der | \
-  openssl dgst -sha256 -binary | base64
+---
+
+## 3. Communications Setup
+
+### 3.1 Email (Brevo)
+
+**Checklist:**
+- [ ] Create Brevo account
+- [ ] Get API key (Settings → SMTP & API → API Keys)
+- [ ] Configure domain DNS:
+  - [ ] SPF record: `v=spf1 include:sendinblue.com ~all`
+  - [ ] DKIM record (provided by Brevo)
+  - [ ] DMARC record: `v=DMARC1; p=none`
+- [ ] Set environment variables:
+  - [ ] `BREVO_API_KEY`
+  - [ ] `BREVO_WEBHOOK_SECRET`
+  - [ ] `DEFAULT_FROM_EMAIL`
+  - [ ] `DEFAULT_FROM_NAME`
+- [ ] Verify domain in Brevo dashboard
+- [ ] Configure webhook URL for delivery tracking
+- [ ] Test email delivery
+- [ ] Test webhook status updates
+
+### 3.2 SMS (Brevo)
+
+**Checklist:**
+- [ ] Verify SMS credits in Brevo account
+- [ ] Test SMS delivery to Philippine numbers
+- [ ] Verify sender ID displays correctly
+
+### 3.3 Push Notifications (Expo)
+
+**Checklist:**
+- [ ] Create Expo account
+- [ ] Configure mobile app project ID
+- [ ] Upload APNs key for iOS (Apple Developer account required)
+- [ ] Upload FCM key for Android (Firebase account required)
+- [ ] Test push notification delivery
+
+### 3.4 Real-time WebSocket (Channels)
+
+**Checklist:**
+- [ ] Verify Redis channel layer configured
+- [ ] Test WebSocket connections
+- [ ] Test real-time message delivery
+- [ ] Test availability broadcasts
+
+---
+
+## 4. Error Monitoring
+
+### 4.1 Sentry Setup
+
+**Checklist:**
+- [ ] Create Sentry account
+- [ ] Create Django project in Sentry
+- [ ] Set `SENTRY_DSN` environment variable
+- [ ] Verify errors appear in Sentry dashboard
+- [ ] Configure alerting rules
+- [ ] Set up release tracking
+
+### 4.2 Logging
+
+**Checklist:**
+- [ ] Verify log output in Fly.io (`fly logs`)
+- [ ] Configure log retention in Fly.io
+- [ ] Set up log aggregation service if needed (e.g., Papertrail, Logtail)
+
+---
+
+## 5. Mobile Application
+
+### 5.1 Mobile Decision Required
+
+**Option A:** Launch without mobile app
+- Faster time to market
+- Focus resources on web platform
+- Mobile can follow later
+
+**Option B:** Delay launch for mobile parity
+- Requires significant development (65+ missing features)
+- Extends timeline significantly
+
+**Checklist:**
+- [ ] Decide on mobile launch strategy
+- [ ] If launching mobile:
+  - [ ] Complete gap analysis implementation
+  - [ ] Test on iOS devices
+  - [ ] Test on Android devices
+  - [ ] Create Apple Developer account ($99/year)
+  - [ ] Submit to App Store
+  - [ ] Create Google Play Developer account ($25 one-time)
+  - [ ] Submit to Google Play
+
+---
+
+## 6. Security - Key Rotation
+
+### 6.1 Secrets in Git History (CRITICAL)
+
+**Issue:** `.env` was committed at `ef2dc28` and deleted at `8d026cd`. Secrets remain in git history.
+
+**Checklist:**
+- [ ] **IMMEDIATELY** rotate Brevo API key in Brevo dashboard
+- [ ] **IMMEDIATELY** generate new Django SECRET_KEY
+- [ ] **IMMEDIATELY** generate new JWT_SIGNING_KEY
+- [ ] **IMMEDIATELY** generate new FIELD_ENCRYPTION_KEY
+- [ ] Re-encrypt all encrypted fields with new encryption key
+- [ ] Set all new keys in Fly.io secrets
+- [ ] Remove secrets from git history using BFG Repo-Cleaner:
+  ```bash
+  # Install BFG
+  brew install bfg
+
+  # Clone a fresh copy
+  git clone --mirror git@github.com:yourorg/lifeplace-app.git
+
+  # Run BFG to remove .env files
+  bfg --delete-files .env lifeplace-app.git
+
+  # Clean up
+  cd lifeplace-app.git
+  git reflog expire --expire=now --all && git gc --prune=now --aggressive
+
+  # Force push (coordinate with team)
+  git push --force
+  ```
+- [ ] Invalidate all existing JWT tokens (force re-login for all users)
+- [ ] Verify new keys only exist in Fly secrets, not in code
+
+### 6.2 Local Development Key
+
+**Issue:** Production Brevo API key found in local `.env` file.
+
+**Checklist:**
+- [ ] Verify the key in local `.env` is not an active production key
+- [ ] If production key, rotate immediately in Brevo dashboard
+- [ ] Use separate development API key for local development
+
+---
+
+## 7. Legal & Compliance
+
+### 7.1 Legal Documents
+
+**Checklist:**
+- [ ] Draft Philippines-specific Privacy Policy
+  - [ ] Include DPA 2012 requirements
+  - [ ] Add data collection disclosures
+  - [ ] Include third-party data sharing
+- [ ] Draft Terms of Service
+  - [ ] Include payment terms
+  - [ ] Include cancellation/refund policy
+  - [ ] Include liability limitations
+- [ ] Get legal review for both documents
+- [ ] Upload documents to system
+
+### 7.2 Philippines Compliance
+
+**Checklist:**
+- [ ] Set `DPO_EMAIL` environment variable
+- [ ] Set `SECURITY_TEAM_EMAIL` environment variable
+- [ ] Create Privacy Policy document
+- [ ] Create Terms of Service document
+- [ ] Consider NPC registration if >1000 SPI records
+- [ ] Review breach detection criteria
+- [ ] Document incident response procedure
+- [ ] Assign incident response team
+- [ ] Verify NPC contact configured: complaints@privacy.gov.ph
+
+### 7.3 BIR Requirements
+
+**Checklist:**
+- [ ] Verify invoice format meets BIR requirements
+- [ ] Consider TIN field if VAT registered
+- [ ] Document tax calculation approach
+
+---
+
+## 8. Pre-Launch Verification
+
+### 8.1 Infrastructure Verification
+
+- [ ] API health check responds: `curl https://api.yourdomain.com/health/`
+- [ ] Readiness check responds: `curl https://api.yourdomain.com/ready/`
+- [ ] Database connection healthy
+- [ ] Redis connection healthy
+- [ ] File storage (R2) working
+- [ ] SSL certificates valid
+- [ ] DNS propagation complete
+
+### 8.2 Security Verification
+
+- [ ] HTTPS enforced on all endpoints
+- [ ] CORS configured correctly (test from frontend)
+- [ ] CSRF protection working
+- [ ] Rate limiting responding with 429
+- [ ] Admin panel not publicly accessible without auth
+- [ ] JWT tokens expire correctly
+- [ ] Logout invalidates tokens
+
+### 8.3 Payment Flow Verification
+
+- [ ] Payment gateway configured in admin
+- [ ] Stripe webhook registered and receiving events
+- [ ] Test payment succeeds (use test card)
+- [ ] Payment status updates via webhook
+- [ ] Refund flow works
+- [ ] Invoice generated correctly
+
+### 8.4 Communication Verification
+
+- [ ] Email sends successfully
+- [ ] Email appears from correct sender
+- [ ] Email not going to spam (SPF/DKIM/DMARC configured)
+- [ ] SMS sends successfully (if applicable)
+- [ ] Push notifications delivered (if mobile launched)
+- [ ] WebSocket connections work
+
+### 8.5 Business Flow Verification
+
+- [ ] User registration works
+- [ ] User login works
+- [ ] Client can view booking flows
+- [ ] Client can complete booking
+- [ ] Client can view their events
+- [ ] Client can view their invoices
+- [ ] Admin can manage events
+- [ ] Admin can manage clients
+- [ ] Admin can process payments
+
+### 8.6 Philippines-Specific Verification
+
+- [ ] Times display in Asia/Manila timezone
+- [ ] Currency displays as PHP with ₱ symbol
+- [ ] Data export includes all required information
+- [ ] Privacy policy accessible
+- [ ] Terms of service accessible
+- [ ] DPO contact information set
+
+### 8.7 Final Checklist
+
+**Before Go-Live:**
+- [ ] All critical tests passing
+- [ ] No CRITICAL or HIGH severity bugs
+- [ ] Monitoring configured and alerting
+- [ ] Backup and recovery tested
+- [ ] Team trained on incident response
+- [ ] Support contact information published
+- [ ] Legal documents uploaded
+- [ ] Payment gateway live keys configured
+
+**Go-Live Day:**
+- [ ] DNS propagation complete
+- [ ] SSL certificates valid
+- [ ] Monitor error rates in Sentry
+- [ ] Monitor server resources in Fly.io
+- [ ] Have rollback plan ready
+- [ ] Team available for rapid response
+
+---
+
+## Appendix A: Cost Summary
+
+### Monthly Operating Costs
+
+| Service | Provider | Cost |
+|---------|----------|------|
+| API Machine | Fly.io | ~$5 |
+| WebSocket Machine | Fly.io | ~$3 |
+| Worker Machine | Fly.io | ~$5 |
+| Beat Machine | Fly.io | ~$2 |
+| PostgreSQL | Fly Postgres | ~$7 |
+| Redis | Upstash | ~$0-5 |
+| Frontend (2 apps) | Cloudflare Pages | $0 |
+| Email | Brevo | $0-9 |
+| Push Notifications | Expo | $0 |
+| Error Monitoring | Sentry | $0 |
+| File Storage | Cloudflare R2 | ~$2-5 |
+| **Monthly Total** | | **~$24-41** |
+
+### Annual Costs
+
+| Service | Cost |
+|---------|------|
+| Apple Developer (if mobile) | $99/year |
+| Google Play (if mobile) | $25 (one-time) |
+
+### Transaction Fees
+
+| Service | Fee |
+|---------|-----|
+| Stripe (domestic) | 2.9% + $0.30 |
+| Stripe (international) | 4.4% + $0.30 |
+| SMS (Philippines) | ~$0.008/SMS |
+
+---
+
+## Appendix B: Architecture Overview
+
 ```
+Frontend (Cloudflare Pages)
+├── Admin CRM (React 19 + MUI 7)
+└── Client Portal (React 19 + MUI 7 + Stripe)
 
-### P0-M2: Mobile Environment Variables
+Backend (Fly.io - Singapore Region)
+├── Django 5.2.1 REST API (Gunicorn)
+├── WebSocket Server (Daphne/Channels)
+├── Celery Workers (async tasks)
+└── Celery Beat (scheduled tasks)
 
-**Update `mobile-app/.env`:**
-```env
-EXPO_PUBLIC_API_URL=https://api.yourdomain.com/api
-EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_live_xxxxx
-EXPO_PUBLIC_ENABLE_PUSH_NOTIFICATIONS=true
-EXPO_PUBLIC_ENABLE_ANALYTICS=true
-```
+Data Layer
+├── PostgreSQL (Fly Postgres)
+├── Redis (Upstash - cache/queue)
+└── R2 (Cloudflare - file storage)
 
-
-### P1-M1: Crash Reporting Integration
-
-**Current State:** Only console.log stubs in `src/utils/crashReporting.ts`
-
-**Install Sentry:**
-```bash
-cd mobile-app
-npx expo install @sentry/react-native
+External Services
+├── Stripe (payments)
+├── Brevo (email/SMS)
+├── Expo (push notifications)
+└── Sentry (error monitoring)
 ```
 
 ---
 
-## Phase 6: Build & Deploy
-
-**Time:** 2-4 hours
-
-### Backend Deployment (Fly.io)
-
-```bash
-cd backend
-fly auth login
-fly apps create lifeplace-api --org personal
-fly postgres create --name lifeplace-db --region sin
-fly postgres attach lifeplace-db
-# Set all secrets (see P0-B12)
-fly deploy
-fly ssh console -C "python manage.py migrate"
-fly ssh console -C "python manage.py createsuperuser"
-```
-
-### Frontend Deployment (Cloudflare Pages)
-
-1. Cloudflare Dashboard → Pages → Create project
-2. Connect to Git
-3. Configure build settings
-4. Add environment variables
-5. Deploy
-
-### Mobile App Build
-
-```bash
-cd mobile-app
-eas build --profile production --platform all
-eas submit --platform ios
-eas submit --platform android
-```
-
----
-
-## Verification Checklist
-
-### Before Going Live
-
-**Backend - Critical Security:** ✅ ALL COMPLETED
-- [x] Authorization bypass in EventViewSet FIXED (P0-B0)
-- [x] Role field is read-only in UserSerializer (P0-B7)
-- [x] Empty admin_permissions bypass FIXED (P0-B6)
-- [x] Sensitive payment data logging removed (P0-B8)
-- [x] Dependency confusion package removed (P0-B9)
-- [x] Dead analytics buffer code removed (P0-B10)
-- [x] File upload content validation added (P0-B11)
-- [x] Unauthenticated product CRUD FIXED (P0-B13)
-- [x] Mass assignment in ClientCreateUpdateSerializer FIXED (P0-B14)
-- [x] Authorization bypass in QuestionnaireViewSet FIXED (P0-B15)
-- [x] Hardcoded URLs fixed (P0-B2, P0-B16)
-
-**Backend - Infrastructure:** ✅ CODE COMPLETE
-- [x] django-storages and boto3 added to requirements.txt (P0-B3)
-- [x] Dockerfile uses Daphne for ASGI (P0-B4)
-- [x] fly.toml created (P0-B5)
-- [x] No print() statements in production code (P0-B1)
-- [ ] All secrets set via `fly secrets set` (P0-B12)
-- [ ] Migrations run successfully
-- [ ] Stripe configured in Django admin
-
-**Frontends:**
-- [ ] .env.production has all required vars (both apps)
-- [ ] Build completes successfully (both apps)
-- [x] TipTap versions aligned (P1-D1) ✅
-- [x] signature_pad versions aligned (P1-D2) ✅
-- [x] @mui/styles removed (P1-D3) ✅
-
-**Mobile:**
-- [ ] SSL cert hashes replaced (not placeholder) (P0-M1)
-- [x] Test Stripe key removed from .env (P0-M4) ✅
-- [ ] Crash reporting integrated (P1-M1)
-- [x] Privacy policy URL in app.json (P0-M3) ✅
-- [x] Console statements guarded (P1-M2) ✅
-- [x] Duplicate associated domains removed (P1-M3) ✅
-- [x] WEB_HOST uses environment variable (P0-M5) ✅
-
-**Backend:**
-- [x] Avatar upload endpoint implemented (P1-B6) ✅
-- [x] Chargeback handling implemented (P1-B5) ✅
-
----
-
-## Quick Reference: Remaining Blockers
-
-### Critical (P0) - Must Fix Before Launch
-
-| Blocker | System | Type | Effort | Ref |
-|---------|--------|------|--------|-----|
-| Environment variables not set | Backend | Config | 30 min | P0-B12 |
-| SSL cert placeholders | Mobile | Config | 30 min | P0-M1 |
-
-### High Priority (P1) - Should Fix Before Launch
-
-| Blocker | System | Type | Effort | Ref |
-|---------|--------|------|--------|-----|
-| Crash reporting placeholder | Mobile | Code | 2-4 hrs | P1-M1 |
-
-### Recently Completed (This Session)
-
-| Task | System | Ref |
-|------|--------|-----|
-| ~~Test Stripe key in .env~~ | Mobile | P0-M4 ✅ |
-| ~~Privacy policy URL missing~~ | Mobile | P0-M3 ✅ |
-| ~~Avatar upload endpoint missing~~ | Backend | P1-B6 ✅ |
-| ~~Chargeback handling not implemented~~ | Backend | P1-B5 ✅ |
-| ~~TipTap version mismatch~~ | Admin-CRM | P1-D1 ✅ |
-| ~~signature_pad version mismatch~~ | Frontends | P1-D2 ✅ |
-| ~~@mui/styles deprecated~~ | Admin-CRM | P1-D3 ✅ |
-| ~~Hardcoded WEB_HOST domain~~ | Mobile | P0-M5 ✅ |
-| ~~129 unguarded console statements~~ | Mobile | P1-M2 ✅ |
-| ~~Duplicate associated domains~~ | Mobile | P1-M3 ✅ |
-
----
-
-## Estimated Time Summary
-
-| Phase | Time | Notes |
-|-------|------|-------|
-| Phase 0: Account Setup | 2-4 hours | External accounts |
-| Phase 1: Backend Fixes | ✅ COMPLETE | All code fixes done |
-| Phase 2: Database Setup | 2-3 hours | |
-| Phase 3: External Services | ✅ COMPLETE | P1-B5, P1-B6 done |
-| Phase 4: Frontend Fixes | 30 min | Env vars setup only |
-| Phase 4.5: Dependency Fixes | ✅ COMPLETE | P1-D1, P1-D2, P1-D3 done |
-| Phase 5: Mobile Fixes | 2-4 hours | Only P0-M1, P1-M1 remain |
-| Phase 6: Build & Deploy | 2-4 hours | |
-| **TOTAL** | **9-18 hours** | Reduced from 18-33 hours |
-
-*Last updated: 2026-01-17 (Rev 4)*
-*Target Platform: Fly.io + Fly Postgres + Upstash + Cloudflare Pages*
-*Security audit completed: 2026-01-17*
-*Backend security fixes completed: 2026-01-17*
-*Revision 4: Completed P0-M3, P0-M4, P0-M5, P1-B5, P1-B6, P1-D1, P1-D2, P1-D3, P1-M2, P1-M3*
+*Document contains only items requiring external service configuration.*
+*Code-only fixes are tracked in CODE_ONLY_TODOS.md*
+*Last updated: January 18, 2026*

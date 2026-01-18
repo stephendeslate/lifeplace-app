@@ -7,6 +7,7 @@ Handles deadline checking, cancellation processing, and date blocking tasks.
 
 import logging
 from datetime import datetime
+from django.utils import timezone
 
 from celery import shared_task
 
@@ -49,7 +50,7 @@ def check_downpayment_deadline(self, event_id: int):
             return {'status': 'skipped', 'reason': 'date_already_blocked'}
 
         # Check if deadline has passed (naive datetime comparison - both PHT)
-        now = datetime.now()
+        now = timezone.now()
 
         if not event.downpayment_deadline:
             logger.warning(f"Event {event_id} has no downpayment deadline set")
@@ -111,7 +112,7 @@ def daily_deadline_sweep(self):
 
     logger.info("Starting daily deadline sweep")
 
-    now = datetime.now()
+    now = timezone.now()
     cancelled_count = 0
     error_count = 0
 
@@ -223,7 +224,7 @@ def schedule_deadline_reminders(self):
 
     logger.info("Scheduling deadline reminders")
 
-    now = datetime.now()
+    now = timezone.now()
     scheduled_count = 0
 
     # Define reminder intervals (days before deadline)
@@ -329,7 +330,7 @@ def expire_date_holds(self):
 
     logger.info("Starting date hold expiration sweep")
 
-    now = datetime.now()
+    now = timezone.now()
     expired_count = 0
     error_count = 0
 
@@ -419,7 +420,7 @@ def send_hold_expiring_soon_reminders(self):
 
     logger.info("Scheduling hold expiration reminders")
 
-    now = datetime.now()
+    now = timezone.now()
     threshold = now + timedelta(hours=24)
     scheduled_count = 0
 
@@ -462,7 +463,7 @@ def send_hold_expiring_reminder(self, event_id: int):
         if event.date_hold_status != 'TEMPORARY_HOLD':
             return {'status': 'skipped', 'reason': 'not_held'}
 
-        hours_remaining = (event.date_hold_expires_at - datetime.now()).total_seconds() / 3600
+        hours_remaining = (event.date_hold_expires_at - timezone.now()).total_seconds() / 3600
 
         NotificationService.create_notification(
             recipient=event.client,

@@ -25,28 +25,28 @@ class PaymentService:
 
     @staticmethod
     def update_payment(payment_id, data, user):
-        """Update a payment record"""
-        try:
-            payment = Payment.objects.get(pk=payment_id)
-        except Payment.DoesNotExist:
-            raise PaymentNotFoundException(f"Payment with ID {payment_id} not found")
-        
-        # Prevent updating completed payments except for notes
-        if payment.status == 'COMPLETED' and set(data.keys()) - {'notes'}:
-            raise PaymentAlreadyCompletedException("Cannot update a completed payment")
-        
-        # Validate status transition
-        new_status = data.get('status')
-        if new_status and new_status != payment.status:
-            # Only allow PENDING -> COMPLETED or PENDING -> FAILED
-            if payment.status == 'PENDING' and new_status in ['COMPLETED', 'FAILED']:
-                pass  # Valid transition
-            else:
-                raise InvalidPaymentStatusTransition(
-                    f"Cannot change payment status from {payment.status} to {new_status}"
-                )
-        
+        """Update a payment record with row-level locking to prevent race conditions"""
         with transaction.atomic():
+            # Fetch payment with row-level lock to prevent concurrent updates
+            try:
+                payment = Payment.objects.select_for_update().get(pk=payment_id)
+            except Payment.DoesNotExist:
+                raise PaymentNotFoundException(f"Payment with ID {payment_id} not found")
+
+            # Prevent updating completed payments except for notes
+            if payment.status == 'COMPLETED' and set(data.keys()) - {'notes'}:
+                raise PaymentAlreadyCompletedException("Cannot update a completed payment")
+
+            # Validate status transition
+            new_status = data.get('status')
+            if new_status and new_status != payment.status:
+                # Only allow PENDING -> COMPLETED or PENDING -> FAILED
+                if payment.status == 'PENDING' and new_status in ['COMPLETED', 'FAILED']:
+                    pass  # Valid transition
+                else:
+                    raise InvalidPaymentStatusTransition(
+                        f"Cannot change payment status from {payment.status} to {new_status}"
+                    )
             # Update simple fields
             for field in ['notes', 'reference_number', 'description']:
                 if field in data:

@@ -379,4 +379,5 @@ class ClientVIPView(viewsets.ViewSet):
             )
             return Response(VIPRewardRedemptionSerializer(redemption).data, status=status.HTTP_201_CREATED)
         except ValueError as e:
-            return Response({'detail': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+            logger.error(f"VIP redemption error: {e}", exc_info=True)
+            return Response({'detail': 'Unable to redeem benefit. Please try again or contact support.'}, status=status.HTTP_400_BAD_REQUEST)

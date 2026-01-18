@@ -3,6 +3,7 @@
 from datetime import timedelta
 import os
 import logging
+import ssl
 from pathlib import Path
 from dotenv import load_dotenv
 import dj_database_url
@@ -76,6 +77,7 @@ INSTALLED_APPS = [
     'core.domains.messaging',  # Real-time messaging system
     'core.domains.vip',  # VIP & Loyalty program
     'core.domains.security',  # Security & breach management
+    'core.infrastructure',  # Infrastructure: DLQ, circuit breakers, health checks
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -89,10 +91,12 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',  # SECURITY: JWT token blacklisting
+    'drf_spectacular',  # OpenAPI schema generation
 ]
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
+    'core.utils.api_middleware.TrustedProxyMiddleware',  # SECURITY: Extract real client IP from trusted proxies
     'django.middleware.security.SecurityMiddleware',
     'core.utils.security.SecurityMiddleware',  # Custom security middleware
     'whitenoise.middleware.WhiteNoiseMiddleware',
@@ -100,6 +104,9 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'core.utils.security.AdminLoggingMiddleware',  # Admin action logging
+    'core.utils.api_middleware.IdempotencyMiddleware',  # Idempotent request handling
+    'core.utils.api_middleware.ETagMiddleware',  # ETag caching for GET requests
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -144,6 +151,11 @@ DATABASES = {
         'CONN_HEALTH_CHECKS': True,  # Verify connections before use (Django 4.1+)
     }
 }
+
+# SECURITY: Require SSL for database connections in production
+if IS_PRODUCTION:
+    DATABASES['default']['OPTIONS'] = DATABASES['default'].get('OPTIONS', {})
+    DATABASES['default']['OPTIONS']['sslmode'] = 'require'
 
 
 # Password validation
@@ -243,6 +255,8 @@ CORS_ALLOW_HEADERS = [
     'user-agent',
     'x-csrftoken',
     'x-requested-with',
+    'idempotency-key',  # For idempotent requests (Section 10.2)
+    'if-none-match',    # For ETag conditional requests (Section 10.3)
 ]
 
 CORS_ALLOW_METHODS = [
@@ -253,6 +267,12 @@ CORS_ALLOW_METHODS = [
     'POST',
     'PUT',
 ]
+
+# Cookie security settings (apply to all environments)
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = 'Lax'
+CSRF_COOKIE_HTTPONLY = True
+CSRF_COOKIE_SAMESITE = 'Lax'
 
 # Production-specific settings
 if IS_PRODUCTION:
@@ -268,6 +288,33 @@ if IS_PRODUCTION:
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
 
+# =============================================================================
+# Trusted Proxy Configuration
+# =============================================================================
+# For rate limiting and logging to work correctly behind a reverse proxy,
+# we need to trust the X-Forwarded-For header from known load balancers.
+#
+# Fly.io proxy IPs are in the 172.16.0.0/12 range (internal network)
+# Only trust headers from these known proxies to prevent IP spoofing.
+# =============================================================================
+
+# Number of proxies to trust in X-Forwarded-For chain
+# Set to 1 for Fly.io (single proxy layer)
+# Increase if you add more proxy layers (e.g., Cloudflare + Fly.io = 2)
+NUM_PROXIES = int(os.getenv('NUM_PROXIES', '1'))
+
+# Custom setting for trusted proxy networks (used by custom middleware)
+# Format: comma-separated CIDR ranges
+# Fly.io internal network uses 172.16.0.0/12 for proxy-to-app communication
+TRUSTED_PROXY_NETWORKS = os.getenv(
+    'TRUSTED_PROXY_NETWORKS',
+    '127.0.0.1/32,172.16.0.0/12,10.0.0.0/8,192.168.0.0/16'
+).split(',')
+
+# Use X-Forwarded-For header for determining client IP
+# This is handled by our custom TrustedProxyMiddleware
+USE_X_FORWARDED_HOST = True
+
 # REST Framework settings
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
@@ -276,6 +323,8 @@ REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.IsAuthenticated",
     ],
+    # OpenAPI Schema Generation
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
     # Pagination
     'DEFAULT_PAGINATION_CLASS': 'core.utils.pagination.StandardResultsSetPagination',
     'PAGE_SIZE': 25,  # Default page size
@@ -315,6 +364,55 @@ REST_FRAMEWORK = {
 
 # Communications throttle disabled in debug mode by default
 COMMUNICATION_THROTTLE_DISABLED = DEBUG
+
+# =============================================================================
+# DRF-SPECTACULAR (OpenAPI) SETTINGS
+# =============================================================================
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'LifePlace API',
+    'DESCRIPTION': 'API documentation for the LifePlace event management platform',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+    'SWAGGER_UI_SETTINGS': {
+        'deepLinking': True,
+        'persistAuthorization': True,
+        'displayOperationId': True,
+    },
+    'COMPONENT_SPLIT_REQUEST': True,
+    'SCHEMA_PATH_PREFIX': r'/api/',
+    # Authentication
+    'SECURITY': [
+        {'Bearer': []},
+    ],
+    'APPEND_COMPONENTS': {
+        'securitySchemes': {
+            'Bearer': {
+                'type': 'http',
+                'scheme': 'bearer',
+                'bearerFormat': 'JWT',
+                'description': 'JWT Authorization header using the Bearer scheme',
+            }
+        }
+    },
+    # Tags for organization
+    'TAGS': [
+        {'name': 'users', 'description': 'User authentication and management'},
+        {'name': 'clients', 'description': 'Client management'},
+        {'name': 'events', 'description': 'Event management'},
+        {'name': 'payments', 'description': 'Payment processing'},
+        {'name': 'bookingflow', 'description': 'Booking flow management'},
+        {'name': 'contracts', 'description': 'Contract management'},
+        {'name': 'communications', 'description': 'Email and messaging'},
+        {'name': 'notifications', 'description': 'Push and in-app notifications'},
+        {'name': 'analytics', 'description': 'Analytics and reporting'},
+        {'name': 'settings', 'description': 'Application settings'},
+    ],
+    # Enum naming for better schema
+    'ENUM_NAME_OVERRIDES': {},
+    # Exclude certain paths
+    'PREPROCESSING_HOOKS': [],
+    'POSTPROCESSING_HOOKS': [],
+}
 
 # Communications daily recipient limit for bulk sends
 COMMUNICATION_DAILY_RECIPIENT_LIMIT = 1000
@@ -360,7 +458,9 @@ REDIS_CONNECTION_POOL_KWARGS = {
 
 # Add SSL configuration for Upstash (production with rediss://)
 if REDIS_USE_SSL:
-    REDIS_CONNECTION_POOL_KWARGS['ssl_cert_reqs'] = None  # Accept Upstash SSL certificates
+    # SECURITY: Require certificate verification in production
+    # For Upstash, certificates are valid and should be verified
+    REDIS_CONNECTION_POOL_KWARGS['ssl_cert_reqs'] = ssl.CERT_REQUIRED
 
 # Parse Redis URL for additional config if needed
 import urllib.parse
@@ -390,7 +490,8 @@ CACHES = {
             'CLIENT_CLASS': 'django_redis.client.DefaultClient',
             'CONNECTION_POOL_KWARGS': REDIS_CONNECTION_POOL_KWARGS,
             # Note: HiRedis is auto-detected in redis-py 5.x+ when installed
-            'PICKLE_VERSION': -1,  # Use latest pickle protocol
+            # Use JSON serializer instead of pickle to prevent insecure deserialization attacks
+            'SERIALIZER': 'django_redis.serializers.json.JSONSerializer',
             'SOCKET_CONNECT_TIMEOUT': 10,  # Increased from 5 to 10 seconds for production
             'SOCKET_TIMEOUT': 10,  # Increased from 5 to 10 seconds for production
             'COMPRESSOR': 'django_redis.compressors.zlib.ZlibCompressor',  # Compress cached data
@@ -405,6 +506,7 @@ CACHES = {
         'OPTIONS': {
             'CLIENT_CLASS': 'django_redis.client.DefaultClient',
             'CONNECTION_POOL_KWARGS': REDIS_CONNECTION_POOL_KWARGS,
+            'SERIALIZER': 'django_redis.serializers.json.JSONSerializer',
         },
         'KEY_PREFIX': 'lifeplace:session',  # Isolates session keys
         'TIMEOUT': 86400,  # Sessions last 24 hours
@@ -415,15 +517,20 @@ CACHES = {
         'OPTIONS': {
             'CLIENT_CLASS': 'django_redis.client.DefaultClient',
             'CONNECTION_POOL_KWARGS': REDIS_CONNECTION_POOL_KWARGS,
+            'SERIALIZER': 'django_redis.serializers.json.JSONSerializer',
         },
         'KEY_PREFIX': 'lifeplace:analytics',  # Isolates analytics keys
         'TIMEOUT': 3600,  # Analytics cache for 1 hour
     },
 }
 
-# Use Redis for session storage (much faster than database)
-SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
-SESSION_CACHE_ALIAS = 'sessions'
+# SECURITY: Use database-backed sessions for better security
+# Database sessions are more secure than cache-based sessions as they:
+# 1. Don't rely on serialization formats that could be vulnerable
+# 2. Provide audit trails
+# 3. Are not susceptible to cache-specific attack vectors
+SESSION_ENGINE = 'django.contrib.sessions.backends.db'
+# Note: Run 'python manage.py migrate' to create the sessions table
 
 # Django Channels Layer Configuration (Upstash Compatible)
 CHANNEL_LAYERS = {
@@ -560,9 +667,11 @@ LOGGING = {
             'formatter': 'products',
         },
         'file': {
-            'class': 'logging.FileHandler',
+            'class': 'logging.handlers.RotatingFileHandler',
             'filename': 'debug.log',
             'formatter': 'verbose',
+            'maxBytes': 10 * 1024 * 1024,  # 10 MB per file
+            'backupCount': 5,  # Keep 5 backup files
         },
         'security_console': {
             'class': 'logging.StreamHandler',
@@ -570,10 +679,12 @@ LOGGING = {
             'level': 'WARNING',
         },
         'security_file': {
-            'class': 'logging.FileHandler',
+            'class': 'logging.handlers.RotatingFileHandler',
             'filename': 'security.log',
             'formatter': 'security',
             'level': 'INFO',
+            'maxBytes': 10 * 1024 * 1024,  # 10 MB per file
+            'backupCount': 10,  # Keep 10 backup files for security logs
         },
         'notifications_console': {
             'class': 'logging.StreamHandler',
@@ -644,6 +755,8 @@ CELERY_TASK_ALWAYS_EAGER = False  # Set to True for synchronous testing
 CELERY_TASK_EAGER_PROPAGATES = True
 CELERY_WORKER_SEND_TASK_EVENTS = True
 CELERY_TASK_SEND_SENT_EVENT = True
+CELERY_TASK_TIME_LIMIT = 300  # 5 minutes max execution time per task
+CELERY_TASK_SOFT_TIME_LIMIT = 270  # 4.5 minutes soft limit (raises SoftTimeLimitExceeded)
 
 # Celery key prefix configuration (Upstash compatibility)
 # These prefixes isolate Celery keys from other Redis data in the same database
@@ -733,4 +846,45 @@ if SENTRY_DSN and IS_PRODUCTION:
     )
 
     print(f"✅ Sentry initialized for environment: {ENV}")
+
+# =============================================================================
+# REPORTLAB SECURITY CONFIGURATION
+# =============================================================================
+# Prevent SSRF attacks by restricting allowed URL schemes and hosts in PDFs
+# This mitigates CVE-2020-28463 and related SSRF vulnerabilities
+#
+# trustedSchemes: Only allow these URL schemes for external resources
+# trustedHosts: Whitelist of allowed hosts for external resources
+# =============================================================================
+
+# Import reportlab and configure security settings
+try:
+    from reportlab.lib import pdfencrypt
+    from reportlab.rl_settings import trustedSchemes, trustedHosts
+
+    # Only allow HTTPS and data URIs (no file://, ftp://, etc.)
+    trustedSchemes[:] = ['https', 'data']
+
+    # Whitelist of trusted hosts for external resources in PDFs
+    # Add your own CDN/image hosting domains here
+    ALLOWED_PDF_HOSTS = [
+        'lifeplace.dev',
+        'admin.lifeplace.dev',
+        '*.lifeplace.dev',
+        # Add CDN domains if using external image hosting
+    ]
+
+    # Clear existing trusted hosts and set our whitelist
+    trustedHosts[:] = ALLOWED_PDF_HOSTS
+
+except ImportError:
+    # ReportLab not installed, skip configuration
+    pass
+except AttributeError:
+    # Older version of ReportLab without these settings
+    import logging
+    logging.getLogger(__name__).warning(
+        "ReportLab version does not support trustedSchemes/trustedHosts. "
+        "Consider upgrading for improved SSRF protection."
+    )
 

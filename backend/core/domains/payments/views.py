@@ -2,10 +2,13 @@
 from core.utils.pagination import StandardResultsSetPagination
 from core.utils.permissions import IsAdmin
 from django.db import models
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.decorators import method_decorator
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
+from rest_framework.views import APIView
 import logging
 
 from .models import (
@@ -43,6 +46,7 @@ from .services import (
     PaymentService,
     TaxRateService,
 )
+from .services.unified_webhook_processor import UnifiedWebhookProcessor
 from .cache_service import payments_cache_service
 
 logger = logging.getLogger(__name__)
@@ -768,24 +772,30 @@ class PaymentTransactionViewSet(viewsets.ModelViewSet):
     queryset = PaymentTransaction.objects.all()
     serializer_class = PaymentTransactionSerializer
     permission_classes = [IsAuthenticated, IsAdmin]
-    
+
     def get_queryset(self):
-        queryset = super().get_queryset().order_by('-created_at')
-        
+        # Optimize queries with select_related for ForeignKey relationships
+        queryset = super().get_queryset().select_related(
+            'gateway',
+            'payment',
+            'payment__event',
+            'payment__invoice',
+        ).order_by('-created_at')
+
         # Apply filters
         payment_id = self.request.query_params.get('payment', None)
         gateway_id = self.request.query_params.get('gateway', None)
         status = self.request.query_params.get('status', None)
-        
+
         if payment_id:
             queryset = queryset.filter(payment_id=payment_id)
-        
+
         if gateway_id:
             queryset = queryset.filter(gateway_id=gateway_id)
-        
+
         if status:
             queryset = queryset.filter(status=status)
-        
+
         return queryset
 
 
@@ -794,20 +804,26 @@ class RefundViewSet(viewsets.ModelViewSet):
     queryset = Refund.objects.all()
     serializer_class = RefundSerializer
     permission_classes = [IsAuthenticated, IsAdmin]
-    
+
     def get_queryset(self):
-        queryset = super().get_queryset().order_by('-created_at')
-        
+        # Optimize queries with select_related for ForeignKey relationships
+        queryset = super().get_queryset().select_related(
+            'payment',
+            'payment__event',
+            'payment__invoice',
+            'refunded_by',
+        ).order_by('-created_at')
+
         # Apply filters
         payment_id = self.request.query_params.get('payment', None)
         status = self.request.query_params.get('status', None)
-        
+
         if payment_id:
             queryset = queryset.filter(payment_id=payment_id)
-        
+
         if status:
             queryset = queryset.filter(status=status)
-        
+
         return queryset
 
 
@@ -816,16 +832,22 @@ class InvoiceLineItemViewSet(viewsets.ModelViewSet):
     queryset = InvoiceLineItem.objects.all()
     serializer_class = InvoiceLineItemSerializer
     permission_classes = [IsAuthenticated, IsAdmin]
-    
+
     def get_queryset(self):
-        queryset = super().get_queryset().order_by('id')
-        
+        # Optimize queries with select_related for ForeignKey relationships
+        queryset = super().get_queryset().select_related(
+            'invoice',
+            'invoice__event',
+            'invoice__client',
+            'product',
+        ).order_by('id')
+
         # Apply filters
         invoice_id = self.request.query_params.get('invoice', None)
-        
+
         if invoice_id:
             queryset = queryset.filter(invoice_id=invoice_id)
-        
+
         return queryset
 
 
@@ -834,16 +856,21 @@ class InvoiceTaxViewSet(viewsets.ModelViewSet):
     queryset = InvoiceTax.objects.all()
     serializer_class = InvoiceTaxSerializer
     permission_classes = [IsAuthenticated, IsAdmin]
-    
+
     def get_queryset(self):
-        queryset = super().get_queryset().order_by('id')
-        
+        # Optimize queries with select_related for ForeignKey relationships
+        queryset = super().get_queryset().select_related(
+            'invoice',
+            'invoice__event',
+            'tax_rate',
+        ).order_by('id')
+
         # Apply filters
         invoice_id = self.request.query_params.get('invoice', None)
-        
+
         if invoice_id:
             queryset = queryset.filter(invoice_id=invoice_id)
-        
+
         return queryset
 
 
@@ -852,23 +879,104 @@ class PaymentNotificationViewSet(viewsets.ModelViewSet):
     queryset = PaymentNotification.objects.all()
     serializer_class = PaymentNotificationSerializer
     permission_classes = [IsAuthenticated, IsAdmin]
-    
+
     def get_queryset(self):
-        queryset = super().get_queryset().order_by('-created_at')
-        
+        # Optimize queries with select_related for ForeignKey relationships
+        queryset = super().get_queryset().select_related(
+            'payment',
+            'payment__event',
+            'payment__invoice',
+            'template_used',
+        ).order_by('-created_at')
+
         # Apply filters
         payment_id = self.request.query_params.get('payment', None)
         notification_type = self.request.query_params.get('notification_type', None)
         is_successful = self.request.query_params.get('is_successful', None)
-        
+
         if payment_id:
             queryset = queryset.filter(payment_id=payment_id)
-        
+
         if notification_type:
             queryset = queryset.filter(notification_type=notification_type)
-        
+
         if is_successful is not None:
             is_successful = is_successful.lower() == 'true'
             queryset = queryset.filter(is_successful=is_successful)
-        
+
         return queryset
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class StripeWebhookView(APIView):
+    """
+    Webhook endpoint for Stripe payment events.
+
+    This endpoint receives and processes webhook events from Stripe including:
+    - payment_intent.succeeded
+    - payment_intent.payment_failed
+    - payment_intent.canceled
+    - charge.refunded
+    - charge.dispute.created
+
+    Stripe sends POST requests to this endpoint when payment events occur.
+    The signature is verified using the webhook secret configured in PaymentGateway.
+    """
+    permission_classes = [AllowAny]
+    authentication_classes = []  # No authentication for webhooks
+
+    def post(self, request):
+        """Handle incoming Stripe webhook"""
+        try:
+            # Process webhook using unified processor
+            result = UnifiedWebhookProcessor.process_webhook(request, 'stripe')
+
+            if result.success:
+                logger.info(
+                    f"Stripe webhook processed successfully: "
+                    f"action={result.action_taken}, "
+                    f"payment_id={result.payment_id}"
+                )
+                return Response(
+                    {'status': 'success', 'message': result.message},
+                    status=status.HTTP_200_OK
+                )
+            else:
+                # Log the error but return 200 to prevent Stripe from retrying
+                # for permanent failures (e.g., duplicate, parse error)
+                if result.error_code in ['duplicate_ignored', 'parse_error', 'unsupported_gateway']:
+                    logger.warning(
+                        f"Stripe webhook non-fatal error: "
+                        f"error_code={result.error_code}, "
+                        f"message={result.message}"
+                    )
+                    return Response(
+                        {'status': 'ignored', 'message': result.message},
+                        status=status.HTTP_200_OK
+                    )
+
+                # For signature verification failures, return 401
+                if result.error_code == 'signature_verification_failed':
+                    logger.error("Stripe webhook signature verification failed")
+                    return Response(
+                        {'status': 'error', 'message': 'Invalid signature'},
+                        status=status.HTTP_401_UNAUTHORIZED
+                    )
+
+                # For other errors, return 500 so Stripe will retry
+                logger.error(
+                    f"Stripe webhook processing failed: "
+                    f"error_code={result.error_code}, "
+                    f"message={result.message}"
+                )
+                return Response(
+                    {'status': 'error', 'message': 'Processing failed'},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
+
+        except Exception as e:
+            logger.error(f"Unexpected error in Stripe webhook: {e}", exc_info=True)
+            return Response(
+                {'status': 'error', 'message': 'Internal server error'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )

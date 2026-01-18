@@ -328,7 +328,7 @@ class NotificationMetrics:
             try:
                 from django.db import connection
                 query_count = len(connection.queries)
-            except:
+            except Exception:
                 query_count = None
             
             metrics = {

@@ -9,7 +9,52 @@ logger = logging.getLogger(__name__)
 
 class CommunicationConfig:
     """Configuration management for communications domain"""
-    
+
+    # CAN-SPAM Compliance: Company physical address for email footer
+    # This should be configured via settings for production
+    COMPANY_ADDRESS = {
+        'name': 'LifePlace Events',
+        'street': '123 Event Street',
+        'city': 'Manila',
+        'state': 'Metro Manila',
+        'postal_code': '1000',
+        'country': 'Philippines',
+    }
+
+    @classmethod
+    def get_company_address(cls) -> dict:
+        """Get company address from settings or default"""
+        return getattr(settings, 'COMPANY_ADDRESS', cls.COMPANY_ADDRESS)
+
+    @classmethod
+    def get_company_address_html(cls) -> str:
+        """Get formatted company address for email footer"""
+        addr = cls.get_company_address()
+        return (
+            f"{addr.get('name', 'LifePlace Events')}<br>"
+            f"{addr.get('street', '')}<br>"
+            f"{addr.get('city', '')}, {addr.get('state', '')} {addr.get('postal_code', '')}<br>"
+            f"{addr.get('country', '')}"
+        )
+
+    # CAN-SPAM Compliance: Email footer with unsubscribe link and address
+    EMAIL_FOOTER_TEMPLATE = '''
+    <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e0e0e0; color: #888; font-size: 12px; text-align: center;">
+        <p style="margin-bottom: 10px;">
+            {{company_address|safe}}
+        </p>
+        {% if unsubscribe_url %}
+        <p style="margin-bottom: 10px;">
+            <a href="{{unsubscribe_url}}" style="color: #666; text-decoration: underline;">Unsubscribe</a>
+            from marketing emails
+        </p>
+        {% endif %}
+        <p style="color: #aaa; font-size: 11px;">
+            &copy; {{current_year}} {{site_name|default:"LifePlace"}}. All rights reserved.
+        </p>
+    </div>
+    '''
+
     # Default template mappings
     DEFAULT_TEMPLATES = {
         'EMAIL_LAYOUT': 'Manual Email Layout',

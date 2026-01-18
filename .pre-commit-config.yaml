@@ -1,0 +1,171 @@
+# =============================================================================
+# Pre-commit Hooks Configuration
+# =============================================================================
+# Section 14.3 - Linting Rules and Pre-commit Hooks
+#
+# Install pre-commit hooks:
+#   pip install pre-commit
+#   pre-commit install
+#
+# Run all hooks manually:
+#   pre-commit run --all-files
+#
+# Update hooks to latest versions:
+#   pre-commit autoupdate
+# =============================================================================
+
+repos:
+  # ===========================================================================
+  # General Hooks
+  # ===========================================================================
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: trailing-whitespace
+        exclude: ^(.*\.md|.*\.json)$
+      - id: end-of-file-fixer
+        exclude: ^(.*\.json)$
+      - id: check-yaml
+        args: [--unsafe]  # Allow custom tags in YAML
+      - id: check-json
+      - id: check-added-large-files
+        args: ['--maxkb=1000']
+      - id: check-merge-conflict
+      - id: detect-private-key
+      - id: check-case-conflict
+      - id: check-executables-have-shebangs
+      - id: check-symlinks
+      - id: mixed-line-ending
+        args: ['--fix=lf']
+
+  # ===========================================================================
+  # Python Linting - Backend (Ruff)
+  # ===========================================================================
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.1.9
+    hooks:
+      # Run the linter
+      - id: ruff
+        args: [--fix, --exit-non-zero-on-fix]
+        files: ^backend/
+      # Run the formatter
+      - id: ruff-format
+        files: ^backend/
+
+  # ===========================================================================
+  # Python Type Checking (optional - uncomment if mypy is configured)
+  # ===========================================================================
+  # - repo: https://github.com/pre-commit/mirrors-mypy
+  #   rev: v1.8.0
+  #   hooks:
+  #     - id: mypy
+  #       files: ^backend/
+  #       additional_dependencies:
+  #         - django-stubs
+  #         - djangorestframework-stubs
+
+  # ===========================================================================
+  # Security Checks
+  # ===========================================================================
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.7.7
+    hooks:
+      - id: bandit
+        args: ['-c', 'pyproject.toml', '-r']
+        files: ^backend/
+        additional_dependencies: ['bandit[toml]']
+
+  # ===========================================================================
+  # Frontend Linting (ESLint via local npm)
+  # ===========================================================================
+  - repo: local
+    hooks:
+      - id: eslint-admin-crm
+        name: ESLint Admin CRM
+        entry: bash -c 'cd frontend/admin-crm && npm run lint'
+        language: system
+        files: ^frontend/admin-crm/.*\.(ts|tsx|js|jsx)$
+        pass_filenames: false
+
+      - id: eslint-client-portal
+        name: ESLint Client Portal
+        entry: bash -c 'cd frontend/client-portal && npm run lint'
+        language: system
+        files: ^frontend/client-portal/.*\.(ts|tsx|js|jsx)$
+        pass_filenames: false
+
+      - id: typescript-admin-crm
+        name: TypeScript Check Admin CRM
+        entry: bash -c 'cd frontend/admin-crm && npm run type-check'
+        language: system
+        files: ^frontend/admin-crm/.*\.(ts|tsx)$
+        pass_filenames: false
+
+      - id: typescript-client-portal
+        name: TypeScript Check Client Portal
+        entry: bash -c 'cd frontend/client-portal && npm run type-check'
+        language: system
+        files: ^frontend/client-portal/.*\.(ts|tsx)$
+        pass_filenames: false
+
+  # ===========================================================================
+  # Django-specific Checks
+  # ===========================================================================
+  - repo: local
+    hooks:
+      - id: django-check
+        name: Django System Check
+        entry: bash -c 'cd backend && source ../venv/bin/activate && python manage.py check'
+        language: system
+        files: ^backend/.*\.py$
+        pass_filenames: false
+
+      - id: django-makemigrations-check
+        name: Django Migrations Check
+        entry: bash -c 'cd backend && source ../venv/bin/activate && python manage.py makemigrations --check --dry-run'
+        language: system
+        files: ^backend/.*models.*\.py$
+        pass_filenames: false
+
+  # ===========================================================================
+  # Commit Message Format (Conventional Commits)
+  # ===========================================================================
+  - repo: https://github.com/compilerla/conventional-pre-commit
+    rev: v3.1.0
+    hooks:
+      - id: conventional-pre-commit
+        stages: [commit-msg]
+        args:
+          - feat
+          - fix
+          - docs
+          - style
+          - refactor
+          - perf
+          - test
+          - build
+          - ci
+          - chore
+          - revert
+
+# Default hook stages
+default_stages: [commit]
+
+# Fail fast - stop on first failure
+fail_fast: false
+
+# Exclude directories
+exclude: |
+  (?x)^(
+    node_modules/|
+    venv/|
+    \.git/|
+    __pycache__/|
+    \.pytest_cache/|
+    dist/|
+    build/|
+    \.next/|
+    coverage/|
+    htmlcov/|
+    \.mypy_cache/
+  )

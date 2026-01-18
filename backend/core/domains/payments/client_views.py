@@ -323,6 +323,26 @@ class ClientInvoiceViewSet(viewsets.ReadOnlyModelViewSet):
                 # For FULL payment type, use remaining amount
                 requested_amount = payment_data.get('amount', invoice.remaining_amount)
 
+            # Validate minimum payment amount (prevent zero-amount payments)
+            MINIMUM_PAYMENT_AMOUNT = Decimal('50.00')  # Minimum payment of 50 PHP
+            if requested_amount <= Decimal('0'):
+                return Response({
+                    'success': False,
+                    'error': 'Payment amount must be greater than zero',
+                    'error_code': 'INVALID_AMOUNT',
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+            if requested_amount < MINIMUM_PAYMENT_AMOUNT:
+                return Response({
+                    'success': False,
+                    'error': f'Payment amount must be at least {MINIMUM_PAYMENT_AMOUNT}',
+                    'error_code': 'BELOW_MINIMUM',
+                    'details': {
+                        'minimum_amount': str(MINIMUM_PAYMENT_AMOUNT),
+                        'requested_amount': str(requested_amount)
+                    }
+                }, status=status.HTTP_400_BAD_REQUEST)
+
             # Validate against remaining balance
             if requested_amount > invoice.remaining_amount:
                 return Response({

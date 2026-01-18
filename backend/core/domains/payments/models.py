@@ -591,15 +591,23 @@ class Payment(BaseModel):
         self.send_receipt_notification()
 
     def generate_receipt(self):
-        """Generate receipt number and update receipt fields"""
-        if not self.receipt_number and self.status == 'COMPLETED':
-            self.receipt_number = f"REC-{timezone.now().strftime('%Y%m%d')}-{self.id}"
-            self.receipt_generated_on = timezone.now()
-            self.save(update_fields=['receipt_number', 'receipt_generated_on'])
-            
-            # Create PDF receipt (implementation depends on your PDF generation solution)
-            # self.generate_receipt_pdf()
-            
+        """Generate receipt number and update receipt fields with row-level locking"""
+        with transaction.atomic():
+            # Re-fetch with lock to prevent concurrent receipt number generation
+            locked_payment = Payment.objects.select_for_update().get(pk=self.pk)
+
+            if not locked_payment.receipt_number and locked_payment.status == 'COMPLETED':
+                locked_payment.receipt_number = f"REC-{timezone.now().strftime('%Y%m%d')}-{locked_payment.id}"
+                locked_payment.receipt_generated_on = timezone.now()
+                locked_payment.save(update_fields=['receipt_number', 'receipt_generated_on'])
+
+                # Sync self with locked instance
+                self.receipt_number = locked_payment.receipt_number
+                self.receipt_generated_on = locked_payment.receipt_generated_on
+
+                # Create PDF receipt (implementation depends on your PDF generation solution)
+                # self.generate_receipt_pdf()
+
         return self.receipt_number
     
     def send_receipt_notification(self):
@@ -814,6 +822,11 @@ class Payment(BaseModel):
 
     class Meta:
         ordering = ['-due_date']
+        indexes = [
+            models.Index(fields=['status']),
+            models.Index(fields=['due_date']),
+            models.Index(fields=['event', 'status']),
+        ]
 
 
 class PaymentGateway(BaseModel):
@@ -935,6 +948,10 @@ class PaymentTransaction(BaseModel):
     
     class Meta:
         ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['transaction_id']),
+            models.Index(fields=['gateway', 'status']),
+        ]
 
 
 class TaxRate(BaseModel):
@@ -1126,8 +1143,15 @@ class Invoice(BaseModel):
             is_public=True,
             action_data={'invoice_id': self.id}
         )
-    
 
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['status']),
+            models.Index(fields=['due_date']),
+            models.Index(fields=['event', 'status']),
+            models.Index(fields=['client', 'status']),
+        ]
 
 
 class InvoiceLineItem(BaseModel):
@@ -1680,4 +1704,107 @@ class PaymentWebhookLog(BaseModel):
             models.Index(fields=['event_type', '-received_at']),
             models.Index(fields=['processed_successfully', '-received_at']),
             models.Index(fields=['transaction_id']),
+        ]
+
+
+class WebhookDeadLetter(BaseModel):
+    """
+    Dead letter queue for permanently failed webhook events.
+
+    Webhooks that exceed the maximum retry attempts are moved here
+    for manual review and remediation.
+    """
+    # Reference to original webhook log
+    original_webhook = models.ForeignKey(
+        PaymentWebhookLog,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='dead_letters',
+        help_text="Reference to the original webhook log"
+    )
+
+    # Duplicate webhook data (in case original is deleted)
+    gateway_code = models.CharField(
+        max_length=50,
+        help_text="Payment gateway code (stripe, paypal, etc.)"
+    )
+    event_type = models.CharField(
+        max_length=100,
+        help_text="Gateway-specific event type"
+    )
+    event_id = models.CharField(
+        max_length=255,
+        help_text="Unique event identifier from gateway"
+    )
+    transaction_id = models.CharField(
+        max_length=255,
+        help_text="Gateway transaction identifier"
+    )
+    raw_data = models.JSONField(
+        help_text="Complete webhook payload from gateway"
+    )
+
+    # Timeline
+    original_received_at = models.DateTimeField(
+        help_text="When the webhook was originally received"
+    )
+    moved_to_dead_letter_at = models.DateTimeField(
+        default=timezone.now,
+        help_text="When the webhook was moved to dead letter queue"
+    )
+
+    # Failure information
+    retry_count = models.PositiveIntegerField(
+        default=0,
+        help_text="Number of retry attempts before failure"
+    )
+    final_error = models.TextField(
+        blank=True,
+        help_text="Final error message that caused permanent failure"
+    )
+
+    # Resolution tracking
+    resolved = models.BooleanField(
+        default=False,
+        help_text="Whether this dead letter has been resolved"
+    )
+    resolved_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="When the dead letter was resolved"
+    )
+    resolved_by = models.ForeignKey(
+        'users.User',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='resolved_dead_letters',
+        help_text="Admin user who resolved the dead letter"
+    )
+    resolution_notes = models.TextField(
+        blank=True,
+        help_text="Notes about how the dead letter was resolved"
+    )
+
+    def __str__(self):
+        return f"Dead Letter: {self.gateway_code} {self.event_type} - {self.event_id}"
+
+    def mark_resolved(self, user, notes: str = None):
+        """Mark this dead letter as resolved"""
+        self.resolved = True
+        self.resolved_at = timezone.now()
+        self.resolved_by = user
+        if notes:
+            self.resolution_notes = notes
+        self.save()
+
+    class Meta:
+        verbose_name = "Webhook Dead Letter"
+        verbose_name_plural = "Webhook Dead Letters"
+        ordering = ['-moved_to_dead_letter_at']
+        indexes = [
+            models.Index(fields=['resolved', '-moved_to_dead_letter_at']),
+            models.Index(fields=['gateway_code', '-moved_to_dead_letter_at']),
+            models.Index(fields=['event_id']),
         ]
