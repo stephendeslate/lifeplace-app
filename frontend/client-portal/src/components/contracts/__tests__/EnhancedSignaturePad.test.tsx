@@ -1,12 +1,11 @@
 // frontend/client-portal/src/components/contracts/__tests__/EnhancedSignaturePad.test.tsx
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { render, screen, fireEvent, waitFor as _waitFor } from '@testing-library/react';
+import _userEvent from '@testing-library/user-event';
 import { ThemeProvider } from '@mui/material/styles';
 import { createTheme } from '@mui/material/styles';
 import EnhancedSignaturePad from '../EnhancedSignaturePad';
 
 import { vi } from 'vitest';
-/* eslint-disable @typescript-eslint/no-explicit-any */
 
 // Mock signature_pad module
 vi.mock('signature_pad', () => ({

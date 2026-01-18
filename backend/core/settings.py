@@ -880,8 +880,8 @@ try:
 except ImportError:
     # ReportLab not installed, skip configuration
     pass
-except AttributeError:
-    # Older version of ReportLab without these settings
+except (AttributeError, TypeError):
+    # Older version of ReportLab without these settings or trustedHosts is None
     import logging
     logging.getLogger(__name__).warning(
         "ReportLab version does not support trustedSchemes/trustedHosts. "
