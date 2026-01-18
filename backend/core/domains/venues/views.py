@@ -290,7 +290,8 @@ class VenueViewSet(viewsets.ModelViewSet):
             program_start_time = datetime.strptime(program_start_time_str, '%H:%M').time()
             program_hours = Decimal(str(program_hours))
         except (ValueError, InvalidOperation) as e:
-            return Response({'error': f'Invalid parameter format: {str(e)}'}, status=400)
+            logger.warning(f"Invalid parameter format: {e}")
+            return Response({'error': 'Invalid parameter format. Please check your input values.'}, status=400)
 
         # Calculate times
         calculated_times = VenueService.calculate_event_times(
@@ -541,7 +542,8 @@ class PublicVenueViewSet(viewsets.ReadOnlyModelViewSet):
             program_start_time = datetime.strptime(program_start_time_str, '%H:%M').time()
             program_hours = Decimal(str(program_hours))
         except (ValueError, InvalidOperation) as e:
-            return Response({'error': f'Invalid parameter format: {str(e)}'}, status=400)
+            logger.warning(f"Invalid parameter format in public endpoint: {e}")
+            return Response({'error': 'Invalid parameter format. Please check your input values.'}, status=400)
 
         calculated_times = VenueService.calculate_event_times(
             venue=venue,

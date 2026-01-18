@@ -92,8 +92,9 @@ class BookingSessionViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_201_CREATED
             )
         except Exception as e:
+            logger.error(f"Booking session error: {e}", exc_info=True)
             return Response(
-                {"detail": str(e)},
+                {"detail": "An error occurred processing your request. Please try again."},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
@@ -114,8 +115,9 @@ class BookingSessionViewSet(viewsets.ModelViewSet):
                 BookingSessionSerializer(session, context=self.get_serializer_context()).data
             )
         except Exception as e:
+            logger.error(f"Booking session update error: {e}", exc_info=True)
             return Response(
-                {"detail": str(e)},
+                {"detail": "An error occurred processing your request. Please try again."},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
@@ -449,11 +451,8 @@ class PublicBookingFlowViewSet(viewsets.ReadOnlyModelViewSet):
             completion_type = request.data.get('completion_type', 'payment')
             reservation_token = request.data.get('reservation_token')
 
-            # ENHANCED DEBUGGING: Log the incoming request data
-            logger.info(f"🔥 PUBLIC COMPLETION ENDPOINT: session_uuid={session_uuid}")
-            logger.info(f"🔥 REQUEST DATA: {request.data}")
-            logger.info(f"🔥 EXTRACTED COMPLETION_TYPE: '{completion_type}'")
-            logger.info(f"🔥 RESERVATION_TOKEN: {reservation_token}")
+            # Log request info (sanitized - no sensitive data)
+            logger.debug(f"Public completion endpoint: session_uuid={session_uuid}, completion_type={completion_type}")
 
             # Validate completion_type
             if completion_type not in ['payment', 'quote']:
@@ -764,7 +763,7 @@ class PublicBookingFlowViewSet(viewsets.ReadOnlyModelViewSet):
                             event_time_formatted = event_time
                     else:
                         event_time_formatted = 'TBD'
-                except:
+                except (ValueError, AttributeError, TypeError, IndexError):
                     # Fallback to raw values if parsing fails
                     event_date_formatted = event_date
                     event_time_formatted = event_time or 'TBD'

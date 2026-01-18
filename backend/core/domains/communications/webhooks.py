@@ -21,6 +21,8 @@ logger = logging.getLogger(__name__)
 # Maximum length for sanitized fields
 MAX_STRING_LENGTH = 1000
 MAX_NESTED_DEPTH = 5
+# Maximum age for webhook timestamps (5 minutes) - prevents replay attacks
+MAX_WEBHOOK_TIMESTAMP_AGE_SECONDS = 300
 
 
 class WebhookThrottle(AnonRateThrottle):
@@ -248,7 +250,7 @@ def brevo_webhook(request):
             logger.warning(f"Unknown event type '{event_type}' from IP: {client_ip}")
             return HttpResponse(status=400)
         
-        # Convert timestamp if provided
+        # Convert timestamp if provided and validate freshness (reject replay attacks)
         occurred_at = None
         if timestamp:
             try:
@@ -258,6 +260,17 @@ def brevo_webhook(request):
                 else:
                     # Handle Unix timestamps
                     occurred_at = timezone.datetime.fromtimestamp(timestamp, tz=timezone.utc)
+
+                # SECURITY: Validate timestamp is not too old (prevent replay attacks)
+                now = timezone.now()
+                age_seconds = abs((now - occurred_at).total_seconds())
+                if age_seconds > MAX_WEBHOOK_TIMESTAMP_AGE_SECONDS:
+                    logger.warning(
+                        f"Brevo webhook timestamp too old ({age_seconds:.0f}s) from IP: {client_ip}, "
+                        f"message_id: {message_id}, rejecting for security"
+                    )
+                    return HttpResponse(status=400)
+
             except (ValueError, TypeError) as e:
                 logger.warning(f"Invalid timestamp format in webhook: {timestamp}")
                 occurred_at = timezone.now()

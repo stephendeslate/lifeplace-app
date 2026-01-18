@@ -18,6 +18,9 @@ RUN apt-get update \
         libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
+# Create non-root user for security
+RUN useradd -m -u 1000 -s /bin/bash appuser
+
 # Install Python dependencies
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
@@ -25,11 +28,17 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy project
 COPY . .
 
+# Change ownership of app directory to non-root user
+RUN chown -R appuser:appuser /app
+
 # Collect static files with dummy environment variables for build time
 # These are only used during build - real values come from Fly.io secrets at runtime
 ENV SECRET_KEY=dummy-build-key-replaced-at-runtime
 ENV DATABASE_URL=postgres://dummy:dummy@dummy:5432/dummy
 RUN python manage.py collectstatic --noinput
+
+# Switch to non-root user
+USER appuser
 
 # Start server using Daphne (ASGI) for WebSocket support
 # Daphne is the official ASGI server for Django Channels

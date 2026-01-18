@@ -647,7 +647,7 @@ class InvoiceService:
                             logger.error(f"Failed to retrieve existing Stripe payment intent: {e}")
                             # Create new intent if existing one is invalid
                             intent_data = {
-                                'amount': int(invoice.total_amount * 100),
+                                'amount': int(invoice.remaining_amount * 100),  # Use remaining_amount for partial payment support
                                 'currency': invoice.currency.lower(),
                                 'automatic_payment_methods': {'enabled': True},
                                 'metadata': {
@@ -665,9 +665,9 @@ class InvoiceService:
                             existing_transaction.save()
                             transaction_record = existing_transaction
                     else:
-                        # Create new payment intent
+                        # Create new payment intent using remaining_amount to handle partial payments
                         intent_data = {
-                            'amount': int(invoice.total_amount * 100),  # Convert to cents
+                            'amount': int(invoice.remaining_amount * 100),  # Convert to cents, use remaining not total
                             'currency': invoice.currency.lower(),
                             'automatic_payment_methods': {'enabled': True},
                             'metadata': {
@@ -680,12 +680,12 @@ class InvoiceService:
 
                         intent = stripe.PaymentIntent.create(**intent_data)
 
-                        # Create transaction record
+                        # Create transaction record with remaining_amount
                         transaction_record = PaymentTransaction.objects.create(
                             payment=payment,
                             gateway=gateway,
                             transaction_id=intent.id,
-                            amount=invoice.total_amount,
+                            amount=invoice.remaining_amount,  # Use remaining amount, not total
                             currency=invoice.currency,
                             status='PROCESSING',
                             response_data=intent

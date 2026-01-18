@@ -189,7 +189,10 @@ class EventSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'created_at', 'updated_at', 'workflow_progress', 'next_task',
                            'current_total_amount', 'current_quote', 'current_invoice',
                            'date_blocked_at', 'date_held_at', 'actual_check_in_time',
-                           'actual_checkout_time', 'cancelled_at']
+                           'actual_checkout_time', 'cancelled_at',
+                           # Prevent mass assignment of status/financial fields
+                           'status', 'payment_status', 'date_blocked', 'total_price',
+                           'total_amount_due', 'total_amount_paid']
     
     def get_client_name(self, obj):
         if obj.client:

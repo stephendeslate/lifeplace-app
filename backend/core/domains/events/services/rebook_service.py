@@ -12,6 +12,7 @@ from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Tuple
 
 from django.db.models import QuerySet
+from django.utils import timezone
 
 from ..models import Event
 
@@ -56,7 +57,7 @@ class EventRebookService:
             return False, f"Events cancelled for reason '{event.cancelled_reason}' cannot be rebooked"
 
         # Check if original event date is in the past
-        if event.start_date and event.start_date < datetime.now():
+        if event.start_date and event.start_date < timezone.now():
             return False, "Cannot rebook events with past dates"
 
         # Check if there's already a rebooked event
@@ -128,7 +129,7 @@ class EventRebookService:
         booking_data = EventRebookService._extract_booking_data_from_event(event, new_date)
 
         # Generate session expiry (24 hours from now)
-        expires_at = datetime.now() + timedelta(hours=24)
+        expires_at = timezone.now() + timedelta(hours=24)
 
         # Get first step
         first_step = booking_flow.enabled_steps.first()
@@ -352,7 +353,7 @@ class EventRebookService:
 
             # Check if within grace period
             if event.created_at:
-                hours_since_booking = (datetime.now() - event.created_at.replace(tzinfo=None)).total_seconds() / 3600
+                hours_since_booking = (timezone.now() - event.created_at.replace(tzinfo=None)).total_seconds() / 3600
                 result['hours_since_booking'] = round(hours_since_booking, 2)
                 result['grace_period_hours'] = settings.rescheduling_grace_period_hours
 

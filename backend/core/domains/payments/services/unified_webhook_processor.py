@@ -153,8 +153,8 @@ class StripeWebhookHandler(BaseWebhookHandler):
             webhook_secret = gateway.config.get('webhook_secret')
 
             if not webhook_secret:
-                logger.warning("No webhook secret configured for Stripe")
-                return True  # Skip verification in development
+                logger.error("No webhook secret configured for Stripe - rejecting webhook")
+                return False  # Fail closed: reject webhooks when no secret is configured
 
             # Get signature from header
             signature = request.META.get('HTTP_STRIPE_SIGNATURE')

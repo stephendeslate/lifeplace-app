@@ -24,7 +24,7 @@ cron-descriptor==1.4.5
 cryptography==42.0.5
 daphne==4.1.2
 dj-database-url==3.0.0
-Django==5.2.1
+Django==5.2.8
 django-celery-beat==2.8.1
 django-cors-headers==4.7.0
 django-filter==25.1
@@ -32,6 +32,7 @@ django-redis==6.0.0
 django-timezone-field==7.1
 djangorestframework==3.16.0
 djangorestframework_simplejwt==5.5.0
+drf-spectacular==0.28.0
 frozenlist==1.7.0
 gunicorn==23.0.0
 hiredis==3.0.0
@@ -42,7 +43,7 @@ kombu==5.5.4
 msgpack==1.1.1
 multidict==6.6.4
 packaging==25.0
-pillow==11.2.1
+pillow==11.3.0
 prompt_toolkit==3.0.51
 propcache==0.3.2
 psutil==6.1.0
@@ -57,7 +58,7 @@ python-dateutil==2.9.0.post0
 python-dotenv==1.1.0
 redis==5.2.1
 reportlab==4.2.5
-requests==2.32.3
+requests==2.32.5
 # SECURITY FIX (P0-B9): Removed rest-framework-simplejwt==0.0.2 (dependency confusion PoC package)
 # The legitimate package is djangorestframework_simplejwt (already included above)
 service-identity==24.2.0
@@ -69,7 +70,7 @@ Twisted==25.5.0
 txaio==25.6.1
 typing_extensions==4.14.0
 tzdata==2025.2
-urllib3==2.4.0
+urllib3==2.6.0
 vine==5.1.0
 vulture==2.14
 wcwidth==0.2.13
@@ -112,3 +113,8 @@ freezegun==1.4.0
 
 # HTTP Mocking
 responses==0.25.6
+
+# Linting and Code Quality (Section 14.3)
+ruff==0.1.9
+bandit[toml]==1.7.7
+pre-commit==3.6.0

@@ -13,8 +13,8 @@ class PaymentMethodService:
         """Create a new payment method"""
         import logging
         logger = logging.getLogger(__name__)
-        logger.info(f"PaymentMethodService.create_payment_method - Received data: {data}")
-        logger.info(f"PaymentMethodService.create_payment_method - User: {user.id}")
+        # Log only safe fields - never log tokens or full data
+        logger.debug(f"PaymentMethodService.create_payment_method - type={data.get('type')}, user_id={user.id}")
 
         user_id = data.get('user', user.id)
 

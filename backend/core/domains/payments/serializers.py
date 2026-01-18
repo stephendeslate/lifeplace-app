@@ -527,7 +527,8 @@ class InvoiceSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = [
             'id', 'invoice_id', 'paid_amount', 'remaining_amount',
-            'is_fully_paid', 'is_partially_paid', 'created_at', 'updated_at'
+            'is_fully_paid', 'is_partially_paid', 'created_at', 'updated_at',
+            'status', 'subtotal', 'tax_amount', 'total_amount',  # Prevent mass assignment of financial/status fields
         ]
 
     def get_related_payments(self, obj):
@@ -663,7 +664,10 @@ class PaymentSerializer(serializers.ModelSerializer):
             'transactions', 'refunds',
             'created_at', 'updated_at'
         ]
-        read_only_fields = ['id', 'payment_number', 'receipt_number', 'created_at', 'updated_at']
+        read_only_fields = [
+            'id', 'payment_number', 'receipt_number', 'created_at', 'updated_at',
+            'status', 'amount',  # Prevent mass assignment of financial/status fields
+        ]
     
     def get_inferred_payment_method(self, obj):
         """Infer payment method information from transaction data when direct payment method is not available"""
@@ -748,7 +752,14 @@ class InvoicePaymentRequestSerializer(serializers.Serializer):
         import logging
         logger = logging.getLogger(__name__)
 
-        logger.info(f"🔍 PAYMENT VALIDATION - Received data: {data}")
+        # SECURITY: Log only non-sensitive fields for debugging
+        safe_fields = {k: v for k, v in data.items()
+                       if k not in ('payment_method_token', 'payment_method_id', 'card_number', 'cvv', 'cvc')}
+        # Mask payment_method_id if present (show last 4 chars only)
+        if data.get('payment_method_id'):
+            pm_id = data.get('payment_method_id')
+            safe_fields['payment_method_id'] = f"***{pm_id[-4:]}" if len(str(pm_id)) > 4 else "***"
+        logger.debug(f"Payment validation - fields: {list(safe_fields.keys())}, payment_type: {data.get('payment_type')}")
 
         # Validate custom amount if payment_type is CUSTOM
         if data.get('payment_type') == 'CUSTOM':
@@ -768,10 +779,11 @@ class InvoicePaymentRequestSerializer(serializers.Serializer):
             payment_method_id = data.get('payment_method_id')
             payment_method_token = data.get('payment_method_token')
 
-            logger.info(f"🔍 PAYMENT VALIDATION - Checking fields: payment_method={payment_method}, payment_method_id={payment_method_id}, payment_method_token={payment_method_token}")
+            # SECURITY: Only log presence of payment method identifiers, not values
+            logger.debug(f"Payment validation - has_method={bool(payment_method)}, has_method_id={bool(payment_method_id)}, has_token={bool(payment_method_token)}")
 
             if not payment_method_id and not payment_method_token and not payment_method:
-                logger.error(f"❌ PAYMENT VALIDATION ERROR - No payment method provided. Received data: {data}")
+                logger.warning("Payment validation error - no payment method identifier provided")
                 raise serializers.ValidationError(
                     "No payment method provided. Either payment_method, payment_method_id, or payment_method_token is required for non-manual payments"
                 )

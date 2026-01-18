@@ -2,6 +2,7 @@
 import logging
 import uuid
 from datetime import timedelta, datetime, date, time
+from django.utils import timezone
 from decimal import Decimal
 from typing import Dict, Any, List, Optional
 
@@ -66,7 +67,7 @@ class BookingSessionService:
             raise BookingFlowNotActive()
         
         # Generate session expiry (24 hours from now)
-        expires_at = datetime.now() + timedelta(hours=24)
+        expires_at = timezone.now() + timedelta(hours=24)
         
         # Get first step
         first_step = flow.enabled_steps.first()
@@ -375,7 +376,7 @@ class BookingSessionService:
 
                             # IMPORTANT: Mark session as completed to prevent duplicate completion
                             session.is_completed = True
-                            session.completed_at = datetime.now()
+                            session.completed_at = timezone.now()
 
                             # CRITICAL FIX: Save the session with the linked event immediately
                             session.save(update_fields=['created_event', 'is_completed', 'completed_at'])
@@ -397,7 +398,7 @@ class BookingSessionService:
                     # ENHANCED SAFEGUARD: Double-check completion status before marking complete
                     if not session.is_completed:
                         session.is_completed = True
-                        session.completed_at = datetime.now()
+                        session.completed_at = timezone.now()
                         logger.info(f"🔥 FLOW_COMPLETION: No more steps - marking session {session.session_id} as completed")
                     else:
                         logger.warning(f"🔥 FLOW_COMPLETION: Session {session.session_id} already marked completed")
@@ -420,10 +421,10 @@ class BookingSessionService:
             completion_type: 'payment' for immediate payment, 'quote' for quote request
             reservation_token: Optional reservation token from pre-payment availability validation
         """
-        # ENHANCED DEBUGGING: Log the received completion type with timestamp
+        # Log completion request (sanitized - no tokens)
         import time
         completion_attempt_time = time.time()
-        logger.info(f"🔥 COMPLETE_BOOKING CALLED: session_id={session_id}, completion_type='{completion_type}', reservation_token={reservation_token}, attempt_time={completion_attempt_time}")
+        logger.info(f"Complete booking: session_id={session_id}, completion_type='{completion_type}', has_token={bool(reservation_token)}")
 
         # ENHANCED SAFEGUARD: Use atomic transaction with row-level locking to prevent race conditions
         with transaction.atomic():
@@ -491,8 +492,8 @@ class BookingSessionService:
                 # Return existing event to maintain idempotency
                 return session.created_event
 
-            # Log session booking data to see what completion_type is stored
-            logger.info(f"🔥 SESSION BOOKING DATA: {session.booking_data}")
+            # Log session info (sanitized - no full data)
+            logger.debug(f"Session booking data keys: {list(session.booking_data.keys()) if session.booking_data else []}")
         
         # Validate all required steps are completed
         required_steps = session.booking_flow.steps.filter(is_required=True, is_enabled=True)
@@ -524,7 +525,7 @@ class BookingSessionService:
         with transaction.atomic():
             # ENHANCED ATOMIC PROTECTION: Mark session as being completed to prevent concurrent access
             session.is_completed = True
-            session.completed_at = datetime.now()
+            session.completed_at = timezone.now()
 
             # Store the reservation token in booking_data for payment signal processing
             if reservation_token:
@@ -672,7 +673,7 @@ class BookingSessionService:
                     if hasattr(session.booking_flow, 'conversion_funnel_id') and session.booking_flow.conversion_funnel_id:
                         update_funnel_analytics.delay(
                             funnel_id=session.booking_flow.conversion_funnel_id,
-                            date_str=datetime.now().date().isoformat()
+                            date_str=timezone.now().date().isoformat()
                         )
                         logger.info(f"Queued funnel analytics update for session {session.session_id}")
                 except ImportError:
@@ -932,10 +933,11 @@ class BookingSessionService:
     def _process_booking_payment(session, event, payment_data):
         """Process payment for completed booking"""
         logger.info(f"Starting payment processing for session {session.session_id}")
-        logger.info(f"Payment data received: {payment_data}")
+        # Log only non-sensitive fields
+        logger.debug(f"Payment data keys: {list(payment_data.keys()) if payment_data else []}")
 
         gateway_id = payment_data.get('gateway_id') or payment_data.get('payment_gateway_id')
-        logger.info(f"Gateway ID from payment data: {gateway_id}")
+        logger.debug(f"Gateway ID from payment data: {gateway_id}")
 
         # If no gateway specified in payment data, use first available active gateway
         if not gateway_id:
@@ -1008,13 +1010,13 @@ class BookingSessionService:
             'event': event.id,  # Pass ID, not object
             'amount': amount_to_charge,  # Use calculated amount, not full total
             'status': 'PENDING',
-            'due_date': datetime.now().date() + timedelta(days=due_days),
+            'due_date': timezone.now().date() + timedelta(days=due_days),
             'description': description,
             'is_manual': False,
             'currency': 'PHP',  # Ensure currency is set
         }
         
-        logger.info(f"Creating payment record with data: {payment_record_data}")
+        logger.debug(f"Creating payment record: amount={payment_record_data.get('amount')}, event_id={payment_record_data.get('event')}")
         
         # Create initial payment record
         try:
@@ -1038,7 +1040,7 @@ class BookingSessionService:
         if payment_data.get('billing_address'):
             gateway_data['billing_address'] = payment_data['billing_address']
         
-        logger.info(f"Gateway data for processing: {gateway_data}")
+        logger.debug(f"Gateway data for processing: gateway_id={gateway_data.get('gateway_id')}, has_token={bool(gateway_data.get('payment_method_token'))}")
         
         # FIX: Use correct service method
         try:
@@ -1165,7 +1167,7 @@ class BookingSessionService:
             event_id=event.id,
             amount=amount_to_charge,
             currency=invoice.currency or 'PHP',
-            due_date=datetime.now().date() + timedelta(days=due_days),
+            due_date=timezone.now().date() + timedelta(days=due_days),
             description=description,
             invoice_id=invoice.id,
             quote_id=invoice.quote.id if invoice.quote else None,
@@ -1362,7 +1364,7 @@ class BookingSessionService:
             'completion_type': completion_type,  # Track how event was completed (payment/quote)
             'workflow_template': session.booking_flow.workflow_template,
             'name': 'Booking from Client Portal',  # Default name
-            'start_date': datetime.now(),  # Default start date - will be overridden if provided
+            'start_date': timezone.now(),  # Default start date - will be overridden if provided
         }
         
         # Extract basic event info from various steps (only whitelisted fields)
@@ -1421,16 +1423,19 @@ class BookingSessionService:
                                         continue
                                 else:
                                     # No format matched, fallback to current time
-                                    event_data['start_date'] = datetime.now()
-                            except Exception:
+                                    logger.warning(f"Start date parsing failed (no format matched): {start_date}, using current time as fallback")
+                                    event_data['start_date'] = timezone.now()
+                            except Exception as e:
                                 # Any other parsing error, use current time
-                                event_data['start_date'] = datetime.now()
+                                logger.warning(f"Start date parsing exception: {e}, using current time as fallback")
+                                event_data['start_date'] = timezone.now()
                         elif hasattr(start_date, 'isoformat'):
                             # Already a datetime or date object
                             event_data['start_date'] = start_date
                         else:
                             # Fallback to current time if invalid format or empty string
-                            event_data['start_date'] = datetime.now()
+                            logger.warning(f"Invalid start_date format or empty: {start_date}, using current time as fallback")
+                            event_data['start_date'] = timezone.now()
                 
                 if 'end_date' in step_data:
                     end_date = step_data['end_date']
@@ -2198,7 +2203,7 @@ class BookingSessionService:
         else:
             # Payment completions auto-accept the quote
             quote_status = 'ACCEPTED'
-            accepted_at = datetime.now()
+            accepted_at = timezone.now()
 
             notes = f"Auto-accepted quote from booking session {session.session_id}"
             client_message = ""
@@ -2207,7 +2212,7 @@ class BookingSessionService:
         logger.info(f"Creating quote with status '{quote_status}' for completion_type '{completion_type}'")
 
         # Calculate valid_until bounded by event date to prevent quotes being valid after the event
-        default_valid_until = datetime.now().date() + timedelta(days=30)
+        default_valid_until = timezone.now().date() + timedelta(days=30)
         event_date = event.start_date.date() if hasattr(event.start_date, 'date') else event.start_date
         max_valid_until = event_date - timedelta(days=1)  # At least 1 day before event
         quote_valid_until = min(default_valid_until, max_valid_until)

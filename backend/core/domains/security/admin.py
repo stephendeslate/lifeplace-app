@@ -2,6 +2,7 @@
 
 from django.contrib import admin
 from .models import SecurityBreach, BreachNotification, AffectedUser
+from core.utils.security_logging import SecurityEvent
 
 
 class BreachNotificationInline(admin.TabularInline):
@@ -132,4 +133,63 @@ class AffectedUserAdmin(admin.ModelAdmin):
         return False
 
     def has_delete_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(SecurityEvent)
+class SecurityEventAdmin(admin.ModelAdmin):
+    """Admin interface for security event logs"""
+    list_display = [
+        'timestamp', 'event_type', 'severity', 'username',
+        'ip_address', 'description_truncated', 'is_blocked'
+    ]
+    list_filter = ['event_type', 'severity', 'is_blocked', 'timestamp']
+    search_fields = ['username', 'ip_address', 'description', 'request_path']
+    readonly_fields = [
+        'timestamp', 'event_type', 'severity', 'user', 'username',
+        'user_agent', 'ip_address', 'country', 'request_method',
+        'request_path', 'referer', 'description', 'details',
+        'risk_score', 'is_blocked'
+    ]
+    date_hierarchy = 'timestamp'
+    ordering = ['-timestamp']
+    list_per_page = 50
+
+    fieldsets = (
+        ('Event Details', {
+            'fields': ('timestamp', 'event_type', 'severity', 'description')
+        }),
+        ('User Information', {
+            'fields': ('user', 'username', 'user_agent')
+        }),
+        ('Network Information', {
+            'fields': ('ip_address', 'country')
+        }),
+        ('Request Information', {
+            'fields': ('request_method', 'request_path', 'referer'),
+            'classes': ('collapse',)
+        }),
+        ('Risk Assessment', {
+            'fields': ('risk_score', 'is_blocked', 'details'),
+            'classes': ('collapse',)
+        }),
+    )
+
+    def description_truncated(self, obj):
+        """Truncate description for list view"""
+        if len(obj.description) > 50:
+            return f"{obj.description[:50]}..."
+        return obj.description
+    description_truncated.short_description = 'Description'
+
+    def has_add_permission(self, request):
+        """Security events should only be created programmatically"""
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        """Security events should be immutable"""
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        """Security events should not be deleted"""
         return False

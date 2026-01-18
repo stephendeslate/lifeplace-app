@@ -285,3 +285,130 @@ class CommunicationRecord(BaseModel):
         self.deleted_at = None
         self.deleted_by = None
         self.save(update_fields=['is_deleted', 'deleted_at', 'deleted_by', 'updated_at'])
+
+
+class EmailUnsubscribeToken(BaseModel):
+    """
+    Token for one-click email unsubscribe functionality.
+
+    CAN-SPAM Compliance: Provides secure one-click unsubscribe links in marketing emails.
+    Tokens are single-use and expire after 30 days.
+    """
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='unsubscribe_tokens'
+    )
+
+    # Category determines what preferences to update on unsubscribe
+    CATEGORY_CHOICES = (
+        ('MARKETING', 'Marketing'),  # Unsubscribe from marketing emails only
+        ('ALL', 'All'),  # Unsubscribe from all non-essential emails
+    )
+    category = models.CharField(
+        max_length=20,
+        choices=CATEGORY_CHOICES,
+        default='MARKETING',
+        help_text="Email category to unsubscribe from"
+    )
+
+    is_used = models.BooleanField(default=False)
+    used_at = models.DateTimeField(null=True, blank=True)
+    expires_at = models.DateTimeField()
+
+    # Track which communication triggered this token
+    communication_record = models.ForeignKey(
+        CommunicationRecord,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='unsubscribe_tokens'
+    )
+
+    class Meta:
+        verbose_name = 'Email Unsubscribe Token'
+        verbose_name_plural = 'Email Unsubscribe Tokens'
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['user', 'is_used']),
+            models.Index(fields=['expires_at']),
+        ]
+
+    def __str__(self):
+        return f"Unsubscribe token for {self.user.email} ({self.category})"
+
+    def save(self, *args, **kwargs):
+        """Set default expiration if not provided."""
+        from datetime import timedelta
+        from django.utils import timezone
+
+        if not self.expires_at:
+            # Tokens expire after 30 days
+            self.expires_at = timezone.now() + timedelta(days=30)
+        super().save(*args, **kwargs)
+
+    def is_expired(self) -> bool:
+        """Check if the token has expired."""
+        from django.utils import timezone
+        return timezone.now() > self.expires_at
+
+    def is_valid(self) -> bool:
+        """Check if the token can be used."""
+        return not self.is_used and not self.is_expired()
+
+    def mark_used(self) -> bool:
+        """
+        Mark the token as used and update user preferences.
+
+        Returns:
+            bool: True if successfully marked as used, False otherwise
+        """
+        from django.utils import timezone
+        from django.db import transaction
+        from core.domains.notifications.models import NotificationPreference
+
+        if not self.is_valid():
+            return False
+
+        with transaction.atomic():
+            # Mark token as used
+            self.is_used = True
+            self.used_at = timezone.now()
+            self.save(update_fields=['is_used', 'used_at', 'updated_at'])
+
+            # Update user notification preferences
+            prefs, _ = NotificationPreference.objects.get_or_create(user=self.user)
+
+            if self.category == 'MARKETING':
+                prefs.marketing_email = False
+                prefs.marketing_sms = False
+                prefs.marketing_push = False
+                prefs.save(update_fields=['marketing_email', 'marketing_sms', 'marketing_push', 'updated_at'])
+            elif self.category == 'ALL':
+                prefs.email_enabled = False
+                prefs.save(update_fields=['email_enabled', 'updated_at'])
+
+            logger.info(f"User {self.user.email} unsubscribed from {self.category} emails")
+
+        return True
+
+    @classmethod
+    def generate_for_user(cls, user, category: str = 'MARKETING', communication_record=None):
+        """
+        Generate a new unsubscribe token for a user.
+
+        Args:
+            user: User model instance
+            category: Email category (MARKETING or ALL)
+            communication_record: Optional CommunicationRecord that triggered this token
+
+        Returns:
+            EmailUnsubscribeToken instance
+        """
+        return cls.objects.create(
+            user=user,
+            category=category,
+            communication_record=communication_record
+        )

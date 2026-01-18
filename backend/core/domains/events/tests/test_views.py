@@ -71,7 +71,7 @@ class TestEventTypeViewSet:
         event_type_factory(name='Corporate')
         event_type_factory(name='Inactive', inactive=True)
 
-        response = api_client.get('/api/event-types/')
+        response = api_client.get('/api/events/event-types/')
 
         assert response.status_code == status.HTTP_200_OK
         # Should only return active event types
@@ -81,24 +81,23 @@ class TestEventTypeViewSet:
         """Test public access to retrieve single event type."""
         event_type = event_type_factory(name='Birthday')
 
-        response = api_client.get(f'/api/event-types/{event_type.id}/')
+        response = api_client.get(f'/api/events/event-types/{event_type.id}/')
 
         assert response.status_code == status.HTTP_200_OK
         assert response.data['name'] == 'Birthday'
 
-    def test_create_event_type_admin_only(
-        self, api_client, authenticated_admin, user_factory
-    ):
+    def test_create_event_type_admin_only(self, authenticated_admin):
         """Test only admin can create event types."""
-        # Anonymous user should fail
-        response = api_client.post('/api/event-types/', {
+        # Anonymous user should fail - use fresh client to avoid shared state
+        anon_client = APIClient()
+        response = anon_client.post('/api/events/event-types/', {
             'name': 'New Type',
             'description': 'A new event type',
         })
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
         # Admin should succeed
-        response = authenticated_admin.post('/api/event-types/', {
+        response = authenticated_admin.post('/api/events/event-types/', {
             'name': 'New Type',
             'description': 'A new event type',
         })
@@ -107,7 +106,7 @@ class TestEventTypeViewSet:
 
     def test_create_event_type_client_forbidden(self, authenticated_client_user):
         """Test client users cannot create event types."""
-        response = authenticated_client_user.post('/api/event-types/', {
+        response = authenticated_client_user.post('/api/events/event-types/', {
             'name': 'Client Type',
             'description': 'Should fail',
         })
@@ -120,7 +119,7 @@ class TestEventTypeViewSet:
         event_type = event_type_factory(name='Old Name')
 
         response = authenticated_admin.patch(
-            f'/api/event-types/{event_type.id}/',
+            f'/api/events/event-types/{event_type.id}/',
             {'name': 'New Name'}
         )
 
@@ -131,7 +130,7 @@ class TestEventTypeViewSet:
         """Test admin can delete event types."""
         event_type = event_type_factory()
 
-        response = authenticated_admin.delete(f'/api/event-types/{event_type.id}/')
+        response = authenticated_admin.delete(f'/api/events/event-types/{event_type.id}/')
 
         assert response.status_code == status.HTTP_204_NO_CONTENT
         assert not EventType.objects.filter(id=event_type.id).exists()
@@ -143,7 +142,7 @@ class TestEventTypeViewSet:
         event_type = event_type_factory()
         event_factory(event_type=event_type)  # Event using this type
 
-        response = authenticated_admin.delete(f'/api/event-types/{event_type.id}/')
+        response = authenticated_admin.delete(f'/api/events/event-types/{event_type.id}/')
 
         # Should return 200 (soft delete)
         assert response.status_code == status.HTTP_200_OK
@@ -154,7 +153,7 @@ class TestEventTypeViewSet:
         event_type_factory(name='Active2')
         event_type_factory(name='Inactive', inactive=True)
 
-        response = api_client.get('/api/event-types/active/')
+        response = api_client.get('/api/events/event-types/active/')
 
         assert response.status_code == status.HTTP_200_OK
         names = [et['name'] for et in response.data]
@@ -174,7 +173,7 @@ class TestEventViewSet:
 
     def test_list_events_requires_auth(self, api_client):
         """Test event list requires authentication."""
-        response = api_client.get('/api/events/')
+        response = api_client.get('/api/events/events/')
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
     def test_list_events_authenticated(self, authenticated_admin, event_factory):
@@ -182,7 +181,7 @@ class TestEventViewSet:
         event_factory()
         event_factory()
 
-        response = authenticated_admin.get('/api/events/')
+        response = authenticated_admin.get('/api/events/events/')
 
         assert response.status_code == status.HTTP_200_OK
         assert response.data['count'] == 2
@@ -193,7 +192,7 @@ class TestEventViewSet:
         event_factory(confirmed=True)
         event_factory(cancelled=True)
 
-        response = authenticated_admin.get('/api/events/', {'status': 'CONFIRMED'})
+        response = authenticated_admin.get('/api/events/events/', {'status': 'CONFIRMED'})
 
         assert response.status_code == status.HTTP_200_OK
         assert response.data['count'] == 1
@@ -210,7 +209,7 @@ class TestEventViewSet:
         event_factory(client=client1)
         event_factory(client=client2)
 
-        response = authenticated_admin.get('/api/events/', {'client': client1.id})
+        response = authenticated_admin.get('/api/events/events/', {'client': client1.id})
 
         assert response.status_code == status.HTTP_200_OK
         assert response.data['count'] == 2
@@ -227,7 +226,7 @@ class TestEventViewSet:
         start_from = (now + timedelta(days=5)).strftime('%Y-%m-%d')
         start_to = (now + timedelta(days=30)).strftime('%Y-%m-%d')
 
-        response = authenticated_admin.get('/api/events/', {
+        response = authenticated_admin.get('/api/events/events/', {
             'start_date_from': start_from,
             'start_date_to': start_to,
         })
@@ -239,7 +238,7 @@ class TestEventViewSet:
         """Test retrieving single event."""
         event = event_factory(name='Test Event')
 
-        response = authenticated_admin.get(f'/api/events/{event.id}/')
+        response = authenticated_admin.get(f'/api/events/events/{event.id}/')
 
         assert response.status_code == status.HTTP_200_OK
         assert response.data['name'] == 'Test Event'
@@ -253,7 +252,7 @@ class TestEventViewSet:
         event = event_factory()
         mock_get.return_value = None  # Cache miss
 
-        response = authenticated_admin.get(f'/api/events/{event.id}/')
+        response = authenticated_admin.get(f'/api/events/events/{event.id}/')
 
         assert response.status_code == status.HTTP_200_OK
         mock_get.assert_called_once_with(event.id)
@@ -267,7 +266,7 @@ class TestEventViewSet:
         event_type = event_type_factory()
         start_date = timezone.now() + timedelta(days=30)
 
-        response = authenticated_admin.post('/api/events/', {
+        response = authenticated_admin.post('/api/events/events/', {
             'client': client.id,
             'event_type': event_type.id,
             'name': 'New Event',
@@ -283,7 +282,7 @@ class TestEventViewSet:
         event = event_factory(name='Old Name')
 
         response = authenticated_admin.patch(
-            f'/api/events/{event.id}/',
+            f'/api/events/events/{event.id}/',
             {'name': 'New Name'}
         )
 
@@ -291,20 +290,22 @@ class TestEventViewSet:
         assert response.data['name'] == 'New Name'
 
     def test_delete_event(self, authenticated_admin, event_factory):
-        """Test deleting an event."""
+        """Test deleting an event uses soft delete (cancellation)."""
         event = event_factory()
 
-        response = authenticated_admin.delete(f'/api/events/{event.id}/')
+        response = authenticated_admin.delete(f'/api/events/events/{event.id}/')
 
         assert response.status_code == status.HTTP_204_NO_CONTENT
-        assert not Event.objects.filter(id=event.id).exists()
+        # Soft delete - event still exists but status is CANCELLED
+        event.refresh_from_db()
+        assert event.status == 'CANCELLED'
 
     def test_update_status_action(self, authenticated_admin, event_factory):
         """Test the update_status action."""
         event = event_factory(status='LEAD')
 
         response = authenticated_admin.post(
-            f'/api/events/{event.id}/update_status/',
+            f'/api/events/events/{event.id}/update_status/',
             {'status': 'CONFIRMED'}
         )
 
@@ -319,7 +320,7 @@ class TestEventViewSet:
         event = event_factory()
 
         response = authenticated_admin.post(
-            f'/api/events/{event.id}/update_status/',
+            f'/api/events/events/{event.id}/update_status/',
             {}
         )
 
@@ -337,7 +338,7 @@ class TestEventViewSet:
             status='PENDING',
         )
 
-        response = authenticated_admin.get(f'/api/events/{event.id}/tasks/')
+        response = authenticated_admin.get(f'/api/events/events/{event.id}/tasks/')
 
         assert response.status_code == status.HTTP_200_OK
         assert len(response.data) == 1
@@ -355,7 +356,7 @@ class TestEventViewSet:
             actor=actor,
         )
 
-        response = authenticated_admin.get(f'/api/events/{event.id}/timeline/')
+        response = authenticated_admin.get(f'/api/events/events/{event.id}/timeline/')
 
         assert response.status_code == status.HTTP_200_OK
         assert len(response.data) == 1
@@ -378,7 +379,7 @@ class TestEventViewSet:
             status='PENDING',
         )
 
-        response = authenticated_admin.get(f'/api/events/{event.id}/next_task/')
+        response = authenticated_admin.get(f'/api/events/events/{event.id}/next_task/')
 
         assert response.status_code == status.HTTP_200_OK
         assert response.data['title'] == 'First Task'
@@ -387,7 +388,7 @@ class TestEventViewSet:
         """Test next_task returns null when no pending tasks."""
         event = event_factory()
 
-        response = authenticated_admin.get(f'/api/events/{event.id}/next_task/')
+        response = authenticated_admin.get(f'/api/events/events/{event.id}/next_task/')
 
         assert response.status_code == status.HTTP_200_OK
         assert response.data is None
@@ -402,7 +403,7 @@ class TestEventViewSet:
             mock_check_in.return_value = {'success': True}
 
             response = authenticated_admin.post(
-                f'/api/events/{event.id}/check_in/',
+                f'/api/events/events/{event.id}/check_in/',
                 {'notes': 'On time arrival'}
             )
 
@@ -422,7 +423,7 @@ class TestEventViewSet:
             }
 
             response = authenticated_admin.post(
-                f'/api/events/{event.id}/check_in/',
+                f'/api/events/events/{event.id}/check_in/',
                 {}
             )
 
@@ -442,7 +443,7 @@ class TestEventViewSet:
             }
 
             response = authenticated_admin.post(
-                f'/api/events/{event.id}/checkout/',
+                f'/api/events/events/{event.id}/checkout/',
                 {'notes': 'Checkout complete'}
             )
 
@@ -458,7 +459,7 @@ class TestEventViewSet:
             mock_no_show.return_value = {'success': True}
 
             response = authenticated_admin.post(
-                f'/api/events/{event.id}/no_show/',
+                f'/api/events/events/{event.id}/no_show/',
                 {}
             )
 
@@ -474,7 +475,7 @@ class TestEventViewSet:
             mock_hold.return_value = {'success': True}
 
             response = authenticated_admin.post(
-                f'/api/events/{event.id}/place_hold/',
+                f'/api/events/events/{event.id}/place_hold/',
                 {}
             )
 
@@ -493,7 +494,7 @@ class TestEventViewSet:
             }
 
             response = authenticated_admin.post(
-                f'/api/events/{event.id}/extend_hold/',
+                f'/api/events/events/{event.id}/extend_hold/',
                 {}
             )
 
@@ -510,7 +511,7 @@ class TestEventViewSet:
             mock_release.return_value = {'success': True}
 
             response = authenticated_admin.post(
-                f'/api/events/{event.id}/release_hold/',
+                f'/api/events/events/{event.id}/release_hold/',
                 {'reason': 'Client requested'}
             )
 
@@ -529,7 +530,7 @@ class TestEventViewSet:
             }
 
             response = authenticated_admin.get(
-                f'/api/events/{event.id}/hold_status/'
+                f'/api/events/events/{event.id}/hold_status/'
             )
 
             assert response.status_code == status.HTTP_200_OK
@@ -555,7 +556,7 @@ class TestEventTaskViewSet:
             status='PENDING',
         )
 
-        response = authenticated_admin.get('/api/event-tasks/')
+        response = authenticated_admin.get('/api/events/event-tasks/')
 
         assert response.status_code == status.HTTP_200_OK
         assert len(response.data) >= 1
@@ -565,7 +566,7 @@ class TestEventTaskViewSet:
         event = event_factory()
         assignee = user_factory()
 
-        response = authenticated_admin.post('/api/event-tasks/', {
+        response = authenticated_admin.post('/api/events/event-tasks/', {
             'event': event.id,
             'title': 'New Task',
             'description': 'Task description',
@@ -590,7 +591,7 @@ class TestEventTaskViewSet:
         )
 
         response = authenticated_admin.post(
-            f'/api/event-tasks/{task.id}/complete/',
+            f'/api/events/event-tasks/{task.id}/complete/',
             {'completion_notes': 'Done!'}
         )
 
@@ -611,7 +612,7 @@ class TestEventTaskViewSet:
         )
 
         response = authenticated_admin.patch(
-            f'/api/event-tasks/{task.id}/',
+            f'/api/events/event-tasks/{task.id}/',
             {'title': 'New Title', 'priority': 'HIGH'}
         )
 
@@ -630,7 +631,7 @@ class TestEventTaskViewSet:
             status='PENDING',
         )
 
-        response = authenticated_admin.delete(f'/api/event-tasks/{task.id}/')
+        response = authenticated_admin.delete(f'/api/events/event-tasks/{task.id}/')
 
         assert response.status_code == status.HTTP_204_NO_CONTENT
 
@@ -646,21 +647,21 @@ class TestDateAvailabilityAPIView:
 
     def test_check_availability_requires_auth(self, api_client):
         """Test availability check requires authentication."""
-        response = api_client.get('/api/availability/', {
+        response = api_client.get('/api/events/availability/check/', {
             'start_date': '2024-06-15',
         })
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
     def test_check_availability_missing_date(self, authenticated_admin):
         """Test availability check requires start_date."""
-        response = authenticated_admin.get('/api/availability/')
+        response = authenticated_admin.get('/api/events/availability/check/')
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert 'start_date' in response.data['error']
 
     def test_check_availability_invalid_date_format(self, authenticated_admin):
         """Test availability check validates date format."""
-        response = authenticated_admin.get('/api/availability/', {
+        response = authenticated_admin.get('/api/events/availability/check/', {
             'start_date': 'invalid-date',
         })
 
@@ -671,7 +672,7 @@ class TestDateAvailabilityAPIView:
         """Test successful availability check."""
         target_date = (timezone.now() + timedelta(days=60)).strftime('%Y-%m-%d')
 
-        response = authenticated_admin.get('/api/availability/', {
+        response = authenticated_admin.get('/api/events/availability/check/', {
             'start_date': target_date,
         })
 
@@ -690,7 +691,7 @@ class TestDateAvailabilityAPIView:
             date_blocked_trait=True,
         )
 
-        response = authenticated_admin.get('/api/availability/', {
+        response = authenticated_admin.get('/api/events/availability/check/', {
             'start_date': target_date.strftime('%Y-%m-%d'),
         })
 
@@ -704,7 +705,7 @@ class TestDateRangeAvailabilityAPIView:
 
     def test_check_range_requires_both_dates(self, authenticated_admin):
         """Test range check requires both start and end dates."""
-        response = authenticated_admin.get('/api/availability/range/', {
+        response = authenticated_admin.get('/api/events/availability/range/', {
             'start_date': '2024-06-15',
         })
 
@@ -712,7 +713,7 @@ class TestDateRangeAvailabilityAPIView:
 
     def test_check_range_validates_order(self, authenticated_admin):
         """Test range check validates start before end."""
-        response = authenticated_admin.get('/api/availability/range/', {
+        response = authenticated_admin.get('/api/events/availability/range/', {
             'start_date': '2024-06-20',
             'end_date': '2024-06-15',
         })
@@ -721,7 +722,7 @@ class TestDateRangeAvailabilityAPIView:
 
     def test_check_range_limits_span(self, authenticated_admin):
         """Test range check limits to 365 days."""
-        response = authenticated_admin.get('/api/availability/range/', {
+        response = authenticated_admin.get('/api/events/availability/range/', {
             'start_date': '2024-01-01',
             'end_date': '2025-12-31',  # More than 365 days
         })
@@ -733,7 +734,7 @@ class TestDateRangeAvailabilityAPIView:
         start = (timezone.now() + timedelta(days=60)).strftime('%Y-%m-%d')
         end = (timezone.now() + timedelta(days=65)).strftime('%Y-%m-%d')
 
-        response = authenticated_admin.get('/api/availability/range/', {
+        response = authenticated_admin.get('/api/events/availability/range/', {
             'start_date': start,
             'end_date': end,
         })
@@ -749,7 +750,7 @@ class TestValidateBookingRequestAPIView:
 
     def test_validate_booking_requires_date(self, authenticated_admin):
         """Test booking validation requires start_date."""
-        response = authenticated_admin.post('/api/availability/validate/', {})
+        response = authenticated_admin.post('/api/events/availability/validate/', {})
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
@@ -757,7 +758,7 @@ class TestValidateBookingRequestAPIView:
         """Test successful booking validation."""
         target_date = (timezone.now() + timedelta(days=90)).strftime('%Y-%m-%d')
 
-        response = authenticated_admin.post('/api/availability/validate/', {
+        response = authenticated_admin.post('/api/events/availability/validate/', {
             'start_date': target_date,
             'is_lead': True,
         })
@@ -772,7 +773,7 @@ class TestNextAvailableDateAPIView:
 
     def test_next_available_default_start(self, authenticated_admin, clear_cache):
         """Test finding next available date from today."""
-        response = authenticated_admin.get('/api/availability/next/')
+        response = authenticated_admin.get('/api/events/availability/next/')
 
         assert response.status_code == status.HTTP_200_OK
         assert 'next_available_date' in response.data
@@ -781,7 +782,7 @@ class TestNextAvailableDateAPIView:
         """Test finding next available from custom date."""
         start = (timezone.now() + timedelta(days=30)).strftime('%Y-%m-%d')
 
-        response = authenticated_admin.get('/api/availability/next/', {
+        response = authenticated_admin.get('/api/events/availability/next/', {
             'start_date': start,
         })
 
@@ -797,7 +798,7 @@ class TestPublicEventAvailabilityAPIView:
         start = (timezone.now() + timedelta(days=30)).strftime('%Y-%m-%d')
         end = (timezone.now() + timedelta(days=60)).strftime('%Y-%m-%d')
 
-        response = api_client.get('/api/availability/public/', {
+        response = api_client.get('/api/events/public/availability/', {
             'start_date': start,
             'end_date': end,
         })
@@ -806,13 +807,13 @@ class TestPublicEventAvailabilityAPIView:
 
     def test_public_availability_requires_dates(self, api_client):
         """Test public availability requires both dates."""
-        response = api_client.get('/api/availability/public/')
+        response = api_client.get('/api/events/public/availability/')
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
     def test_public_availability_limits_range(self, api_client):
         """Test public availability limits to 90 days."""
-        response = api_client.get('/api/availability/public/', {
+        response = api_client.get('/api/events/public/availability/', {
             'start_date': '2024-01-01',
             'end_date': '2024-12-31',  # More than 90 days
         })
@@ -833,7 +834,7 @@ class TestPublicEventAvailabilityAPIView:
         start = (timezone.now() + timedelta(days=30)).strftime('%Y-%m-%d')
         end = (timezone.now() + timedelta(days=60)).strftime('%Y-%m-%d')
 
-        response = api_client.get('/api/availability/public/', {
+        response = api_client.get('/api/events/public/availability/', {
             'start_date': start,
             'end_date': end,
         })

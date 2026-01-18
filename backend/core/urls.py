@@ -5,6 +5,7 @@ from django.urls import path, include, re_path
 from django.views.generic import TemplateView
 from django.conf import settings
 from django.conf.urls.static import static
+from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
 from core.views import health_check, readiness_check
 from core.domains.settings.views import MobileVersionCheckView
 
@@ -12,6 +13,11 @@ urlpatterns = [
     # Health check endpoints (no auth required)
     path('health/', health_check, name='health_check'),
     path('ready/', readiness_check, name='readiness_check'),
+
+    # OpenAPI Documentation (no auth required)
+    path('api/docs/schema/', SpectacularAPIView.as_view(), name='schema'),
+    path('api/docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
+    path('api/docs/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
 
     # Mobile app version check (public endpoint)
     path('api/mobile/version/', MobileVersionCheckView.as_view(), name='mobile-version-check'),

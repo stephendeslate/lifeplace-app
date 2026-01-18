@@ -42,6 +42,11 @@ from core.factories.questionnaires import (
     QuestionnaireFieldFactory,
     QuestionnaireResponseFactory,
 )
+from core.factories.products import (
+    ProductCategoryFactory,
+    ProductOptionFactory,
+    DiscountFactory,
+)
 
 
 # =============================================================================
@@ -75,6 +80,11 @@ register(InvoiceFactory)
 register(QuestionnaireFactory)
 register(QuestionnaireFieldFactory)
 register(QuestionnaireResponseFactory)
+
+# Products domain
+register(ProductCategoryFactory)
+register(ProductOptionFactory)
+register(DiscountFactory)
 
 
 # =============================================================================

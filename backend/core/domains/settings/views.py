@@ -4,6 +4,7 @@ from rest_framework import status, permissions
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.throttling import AnonRateThrottle
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from packaging import version as semver
@@ -22,6 +23,7 @@ from .serializers import (
     PublicCompanySettingsSerializer,
 )
 from .services import AppSettingsService, CurrencySettingsService
+from core.utils.permissions import IsAdmin, CanManageFinancialSettings, CanManageCompanySettings
 import logging
 
 logger = logging.getLogger(__name__)
@@ -126,7 +128,7 @@ class CurrencySettingsView(APIView):
 
 class SystemCurrencySettingsView(APIView):
     """API for system-wide currency settings (admin only)"""
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, CanManageFinancialSettings]
 
     def get(self, request):
         """Get system-wide currency settings"""
@@ -212,7 +214,7 @@ def currency_format_settings_view(request):
 
 class LegalDocumentViewSet(APIView):
     """API for managing legal documents (admin only)"""
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsAdmin]
 
     def get(self, request, document_type=None):
         """Get legal documents - list or detail"""
@@ -351,7 +353,7 @@ class CompanySettingsView(APIView):
     API for managing company settings (singleton).
     Used for branding, contact info, and PDF generation context.
     """
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, CanManageCompanySettings]
 
     def get(self, request):
         """Get company settings (admin view with all fields)"""
@@ -422,6 +424,11 @@ class PublicCompanySettingsView(APIView):
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+class MobileVersionCheckThrottle(AnonRateThrottle):
+    """Rate limiting for mobile version check endpoint"""
+    rate = '100/hour'
+
+
 class MobileVersionCheckView(APIView):
     """
     Public endpoint for mobile app version checking.
@@ -429,7 +436,7 @@ class MobileVersionCheckView(APIView):
     GET /api/mobile/version/?platform=ios&current_version=1.0.0
     """
     permission_classes = [permissions.AllowAny]
-    throttle_classes = []  # No throttling for version checks
+    throttle_classes = [MobileVersionCheckThrottle]
 
     def get(self, request):
         platform = request.query_params.get('platform', 'ios')

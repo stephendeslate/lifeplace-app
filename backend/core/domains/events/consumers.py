@@ -13,12 +13,17 @@ Use Case:
 
 import json
 import logging
+import time
 from channels.generic.websocket import AsyncWebsocketConsumer
 
 logger = logging.getLogger(__name__)
 
 # Group name for all availability subscribers
 AVAILABILITY_GROUP = 'availability_updates'
+
+# Rate limiting settings
+MAX_MESSAGES_PER_SECOND = 10
+MAX_MESSAGE_SIZE = 65536  # 64KB max message size
 
 
 class AvailabilityConsumer(AsyncWebsocketConsumer):
@@ -46,6 +51,10 @@ class AvailabilityConsumer(AsyncWebsocketConsumer):
         Handle WebSocket connection.
         No authentication required - public endpoint.
         """
+        # Initialize rate limiting state
+        self.message_count = 0
+        self.rate_limit_window_start = time.time()
+
         # Join the global availability updates group
         self.group_name = AVAILABILITY_GROUP
 
@@ -74,6 +83,18 @@ class AvailabilityConsumer(AsyncWebsocketConsumer):
 
         logger.debug(f"Availability WebSocket disconnected: {self.channel_name} (code: {close_code})")
 
+    def _check_rate_limit(self):
+        """Check if the connection is within rate limits. Returns True if allowed."""
+        current_time = time.time()
+
+        # Reset counter if window has passed
+        if current_time - self.rate_limit_window_start >= 1.0:
+            self.message_count = 0
+            self.rate_limit_window_start = current_time
+
+        self.message_count += 1
+        return self.message_count <= MAX_MESSAGES_PER_SECOND
+
     async def receive(self, text_data):
         """
         Handle incoming WebSocket messages.
@@ -81,6 +102,24 @@ class AvailabilityConsumer(AsyncWebsocketConsumer):
         Currently supports:
         - ping: Heartbeat check (important for mobile apps)
         """
+        # Check message size limit
+        if len(text_data) > MAX_MESSAGE_SIZE:
+            logger.warning(f"WebSocket message too large: {len(text_data)} bytes")
+            await self.send(text_data=json.dumps({
+                'type': 'error',
+                'message': 'Message too large'
+            }))
+            return
+
+        # Check rate limit
+        if not self._check_rate_limit():
+            logger.warning(f"WebSocket rate limit exceeded for {self.channel_name}")
+            await self.send(text_data=json.dumps({
+                'type': 'error',
+                'message': 'Rate limit exceeded'
+            }))
+            return
+
         try:
             data = json.loads(text_data)
             message_type = data.get('type')

@@ -146,7 +146,7 @@ class DateBlockingService:
             reason: Optional reason for blocking (for logging)
         """
         event.date_blocked = True
-        event.date_blocked_at = datetime.now()
+        event.date_blocked_at = timezone.now()
         event.save(update_fields=['date_blocked', 'date_blocked_at'])
 
         logger.info(
@@ -398,7 +398,7 @@ class DateBlockingService:
         """
         event.status = 'CANCELLED'
         event.cancelled_reason = 'DATE_TAKEN'
-        event.cancelled_at = datetime.now()
+        event.cancelled_at = timezone.now()
         event.can_rebook = True  # Allow rebooking
         event.save(update_fields=['status', 'cancelled_reason', 'cancelled_at', 'can_rebook'])
 
@@ -422,7 +422,7 @@ class DateBlockingService:
         """
         event.status = 'CANCELLED'
         event.cancelled_reason = 'PAYMENT_TIMEOUT'
-        event.cancelled_at = datetime.now()
+        event.cancelled_at = timezone.now()
         event.can_rebook = True  # Allow rebooking
         event.save(update_fields=['status', 'cancelled_reason', 'cancelled_at', 'can_rebook'])
 
@@ -447,7 +447,7 @@ class DateBlockingService:
         if not event.downpayment_deadline:
             return False
 
-        now = datetime.now()
+        now = timezone.now()
         return now >= event.downpayment_deadline
 
     @staticmethod
@@ -459,7 +459,7 @@ class DateBlockingService:
             event: The event
             deadline_days: Number of days from now until deadline
         """
-        event.downpayment_deadline = datetime.now() + timedelta(days=deadline_days)
+        event.downpayment_deadline = timezone.now() + timedelta(days=deadline_days)
         event.save(update_fields=['downpayment_deadline'])
 
         logger.info(

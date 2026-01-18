@@ -10,6 +10,7 @@ and signal handlers.
 import logging
 from datetime import date, datetime
 from typing import Optional
+from django.utils import timezone
 
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
@@ -74,7 +75,7 @@ class AvailabilityWebSocketService:
                 'date': date_str,
                 'event_id': blocking_event_id,
                 'reason': reason,
-                'timestamp': datetime.now().isoformat()
+                'timestamp': timezone.now().isoformat()
             }
 
             # Use async_to_sync to call async channel layer method
@@ -120,7 +121,7 @@ class AvailabilityWebSocketService:
                 'type': 'date_released',
                 'date': date_str,
                 'reason': reason,
-                'timestamp': datetime.now().isoformat()
+                'timestamp': timezone.now().isoformat()
             }
 
             async_to_sync(channel_layer.group_send)(
@@ -167,7 +168,7 @@ class AvailabilityWebSocketService:
                 'type': 'reservation_created',
                 'date': date_str,
                 'expires_at': expires_str,
-                'timestamp': datetime.now().isoformat()
+                'timestamp': timezone.now().isoformat()
             }
 
             async_to_sync(channel_layer.group_send)(
@@ -210,7 +211,7 @@ class AvailabilityWebSocketService:
                 'type': 'reservation_released',
                 'date': date_str,
                 'reason': reason,
-                'timestamp': datetime.now().isoformat()
+                'timestamp': timezone.now().isoformat()
             }
 
             async_to_sync(channel_layer.group_send)(

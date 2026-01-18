@@ -12,6 +12,7 @@ import { Dashboard } from './pages/dashboard';
 import { ClientsOverview, ClientProfile } from './pages/clients';
 import { EventsOverview, EventProfile, EventsCalendar } from './pages/events';
 import { ContractEdit, ContractView, ContractSign } from './pages/contracts';
+import { NotFound } from './pages/NotFound';
 import { TasksPage } from './pages/tasks';
 import { CommunicationRecords } from './pages/records';
 import { NotificationsPage } from './pages/notifications';
@@ -553,8 +554,8 @@ const AppRouter: React.FC = () => {
       {/* Default Route */}
       <Route path="/" element={<Navigate to="/dashboard" replace />} />
 
-      {/* Catch-all Route */}
-      <Route path="*" element={<Navigate to="/dashboard" replace />} />
+      {/* 404 Not Found - Better for SEO than redirect */}
+      <Route path="*" element={<NotFound />} />
     </Routes>
   );
 };

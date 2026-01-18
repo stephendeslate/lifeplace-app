@@ -1,4 +1,5 @@
 # backend/core/domains/payments/signals.py
+from decimal import Decimal
 from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 import logging
@@ -27,22 +28,22 @@ def update_event_financial_totals(event):
         return
 
     try:
-        # Calculate total from invoices
-        total_invoiced = 0
-        total_paid = 0
+        # Calculate total from invoices using Decimal for financial precision
+        total_invoiced = Decimal('0')
+        total_paid = Decimal('0')
 
         # Get all invoices for this event
         invoices = Invoice.objects.filter(event=event)
         for invoice in invoices:
             if invoice.total_amount:
-                total_invoiced += float(invoice.total_amount)
+                total_invoiced += invoice.total_amount  # Already Decimal from model
 
                 # Calculate paid amount from related payments
-                paid_for_this_invoice = 0
+                paid_for_this_invoice = Decimal('0')
                 if hasattr(invoice, 'related_payments'):
                     for payment in invoice.related_payments.filter(status='COMPLETED'):
                         if payment.amount:
-                            paid_for_this_invoice += float(payment.amount)
+                            paid_for_this_invoice += payment.amount  # Already Decimal from model
 
                 total_paid += paid_for_this_invoice
 
@@ -50,7 +51,7 @@ def update_event_financial_totals(event):
         direct_payments = Payment.objects.filter(event=event, invoice__isnull=True, status='COMPLETED')
         for payment in direct_payments:
             if payment.amount:
-                total_paid += float(payment.amount)
+                total_paid += payment.amount  # Already Decimal from model
 
         # Store previous payment status
         previous_payment_status = event.payment_status

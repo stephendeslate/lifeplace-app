@@ -2,6 +2,7 @@
 
 import React, { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import DOMPurify from 'dompurify';
 import {
   Box,
   Typography,
@@ -414,7 +415,7 @@ export const ContractView: React.FC = () => {
           >
             <div
               dangerouslySetInnerHTML={{
-                __html: contract.content || 'No content available'
+                __html: DOMPurify.sanitize(contract.content || 'No content available')
               }}
               style={{
                 lineHeight: 1.6,

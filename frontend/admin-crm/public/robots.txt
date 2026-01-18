@@ -1,0 +1,4 @@
+# Admin CRM - Disallow all crawling
+# This is an internal administrative interface
+User-agent: *
+Disallow: /
