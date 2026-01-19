@@ -29,7 +29,7 @@ import {
   EventNote as EventIcon,
   FlashOn as TriggerIcon,
 } from '@mui/icons-material';
-import type { WorkflowVisualizationProps } from '../../types/workflows.types';
+import type { WorkflowVisualizationProps, WorkflowStage } from '../../types/workflows.types';
 import { tokens } from '../../design-system';
 
 export const WorkflowVisualization: React.FC<WorkflowVisualizationProps> = ({
@@ -108,13 +108,13 @@ export const WorkflowVisualization: React.FC<WorkflowVisualizationProps> = ({
   }
 
   // Group stages by type and sort by order
-  const stagesByType = template.stages.reduce((acc, stage) => {
+  const stagesByType = template.stages.reduce<Record<string, WorkflowStage[]>>((acc, stage) => {
     if (!acc[stage.stage]) {
       acc[stage.stage] = [];
     }
     acc[stage.stage].push(stage);
     return acc;
-  }, {} as Record<string, typeof template.stages>);
+  }, {});
 
   // Sort stages within each type by order
   Object.keys(stagesByType).forEach(type => {
@@ -268,16 +268,16 @@ export const WorkflowVisualization: React.FC<WorkflowVisualizationProps> = ({
                                       variant="outlined"
                                     />
                                   )}
-                                  {stage.automation_type === 'TASK' && stage.metadata?.task_priority && (
+                                  {stage.automation_type === 'TASK' && stage.metadata?.task_priority != null && (
                                     <Chip
-                                      label={`Priority: ${stage.metadata.task_priority}`}
+                                      label={`Priority: ${String(stage.metadata.task_priority)}`}
                                       size="small"
                                       variant="outlined"
                                     />
                                   )}
-                                  {stage.automation_type === 'CONTRACT' && stage.metadata?.signature_deadline_hours && (
+                                  {stage.automation_type === 'CONTRACT' && stage.metadata?.signature_deadline_hours != null && (
                                     <Chip
-                                      label={`Deadline: ${stage.metadata.signature_deadline_hours}h`}
+                                      label={`Deadline: ${String(stage.metadata.signature_deadline_hours)}h`}
                                       size="small"
                                       variant="outlined"
                                     />

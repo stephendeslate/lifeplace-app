@@ -40,8 +40,8 @@ const getAutomationIcon = (automationType: string) => {
   return icons[automationType] || <TaskIcon fontSize="small" />;
 };
 
-const StageNodeComponent: React.FC<NodeProps<StageNodeData>> = ({ data, selected }) => {
-  const { stage, stageType, isSelected, onEdit, onDelete, onSelect } = data;
+const StageNodeComponent: React.FC<NodeProps> = ({ data, selected }) => {
+  const { stage, stageType, isSelected, onEdit, onDelete, onSelect } = data as StageNodeData;
   const swimlaneConfig = getSwimlaneConfig(stageType);
 
   const hasEventTriggers =

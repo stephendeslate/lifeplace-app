@@ -21,7 +21,6 @@ import { AddStageNode } from './nodes/AddStageNode';
 import { ProgressionEdge } from './edges/ProgressionEdge';
 import { useFlowchartState } from './hooks/useFlowchartState';
 import type { WorkflowFlowchartProps } from './types';
-import { getFlowchartBounds } from './utils/layoutCalculator';
 
 // Define custom node types
 const nodeTypes: NodeTypes = {
@@ -38,7 +37,7 @@ const edgeTypes: EdgeTypes = {
 // Inner component that uses useReactFlow hook
 const FlowchartInner: React.FC<WorkflowFlowchartProps> = ({
   stages,
-  _templateId,
+  templateId: _templateId,
   mode = 'view',
   selectedStageId: externalSelectedStageId,
   onStageSelect,
@@ -94,9 +93,6 @@ const FlowchartInner: React.FC<WorkflowFlowchartProps> = ({
   const handlePaneClick = useCallback(() => {
     setSelectedStageId(null);
   }, [setSelectedStageId]);
-
-  // Calculate bounds for minimap
-  const _bounds = getFlowchartBounds(stages);
 
   if (stages.length === 0) {
     return (

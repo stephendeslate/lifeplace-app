@@ -44,6 +44,7 @@ import { GlassCard } from '../../design-system/components/GlassCard';
 import { AnimatedElement } from '../../design-system/components/AnimatedElement';
 import { useAcceptQuote, useRejectQuote } from '../../hooks/useEventQuotes';
 import { QuoteRejectionDialog } from '../../components/common/QuoteRejectionDialog';
+import { useCurrencySettings } from '../../hooks/useCurrency';
 
 
 // Helper function to safely format dates - validates before formatting to prevent RangeError
@@ -62,6 +63,7 @@ const Dashboard: React.FC = () => {
   const { user } = useAuth();
   const theme = useTheme();
   const navigate = useNavigate();
+  const { formatAmount } = useCurrencySettings();
   const PHILIPPINE_TIMEZONE = 'Asia/Manila';
   const [rejectionDialog, setRejectionDialog] = useState<{
     open: boolean;
@@ -639,7 +641,7 @@ const Dashboard: React.FC = () => {
                       Total Outstanding
                     </Typography>
                     <Typography variant="h4" sx={{ fontWeight: 600, mb: 1 }}>
-                      ${dashboardData.financialSummary.totalOutstanding}
+                      {formatAmount(parseFloat(dashboardData.financialSummary.totalOutstanding))}
                     </Typography>
                     <Chip
                       label={dashboardData.financialSummary.urgencyLevel.toUpperCase()}
