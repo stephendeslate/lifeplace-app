@@ -26,11 +26,14 @@ import {
   AccountCircle as AccountIcon,
   Star as StarIcon,
   Verified as VerifiedIcon,
+  Login as LoginIcon,
 } from '@mui/icons-material';
 import { GlassCard } from '../../../design-system/components/GlassCard';
 import { AnimatedElement } from '../../../design-system/components/AnimatedElement';
 import { useAccessibility } from '../../accessibility';
 import { useContactInfo } from '../../../hooks/booking/useContactInfo';
+import { SignInDialog } from '../../common/SignInDialog';
+import { useAuth } from '../../../contexts/AuthContext';
 import type { 
   ContactInfoStepData, 
   ContactInfoStepConfiguration, 
@@ -141,6 +144,10 @@ export const EnhancedContactInfoStep: React.FC<EnhancedContactInfoStepProps> = (
   const [showPassword, setShowPassword] = useState(false);
   const [emailStrength, setEmailStrength] = useState(0);
   const [phoneStrength, setPhoneStrength] = useState(0);
+  const [signInDialogOpen, setSignInDialogOpen] = useState(false);
+
+  // Get fresh auth state for sign-in success handling
+  const { user: authUser, isAuthenticated: authIsAuthenticated } = useAuth();
 
   // Update form data with real-time validation
   const updateFormData = useCallback((field: keyof ContactInfoStepData, value: unknown) => {
@@ -213,14 +220,14 @@ export const EnhancedContactInfoStep: React.FC<EnhancedContactInfoStepProps> = (
     return (
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1 }}>
         <Box sx={{ flex: 1, height: 4, backgroundColor: alpha('#fff', 0.2), borderRadius: 2 }}>
-          <Box 
-            sx={{ 
-              height: '100%', 
-              width: `${strength}%`, 
+          <Box
+            sx={{
+              height: '100%',
+              width: `${strength}%`,
               backgroundColor: strength > 80 ? theme.palette.success.main : theme.palette.warning.main,
               borderRadius: 2,
               transition: 'all 0.3s ease'
-            }} 
+            }}
           />
         </Box>
         <Typography variant="caption" color={strength > 80 ? 'success.main' : 'warning.main'}>
@@ -230,6 +237,68 @@ export const EnhancedContactInfoStep: React.FC<EnhancedContactInfoStepProps> = (
     );
   };
 
+  // Handle successful sign-in - update form with user data
+  const handleSignInSuccess = useCallback(() => {
+    // The auth context will update, and we need to refresh the form data
+    // We use a small delay to ensure auth state is updated
+    setTimeout(() => {
+      if (authUser) {
+        const newData: ContactInfoStepData = {
+          full_name: `${authUser.first_name || ''} ${authUser.last_name || ''}`.trim(),
+          email: authUser.email || '',
+          phone: authUser.profile?.phone || formData.phone || '',
+          address: formData.address || '',
+          company: formData.company || '',
+          create_account: false,
+        };
+        setFormData(newData);
+        onDataChange(newData);
+
+        // Update validation states for auto-filled fields
+        if (newData.email) {
+          setValidationState(prev => ({ ...prev, email: 'valid' }));
+          setEmailStrength(100);
+        }
+        if (newData.full_name && newData.full_name.includes(' ')) {
+          setValidationState(prev => ({ ...prev, full_name: 'valid' }));
+        }
+        if (newData.phone && validatePhoneNumber(newData.phone)) {
+          setValidationState(prev => ({ ...prev, phone: 'valid' }));
+          setPhoneStrength(100);
+        }
+      }
+    }, 100);
+  }, [authUser, formData.address, formData.company, formData.phone, onDataChange]);
+
+  // Effect to handle auth state changes after sign-in
+  useEffect(() => {
+    if (authIsAuthenticated && authUser && !isAuthenticated) {
+      // User just signed in via the dialog
+      const newData: ContactInfoStepData = {
+        full_name: `${authUser.first_name || ''} ${authUser.last_name || ''}`.trim(),
+        email: authUser.email || '',
+        phone: authUser.profile?.phone || formData.phone || '',
+        address: formData.address || '',
+        company: formData.company || '',
+        create_account: false,
+      };
+      setFormData(newData);
+      onDataChange(newData);
+
+      // Update validation states
+      if (newData.email) {
+        setValidationState(prev => ({ ...prev, email: 'valid' }));
+        setEmailStrength(100);
+      }
+      if (newData.full_name && newData.full_name.includes(' ')) {
+        setValidationState(prev => ({ ...prev, full_name: 'valid' }));
+      }
+      if (newData.phone && validatePhoneNumber(newData.phone)) {
+        setValidationState(prev => ({ ...prev, phone: 'valid' }));
+        setPhoneStrength(100);
+      }
+    }
+  }, [authIsAuthenticated, authUser]);
 
   return (
     <Box>
@@ -473,8 +542,8 @@ export const EnhancedContactInfoStep: React.FC<EnhancedContactInfoStepProps> = (
           </GlassCard>
         </AnimatedElement>
 
-        {/* Account Creation */}
-        {accountCreationOptions.canCreateAccount && !isAuthenticated && (
+        {/* Account Options - Only shown when not authenticated */}
+        {!isAuthenticated && !authIsAuthenticated && (
           <AnimatedElement animation="slideRight" delay={600}>
             <GlassCard
               variant="light"
@@ -491,62 +560,112 @@ export const EnhancedContactInfoStep: React.FC<EnhancedContactInfoStepProps> = (
                     Account Options
                   </Typography>
                 </Box>
-                
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={formData.create_account || false}
-                      onChange={(e) => updateFormData('create_account', e.target.checked)}
-                    />
-                  }
-                  label={
+
+                {/* Sign In Option */}
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    p: 2,
+                    mb: 2,
+                    borderRadius: 2,
+                    backgroundColor: alpha(theme.palette.primary.main, 0.08),
+                    border: `1px solid ${alpha(theme.palette.primary.main, 0.2)}`,
+                  }}
+                >
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <LoginIcon color="primary" />
                     <Box>
                       <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                        Create an account for faster future bookings
+                        Already have an account?
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
-                        Save your preferences and view booking history
+                        Sign in to auto-fill your information
                       </Typography>
                     </Box>
-                  }
-                />
-                
-                {formData.create_account && (
-                  <Box sx={{ mt: 3 }}>
-                    <TextField
-                      label="Password"
-                      type={showPassword ? 'text' : 'password'}
-                      value={formData.password || ''}
-                      onChange={(e) => updateFormData('password', e.target.value)}
-                      required
-                      fullWidth
-                      InputProps={{
-                        endAdornment: (
-                          <InputAdornment position="end">
-                            <IconButton
-                              onClick={() => setShowPassword(!showPassword)}
-                              edge="end"
-                            >
-                              {showPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
-                            </IconButton>
-                          </InputAdornment>
-                        ),
-                        sx: {
-                          backgroundColor: alpha('#fff', 0.1),
-                          backdropFilter: 'blur(10px)',
-                          '& .MuiOutlinedInput-notchedOutline': {
-                            borderColor: alpha('#fff', 0.2),
-                          },
-                        },
-                      }}
-                    />
                   </Box>
+                  <IconButton
+                    onClick={() => setSignInDialogOpen(true)}
+                    sx={{
+                      backgroundColor: theme.palette.primary.main,
+                      color: 'white',
+                      '&:hover': {
+                        backgroundColor: theme.palette.primary.dark,
+                      },
+                    }}
+                  >
+                    <LoginIcon />
+                  </IconButton>
+                </Box>
+
+                {/* Create Account Option */}
+                {accountCreationOptions.canCreateAccount && (
+                  <>
+                    <FormControlLabel
+                      control={
+                        <Checkbox
+                          checked={formData.create_account || false}
+                          onChange={(e) => updateFormData('create_account', e.target.checked)}
+                        />
+                      }
+                      label={
+                        <Box>
+                          <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                            Create an account for faster future bookings
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary">
+                            Save your preferences and view booking history
+                          </Typography>
+                        </Box>
+                      }
+                    />
+
+                    {formData.create_account && (
+                      <Box sx={{ mt: 3 }}>
+                        <TextField
+                          label="Password"
+                          type={showPassword ? 'text' : 'password'}
+                          value={formData.password || ''}
+                          onChange={(e) => updateFormData('password', e.target.value)}
+                          required
+                          fullWidth
+                          InputProps={{
+                            endAdornment: (
+                              <InputAdornment position="end">
+                                <IconButton
+                                  onClick={() => setShowPassword(!showPassword)}
+                                  edge="end"
+                                >
+                                  {showPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
+                                </IconButton>
+                              </InputAdornment>
+                            ),
+                            sx: {
+                              backgroundColor: alpha('#fff', 0.1),
+                              backdropFilter: 'blur(10px)',
+                              '& .MuiOutlinedInput-notchedOutline': {
+                                borderColor: alpha('#fff', 0.2),
+                              },
+                            },
+                          }}
+                        />
+                      </Box>
+                    )}
+                  </>
                 )}
               </Box>
             </GlassCard>
           </AnimatedElement>
         )}
       </Box>
+
+      {/* Sign In Dialog */}
+      <SignInDialog
+        open={signInDialogOpen}
+        onClose={() => setSignInDialogOpen(false)}
+        onSuccess={handleSignInSuccess}
+      />
     </Box>
   );
 };
