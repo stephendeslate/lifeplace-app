@@ -1,5 +1,6 @@
 # backend/core/domains/communications/models.py
 import logging
+import re
 import uuid
 from django.conf import settings
 from core.utils.models import BaseModel
@@ -11,6 +12,198 @@ from .context_service import ContextType
 
 User = get_user_model()
 logger = logging.getLogger(__name__)
+
+
+class EmailLayout(BaseModel):
+    """
+    Reusable email layout wrapper for communication templates.
+    Provides consistent branding across all email communications.
+
+    Separates layout (HTML shell: header, footer, styling) from content
+    (template-specific messages and variables), enabling centralized
+    brand management and consistent styling across all communication templates.
+    """
+
+    name = models.CharField(
+        max_length=100,
+        unique=True,
+        help_text="Unique identifier for this layout (e.g., 'Standard', 'Premium Client')"
+    )
+    description = models.TextField(
+        blank=True,
+        help_text="Internal description of when to use this layout"
+    )
+
+    # Layout Components (Django template syntax supported)
+    header_template = models.TextField(
+        help_text="HTML for header section. Variables: {{ site_name }}, {{ header_title }}, {{ header_subtitle }}, {{ logo_url }}"
+    )
+    footer_template = models.TextField(
+        help_text="HTML for footer section. Variables: {{ site_name }}, {{ current_year }}, {{ support_email }}, {{ unsubscribe_link }}"
+    )
+    wrapper_template = models.TextField(
+        help_text="HTML wrapper for content area. MUST include {{ content }} placeholder.",
+        default='<div class="content-wrapper">{{ content }}</div>'
+    )
+
+    # Base CSS styles applied to entire email
+    base_styles = models.TextField(
+        blank=True,
+        help_text="CSS styles applied before content. Supports {{ primary_color }}, {{ secondary_color }} variables."
+    )
+
+    # Theme Configuration
+    primary_color = models.CharField(
+        max_length=7,
+        default="#667eea",
+        help_text="Primary brand color (hex format, e.g., #667eea)"
+    )
+    secondary_color = models.CharField(
+        max_length=7,
+        default="#764ba2",
+        help_text="Secondary brand color for gradients (hex format)"
+    )
+    logo_url = models.URLField(
+        blank=True,
+        help_text="URL to company logo image"
+    )
+
+    # Status Flags
+    is_default = models.BooleanField(
+        default=False,
+        help_text="If true, this layout is used when no layout is explicitly assigned"
+    )
+    is_active = models.BooleanField(
+        default=True,
+        help_text="Inactive layouts cannot be assigned to templates"
+    )
+
+    class Meta:
+        verbose_name = 'Email Layout'
+        verbose_name_plural = 'Email Layouts'
+        ordering = ['name']
+
+    def __str__(self):
+        default_suffix = ' (Default)' if self.is_default else ''
+        return f"{self.name}{default_suffix}"
+
+    def clean(self):
+        """Validate layout before saving."""
+        super().clean()
+
+        # Ensure wrapper_template contains {{ content }} placeholder
+        if '{{ content }}' not in self.wrapper_template and '{{content}}' not in self.wrapper_template:
+            raise ValidationError({
+                'wrapper_template': 'Must contain {{ content }} placeholder for template content injection.'
+            })
+
+        # Validate color format
+        hex_pattern = re.compile(r'^#[0-9A-Fa-f]{6}$')
+        if not hex_pattern.match(self.primary_color):
+            raise ValidationError({'primary_color': 'Must be valid hex color (e.g., #667eea)'})
+        if not hex_pattern.match(self.secondary_color):
+            raise ValidationError({'secondary_color': 'Must be valid hex color (e.g., #764ba2)'})
+
+    def save(self, *args, **kwargs):
+        # Ensure only one default layout
+        if self.is_default:
+            EmailLayout.objects.filter(is_default=True).exclude(pk=self.pk).update(is_default=False)
+        super().save(*args, **kwargs)
+
+    @classmethod
+    def get_default_layout(cls):
+        """Get the default layout, or None if no default is set."""
+        return cls.objects.filter(is_default=True, is_active=True).first()
+
+
+class EmailLayoutHistory(BaseModel):
+    """
+    Audit trail for email layout changes.
+    Records all updates to layouts for version control and rollback capability.
+    """
+
+    REASON_CHOICES = [
+        ('CREATE', 'Initial Creation'),
+        ('UPDATE', 'Manual Update'),
+        ('ROLLBACK', 'Rollback to Previous Version'),
+    ]
+
+    layout = models.ForeignKey(
+        EmailLayout,
+        on_delete=models.CASCADE,
+        related_name='history'
+    )
+    version = models.PositiveIntegerField(
+        help_text="Version number of this history entry"
+    )
+
+    # Snapshot of layout state
+    name = models.CharField(max_length=100)
+    description = models.TextField(blank=True)
+    header_template = models.TextField()
+    footer_template = models.TextField()
+    wrapper_template = models.TextField()
+    base_styles = models.TextField(blank=True)
+    primary_color = models.CharField(max_length=7)
+    secondary_color = models.CharField(max_length=7)
+    logo_url = models.URLField(blank=True)
+
+    reason = models.CharField(max_length=20, choices=REASON_CHOICES, default='UPDATE')
+    notes = models.TextField(
+        blank=True,
+        help_text="Additional notes about this change"
+    )
+    changed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='layout_changes'
+    )
+
+    class Meta:
+        verbose_name = 'Email Layout History'
+        verbose_name_plural = 'Email Layout Histories'
+        ordering = ['-created_at']
+        unique_together = ['layout', 'version']
+
+    def __str__(self):
+        return f"{self.name} v{self.version} ({self.reason})"
+
+    @classmethod
+    def create_snapshot(cls, layout, reason='UPDATE', changed_by=None, notes=''):
+        """
+        Create a history snapshot of the current layout state.
+
+        Args:
+            layout: EmailLayout instance
+            reason: One of REASON_CHOICES
+            changed_by: User who made the change
+            notes: Optional notes about the change
+
+        Returns:
+            EmailLayoutHistory instance
+        """
+        last_version = cls.objects.filter(layout=layout).aggregate(
+            max_version=models.Max('version')
+        )['max_version'] or 0
+
+        return cls.objects.create(
+            layout=layout,
+            version=last_version + 1,
+            name=layout.name,
+            description=layout.description,
+            header_template=layout.header_template,
+            footer_template=layout.footer_template,
+            wrapper_template=layout.wrapper_template,
+            base_styles=layout.base_styles,
+            primary_color=layout.primary_color,
+            secondary_color=layout.secondary_color,
+            logo_url=layout.logo_url,
+            reason=reason,
+            changed_by=changed_by,
+            notes=notes
+        )
 
 
 class CommunicationTemplate(BaseModel):
@@ -53,6 +246,16 @@ class CommunicationTemplate(BaseModel):
     subject_template = models.CharField(max_length=200, blank=True, null=True)  # For email only
     body_template = models.TextField()
     is_system = models.BooleanField(default=False)
+
+    # Layout relationship - Email layouts wrap template content
+    layout = models.ForeignKey(
+        'EmailLayout',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='templates',
+        help_text="Email layout to wrap content. Leave empty for SMS or legacy full-HTML templates."
+    )
 
     class Meta:
         verbose_name = 'Communication Template'

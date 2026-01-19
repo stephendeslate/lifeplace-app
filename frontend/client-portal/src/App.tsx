@@ -36,6 +36,7 @@ const DocumentsPage = React.lazy(() => import('./pages/documents/DocumentsPage')
 const RecordsPage = React.lazy(() => import('./pages/records/RecordsPage').then(m => ({ default: m.RecordsPage })));
 const ActionCenterPage = React.lazy(() => import('./pages/actions/ActionCenterPage').then(m => ({ default: m.ActionCenterPage })));
 const ContractDetail = React.lazy(() => import('./pages/contracts').then(m => ({ default: m.ContractDetail })));
+const SupportPage = React.lazy(() => import('./pages/support').then(m => ({ default: m.SupportPage })));
 
 // Legal pages lazy imports
 const TermsPage = React.lazy(() => import('./pages/legal').then(m => ({ default: m.TermsPage })));
@@ -461,19 +462,19 @@ const AppRouter: React.FC = () => {
         element={<Navigate to="/actions" replace />}
       />
 
+      {/* Support Route */}
       <Route
-        path="/help" 
+        path="/support"
         element={
           <ProtectedRoute>
             <ClientLayoutWrapper>
-              <PlaceholderPage 
-                title="Help & Support" 
-                description="Support center coming soon!"
-              />
+              <SupportPage />
             </ClientLayoutWrapper>
           </ProtectedRoute>
-        } 
+        }
       />
+      {/* Redirect /help to /support for backward compatibility */}
+      <Route path="/help" element={<Navigate to="/support" replace />} />
 
       {/* Legal pages */}
       <Route

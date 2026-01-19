@@ -33,6 +33,7 @@ import {
   Close as ClearIcon,
 } from '@mui/icons-material';
 import { SEO } from '../../hooks/useSEO';
+import { AnimatedElement } from '../../design-system/components/AnimatedElement';
 import { useNavigate } from 'react-router-dom';
 import { useActionCenter } from '../../hooks/useActionCenter';
 import { ActionCardList } from '../../components/actions';
@@ -196,8 +197,9 @@ export const ActionCenterPage: React.FC = () => {
         description="View items requiring your attention."
         noIndex={true}
       />
-      <Box sx={{ py: 3, px: { xs: 2, md: 3 } }}>
-        {/* Header */}
+      <AnimatedElement animation="slideUp" delay={400}>
+        <Box sx={{ py: 3, px: { xs: 2, md: 3 } }}>
+          {/* Header */}
       <Stack
         direction={{ xs: 'column', sm: 'row' }}
         justifyContent="space-between"
@@ -471,7 +473,8 @@ export const ActionCenterPage: React.FC = () => {
             onPaymentSuccess={handleInvoicePaymentSuccess}
           />
         )}
-      </Box>
+        </Box>
+      </AnimatedElement>
     </>
   );
 };

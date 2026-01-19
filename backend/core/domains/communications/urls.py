@@ -8,6 +8,7 @@ from . import webhooks
 app_name = 'communications'
 
 router = DefaultRouter()
+router.register(r'layouts', views.EmailLayoutViewSet)
 router.register(r'templates', views.CommunicationTemplateViewSet)
 router.register(r'records', views.CommunicationRecordViewSet)
 

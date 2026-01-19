@@ -22,6 +22,7 @@ from .template_sandbox import (
     validate_template_for_save,
     TemplateSandboxError
 )
+from .layout_service import LayoutCompositionService
 
 User = get_user_model()
 logger = logging.getLogger(__name__)
@@ -130,7 +131,7 @@ class CommunicationTemplateService:
     
     @staticmethod
     def preview_template(template_id: int, context_data: Dict[str, Any] = None) -> Dict[str, str]:
-        """Preview a template with context data - Enhanced for manual messages"""
+        """Preview a template with context data - Enhanced for manual messages and layout support"""
         template = CommunicationTemplateService.get_template_by_id(template_id)
 
         if context_data is None:
@@ -159,7 +160,7 @@ class CommunicationTemplateService:
             else:
                 subject = None
 
-            # Handle body
+            # Handle body with layout support
             if custom_body and template.category == 'MANUAL':
                 # For manual templates, create a combined template that includes the custom content
                 base_template = template.body_template
@@ -197,15 +198,35 @@ class CommunicationTemplateService:
                         # Fallback: append to template
                         combined_template += f'<div style="margin: 16px 0;">{custom_body}</div>'
 
-                # Now render the combined template with sandboxed engine
-                body = sandboxed_template_engine.render(
+                # Render the combined template
+                rendered_content = sandboxed_template_engine.render(
                     combined_template, context_data, validate_first=True
                 )
+
+                # Apply layout if assigned (even for manual messages)
+                if template.layout and template.channel == 'EMAIL':
+                    body = LayoutCompositionService.compose_content_only(
+                        content=rendered_content,
+                        layout=template.layout,
+                        context=context_data,
+                        subject=subject
+                    )
+                else:
+                    body = rendered_content
             else:
-                # Use standard sandboxed template rendering
-                body = sandboxed_template_engine.render(
-                    template.body_template, context_data, validate_first=True
-                )
+                # Standard template rendering
+                if template.layout and template.channel == 'EMAIL':
+                    # Use layout composition
+                    body = LayoutCompositionService.compose_email(
+                        template=template,
+                        content_context=context_data,
+                        subject=subject
+                    )
+                else:
+                    # Legacy: render body_template directly (SMS or no layout)
+                    body = sandboxed_template_engine.render(
+                        template.body_template, context_data, validate_first=True
+                    )
 
             return {
                 'subject': subject,
