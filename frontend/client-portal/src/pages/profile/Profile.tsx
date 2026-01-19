@@ -1,6 +1,7 @@
 // frontend/client-portal/src/pages/profile/Profile.tsx
 
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Typography,
@@ -25,6 +26,7 @@ import {
   CalendarToday as CalendarIcon,
   Security as SecurityIcon,
   Notifications as NotificationsIcon,
+  Support as SupportIcon,
 } from '@mui/icons-material';
 import { SEO } from '../../hooks/useSEO';
 import { useAuth } from '../../contexts/AuthContext';
@@ -45,6 +47,7 @@ interface ProfileFormData {
 
 const Profile: React.FC = () => {
   const theme = useTheme();
+  const navigate = useNavigate();
   const { user, updateUser } = useAuth();
   const { showSuccess, showError } = useToastActions();
 
@@ -453,8 +456,9 @@ const Profile: React.FC = () => {
                   </Button>
                   <Button
                     variant="outlined"
-                    startIcon={<EmailIcon />}
+                    startIcon={<SupportIcon />}
                     fullWidth
+                    onClick={() => navigate('/support')}
                     sx={{
                       backgroundColor: alpha('#fff', 0.1),
                       backdropFilter: 'blur(10px)',

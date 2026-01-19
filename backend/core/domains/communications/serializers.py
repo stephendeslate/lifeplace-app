@@ -3,8 +3,9 @@
 from rest_framework import serializers
 from django.template import Template, TemplateSyntaxError
 
-from .models import CommunicationTemplate, CommunicationRecord
+from .models import CommunicationTemplate, CommunicationRecord, EmailLayout, EmailLayoutHistory
 from .template_sandbox import validate_template_for_save
+from .layout_service import LayoutCompositionService
 
 
 class CommunicationTemplateSerializer(serializers.ModelSerializer):
@@ -15,15 +16,25 @@ class CommunicationTemplateSerializer(serializers.ModelSerializer):
         source='get_context_type_display', read_only=True
     )
 
+    # Layout relationship
+    layout = serializers.PrimaryKeyRelatedField(
+        queryset=EmailLayout.objects.filter(is_active=True),
+        required=False,
+        allow_null=True,
+        help_text="Email layout to wrap content"
+    )
+    layout_name = serializers.CharField(source='layout.name', read_only=True)
+
     class Meta:
         model = CommunicationTemplate
         fields = [
             'id', 'name', 'channel', 'category', 'context_type', 'context_type_display',
             'include_client_context', 'include_event_context',
             'subject_template', 'body_template', 'is_system',
+            'layout', 'layout_name',
             'created_at', 'updated_at'
         ]
-        read_only_fields = ['id', 'created_at', 'updated_at', 'context_type_display']
+        read_only_fields = ['id', 'created_at', 'updated_at', 'context_type_display', 'layout_name']
 
     def validate_name(self, value):
         """Check that the template name is unique (case insensitive)"""
@@ -217,3 +228,85 @@ class BulkSendSerializer(serializers.Serializer):
             return value
         except CommunicationTemplate.DoesNotExist:
             raise serializers.ValidationError("Template does not exist.")
+
+
+class EmailLayoutSerializer(serializers.ModelSerializer):
+    """Serializer for email layouts"""
+
+    template_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = EmailLayout
+        fields = [
+            'id', 'name', 'description',
+            'header_template', 'footer_template', 'wrapper_template', 'base_styles',
+            'primary_color', 'secondary_color', 'logo_url',
+            'is_default', 'is_active',
+            'template_count',
+            'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at', 'template_count']
+
+    def get_template_count(self, obj):
+        """Get count of templates using this layout"""
+        return obj.templates.count()
+
+    def validate_wrapper_template(self, value):
+        """Validate wrapper template contains content placeholder"""
+        if value and '{{ content }}' not in value and '{{content}}' not in value:
+            raise serializers.ValidationError(
+                'Must contain {{ content }} placeholder for template content injection.'
+            )
+        return value
+
+    def validate(self, data):
+        """Validate layout templates"""
+        # Build a temporary layout object for validation
+        layout = EmailLayout(
+            header_template=data.get('header_template', ''),
+            footer_template=data.get('footer_template', ''),
+            wrapper_template=data.get('wrapper_template', '<div>{{ content }}</div>'),
+            base_styles=data.get('base_styles', ''),
+            primary_color=data.get('primary_color', '#667eea'),
+            secondary_color=data.get('secondary_color', '#764ba2'),
+        )
+
+        is_valid, errors = LayoutCompositionService.validate_layout_templates(layout)
+        if not is_valid:
+            raise serializers.ValidationError({'templates': errors})
+
+        return data
+
+
+class EmailLayoutHistorySerializer(serializers.ModelSerializer):
+    """Serializer for layout history entries"""
+
+    changed_by_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = EmailLayoutHistory
+        fields = [
+            'id', 'version', 'name', 'description',
+            'header_template', 'footer_template', 'wrapper_template', 'base_styles',
+            'primary_color', 'secondary_color', 'logo_url',
+            'reason', 'notes', 'changed_by', 'changed_by_name',
+            'created_at'
+        ]
+        read_only_fields = fields
+
+    def get_changed_by_name(self, obj):
+        if obj.changed_by:
+            return f"{obj.changed_by.first_name} {obj.changed_by.last_name}".strip() or obj.changed_by.email
+        return None
+
+
+class LayoutPreviewSerializer(serializers.Serializer):
+    """Serializer for layout preview requests"""
+
+    sample_content = serializers.CharField(
+        required=False,
+        default='<p style="color: #333;">This is sample content to preview your layout.</p>'
+    )
+    header_title = serializers.CharField(required=False, allow_blank=True)
+    header_subtitle = serializers.CharField(required=False, allow_blank=True)
+    context_data = serializers.JSONField(required=False, default=dict)

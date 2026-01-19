@@ -23,6 +23,7 @@ import {
   AccountTree,
   Message,
   Inventory,
+  SupportAgent,
 } from '@mui/icons-material';
 import type { NavigationGroup } from '../types/layout.types';
 
@@ -157,6 +158,13 @@ export const navigationConfig: NavigationGroup[] = [
         label: 'Payments',
         path: '/payments',
         icon: Payment,
+        roles: ['ADMIN'],
+      },
+      {
+        id: 'support',
+        label: 'Support',
+        path: '/support',
+        icon: SupportAgent,
         roles: ['ADMIN'],
       },
     ],

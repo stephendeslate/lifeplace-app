@@ -7,6 +7,18 @@ from django.utils import timezone
 User = get_user_model()
 
 
+class ThreadType(models.TextChoices):
+    CONVERSATION = 'conversation', 'Conversation'
+    SUPPORT = 'support', 'Support Inquiry'
+
+
+class SupportCategory(models.TextChoices):
+    BILLING = 'billing', 'Billing & Payments'
+    EVENT = 'event', 'Event Changes/Questions'
+    TECHNICAL = 'technical', 'Technical Issues'
+    GENERAL = 'general', 'General Inquiry'
+
+
 class MessageThread(BaseModel):
     """Message thread for client-admin communication"""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -52,6 +64,21 @@ class MessageThread(BaseModel):
         ('archived', 'Archived'),
     )
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='active')
+
+    # Thread type and support category
+    thread_type = models.CharField(
+        max_length=20,
+        choices=ThreadType.choices,
+        default=ThreadType.CONVERSATION,
+        help_text="Type of thread - conversation or support inquiry"
+    )
+    category = models.CharField(
+        max_length=20,
+        choices=SupportCategory.choices,
+        null=True,
+        blank=True,
+        help_text="Category for support inquiries"
+    )
 
     # Tracking fields
     last_message_at = models.DateTimeField(null=True, blank=True)

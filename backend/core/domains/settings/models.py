@@ -521,6 +521,17 @@ class CompanySettings(BaseModel):
         default='support@lifeplace.dev',
         help_text="Support email address"
     )
+    support_phone = models.CharField(
+        max_length=20,
+        blank=True,
+        default='',
+        help_text="Support phone number (if different from main phone)"
+    )
+    support_hours = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text="Support availability hours, e.g., {'weekdays': '9AM-6PM', 'weekends': 'Closed'}"
+    )
     phone = models.CharField(
         max_length=20,
         blank=True,

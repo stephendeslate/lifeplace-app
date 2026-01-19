@@ -25,6 +25,7 @@ import {
 } from '@mui/icons-material';
 import DOMPurify from 'dompurify';
 import { useCommunications } from '../../hooks/useCommunications';
+import { useLayouts } from '../../hooks/useLayouts';
 import type { CommunicationTemplate, CreateTemplateData, UpdateTemplateData } from '../../types/communications.types';
 import { TemplateContentEditor, TemplateVariableInserter } from '../shared';
 import type { TemplateContentEditorHandle } from '../shared';
@@ -55,12 +56,15 @@ export const TemplateForm: React.FC<TemplateFormProps> = ({
     include_event_context: false,
     subject_template: '',
     body_template: '',
+    layout: null,
   });
 
   const [editorMode, setEditorMode] = useState<TemplateEditorMode>('visual');
   const editorRef = useRef<TemplateContentEditorHandle>(null);
 
   const { useCreateTemplate, useUpdateTemplate, useVariableSchemas, usePreviewTemplate } = useCommunications();
+  const { useAllLayouts } = useLayouts();
+  const { data: layouts = [], isLoading: layoutsLoading } = useAllLayouts({ is_active: true });
   const { mutate: createTemplate, isPending: isCreating } = useCreateTemplate();
   const { mutate: updateTemplate, isPending: isUpdating } = useUpdateTemplate();
   const { data: variableSchemas } = useVariableSchemas();
@@ -170,6 +174,7 @@ export const TemplateForm: React.FC<TemplateFormProps> = ({
         include_event_context: template.include_event_context || false,
         subject_template: template.subject_template || '',
         body_template: template.body_template,
+        layout: template.layout,
       });
     }
   }, [template]);
@@ -421,6 +426,47 @@ The {{ site_name }} Team</p>`
                     />
                   </Stack>
                 </Paper>
+              )}
+
+              {/* Email Layout Selector - Only for EMAIL channel */}
+              {formData.channel === 'EMAIL' && (
+                <FormControl fullWidth>
+                  <InputLabel>
+                    Email Layout
+                    <Tooltip title="Select a layout to wrap your email content with consistent branding (header, footer, styling)">
+                      <InfoIcon sx={{ fontSize: 14, ml: 0.5, verticalAlign: 'middle', color: 'text.secondary' }} />
+                    </Tooltip>
+                  </InputLabel>
+                  <Select
+                    value={formData.layout ?? ''}
+                    label="Email Layout"
+                    onChange={(e) => handleInputChange('layout', e.target.value === '' ? null : Number(e.target.value))}
+                    disabled={layoutsLoading}
+                  >
+                    <MenuItem value="">
+                      <em>No Layout (Raw HTML)</em>
+                    </MenuItem>
+                    {layouts.map((layout) => (
+                      <MenuItem key={layout.id} value={layout.id}>
+                        <Box>
+                          <Typography variant="body2">
+                            {layout.name}
+                            {layout.is_default && (
+                              <Typography component="span" variant="caption" sx={{ ml: 1, color: 'primary.main' }}>
+                                (Default)
+                              </Typography>
+                            )}
+                          </Typography>
+                          {layout.description && (
+                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                              {layout.description}
+                            </Typography>
+                          )}
+                        </Box>
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
               )}
             </Stack>
           </Box>

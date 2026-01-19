@@ -30,6 +30,7 @@ import {
   InsertDriveFile as OtherIcon,
 } from '@mui/icons-material';
 import { SEO } from '../../hooks/useSEO';
+import { AnimatedElement } from '../../design-system/components/AnimatedElement';
 import { useDocuments } from '../../hooks/useDocuments';
 import { useEvents } from '../../hooks/useEvents';
 import { contractsApi } from '../../apis/contracts.api';
@@ -198,8 +199,9 @@ export const DocumentsPage: React.FC = () => {
         description="View and manage your documents."
         noIndex={true}
       />
-      <Box sx={{ py: 3, px: { xs: 2, md: 3 } }}>
-        {/* Header */}
+      <AnimatedElement animation="slideUp" delay={400}>
+        <Box sx={{ py: 3, px: { xs: 2, md: 3 } }}>
+          {/* Header */}
       <Stack
         direction={{ xs: 'column', sm: 'row' }}
         justifyContent="space-between"
@@ -395,7 +397,8 @@ export const DocumentsPage: React.FC = () => {
           onDownload={viewingDocument ? () => handleDownload(viewingDocument) : undefined}
           getFileBlob={getFileBlob}
         />
-      </Box>
+        </Box>
+      </AnimatedElement>
     </>
   );
 };

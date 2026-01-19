@@ -82,9 +82,9 @@ const StyledGradientBackground = styled(Box, {
   };
 });
 
-export const GradientBackground: React.FC<GradientBackgroundProps> = ({ 
-  children, 
-  ...props 
+export const GradientBackground: React.FC<GradientBackgroundProps> = ({
+  children,
+  ...props
 }) => {
   return (
     <StyledGradientBackground {...props}>

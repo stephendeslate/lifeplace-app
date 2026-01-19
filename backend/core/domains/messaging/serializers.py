@@ -296,3 +296,140 @@ class MessageReadStatusSerializer(serializers.ModelSerializer):
         model = MessageReadStatus
         fields = ['user', 'read_at']
         read_only_fields = ['user', 'read_at']
+
+
+# Support Inquiry Serializers
+
+class SupportInquiryCreateSerializer(serializers.ModelSerializer):
+    """Serializer for clients creating support inquiries."""
+    initial_message = serializers.CharField(write_only=True)
+
+    class Meta:
+        model = MessageThread
+        fields = ['subject', 'category', 'event', 'initial_message']
+
+    def validate(self, attrs):
+        # Set thread_type to support
+        attrs['thread_type'] = 'support'
+        return attrs
+
+    def create(self, validated_data):
+        initial_message = validated_data.pop('initial_message')
+        user = self.context['request'].user
+        validated_data['client'] = user
+        validated_data['status'] = 'active'
+
+        thread = MessageThread.objects.create(**validated_data)
+
+        # Create initial message
+        Message.objects.create(
+            thread=thread,
+            sender=user,
+            content=initial_message,
+            message_type='text'
+        )
+
+        return thread
+
+
+class SupportInquiryListSerializer(serializers.ModelSerializer):
+    """Serializer for listing support inquiries (client view)."""
+    status_display = serializers.CharField(source='get_status_display', read_only=True)
+    category_display = serializers.CharField(source='get_category_display', read_only=True)
+    event_name = serializers.CharField(source='event.name', read_only=True, allow_null=True)
+
+    class Meta:
+        model = MessageThread
+        fields = [
+            'id', 'subject', 'category', 'category_display',
+            'status', 'status_display', 'event', 'event_name',
+            'created_at', 'updated_at', 'last_message_at'
+        ]
+        read_only_fields = fields
+
+
+class SupportInquiryDetailSerializer(SupportInquiryListSerializer):
+    """Serializer for support inquiry detail with messages."""
+    messages = serializers.SerializerMethodField()
+
+    class Meta(SupportInquiryListSerializer.Meta):
+        fields = list(SupportInquiryListSerializer.Meta.fields) + ['messages']
+
+    def get_messages(self, obj):
+        # Exclude internal notes for clients
+        messages = obj.messages.filter(is_internal_note=False).order_by('created_at')
+        return MessageSerializer(messages, many=True, context=self.context).data
+
+
+class AdminSupportInquiryListSerializer(serializers.ModelSerializer):
+    """Serializer for admin support inquiry list."""
+    client_name = serializers.SerializerMethodField()
+    client_email = serializers.CharField(source='client.email', read_only=True)
+    assigned_admin_name = serializers.SerializerMethodField()
+    status_display = serializers.CharField(source='get_status_display', read_only=True)
+    category_display = serializers.CharField(source='get_category_display', read_only=True)
+    event_name = serializers.CharField(source='event.name', read_only=True, allow_null=True)
+    message_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = MessageThread
+        fields = [
+            'id', 'subject', 'category', 'category_display',
+            'status', 'status_display', 'priority',
+            'client', 'client_name', 'client_email',
+            'assigned_admin', 'assigned_admin_name',
+            'event', 'event_name', 'message_count',
+            'created_at', 'updated_at', 'last_message_at'
+        ]
+
+    def get_client_name(self, obj):
+        if obj.client:
+            return obj.client.get_display_name()
+        return None
+
+    def get_assigned_admin_name(self, obj):
+        if obj.assigned_admin:
+            return obj.assigned_admin.get_display_name()
+        return None
+
+    def get_message_count(self, obj):
+        return obj.messages.count()
+
+
+class AdminSupportInquiryDetailSerializer(AdminSupportInquiryListSerializer):
+    """Serializer for admin support inquiry detail with messages."""
+    messages = serializers.SerializerMethodField()
+
+    class Meta(AdminSupportInquiryListSerializer.Meta):
+        fields = list(AdminSupportInquiryListSerializer.Meta.fields) + ['messages']
+
+    def get_messages(self, obj):
+        # Admins can see all messages including internal notes
+        messages = obj.messages.all().order_by('created_at')
+        return MessageSerializer(messages, many=True, context=self.context).data
+
+
+class AdminSupportInquiryUpdateSerializer(serializers.ModelSerializer):
+    """Serializer for admin updating support inquiry."""
+    internal_note = serializers.CharField(write_only=True, required=False, allow_blank=True)
+
+    class Meta:
+        model = MessageThread
+        fields = ['status', 'priority', 'assigned_admin', 'internal_note']
+
+    def update(self, instance, validated_data):
+        internal_note = validated_data.pop('internal_note', None)
+
+        instance = super().update(instance, validated_data)
+
+        # Create internal note if provided
+        if internal_note:
+            Message.objects.create(
+                thread=instance,
+                sender=self.context['request'].user,
+                content=internal_note,
+                message_type='text',
+                is_internal_note=True
+            )
+
+        return instance

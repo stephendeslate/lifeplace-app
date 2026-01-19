@@ -32,8 +32,10 @@ import { ProductsPackages, Payments, Sales } from './pages/settings/commerce';
 import { CurrencyTaxes } from './pages/settings/commerce/CurrencyTaxes';
 import { VIPProgram } from './pages/settings/vip/VIPProgram';
 import { CommunicationTemplates } from './pages/settings/templates/CommunicationTemplates';
+import { EmailLayouts } from './pages/settings/templates/EmailLayouts';
 import { LegalDocumentsPage } from './pages/settings/legal';
 import { PaymentsOverview, PaymentProfile, NewPayment } from './pages/payments';
+import { SupportPage } from './pages/support';
 // FunnelAnalytics removed - functionality now in AnalyticsDashboard
 
 // Protected Route Component
@@ -456,6 +458,14 @@ const AppRouter: React.FC = () => {
           </SettingsRoute>
         }
       />
+      <Route
+        path="/settings/templates/email-layouts"
+        element={
+          <SettingsRoute>
+            <EmailLayouts />
+          </SettingsRoute>
+        }
+      />
 
       {/* Commerce */}
       <Route
@@ -574,10 +584,7 @@ const AppRouter: React.FC = () => {
         path="/support"
         element={
           <ProtectedRoute>
-            <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
-              <Typography variant="h4">Support</Typography>
-              <Typography color="text.secondary">Coming soon...</Typography>
-            </Box>
+            <SupportPage />
           </ProtectedRoute>
         }
       />

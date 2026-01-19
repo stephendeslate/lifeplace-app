@@ -17,6 +17,7 @@ import {
   Star,
   Gavel,
   Business,
+  DesignServices,
 } from '@mui/icons-material';
 import type { SettingsNavigationGroup } from '../types/settings.types';
 
@@ -106,6 +107,13 @@ export const settingsNavigationConfig: SettingsNavigationGroup[] = [
         path: '/settings/templates/communication-templates',
         icon: Message,
         description: 'Manage email and SMS templates',
+      },
+      {
+        id: 'email-layouts',
+        label: 'Email Layouts',
+        path: '/settings/templates/email-layouts',
+        icon: DesignServices,
+        description: 'Manage email layout branding',
       },
     ],
   },

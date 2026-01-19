@@ -17,6 +17,8 @@ export interface CommunicationTemplate {
   subject_template?: string;
   body_template: string;
   is_system: boolean;
+  layout: number | null;
+  layout_name?: string;
   created_at: string;
   updated_at: string;
 }
@@ -58,6 +60,7 @@ export interface CreateTemplateData {
   include_event_context?: boolean;
   subject_template?: string;
   body_template: string;
+  layout?: number | null;
 }
 
 export type UpdateTemplateData = Partial<CreateTemplateData>;

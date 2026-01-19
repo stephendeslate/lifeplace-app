@@ -3,9 +3,10 @@ from django.db.models import Q, Count, Prefetch
 from django.utils import timezone
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework.throttling import UserRateThrottle
+from rest_framework.views import APIView
 
 from .models import MessageThread, Message, MessageReadStatus
 from .serializers import (
@@ -16,6 +17,12 @@ from .serializers import (
     MessageSerializer,
     MessageCreateSerializer,
     MessageReadStatusSerializer,
+    SupportInquiryCreateSerializer,
+    SupportInquiryListSerializer,
+    SupportInquiryDetailSerializer,
+    AdminSupportInquiryListSerializer,
+    AdminSupportInquiryDetailSerializer,
+    AdminSupportInquiryUpdateSerializer,
 )
 from .permissions import (
     CanAccessMessageThread,
@@ -428,3 +435,166 @@ class MessageThreadAdminViewSet(viewsets.ModelViewSet):
         stats['priority_breakdown'] = priority_counts
 
         return Response(stats)
+
+
+# Support Inquiry ViewSets
+
+class SupportInquiryViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet for clients to manage their support inquiries.
+    """
+    permission_classes = [IsAuthenticated]
+    throttle_classes = [UserRateThrottle]
+
+    def get_serializer_class(self):
+        if self.action == 'create':
+            return SupportInquiryCreateSerializer
+        elif self.action == 'retrieve':
+            return SupportInquiryDetailSerializer
+        return SupportInquiryListSerializer
+
+    def get_queryset(self):
+        """Return only support threads for the current user."""
+        return MessageThread.objects.filter(
+            client=self.request.user,
+            thread_type='support'
+        ).select_related('event', 'assigned_admin').order_by('-created_at')
+
+    @action(detail=True, methods=['post'])
+    def add_reply(self, request, pk=None):
+        """Add a reply to a support inquiry."""
+        thread = self.get_object()
+        content = request.data.get('content')
+
+        if not content:
+            return Response(
+                {'error': 'Content is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        message = Message.objects.create(
+            thread=thread,
+            sender=request.user,
+            content=content,
+            message_type='text',
+            is_internal_note=False
+        )
+
+        return Response(MessageSerializer(message, context={'request': request}).data, status=status.HTTP_201_CREATED)
+
+
+class AdminSupportInquiryViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet for admins to manage all support inquiries.
+    """
+    permission_classes = [IsAuthenticated, CanManageMessageThread]
+    throttle_classes = [UserRateThrottle]
+
+    def get_serializer_class(self):
+        if self.action in ['update', 'partial_update']:
+            return AdminSupportInquiryUpdateSerializer
+        elif self.action == 'retrieve':
+            return AdminSupportInquiryDetailSerializer
+        return AdminSupportInquiryListSerializer
+
+    def get_queryset(self):
+        """Return all support threads with filtering."""
+        queryset = MessageThread.objects.filter(
+            thread_type='support'
+        ).select_related('client', 'event', 'assigned_admin')
+
+        # Filters
+        status_filter = self.request.query_params.get('status')
+        category = self.request.query_params.get('category')
+        assigned_admin = self.request.query_params.get('assigned_admin')
+        priority = self.request.query_params.get('priority')
+        search = self.request.query_params.get('search')
+
+        if status_filter:
+            queryset = queryset.filter(status=status_filter)
+        if category:
+            queryset = queryset.filter(category=category)
+        if assigned_admin:
+            if assigned_admin == 'unassigned':
+                queryset = queryset.filter(assigned_admin__isnull=True)
+            else:
+                queryset = queryset.filter(assigned_admin_id=assigned_admin)
+        if priority:
+            queryset = queryset.filter(priority=priority)
+        if search:
+            queryset = queryset.filter(
+                Q(subject__icontains=search) |
+                Q(client__email__icontains=search) |
+                Q(client__first_name__icontains=search) |
+                Q(client__last_name__icontains=search)
+            )
+
+        return queryset.order_by('-created_at')
+
+    @action(detail=False, methods=['get'])
+    def stats(self, request):
+        """Get support inquiry statistics."""
+        today = timezone.now().date()
+
+        queryset = self.get_queryset()
+
+        stats = {
+            'total': queryset.count(),
+            'open': queryset.filter(status='active').count(),
+            'in_progress': queryset.filter(status='waiting').count(),
+            'resolved_today': queryset.filter(
+                status='resolved',
+                updated_at__date=today
+            ).count(),
+            'unassigned': queryset.filter(assigned_admin__isnull=True, status='active').count(),
+            'by_category': dict(
+                queryset.values('category').annotate(count=Count('id')).values_list('category', 'count')
+            ),
+            'by_priority': dict(
+                queryset.filter(status='active').values('priority').annotate(count=Count('id')).values_list('priority', 'count')
+            ),
+        }
+
+        return Response(stats)
+
+    @action(detail=True, methods=['post'])
+    def add_reply(self, request, pk=None):
+        """Add an admin reply to a support inquiry."""
+        thread = self.get_object()
+        content = request.data.get('content')
+        is_internal = request.data.get('is_internal_note', False)
+
+        if not content:
+            return Response(
+                {'error': 'Content is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        message = Message.objects.create(
+            thread=thread,
+            sender=request.user,
+            content=content,
+            message_type='text',
+            is_internal_note=is_internal
+        )
+
+        return Response(MessageSerializer(message, context={'request': request}).data, status=status.HTTP_201_CREATED)
+
+
+class PublicSupportSettingsView(APIView):
+    """
+    Public endpoint to get support contact information.
+    """
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        from core.domains.settings.models import CompanySettings
+
+        settings = CompanySettings.get_settings()
+
+        return Response({
+            'support_email': settings.support_email or settings.email,
+            'support_phone': settings.support_phone or settings.phone,
+            'support_hours': settings.support_hours,
+            'company_name': settings.company_name,
+        })
