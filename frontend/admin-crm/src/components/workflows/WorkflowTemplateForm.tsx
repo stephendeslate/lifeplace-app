@@ -76,6 +76,7 @@ export const WorkflowTemplateForm: React.FC<WorkflowTemplateFormProps> = ({
     description: '',
     event_type: null,
     is_active: true,
+    lead_stage_auto_stop: true, // Default to true (recommended)
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -112,6 +113,7 @@ export const WorkflowTemplateForm: React.FC<WorkflowTemplateFormProps> = ({
         description: template.description || '',
         event_type: template.event_type,
         is_active: template.is_active,
+        lead_stage_auto_stop: template.lead_stage_auto_stop ?? true,
       });
     }
   }, [template]);
@@ -296,6 +298,32 @@ export const WorkflowTemplateForm: React.FC<WorkflowTemplateFormProps> = ({
                     }
                     label="Active Template"
                   />
+                </Stack>
+              </CardContent>
+            </Card>
+
+            {/* Behavior Settings */}
+            <Card>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  Behavior Settings
+                </Typography>
+
+                <Stack spacing={2}>
+                  <FormControlLabel
+                    control={
+                      <Switch
+                        checked={formData.lead_stage_auto_stop ?? true}
+                        onChange={(e) => handleInputChange('lead_stage_auto_stop', e.target.checked)}
+                      />
+                    }
+                    label="Lead Stage Auto-Stop"
+                  />
+                  <Typography variant="body2" color="text.secondary" sx={{ ml: 6, mt: -1 }}>
+                    When enabled, all remaining LEAD stage automations are automatically cancelled
+                    when an event transitions to PRODUCTION stage. This prevents follow-up emails
+                    from being sent after a client has already booked.
+                  </Typography>
                 </Stack>
               </CardContent>
             </Card>

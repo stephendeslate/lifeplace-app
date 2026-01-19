@@ -74,7 +74,7 @@ type BookingAction =
   | { type: 'SET_TAX_RATE'; payload: number }
   | { type: 'SET_PRICING_BREAKDOWN'; payload: { subtotal: string; tax: string; discount: string; formattedSubtotal: string; formattedTax: string; formattedDiscount: string } }
   | { type: 'RESET_BOOKING' }
-  | { type: 'SET_RECOVERABLE_SESSION'; payload: { sessionId: string; lastUpdated: string; stepName: string } | null };
+  | { type: 'SET_RECOVERABLE_SESSION'; payload: { sessionId: string; lastUpdated: string; stepName: string; progressPercentage: number } | null };
 
 // Reducer
 function bookingReducer(state: BookingState, action: BookingAction): BookingState {
@@ -324,6 +324,14 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
                 continue;
               }
 
+              // Skip sessions that are already on the Confirmation step
+              // (These are completed bookings that don't need recovery)
+              const stepName = data.current_step?.step_type_display || data.current_step?.step_type || '';
+              if (stepName.toLowerCase() === 'confirmation') {
+                localStorage.removeItem(key); // Clean up completed sessions
+                continue;
+              }
+
               const sessionId = key.replace('booking_session_', '');
               const lastUpdated = data.updated_at || data.savedAt || data.lastSaved;
               const timestamp = lastUpdated ? new Date(lastUpdated).getTime() : 0;
@@ -333,7 +341,7 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
                 mostRecentSession = {
                   sessionId,
                   lastUpdated: lastUpdated || new Date().toISOString(),
-                  stepName: data.current_step?.step_type_display || data.current_step?.step_type || 'Unknown',
+                  stepName: stepName || 'Unknown',
                   timestamp,
                   progressPercentage,
                 };
@@ -352,6 +360,7 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
                 sessionId: mostRecentSession.sessionId,
                 lastUpdated: mostRecentSession.lastUpdated,
                 stepName: mostRecentSession.stepName,
+                progressPercentage: mostRecentSession.progressPercentage,
               },
             });
           }

@@ -1932,7 +1932,9 @@ class BookingSessionService:
                     venue_config = None
 
                 if venue_config:
-                    min_venues = getattr(venue_config, 'min_venues', 1)
+                    # If step is skippable, use 0 as effective minimum (allow empty selection)
+                    config_min_venues = getattr(venue_config, 'min_venues', 1)
+                    min_venues = 0 if step.is_skippable else config_min_venues
                     max_venues = getattr(venue_config, 'max_venues', 10)
 
                     if len(selected_venue_ids) < min_venues:

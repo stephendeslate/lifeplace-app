@@ -29,6 +29,7 @@ import {
   Task as TaskIcon,
   RequestQuote as QuoteIcon,
   Description as ContractIcon,
+  Quiz as QuestionnaireIcon,
   Notifications as NotificationIcon,
   Handyman as ManualIcon,
   PlayArrow as TriggerIcon,
@@ -84,6 +85,7 @@ export const WorkflowStagesTable: React.FC<WorkflowStageTableProps> = ({
       TASK: <TaskIcon fontSize="small" />,
       QUOTE: <QuoteIcon fontSize="small" />,
       CONTRACT: <ContractIcon fontSize="small" />,
+      QUESTIONNAIRE: <QuestionnaireIcon fontSize="small" />,
       REMINDER: <ScheduleIcon fontSize="small" />,
       NOTIFICATION: <NotificationIcon fontSize="small" />,
     };
@@ -105,12 +107,14 @@ export const WorkflowStagesTable: React.FC<WorkflowStageTableProps> = ({
     }
 
     let label = automationType || 'Automated';
-    
-    // Add template info for EMAIL and CONTRACT automation
+
+    // Add template info for EMAIL, CONTRACT, and QUESTIONNAIRE automation
     if (automationType === 'EMAIL' && stage?.email_template_name) {
       label = `Email: ${stage.email_template_name}`;
     } else if (automationType === 'CONTRACT' && stage?.contract_template_name) {
       label = `Contract: ${stage.contract_template_name}`;
+    } else if (automationType === 'QUESTIONNAIRE' && stage?.questionnaire_template_name) {
+      label = `Questionnaire: ${stage.questionnaire_template_name}`;
     }
 
     const colors = {
@@ -118,6 +122,7 @@ export const WorkflowStagesTable: React.FC<WorkflowStageTableProps> = ({
       TASK: 'secondary',
       QUOTE: 'warning',
       CONTRACT: 'success',
+      QUESTIONNAIRE: 'info',
       REMINDER: 'info',
       NOTIFICATION: 'default',
     } as const;

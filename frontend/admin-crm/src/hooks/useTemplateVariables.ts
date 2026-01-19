@@ -191,6 +191,16 @@ export const getVariableGroupIcon = (groupKey: string): string => {
 };
 
 /**
+ * Convert a variable name to a human-readable label
+ * e.g., 'client_first_name' -> 'Client First Name'
+ */
+export const getVariableLabel = (variableName: string): string => {
+  return variableName
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, (l) => l.toUpperCase());
+};
+
+/**
  * Get context type options for select dropdowns
  */
 export const getContextTypeOptions = (

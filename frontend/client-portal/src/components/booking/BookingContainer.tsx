@@ -1,6 +1,6 @@
 // frontend/client-portal/src/components/booking/BookingContainer.tsx
 
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Box,
   Container,
@@ -18,6 +18,7 @@ import {
   Backdrop,
   CircularProgress,
   alpha,
+  Collapse,
 } from '@mui/material';
 import { GlassCard } from '../../design-system/components/GlassCard';
 import { AnimatedElement } from '../../design-system/components/AnimatedElement';
@@ -28,6 +29,7 @@ import {
   Close,
   Schedule,
   Warning,
+  KeyboardArrowDown,
 } from '@mui/icons-material';
 // import { useNavigate } from 'react-router-dom'; // Available for future use
 import { useBooking } from '../../contexts/BookingContext';
@@ -45,6 +47,7 @@ export const BookingContainer: React.FC<BookingContainerProps> = ({ children }) 
   // const navigate = useNavigate();
   const { state, actions } = useBooking();
   const { formatAmount } = useCurrencySettings();
+  const [priceDetailsExpanded, setPriceDetailsExpanded] = useState(false);
 
   // Use session timer hook for expiry tracking
   const { 
@@ -417,14 +420,23 @@ export const BookingContainer: React.FC<BookingContainerProps> = ({ children }) 
           <GlassCard
             variant="light"
             intensity="subtle"
+            onClick={() => setPriceDetailsExpanded(!priceDetailsExpanded)}
             sx={{
               mt: 3,
               p: 2,
               backgroundColor: alpha(theme.palette.success.main, 0.08),
               border: `1px solid ${alpha(theme.palette.success.main, 0.2)}`,
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              '&:hover': {
+                backgroundColor: alpha(theme.palette.success.main, 0.12),
+              },
+              '&:active': {
+                transform: 'scale(0.99)',
+              },
             }}
           >
-            {/* Subtotal row - only show if we have breakdown data */}
+            {/* Subtotal row - always show if we have breakdown data */}
             {state.pricingBreakdown.formattedSubtotal && (
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
                 <Typography variant="body2" color="text.secondary">
@@ -436,40 +448,57 @@ export const BookingContainer: React.FC<BookingContainerProps> = ({ children }) 
               </Box>
             )}
 
-            {/* Tax row - only show if we have tax data */}
-            {state.pricingBreakdown.formattedTax && parseFloat(state.pricingBreakdown.tax) > 0 && (
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
-                <Typography variant="body2" color="text.secondary">
-                  Tax:
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  {state.pricingBreakdown.formattedTax}
-                </Typography>
-              </Box>
-            )}
+            {/* Collapsible Tax and Discount details */}
+            <Collapse in={priceDetailsExpanded} timeout="auto">
+              {/* Tax row - only show if we have tax data */}
+              {state.pricingBreakdown.formattedTax && parseFloat(state.pricingBreakdown.tax) > 0 && (
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
+                  <Typography variant="body2" color="text.secondary">
+                    Tax:
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {state.pricingBreakdown.formattedTax}
+                  </Typography>
+                </Box>
+              )}
 
-            {/* Discount row - only show if discount exists */}
-            {state.pricingBreakdown.formattedDiscount && parseFloat(state.pricingBreakdown.discount) > 0 && (
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
-                <Typography variant="body2" sx={{ color: 'success.main' }}>
-                  Discount:
-                </Typography>
-                <Typography variant="body2" sx={{ color: 'success.main' }}>
-                  -{state.pricingBreakdown.formattedDiscount}
-                </Typography>
-              </Box>
-            )}
+              {/* Discount row - only show if discount exists */}
+              {state.pricingBreakdown.formattedDiscount && parseFloat(state.pricingBreakdown.discount) > 0 && (
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
+                  <Typography variant="body2" sx={{ color: 'success.main' }}>
+                    Discount:
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: 'success.main' }}>
+                    -{state.pricingBreakdown.formattedDiscount}
+                  </Typography>
+                </Box>
+              )}
+            </Collapse>
 
             {/* Divider if we have breakdown details */}
             {state.pricingBreakdown.formattedSubtotal && (
               <Box sx={{ borderTop: `1px solid ${alpha(theme.palette.divider, 0.2)}`, my: 1 }} />
             )}
 
-            {/* Total row */}
+            {/* Total row with expand indicator */}
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Typography variant="body2" color="text.secondary" sx={{ fontWeight: state.pricingBreakdown.formattedSubtotal ? 500 : 400 }}>
-                {state.pricingBreakdown.formattedSubtotal ? 'Total:' : 'Current Total:'}
-              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                <Typography variant="body2" color="text.secondary" sx={{ fontWeight: state.pricingBreakdown.formattedSubtotal ? 500 : 400 }}>
+                  {state.pricingBreakdown.formattedSubtotal ? 'Total:' : 'Current Total:'}
+                </Typography>
+                {/* Show expand hint if there's tax or discount to reveal */}
+                {((state.pricingBreakdown.formattedTax && parseFloat(state.pricingBreakdown.tax) > 0) ||
+                  (state.pricingBreakdown.formattedDiscount && parseFloat(state.pricingBreakdown.discount) > 0)) && (
+                  <KeyboardArrowDown
+                    sx={{
+                      fontSize: 18,
+                      color: 'text.secondary',
+                      transform: priceDetailsExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
+                      transition: 'transform 0.3s ease',
+                    }}
+                  />
+                )}
+              </Box>
               <Typography variant="h6" sx={{ fontWeight: 600, color: 'primary.main' }}>
                 {formatAmount(state.totalPrice || '0')}
               </Typography>

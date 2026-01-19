@@ -1,6 +1,6 @@
 // frontend/admin-crm/src/components/communications/TemplateForm.tsx
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   Box,
   Button,
@@ -21,11 +21,10 @@ import {
 import {
   Save as SaveIcon,
   Cancel as CancelIcon,
-  Preview as PreviewIcon,
   Info as InfoIcon,
 } from '@mui/icons-material';
+import DOMPurify from 'dompurify';
 import { useCommunications } from '../../hooks/useCommunications';
-import { sanitizeHTML } from '../../utils/security';
 import type { CommunicationTemplate, CreateTemplateData, UpdateTemplateData } from '../../types/communications.types';
 import { TemplateContentEditor, TemplateVariableInserter } from '../shared';
 import type { TemplateContentEditorHandle } from '../shared';
@@ -64,11 +63,101 @@ export const TemplateForm: React.FC<TemplateFormProps> = ({
   const { useCreateTemplate, useUpdateTemplate, useVariableSchemas, usePreviewTemplate } = useCommunications();
   const { mutate: createTemplate, isPending: isCreating } = useCreateTemplate();
   const { mutate: updateTemplate, isPending: isUpdating } = useUpdateTemplate();
-  const { mutate: previewTemplate, isPending: isPreviewing, data: previewData } = usePreviewTemplate();
   const { data: variableSchemas } = useVariableSchemas();
+  const { mutate: previewTemplate, data: previewResult, isPending: isPreviewing } = usePreviewTemplate();
 
   const isEditing = !!template;
   const isLoading = isCreating || isUpdating;
+
+  // Sample data for live preview - defined first so it can be used in effects
+  const samplePreviewData = useMemo(() => ({
+    first_name: 'John',
+    last_name: 'Doe',
+    email: 'john.doe@example.com',
+    company: 'Example Corp',
+    site_name: 'LifePlace',
+    current_date: new Date().toLocaleDateString(),
+    support_email: 'support@lifeplace.com',
+    invitation_link: 'https://app.lifeplace.com/accept-invitation/123',
+    invited_by: 'Jane Smith',
+    expiry_date: 'December 31, 2024',
+    event_name: 'Annual Gala',
+    event_date: 'March 15, 2024',
+    venue: 'Grand Ballroom',
+    client_name: 'John Doe',
+    phone: '(555) 123-4567',
+  }), []);
+
+  // Debounced preview using backend API
+  const [debouncedBody, setDebouncedBody] = useState(formData.body_template);
+  const [debouncedSubject, setDebouncedSubject] = useState(formData.subject_template);
+
+  // Debounce the body and subject template changes
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedBody(formData.body_template);
+      setDebouncedSubject(formData.subject_template);
+    }, 800);
+    return () => clearTimeout(timer);
+  }, [formData.body_template, formData.subject_template]);
+
+  // Trigger backend preview when debounced values change (only when editing)
+  useEffect(() => {
+    if (isEditing && template?.id && debouncedBody) {
+      previewTemplate({
+        id: template.id,
+        data: {
+          template_id: template.id,
+          context_data: {
+            ...samplePreviewData,
+            // Override with current unsaved content
+            body_template: debouncedBody,
+            subject_template: debouncedSubject,
+          },
+        },
+      });
+    }
+  }, [isEditing, template?.id, debouncedBody, debouncedSubject, previewTemplate, samplePreviewData]);
+
+  // Live preview - uses backend API result when editing, falls back to client-side for new templates
+  const livePreview = useMemo(() => {
+    // If we have a backend preview result (editing mode), use it
+    if (isEditing && previewResult) {
+      return {
+        subject: previewResult.subject || '',
+        body: previewResult.body || '',
+      };
+    }
+
+    // Fallback: client-side substitution for new templates
+    if (!formData.body_template) return { subject: '', body: '' };
+
+    const substituteVariables = (text: string) => {
+      let result = text;
+
+      // Step 1: Remove variable pill spans entirely - match any span containing {{ variable }}
+      result = result.replace(
+        /<span[^>]*>\s*\{\{\s*(\w+)\s*\}\}\s*<\/span>/gi,
+        (_, varName) => {
+          const value = samplePreviewData[varName as keyof typeof samplePreviewData];
+          return value !== undefined ? String(value) : `{{ ${varName} }}`;
+        }
+      );
+
+      // Step 2: Substitute any remaining {{ variable }} patterns (plain text not in spans)
+      result = result.replace(/\{\{\s*(\w+)\s*\}\}/g, (match, varName) => {
+        const value = samplePreviewData[varName as keyof typeof samplePreviewData];
+        return value !== undefined ? String(value) : match;
+      });
+
+      return result;
+    };
+
+    return {
+      subject: substituteVariables(formData.subject_template || ''),
+      body: substituteVariables(formData.body_template),
+    };
+  }, [isEditing, previewResult, formData.body_template, formData.subject_template, samplePreviewData]);
 
   useEffect(() => {
     if (template) {
@@ -103,35 +192,6 @@ export const TemplateForm: React.FC<TemplateFormProps> = ({
     } else {
       createTemplate(formData, { onSuccess: onSave });
     }
-  };
-
-  const handlePreview = () => {
-    if (!formData.name) return;
-    
-    // Create sample context data
-    const sampleData = {
-      first_name: 'John',
-      last_name: 'Doe',
-      email: 'john.doe@example.com',
-      company: 'Example Corp',
-      site_name: 'LifePlace',
-      current_date: new Date().toLocaleDateString(),
-      support_email: 'support@lifeplace.com',
-      invitation_link: 'https://app.lifeplace.com/accept-invitation/123',
-      invited_by: 'Jane Smith',
-      expiry_date: 'December 31, 2024',
-      event_name: 'Annual Gala',
-      event_date: 'March 15, 2024',
-      venue: 'Grand Ballroom'
-    };
-
-    previewTemplate({
-      id: template?.id || 0,
-      data: { 
-        template_id: template?.id || 0,
-        context_data: sampleData 
-      }
-    });
   };
 
   const handleVariableInsert = (variable: string) => {
@@ -367,24 +427,9 @@ The {{ site_name }} Team</p>`
 
           {/* Template Content */}
           <Box sx={{ borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
-            <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-              <Typography variant="h6">
-                Template Content
-              </Typography>
-              <Button
-                variant="outlined"
-                startIcon={<PreviewIcon />}
-                onClick={handlePreview}
-                disabled={!formData.body_template || isPreviewing}
-                sx={{
-                  borderRadius: 1,
-                  px: 3,
-                  fontWeight: 600,
-                }}
-              >
-                {isPreviewing ? <CircularProgress size={20} color="primary" /> : 'Preview'}
-              </Button>
-            </Box>
+            <Typography variant="h6" gutterBottom>
+              Template Content
+            </Typography>
 
             <Stack spacing={2}>
               {formData.channel === 'EMAIL' && (
@@ -411,7 +456,7 @@ The {{ site_name }} Team</p>`
                 placeholder={
                   formData.channel === 'SMS'
                     ? 'Hi {{ first_name }}! Your message here...'
-                    : 'Start typing your email content... Use variables for dynamic content.'
+                    : 'Start typing your email content... Type {{ to insert variables.'
                 }
                 minHeight={formData.channel === 'SMS' ? 100 : 300}
                 rows={formData.channel === 'SMS' ? 4 : 12}
@@ -420,8 +465,11 @@ The {{ site_name }} Team</p>`
                 helperText={
                   formData.channel === 'SMS'
                     ? 'Keep SMS messages under 160 characters for best delivery'
-                    : undefined
+                    : 'Type {{ to insert variables with autocomplete'
                 }
+                variableSchemas={variableSchemas}
+                contextType={formData.context_type}
+                hideAdvancedModes={true}
               />
             </Stack>
           </Box>
@@ -438,65 +486,77 @@ The {{ site_name }} Team</p>`
             />
           </Box>
 
-          {/* Preview */}
-          {previewData && (
-            <Box sx={{ borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
-              <Typography variant="h6" gutterBottom>
-                Preview
+          {/* Live Preview - Auto-updates as you type */}
+          <Box sx={{ borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
+            <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+              <Box display="flex" alignItems="center" gap={1}>
+                <Typography variant="h6">
+                  Live Preview
+                </Typography>
+                {isPreviewing && <CircularProgress size={16} />}
+              </Box>
+              <Typography variant="caption" color="text.secondary">
+                {isEditing ? 'Server-rendered preview' : 'Using sample data'}
               </Typography>
+            </Box>
 
-              {previewData.subject && (
-                <Box mb={2}>
-                  <Typography variant="subtitle2" gutterBottom>
-                    Subject:
+            {formData.channel === 'EMAIL' && livePreview.subject && (
+              <Box mb={2}>
+                <Typography variant="subtitle2" gutterBottom>
+                  Subject:
+                </Typography>
+                <Paper variant="outlined" sx={{ p: 2, bgcolor: 'grey.50' }}>
+                  <Typography variant="body2">
+                    {livePreview.subject}
                   </Typography>
-                  <Paper variant="outlined" sx={{ p: 2, bgcolor: 'grey.50' }}>
-                    <Typography variant="body2" fontFamily="monospace">
-                      {previewData.subject}
-                    </Typography>
-                  </Paper>
-                </Box>
-              )}
+                </Paper>
+              </Box>
+            )}
 
-              <Typography variant="subtitle2" gutterBottom>
-                {formData.channel === 'SMS' ? 'Message:' : 'Body:'}
-              </Typography>
-              <Paper variant="outlined" sx={{ p: 2, bgcolor: 'grey.50' }}>
-                {formData.channel === 'EMAIL' ? (
-                  <Box
-                    dangerouslySetInnerHTML={{ __html: sanitizeHTML(previewData.body, 'template') }}
-                    sx={{
-                      '& *': { maxWidth: '100%' },
-                      wordBreak: 'break-word',
-                      '& .variable-placeholder': {
-                        backgroundColor: '#4caf50',
-                        color: 'white',
-                        padding: '2px 4px',
-                        borderRadius: '3px',
-                        fontFamily: 'monospace',
-                        fontSize: '0.875em'
-                      }
+            <Typography variant="subtitle2" gutterBottom>
+              {formData.channel === 'SMS' ? 'Message:' : 'Body:'}
+            </Typography>
+            <Paper
+              variant="outlined"
+              sx={{
+                p: 3,
+                bgcolor: 'background.default',
+                minHeight: 100,
+                maxHeight: '400px',
+                overflow: 'auto',
+              }}
+            >
+              {livePreview.body ? (
+                formData.channel === 'EMAIL' ? (
+                  // Render HTML exactly like Rendered Preview - no CSS overrides
+                  <div
+                    dangerouslySetInnerHTML={{
+                      __html: DOMPurify.sanitize(livePreview.body),
                     }}
                   />
                 ) : (
                   <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
-                    {previewData.body}
+                    {livePreview.body}
                   </Typography>
-                )}
-              </Paper>
-
-              {formData.channel === 'SMS' && (
-                <Alert severity="info" sx={{ mt: 2 }}>
-                  <Typography variant="body2">
-                    <strong>SMS Preview:</strong> Character count: {previewData.body.length}
-                    {previewData.body.length > 160 && (
-                      <span> - This message will be sent as multiple SMS parts.</span>
-                    )}
-                  </Typography>
-                </Alert>
+                )
+              ) : (
+                <Typography variant="body2" color="text.secondary" fontStyle="italic">
+                  Start typing to see preview...
+                </Typography>
               )}
-            </Box>
-          )}
+            </Paper>
+
+            {formData.channel === 'SMS' && livePreview.body && (
+              <Alert severity={livePreview.body.length > 160 ? 'warning' : 'info'} sx={{ mt: 2 }}>
+                <Typography variant="body2">
+                  Character count: {livePreview.body.length}/160
+                  {livePreview.body.length > 160 && (
+                    <span> - Will be sent as multiple SMS parts</span>
+                  )}
+                </Typography>
+              </Alert>
+            )}
+          </Box>
 
           {/* Actions */}
           <Box sx={{ borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>

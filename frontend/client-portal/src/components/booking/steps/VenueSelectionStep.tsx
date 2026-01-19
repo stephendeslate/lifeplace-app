@@ -37,6 +37,7 @@ interface VenueSelectionStepProps {
   validationErrors: Record<string, string[]>;
   isValidating: boolean;
   eventTypeId?: number;
+  isSkippable?: boolean;
 }
 
 export const VenueSelectionStep: React.FC<VenueSelectionStepProps> = ({
@@ -46,6 +47,7 @@ export const VenueSelectionStep: React.FC<VenueSelectionStepProps> = ({
   validationErrors,
   isValidating,
   eventTypeId,
+  isSkippable = false,
 }) => {
   const { formatAmount } = useCurrencySettings();
   const [selectedVenueIds, setSelectedVenueIds] = useState<number[]>(
@@ -53,8 +55,11 @@ export const VenueSelectionStep: React.FC<VenueSelectionStepProps> = ({
   );
 
   // Configuration values
-  const minVenues = config?.min_venues || 1;
-  const maxVenues = config?.max_venues || 5;
+  // Use nullish coalescing (??) so that 0 is preserved (for skippable steps)
+  // If step is skippable, allow empty selection (min = 0)
+  const configMinVenues = config?.min_venues ?? 1;
+  const minVenues = isSkippable ? 0 : configMinVenues;
+  const maxVenues = config?.max_venues ?? 5;
   const showPricing = config?.show_pricing ?? true;
   const showIncludedHours = config?.show_included_hours ?? true;
   const title = config?.title || 'Select Your Spaces';

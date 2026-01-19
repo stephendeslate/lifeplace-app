@@ -41,6 +41,7 @@ class WorkflowStage(BaseModel):
         ('TASK', 'Create Task'),
         ('QUOTE', 'Generate Quote'),
         ('CONTRACT', 'Generate Contract'),
+        ('QUESTIONNAIRE', 'Send Questionnaire'),
         ('REMINDER', 'Send Reminder'),
         ('NOTIFICATION', 'Send Notification'),
     ]
@@ -68,6 +69,14 @@ class WorkflowStage(BaseModel):
         null=True,
         blank=True,
         help_text="Contract template to use for CONTRACT automation"
+    )
+    questionnaire_template = models.ForeignKey(
+        'questionnaires.Questionnaire',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='workflow_stages',
+        help_text="Questionnaire template to send for QUESTIONNAIRE automation"
     )
     task_description = models.TextField(blank=True)
     
@@ -468,6 +477,177 @@ class WorkflowStage(BaseModel):
             except Exception as e:
                 logger.error(f"Failed to generate automated quote: {e}", exc_info=True)
 
+        elif self.automation_type == 'QUESTIONNAIRE':
+            # Send questionnaire notification/reminder
+            self._execute_questionnaire_automation(event)
+
+    def _execute_questionnaire_automation(self, event):
+        """
+        Execute questionnaire automation for this stage.
+
+        This automation:
+        1. Checks if the questionnaire is already completed for this event
+        2. If complete → logs and skips (no action needed)
+        3. If incomplete or no responses → sends email notification with portal link
+
+        The email template should include a link to the client portal where
+        they can fill out/complete the questionnaire.
+        """
+        from core.domains.questionnaires.models import Questionnaire, QuestionnaireResponse
+        from core.domains.events.models import EventTimeline
+
+        if not self.questionnaire_template:
+            logger.warning(
+                f"No questionnaire template configured for stage '{self.name}' "
+                f"(stage_id={self.id}). Skipping questionnaire automation."
+            )
+            return
+
+        try:
+            questionnaire = self.questionnaire_template
+
+            # Get all required fields for this questionnaire
+            required_fields = questionnaire.fields.filter(required=True)
+            required_field_ids = set(required_fields.values_list('id', flat=True))
+
+            # Get existing responses for this event and questionnaire
+            existing_responses = QuestionnaireResponse.objects.filter(
+                event=event,
+                field__questionnaire=questionnaire
+            )
+            answered_field_ids = set(existing_responses.values_list('field_id', flat=True))
+
+            # Check if all required fields have been answered
+            is_complete = required_field_ids.issubset(answered_field_ids)
+
+            if is_complete and required_field_ids:
+                # Questionnaire is already complete - log and skip
+                logger.info(
+                    f"Questionnaire '{questionnaire.name}' already complete for event {event.id}. "
+                    f"Skipping automation."
+                )
+                EventTimeline.objects.create(
+                    event=event,
+                    action_type='SYSTEM_UPDATE',
+                    description=f"Questionnaire '{questionnaire.name}' automation skipped (already complete)",
+                    action_data={
+                        'stage_id': self.id,
+                        'questionnaire_id': questionnaire.id,
+                        'status': 'already_complete'
+                    },
+                    is_public=False
+                )
+                return
+
+            # Determine if this is a reminder or initial notification
+            has_partial_responses = existing_responses.exists()
+            notification_type = 'reminder' if has_partial_responses else 'initial'
+
+            # Calculate completion percentage for context
+            total_fields = questionnaire.fields.count()
+            answered_count = existing_responses.count()
+            completion_percentage = (
+                round((answered_count / total_fields) * 100) if total_fields > 0 else 0
+            )
+
+            # Send email notification if email template is configured
+            if self.email_template:
+                from core.domains.communications.services import CommunicationService
+                from core.domains.communications.context_service import (
+                    CommunicationContextService, ContextType
+                )
+
+                try:
+                    comm_service = CommunicationService()
+
+                    # Generate context using the unified context service
+                    context_data = CommunicationContextService.generate_context(
+                        context_type=ContextType.EVENT,
+                        client=event.client,
+                        event=event,
+                    )
+
+                    # Add questionnaire-specific context
+                    context_data.update({
+                        'questionnaire_name': questionnaire.name,
+                        'questionnaire_id': questionnaire.id,
+                        'is_reminder': has_partial_responses,
+                        'completion_percentage': completion_percentage,
+                        'answered_count': answered_count,
+                        'total_fields': total_fields,
+                        'remaining_fields': total_fields - answered_count,
+                        'stage_name': self.name,
+                        # Portal link for completing questionnaire
+                        'questionnaire_url': f'/portal/events/{event.id}/questionnaires',
+                    })
+
+                    comm_service.send_communication_by_template(
+                        template=self.email_template,
+                        recipient=event.client.email,
+                        context_data=context_data,
+                        client=event.client,
+                        sent_by=None
+                    )
+
+                    action_description = (
+                        f"Questionnaire reminder sent for '{questionnaire.name}' "
+                        f"({completion_percentage}% complete)"
+                        if has_partial_responses
+                        else f"Questionnaire request sent for '{questionnaire.name}'"
+                    )
+
+                    logger.info(
+                        f"Sent questionnaire {notification_type} email "
+                        f"'{self.email_template.name}' for event {event.id}"
+                    )
+
+                    # Log timeline entry
+                    EventTimeline.objects.create(
+                        event=event,
+                        action_type='QUESTIONNAIRE_SENT' if not has_partial_responses else 'QUESTIONNAIRE_REMINDER',
+                        description=action_description,
+                        action_data={
+                            'stage_id': self.id,
+                            'questionnaire_id': questionnaire.id,
+                            'notification_type': notification_type,
+                            'completion_percentage': completion_percentage
+                        },
+                        is_public=True
+                    )
+
+                except Exception as email_error:
+                    logger.error(
+                        f"Failed to send questionnaire email for event {event.id}: {email_error}"
+                    )
+            else:
+                # No email template - just create in-app notification
+                from core.domains.notifications.services import NotificationService
+
+                NotificationService.create_notification(
+                    recipient=event.client,
+                    notification_type_code='QUESTIONNAIRE_REQUEST',
+                    context={
+                        'questionnaire_name': questionnaire.name,
+                        'event_name': event.name or f"{getattr(event, 'event_type', 'Event')}",
+                        'event_id': event.id,
+                        'is_reminder': has_partial_responses,
+                        'completion_percentage': completion_percentage,
+                        'action_url': f'/portal/events/{event.id}/questionnaires',
+                    },
+                    event=event,
+                    client=event.client
+                )
+
+                logger.info(
+                    f"Created questionnaire {notification_type} notification for event {event.id}"
+                )
+
+        except Exception as e:
+            logger.error(
+                f"Failed to execute questionnaire automation for event {event.id}: {e}",
+                exc_info=True
+            )
+
 
 class WorkflowTrigger(BaseModel):
     """Records of workflow trigger events for automation"""
@@ -641,3 +821,134 @@ class EventWorkflowOverride(BaseModel):
     def is_automation_disabled(self):
         """Check if automation is disabled for this stage"""
         return self.override_type in ['SKIP', 'DISABLE_AUTOMATION']
+
+
+class WorkflowWebhook(BaseModel):
+    """
+    Configuration for outgoing webhooks triggered by workflow events.
+
+    Allows external systems to be notified when workflow events occur:
+    - Stage entered/completed
+    - Automation executed
+    - Workflow completed
+
+    Includes HMAC signature verification for security.
+    """
+    WEBHOOK_EVENT_CHOICES = [
+        ('STAGE_ENTERED', 'Stage Entered'),
+        ('STAGE_COMPLETED', 'Stage Completed'),
+        ('AUTOMATION_EXECUTED', 'Automation Executed'),
+        ('WORKFLOW_COMPLETED', 'Workflow Completed'),
+    ]
+
+    name = models.CharField(
+        max_length=255,
+        help_text="Friendly name for this webhook"
+    )
+    url = models.URLField(
+        max_length=2048,
+        help_text="URL to send webhook payloads to"
+    )
+    secret = models.CharField(
+        max_length=255,
+        help_text="Secret key for HMAC signature verification"
+    )
+    is_active = models.BooleanField(
+        default=True,
+        help_text="Whether this webhook is active"
+    )
+    events = models.JSONField(
+        default=list,
+        help_text="List of event types to trigger this webhook"
+    )
+    workflow_template = models.ForeignKey(
+        WorkflowTemplate,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='webhooks',
+        help_text="Optional: Limit to specific workflow template"
+    )
+    headers = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text="Additional headers to include in webhook requests"
+    )
+    last_triggered_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="When this webhook was last triggered"
+    )
+    failure_count = models.PositiveIntegerField(
+        default=0,
+        help_text="Number of consecutive failures (reset on success)"
+    )
+
+    class Meta:
+        ordering = ['name']
+
+    def __str__(self):
+        return f"{self.name} ({self.url})"
+
+
+class WorkflowWebhookDelivery(BaseModel):
+    """
+    Record of individual webhook delivery attempts.
+
+    Tracks success/failure status and enables retry logic.
+    """
+    STATUS_CHOICES = [
+        ('PENDING', 'Pending'),
+        ('SUCCESS', 'Success'),
+        ('FAILED', 'Failed'),
+        ('RETRYING', 'Retrying'),
+    ]
+
+    webhook = models.ForeignKey(
+        WorkflowWebhook,
+        on_delete=models.CASCADE,
+        related_name='deliveries',
+        help_text="The webhook this delivery is for"
+    )
+    event_type = models.CharField(
+        max_length=50,
+        help_text="The type of event that triggered this delivery"
+    )
+    payload = models.JSONField(
+        help_text="The JSON payload sent to the webhook"
+    )
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default='PENDING',
+        help_text="Current status of the delivery"
+    )
+    response_status_code = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        help_text="HTTP status code from the response"
+    )
+    response_body = models.TextField(
+        blank=True,
+        help_text="Response body from the webhook endpoint"
+    )
+    error_message = models.TextField(
+        blank=True,
+        help_text="Error message if delivery failed"
+    )
+    attempt_count = models.PositiveIntegerField(
+        default=0,
+        help_text="Number of delivery attempts"
+    )
+    next_retry_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="When to next retry delivery (if failed)"
+    )
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name_plural = 'Workflow webhook deliveries'
+
+    def __str__(self):
+        return f"{self.webhook.name} - {self.event_type} - {self.status}"

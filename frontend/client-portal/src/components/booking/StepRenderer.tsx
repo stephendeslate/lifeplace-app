@@ -153,6 +153,7 @@ export const StepRenderer: React.FC = () => {
           validationErrors={mergedValidationErrors}
           isValidating={state.ui.isValidating}
           eventTypeId={state.currentFlow?.event_type}
+          isSkippable={currentStep.is_skippable}
         />
       );
 

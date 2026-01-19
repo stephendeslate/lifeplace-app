@@ -12,6 +12,8 @@ router = DefaultRouter()
 router.register(r'templates', views.WorkflowTemplateViewSet, basename='template')
 router.register(r'stages', views.WorkflowStageViewSet, basename='stage')
 router.register(r'triggers', views.WorkflowTriggerViewSet, basename='trigger')
+router.register(r'overrides', views.EventWorkflowOverrideViewSet, basename='override')
+router.register(r'webhooks', views.WorkflowWebhookViewSet, basename='webhook')
 
 # Client router
 client_router = DefaultRouter()

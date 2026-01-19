@@ -277,12 +277,16 @@ export interface AddonSelectionStepConfiguration {
   // Selection behavior
   min_selection: number;
   max_selection: number;
-  
+
+  // Event type filtering
+  /** When true, show all active add-ons for the booking flow's event type. Default: true */
+  filter_by_event_type: boolean;
+
   // Display options
   group_by_category: boolean;
   show_recommendations: boolean;
   recommendation_logic: Record<string, unknown>;
-  
+
   created_at: string;
   updated_at: string;
 }

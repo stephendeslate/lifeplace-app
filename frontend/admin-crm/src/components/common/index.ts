@@ -141,3 +141,7 @@ export { SectionHeader } from './SectionHeader';
 
 // Tab Panel - Reusable tab panel for tab interfaces
 export { TabPanel, a11yTabProps, a11yTabPanelProps } from './TabPanel';
+
+// Inline Editable Text - Click-to-edit text component
+export { InlineEditableText } from './InlineEditableText';
+export type { InlineEditableTextProps } from './InlineEditableText';

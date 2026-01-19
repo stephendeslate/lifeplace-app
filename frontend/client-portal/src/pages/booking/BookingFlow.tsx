@@ -113,7 +113,7 @@ const BookingFlowContent: React.FC = () => {
             canRecover: Boolean(state.recoverableSession),
             lastUpdated: state.recoverableSession?.lastUpdated,
             currentStep: state.recoverableSession?.stepName,
-            progressPercentage: 0, // Could be calculated from localStorage data
+            progressPercentage: state.recoverableSession?.progressPercentage ?? 0,
           }}
           onRestore={handleRestoreSession}
           onDiscard={handleDiscardSession}

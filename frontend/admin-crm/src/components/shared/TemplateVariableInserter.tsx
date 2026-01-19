@@ -10,7 +10,6 @@ import {
   AccordionSummary,
   AccordionDetails,
   Stack,
-  Paper,
   Divider,
   Tooltip,
   Icon,
@@ -22,10 +21,10 @@ import {
 } from '@mui/icons-material';
 import type {
   TemplateVariableInserterProps,
-  TemplateStarter,
   VariableGroup,
 } from '../../types/templates.types';
 import { getVariableGroupTitle, getVariableGroupColor } from '../../hooks/useTemplateVariables';
+import { TemplateStartersGallery } from './TemplateStartersGallery';
 
 /**
  * TemplateVariableInserter - A shared component for inserting template variables
@@ -216,7 +215,7 @@ export const TemplateVariableInserter: React.FC<TemplateVariableInserterProps> =
         </AccordionDetails>
       </Accordion>
 
-      {/* Template Starters */}
+      {/* Template Starters - Visual Gallery */}
       {onTemplateLoad && templateStarters && Object.keys(templateStarters).length > 0 && (
         <Accordion
           expanded={expandedPanel === 'templates'}
@@ -228,34 +227,26 @@ export const TemplateVariableInserter: React.FC<TemplateVariableInserterProps> =
             </Typography>
           </AccordionSummary>
           <AccordionDetails>
-            <Stack spacing={1}>
+            <Stack spacing={1.5}>
               <Typography variant="caption" color="text.secondary">
-                Load a pre-made template to get started quickly (this will replace current content)
+                Choose a template to get started quickly
               </Typography>
 
-              {Object.entries(templateStarters).map(([key, template]: [string, TemplateStarter]) => (
-                <Paper
-                  key={key}
-                  variant="outlined"
-                  sx={{
-                    p: 2,
-                    cursor: 'pointer',
-                    transition: 'all 0.2s',
-                    '&:hover': {
-                      backgroundColor: 'action.hover',
-                      borderColor: 'primary.main',
-                    },
-                  }}
-                  onClick={() => onTemplateLoad(key)}
-                >
-                  <Typography variant="body2" fontWeight="medium">
-                    {template.name}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    {template.description}
-                  </Typography>
-                </Paper>
-              ))}
+              <TemplateStartersGallery
+                starters={Object.entries(templateStarters).map(([key, template]) => ({
+                  key,
+                  name: template.name,
+                  description: template.description,
+                  content: template.content,
+                  previewHtml: template.content,
+                  category: key.includes('welcome') ? 'welcome' :
+                           key.includes('reminder') ? 'reminder' :
+                           key.includes('followup') || key.includes('follow') ? 'followup' :
+                           key.includes('confirm') ? 'confirmation' : undefined,
+                }))}
+                onSelect={onTemplateLoad}
+                showConfirmation={true}
+              />
             </Stack>
           </AccordionDetails>
         </Accordion>

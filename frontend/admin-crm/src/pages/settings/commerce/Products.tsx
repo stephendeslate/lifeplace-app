@@ -273,6 +273,7 @@ export const Products = () => {
       is_featured: data.is_featured,
       allow_multiple: data.allow_multiple,
       requires_approval: data.requires_approval,
+      event_type_ids: data.event_type_ids,
     };
 
     return new Promise<void>((resolve, reject) => {
@@ -296,6 +297,7 @@ export const Products = () => {
       is_featured: data.is_featured,
       allow_multiple: data.allow_multiple,
       requires_approval: data.requires_approval,
+      event_type_ids: data.event_type_ids,
     };
 
     return new Promise<void>((resolve, reject) => {

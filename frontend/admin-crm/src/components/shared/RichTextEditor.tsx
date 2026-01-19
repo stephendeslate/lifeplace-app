@@ -1,6 +1,6 @@
 // frontend/admin-crm/src/components/shared/RichTextEditor.tsx
 
-import { useRef, useImperativeHandle, forwardRef, useEffect } from 'react';
+import { useRef, useImperativeHandle, forwardRef, useEffect, useMemo } from 'react';
 import { Box, Typography } from '@mui/material';
 import {
   RichTextEditor as MUITiptapEditor,
@@ -33,6 +33,15 @@ import Underline from '@tiptap/extension-underline';
 import TextAlign from '@tiptap/extension-text-align';
 import Link from '@tiptap/extension-link';
 import Placeholder from '@tiptap/extension-placeholder';
+import {
+  VariableMention,
+  setVariableSchemas,
+  setContextType,
+} from './VariableMentionExtension';
+import { SlashCommands } from './SlashCommandExtension';
+import { ConditionalBlock } from './ConditionalBlockExtension';
+import { getVariableLabel } from '../../hooks/useTemplateVariables';
+import type { VariableSchemas, ContextType } from '../../types/templates.types';
 
 interface RichTextEditorProps {
   value: string;
@@ -45,6 +54,10 @@ interface RichTextEditorProps {
   error?: boolean;
   helperText?: string;
   label?: string;
+  /** Variable schemas for autocomplete - enables variable pills when provided */
+  variableSchemas?: VariableSchemas;
+  /** Current context type for filtering available variables */
+  contextType?: ContextType;
 }
 
 export interface RichTextEditorHandle {
@@ -63,11 +76,23 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
   error = false,
   helperText,
   label,
+  variableSchemas,
+  contextType,
 }, ref) => {
   const editorRef = useRef<RichTextEditorRef>(null);
 
-  // Create extensions with placeholder
-  const extensions = [
+  // Update variable schemas when they change (for autocomplete)
+  useEffect(() => {
+    setVariableSchemas(variableSchemas);
+  }, [variableSchemas]);
+
+  // Update context type when it changes (for filtering variables)
+  useEffect(() => {
+    setContextType(contextType);
+  }, [contextType]);
+
+  // Create extensions with placeholder, variable mention, and slash commands
+  const extensions = useMemo(() => [
     StarterKit.configure({
       history: {
         depth: 20,
@@ -85,18 +110,32 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
     Placeholder.configure({
       placeholder,
     }),
-  ];
+    VariableMention,
+    SlashCommands,
+    ConditionalBlock,
+  ], [placeholder]);
 
-  // Insert variable at cursor position
+  // Insert variable at cursor position using the VariableMention extension
   const insertVariable = (variable: string) => {
     const editor = editorRef.current?.editor;
     if (editor) {
-      const variableText = `{{ ${variable} }}`;
-      
+      // Insert as a mention node for proper pill rendering
       editor
         .chain()
         .focus()
-        .insertContent(`<span style="background-color: #e3f2fd; color: #1976d2; padding: 2px 4px; border-radius: 3px; font-family: monospace; font-size: 0.875em; font-weight: bold;">${variableText}</span>&nbsp;`)
+        .insertContent([
+          {
+            type: 'variableMention',
+            attrs: {
+              id: variable,
+              label: getVariableLabel(variable),
+            },
+          },
+          {
+            type: 'text',
+            text: ' ',
+          },
+        ])
         .run();
     }
   };
@@ -298,8 +337,35 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
             '& h4': { fontSize: '1.125rem' },
             '& h5': { fontSize: '1rem' },
             '& h6': { fontSize: '0.875rem' },
-            // Variable placeholder styling
-            '& span[style*="background-color: #e3f2fd"]': {
+            // Variable pill styling - modern pill appearance
+            '& .variable-pill, & span[data-type="variable"]': {
+              display: 'inline-flex',
+              alignItems: 'center',
+              backgroundColor: '#e3f2fd',
+              color: '#1565c0',
+              padding: '1px 8px',
+              borderRadius: '12px',
+              fontSize: '0.875em',
+              fontWeight: 500,
+              border: '1px solid #90caf9',
+              cursor: 'default',
+              userSelect: 'none',
+              whiteSpace: 'nowrap',
+              verticalAlign: 'baseline',
+              lineHeight: 1.5,
+              transition: 'all 0.15s ease',
+              '&:hover': {
+                backgroundColor: '#bbdefb',
+                borderColor: '#64b5f6',
+              },
+              '&.ProseMirror-selectednode': {
+                backgroundColor: '#90caf9',
+                borderColor: '#42a5f5',
+                outline: 'none',
+              },
+            },
+            // Legacy variable placeholder styling (for backwards compatibility)
+            '& span[style*="background-color: #e3f2fd"]:not([data-type])': {
               backgroundColor: '#e3f2fd !important',
               color: '#1976d2 !important',
               padding: '2px 4px !important',
