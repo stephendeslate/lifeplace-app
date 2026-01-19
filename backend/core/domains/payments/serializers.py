@@ -29,8 +29,6 @@ class PaymentSettingsSerializer(serializers.ModelSerializer):
             # Payment plan settings
             'balance_due_days',
             'grace_period_days',
-            'default_installments',
-            'default_installment_frequency',
             'late_fee_enabled',
             'default_late_fee_amount',
             'default_deposit_percentage',
@@ -126,14 +124,6 @@ class PaymentSettingsSerializer(serializers.ModelSerializer):
         if value < 0:
             raise serializers.ValidationError(
                 "Grace period days must be non-negative."
-            )
-        return value
-
-    def validate_default_installments(self, value):
-        """Validate default installments is positive"""
-        if value <= 0:
-            raise serializers.ValidationError(
-                "Default installments must be a positive number."
             )
         return value
 

@@ -77,6 +77,9 @@ export interface SettingsPageProps<T = Record<string, unknown>> {
   onDelete?: (id: string | number) => Promise<void>;
   onDuplicate?: (item: T) => Promise<void>;
 
+  // Optional: Fetch fresh item data before editing (ensures form shows latest data)
+  onFetchItem?: (id: string | number) => Promise<T>;
+
   // Loading states
   isCreating?: boolean;
   isUpdating?: boolean;
@@ -117,6 +120,7 @@ export const SettingsPage = <T extends { id: string | number }>({
   onCreate,
   onUpdate,
   onDelete,
+  onFetchItem,
   isCreating = false,
   isUpdating = false,
   isDeleting = false,
@@ -127,6 +131,7 @@ export const SettingsPage = <T extends { id: string | number }>({
 }: SettingsPageProps<T>) => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<T | null>(null);
+  const [isFetchingItem, setIsFetchingItem] = useState(false);
   const [sortBy, setSortBy] = useState<string>(config.table.defaultSort?.key || '');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>(config.table.defaultSort?.order || 'asc');
 
@@ -175,6 +180,32 @@ export const SettingsPage = <T extends { id: string | number }>({
     )] : []),
   ];
 
+  // Handle edit click - fetch fresh data if onFetchItem is provided
+  const handleEditClick = async (item: T) => {
+    const itemId = (item as unknown as { id: string | number }).id;
+
+    if (onFetchItem) {
+      // Fetch fresh data before opening the form
+      setIsFetchingItem(true);
+      try {
+        const freshItem = await onFetchItem(itemId);
+        setEditingItem(freshItem);
+        setDialogOpen(true);
+      } catch (err) {
+        console.error('Failed to fetch item for editing:', err);
+        // Fallback to using list data if fetch fails
+        setEditingItem(item);
+        setDialogOpen(true);
+      } finally {
+        setIsFetchingItem(false);
+      }
+    } else {
+      // Use list data directly (legacy behavior)
+      setEditingItem(item);
+      setDialogOpen(true);
+    }
+  };
+
   // Table actions
   const tableActions = [
     ...customTableActions.map(action => ({
@@ -182,10 +213,7 @@ export const SettingsPage = <T extends { id: string | number }>({
       onClick: action.onClick,
     })),
     ...(features.edit && hasFormCapability ? createStandardActions(
-      (item: T) => {
-        setEditingItem(item);
-        setDialogOpen(true);
-      },
+      handleEditClick,
       (item: T) => onDelete && onDelete((item as unknown as { id: string | number }).id)
     ) : []),
   ];

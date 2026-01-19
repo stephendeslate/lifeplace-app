@@ -30,6 +30,7 @@ import {
 import { useCommunications } from '../../hooks/useCommunications';
 import { useContractTemplates } from '../../hooks/useContracts';
 import { useQuoteTemplates } from '../../hooks/useSales';
+import { useConfirmDialog } from '../common/ConfirmDialog';
 import type {
   WorkflowStageFormDialogProps,
   CreateWorkflowStageData,
@@ -75,7 +76,9 @@ export const WorkflowStageFormDialog: React.FC<WorkflowStageFormDialogProps> = (
 }) => {
   const [formData, setFormData] = useState<CreateWorkflowStageData>(defaultFormData);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [originalStageType, setOriginalStageType] = useState<StageType | null>(null);
 
+  const { confirm } = useConfirmDialog();
   const { useTemplates } = useCommunications();
   const { data: emailTemplates = [] } = useTemplates({ channel: 'EMAIL' });
 
@@ -107,11 +110,14 @@ export const WorkflowStageFormDialog: React.FC<WorkflowStageFormDialogProps> = (
           trigger_on_quote_sent: editingStage.trigger_on_quote_sent || false,
           metadata: editingStage.metadata || {},
         });
+        // Track original stage type for change detection
+        setOriginalStageType(editingStage.stage);
       } else {
         setFormData({
           ...defaultFormData,
           template: templateId,
         });
+        setOriginalStageType(null);
       }
       setErrors({});
     }
@@ -166,13 +172,40 @@ export const WorkflowStageFormDialog: React.FC<WorkflowStageFormDialogProps> = (
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!validateForm()) return;
 
     const submitData: CreateWorkflowStageData | UpdateWorkflowStageData = {
       ...formData,
       template: templateId,
     };
+
+    // For CREATE mode, remove order to let backend auto-assign
+    if (!isEditing) {
+      delete (submitData as CreateWorkflowStageData).order;
+    }
+
+    // Check if stage type changed during edit - show confirmation
+    if (isEditing && originalStageType && formData.stage !== originalStageType) {
+      const stageTypeLabels: Record<StageType, string> = {
+        LEAD: 'Lead',
+        PRODUCTION: 'Production',
+        POST_PRODUCTION: 'Post-Production',
+      };
+
+      const confirmed = await confirm({
+        title: 'Confirm Stage Type Change',
+        message: `Changing the stage type from "${stageTypeLabels[originalStageType]}" to "${stageTypeLabels[formData.stage]}" will cause automatic reordering of stages within the workflow. This may affect the execution order for events using this template. Are you sure you want to proceed?`,
+        type: 'warning',
+        confirmText: 'Change Stage Type',
+        cancelText: 'Keep Original',
+        confirmColor: 'warning',
+      });
+
+      if (!confirmed) {
+        return;
+      }
+    }
 
     onSubmit(submitData);
   };
@@ -238,15 +271,25 @@ export const WorkflowStageFormDialog: React.FC<WorkflowStageFormDialogProps> = (
                         </Select>
                       </FormControl>
 
-                      <TextField
-                        label="Order"
-                        value={formData.order}
-                        onChange={(e) => handleInputChange('order', parseInt(e.target.value) || 1)}
-                        error={!!errors.order}
-                        helperText={errors.order || 'Execution order within stage type'}
-                        type="number"
-                        sx={{ minWidth: 120 }}
-                      />
+                      {isEditing ? (
+                        <TextField
+                          label="Order"
+                          value={formData.order}
+                          onChange={(e) => handleInputChange('order', parseInt(e.target.value) || 1)}
+                          error={!!errors.order}
+                          helperText={errors.order || 'Changing order may reorder other stages'}
+                          type="number"
+                          sx={{ minWidth: 120 }}
+                        />
+                      ) : (
+                        <TextField
+                          label="Order"
+                          value="Auto"
+                          disabled
+                          helperText="Order is automatically assigned"
+                          sx={{ minWidth: 120 }}
+                        />
+                      )}
                     </Box>
 
                     <TextField
@@ -553,7 +596,20 @@ export const WorkflowStageFormDialog: React.FC<WorkflowStageFormDialogProps> = (
                           label="Progression Condition"
                           onChange={(e) => handleInputChange('progression_condition', e.target.value)}
                         >
-                          {PROGRESSION_CONDITIONS.map((condition) => (
+                          <ListSubheader>Manual</ListSubheader>
+                          {PROGRESSION_CONDITIONS.filter(c => c.category === 'manual').map((condition) => (
+                            <MenuItem key={condition.value} value={condition.value}>
+                              {condition.label}
+                            </MenuItem>
+                          ))}
+                          <ListSubheader>Event-Based</ListSubheader>
+                          {PROGRESSION_CONDITIONS.filter(c => c.category === 'event').map((condition) => (
+                            <MenuItem key={condition.value} value={condition.value}>
+                              {condition.label}
+                            </MenuItem>
+                          ))}
+                          <ListSubheader>Time-Based</ListSubheader>
+                          {PROGRESSION_CONDITIONS.filter(c => c.category === 'time').map((condition) => (
                             <MenuItem key={condition.value} value={condition.value}>
                               {condition.label}
                             </MenuItem>

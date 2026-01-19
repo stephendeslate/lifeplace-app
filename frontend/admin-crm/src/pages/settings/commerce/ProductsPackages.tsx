@@ -15,6 +15,7 @@ import {
   Search as SearchIcon,
   Category as CategoryIcon,
   Inventory as ProductIcon,
+  ViewInAr as PackageIcon,
   LocalOffer as DiscountIcon,
   LocationOn as VenueIcon,
   Store as VendorIcon,
@@ -391,19 +392,20 @@ export const ProductsPackages: React.FC = () => {
     setHeaderSearchQuery(query);
     // Apply to current tab's search
     switch (activeTab) {
-      case 0:
+      case 0: // Products
+      case 1: // Packages
         setProductSearch(query);
         break;
-      case 1:
+      case 2: // Categories
         setCategorySearch(query);
         break;
-      case 2:
+      case 3: // Discounts
         setDiscountSearch(query);
         break;
-      case 3:
+      case 4: // Venues
         setVenueSearch(query);
         break;
-      case 4:
+      case 5: // Vendors
         setVendorSearch(query);
         break;
     }
@@ -427,19 +429,20 @@ export const ProductsPackages: React.FC = () => {
 
   const handleCreateNew = () => {
     switch (activeTab) {
-      case 0:
+      case 0: // Products
+      case 1: // Packages
         handleCreateProduct();
         break;
-      case 1:
+      case 2: // Categories
         handleCreateCategory();
         break;
-      case 2:
+      case 3: // Discounts
         handleCreateDiscount();
         break;
-      case 3:
+      case 4: // Venues
         handleCreateVenue();
         break;
-      case 4:
+      case 5: // Vendors
         handleCreateVendor();
         break;
     }
@@ -487,15 +490,20 @@ export const ProductsPackages: React.FC = () => {
         const getTabLabel = () => {
           switch (activeTab) {
             case 0: return 'Product';
-            case 1: return 'Category';
-            case 2: return 'Discount';
-            case 3: return 'Venue';
-            case 4: return 'Vendor';
+            case 1: return 'Package';
+            case 2: return 'Category';
+            case 3: return 'Discount';
+            case 4: return 'Venue';
+            case 5: return 'Vendor';
             default: return 'Item';
           }
         };
 
         const primaryAction = createAddAction(`Add ${getTabLabel()}`, handleCreateNew, 'primary');
+
+        // Calculate product and package counts
+        const productCount = products.filter(p => p.type === 'PRODUCT').length;
+        const packageCount = products.filter(p => p.type === 'PACKAGE').length;
 
         return (
           <ModernPageHeader
@@ -510,11 +518,10 @@ export const ProductsPackages: React.FC = () => {
             primaryAction={primaryAction}
             secondaryActions={headerActions}
             stats={[
-              { label: 'Products', value: products.length },
+              { label: 'Products', value: productCount },
+              { label: 'Packages', value: packageCount },
               { label: 'Categories', value: categories.length },
               { label: 'Discounts', value: discounts.filter(d => d.is_active).length },
-              { label: 'Venues', value: venues.length },
-              { label: 'Vendors', value: vendors.length },
             ]}
             size="medium"
           />
@@ -559,23 +566,32 @@ export const ProductsPackages: React.FC = () => {
           scrollButtons="auto"
           sx={{ borderBottom: 1, borderColor: 'divider' }}
         >
-          <Tab 
+          <Tab
             label={
               <Box display="flex" alignItems="center" gap={1}>
                 <ProductIcon />
-                Products & Packages
-                <Chip label={products.length} size="small" />
+                Products
+                <Chip label={products.filter(p => p.type === 'PRODUCT').length} size="small" />
               </Box>
-            } 
+            }
           />
-          <Tab 
+          <Tab
+            label={
+              <Box display="flex" alignItems="center" gap={1}>
+                <PackageIcon />
+                Packages
+                <Chip label={products.filter(p => p.type === 'PACKAGE').length} size="small" />
+              </Box>
+            }
+          />
+          <Tab
             label={
               <Box display="flex" alignItems="center" gap={1}>
                 <CategoryIcon />
                 Categories
                 <Chip label={categories.length} size="small" />
               </Box>
-            } 
+            }
           />
           <Tab
             label={
@@ -612,8 +628,8 @@ export const ProductsPackages: React.FC = () => {
 
             {/* Products Alert */}
             <Alert severity="info" sx={{ mb: 3 }}>
-              Products are individual services, while packages are bundles of services. 
-              Configure pricing, timing, and booking requirements for each offering.
+              Products are individual services you offer to clients.
+              Configure pricing, timing, and booking requirements for each product.
             </Alert>
 
             {/* Products Table */}
@@ -623,12 +639,35 @@ export const ProductsPackages: React.FC = () => {
               onEdit={handleEditProduct}
               onDelete={handleDeleteProduct}
               isDeleting={isDeletingProduct}
+              typeFilter="PRODUCT"
+            />
+          </Box>
+        </TabPanel>
+
+        {/* Packages Tab */}
+        <TabPanel value={activeTab} index={1}>
+          <Box p={3}>
+
+            {/* Packages Alert */}
+            <Alert severity="info" sx={{ mb: 3 }}>
+              Packages are bundles of products and services offered together.
+              Create packages to provide clients with comprehensive service offerings.
+            </Alert>
+
+            {/* Packages Table */}
+            <ProductsTable
+              products={products}
+              isLoading={isLoadingProducts}
+              onEdit={handleEditProduct}
+              onDelete={handleDeleteProduct}
+              isDeleting={isDeletingProduct}
+              typeFilter="PACKAGE"
             />
           </Box>
         </TabPanel>
 
         {/* Categories Tab */}
-        <TabPanel value={activeTab} index={1}>
+        <TabPanel value={activeTab} index={2}>
           <Box p={3}>
 
             {/* Categories Alert */}
@@ -649,7 +688,7 @@ export const ProductsPackages: React.FC = () => {
         </TabPanel>
 
         {/* Discounts Tab */}
-        <TabPanel value={activeTab} index={2}>
+        <TabPanel value={activeTab} index={3}>
           <Box p={3}>
 
             {/* Discounts Alert */}
@@ -670,7 +709,7 @@ export const ProductsPackages: React.FC = () => {
         </TabPanel>
 
         {/* Venues Tab */}
-        <TabPanel value={activeTab} index={3}>
+        <TabPanel value={activeTab} index={4}>
           <Box p={3}>
 
             {/* Venues Alert */}
@@ -692,7 +731,7 @@ export const ProductsPackages: React.FC = () => {
         </TabPanel>
 
         {/* Vendors Tab */}
-        <TabPanel value={activeTab} index={4}>
+        <TabPanel value={activeTab} index={5}>
           <Box p={3}>
 
             {/* Vendors Alert */}

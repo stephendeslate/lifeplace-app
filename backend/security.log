@@ -2027,3 +2027,21 @@ LINE 1: INSERT INTO "security_events" ("timestamp", "event_type", "s...
 🔒 SECURITY 2026-01-19 06:28:49,076 INFO [LOGIN_SUCCESS] User loadtest-admin@example.com logged in successfully
 🔒 SECURITY 2026-01-19 06:31:16,100 INFO [LOGIN_SUCCESS] User loadtest-client@example.com logged in successfully
 🔒 SECURITY 2026-01-19 06:31:19,096 INFO [LOGIN_SUCCESS] User loadtest-admin@example.com logged in successfully
+🔒 SECURITY 2026-01-19 06:43:58,207 INFO [LOGIN_SUCCESS] User john.test@gmail.com logged in successfully
+🔒 SECURITY 2026-01-19 06:47:05,139 INFO [LOGIN_SUCCESS] User john.test@gmail.com logged in successfully
+🔒 SECURITY 2026-01-19 06:56:43,980 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully
+🔒 SECURITY 2026-01-19 07:21:52,418 WARNING [ADMIN_ACTION] Admin request: POST /admin/communications/communicationrecord/
+🔒 SECURITY 2026-01-19 07:21:53,460 WARNING [ADMIN_ACTION] Admin request: POST /admin/communications/communicationrecord/
+🔒 SECURITY 2026-01-19 07:21:53,531 WARNING [ADMIN_ACTION] Admin request failed: POST /admin/communications/communicationrecord/ - 500
+🔒 SECURITY 2026-01-19 07:22:36,578 WARNING [ADMIN_ACTION] Admin request: POST /admin/communications/communicationrecord/
+🔒 SECURITY 2026-01-19 07:22:37,809 WARNING [ADMIN_ACTION] Admin request: POST /admin/communications/communicationrecord/
+🔒 SECURITY 2026-01-19 07:23:04,138 WARNING [ADMIN_ACTION] Admin request: POST /admin/bookingflow/bookingflow/
+🔒 SECURITY 2026-01-19 07:23:14,006 WARNING [ADMIN_ACTION] Admin request: POST /admin/bookingflow/bookingflow/
+🔒 SECURITY 2026-01-19 08:51:25,966 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully
+🔒 SECURITY 2026-01-19 09:12:31,987 INFO [LOGIN_SUCCESS] User john.test@gmail.com logged in successfully
+🔒 SECURITY 2026-01-19 09:19:28,622 INFO [ADMIN_ACTION] Admin request: POST /admin/events/event/289/change/
+🔒 SECURITY 2026-01-19 09:19:38,051 INFO [ADMIN_ACTION] Admin request: POST /admin/events/event/288/change/
+🔒 SECURITY 2026-01-19 09:20:14,002 WARNING [ADMIN_ACTION] Admin request: POST /admin/events/event/
+🔒 SECURITY 2026-01-19 09:20:16,650 WARNING [ADMIN_ACTION] Admin request: POST /admin/events/event/
+🔒 SECURITY 2026-01-19 09:28:16,206 WARNING [ADMIN_ACTION] Admin request: POST /admin/events/event/
+🔒 SECURITY 2026-01-19 09:28:18,341 WARNING [ADMIN_ACTION] Admin request: POST /admin/events/event/

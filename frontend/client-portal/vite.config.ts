@@ -12,7 +12,9 @@ export default defineConfig({
     alias: {
       '@': path.resolve(__dirname, './src'),
       '@shared': path.resolve(__dirname, '../shared'),
-    }
+    },
+    // Force all React imports to use the same instance from client-portal's node_modules
+    dedupe: ['react', 'react-dom', 'react-router-dom', '@tanstack/react-query'],
   },
   build: {
     outDir: 'dist',

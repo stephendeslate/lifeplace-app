@@ -1,6 +1,6 @@
 // frontend/client-portal/src/components/booking/steps/PricingSummaryStep.tsx
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import {
   Box,
   Typography,
@@ -72,19 +72,28 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
   const [discountError, setDiscountError] = useState<string | null>(null);
   const [validatingDiscount, setValidatingDiscount] = useState(false);
 
-  // Get selected packages and addons from step data
+  // Get selected packages and addons from step data - memoized to prevent infinite loops
   // Check package_selection first, then venue_selection (for custom packages), then booking_data
-  const selectedPackages: SelectedPackage[] = state.stepData.package_selection?.selected_packages ||
+  const selectedPackages: SelectedPackage[] = useMemo(() =>
+    state.stepData.package_selection?.selected_packages ||
     (state.stepData.venue_selection as { selected_packages?: SelectedPackage[] })?.selected_packages ||
     (state.currentSession?.booking_data?.selected_packages as SelectedPackage[] | undefined) ||
-    [];
-  const selectedAddons = state.stepData.addon_selection?.selected_addons || [];
+    [],
+    [state.stepData.package_selection?.selected_packages, state.stepData.venue_selection, state.currentSession?.booking_data?.selected_packages]
+  );
+  const selectedAddons = useMemo(() =>
+    state.stepData.addon_selection?.selected_addons || [],
+    [state.stepData.addon_selection?.selected_addons]
+  );
 
   // Get venue_additional_hours from addon_selection or package_selection step data
-  const venueAdditionalHours = state.stepData.addon_selection?.venue_additional_hours ||
+  const venueAdditionalHours = useMemo(() =>
+    state.stepData.addon_selection?.venue_additional_hours ||
     state.stepData.package_selection?.venue_additional_hours ||
     (state.currentSession?.booking_data?.venue_additional_hours as Record<string, number> | undefined) ||
-    undefined;
+    undefined,
+    [state.stepData.addon_selection?.venue_additional_hours, state.stepData.package_selection?.venue_additional_hours, state.currentSession?.booking_data?.venue_additional_hours]
+  );
 
   // Use simplified unified pricing hook
   const {
@@ -131,7 +140,9 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
     } catch (error) {
       if (import.meta.env.DEV) console.error('Failed to update pricing data:', error);
     }
-  }, [stepData, onDataChange, pricing.total, state.totalPrice, actions.updateStepData, actions.updateTotalPrice]);
+  // Note: actions methods omitted from deps - actions object is not memoized and would cause loops
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stepData, onDataChange, pricing.total, state.totalPrice]);
 
   // Update pricing data when total changes
   useEffect(() => {
@@ -156,7 +167,8 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
         formattedDiscount: pricing.formattedDiscount,
       });
     }
-  }, [pricing, hasItems, calculatingPricing, actions]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pricing, hasItems, calculatingPricing]);
 
   // Handle discount code application
   const handleApplyDiscount = async () => {

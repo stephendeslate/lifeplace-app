@@ -25,7 +25,7 @@ class ClientAnalyticsService:
             Dict with client-specific metrics
         """
         from core.domains.events.models import Event
-        from core.domains.payments.models import Payment, PaymentInstallment
+        from core.domains.payments.models import Payment
 
         if not end_date:
             end_date = timezone.now()
@@ -59,10 +59,9 @@ class ClientAnalyticsService:
             status='PENDING'
         ).aggregate(total=Sum('amount'))['total'] or Decimal('0')
 
-        # Overdue installments
+        # Overdue payments
         today = timezone.now().date()
-        overdue = PaymentInstallment.objects.filter(
-            payment__event_id__in=client_event_ids,
+        overdue = payments.filter(
             status='PENDING',
             due_date__lt=today
         ).aggregate(
@@ -70,9 +69,8 @@ class ClientAnalyticsService:
             amount=Sum('amount')
         )
 
-        # Upcoming installments (next 30 days)
-        upcoming_payments = PaymentInstallment.objects.filter(
-            payment__event_id__in=client_event_ids,
+        # Upcoming payments (next 30 days)
+        upcoming_payments = payments.filter(
             status='PENDING',
             due_date__gte=today,
             due_date__lte=today + timedelta(days=30)
@@ -200,7 +198,7 @@ class ClientAnalyticsService:
             List of upcoming deadlines
         """
         from core.domains.events.models import Event
-        from core.domains.payments.models import PaymentInstallment
+        from core.domains.payments.models import Payment
         from core.domains.contracts.models import Contract
 
         today = timezone.now()
@@ -216,23 +214,23 @@ class ClientAnalyticsService:
         if not event_ids:
             return []
 
-        # Upcoming payment installments
-        installments = PaymentInstallment.objects.filter(
-            payment__event_id__in=event_ids,
+        # Upcoming payments
+        upcoming_payments = Payment.objects.filter(
+            event_id__in=event_ids,
             status='PENDING',
             due_date__gte=today.date(),
             due_date__lte=end_date.date()
-        ).select_related('payment', 'payment__event').order_by('due_date')
+        ).select_related('event').order_by('due_date')
 
-        for inst in installments:
+        for payment in upcoming_payments:
             deadlines.append({
                 'type': 'payment',
-                'title': f"Payment Due: {inst.payment.event.name or 'Event'}",
-                'description': inst.description or f"Installment #{inst.installment_number}",
-                'due_date': inst.due_date.isoformat(),
-                'amount': float(inst.amount),
-                'event_id': inst.payment.event_id,
-                'urgency': 'high' if inst.due_date <= (today.date() + timedelta(days=7)) else 'normal',
+                'title': f"Payment Due: {payment.event.name or 'Event'}",
+                'description': payment.description or 'Payment',
+                'due_date': payment.due_date.isoformat(),
+                'amount': float(payment.amount),
+                'event_id': payment.event_id,
+                'urgency': 'high' if payment.due_date <= (today.date() + timedelta(days=7)) else 'normal',
             })
 
         # Upcoming events

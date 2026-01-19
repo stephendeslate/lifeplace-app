@@ -14,3 +14,4 @@ export { default as EventNotes } from './EventNotes';
 export { default as ContractStatusChip } from './ContractStatusChip';
 export { default as FileUpload } from './FileUpload';
 export { WorkflowProgressStepper } from './WorkflowProgressStepper';
+export { EventMilestones } from './EventMilestones';

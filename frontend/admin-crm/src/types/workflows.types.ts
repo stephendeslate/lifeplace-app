@@ -48,7 +48,7 @@ export type AutomationType = 'EMAIL' | 'TASK' | 'QUOTE' | 'CONTRACT' | 'REMINDER
 export const STAGE_TYPES = [
   { value: 'LEAD', label: 'Lead' },
   { value: 'PRODUCTION', label: 'Production' },
-  { value: 'POST_PRODUCTION', label: 'Post Production' },
+  { value: 'POST_PRODUCTION', label: 'Post-Production' },
 ] as const;
 
 export const AUTOMATION_TYPES = [
@@ -82,12 +82,20 @@ export const TRIGGER_TIMES = [
 ] as const;
 
 export const PROGRESSION_CONDITIONS = [
-  { value: '', label: 'None (Manual)' },
-  { value: 'QUOTE_ACCEPTED', label: 'Quote Accepted' },
-  { value: 'CONTRACT_SIGNED', label: 'Contract Signed' },
-  { value: 'PAYMENT_RECEIVED', label: 'Payment Received' },
-  { value: 'TASKS_COMPLETED', label: 'All Tasks Completed' },
-  { value: 'TIME_ELAPSED', label: 'Time Elapsed' },
+  { value: '', label: 'None (Manual)', category: 'manual' },
+  { value: 'QUOTE_ACCEPTED', label: 'Quote Accepted', category: 'event' },
+  { value: 'CONTRACT_SIGNED', label: 'Contract Signed', category: 'event' },
+  { value: 'PAYMENT_RECEIVED', label: 'Payment Received', category: 'event' },
+  { value: 'TASKS_COMPLETED', label: 'All Tasks Completed', category: 'event' },
+  // Time-based progression conditions
+  { value: 'TIME_ELAPSED_1_HOURS', label: 'After 1 Hour', category: 'time' },
+  { value: 'TIME_ELAPSED_6_HOURS', label: 'After 6 Hours', category: 'time' },
+  { value: 'TIME_ELAPSED_12_HOURS', label: 'After 12 Hours', category: 'time' },
+  { value: 'TIME_ELAPSED_1_DAYS', label: 'After 1 Day', category: 'time' },
+  { value: 'TIME_ELAPSED_2_DAYS', label: 'After 2 Days', category: 'time' },
+  { value: 'TIME_ELAPSED_3_DAYS', label: 'After 3 Days', category: 'time' },
+  { value: 'TIME_ELAPSED_1_WEEKS', label: 'After 1 Week', category: 'time' },
+  { value: 'TIME_ELAPSED_2_WEEKS', label: 'After 2 Weeks', category: 'time' },
 ] as const;
 
 // Create/Update types
@@ -193,6 +201,7 @@ export interface WorkflowStageTableProps {
   onEdit: (stage: WorkflowStage) => void;
   onDelete: (id: number) => void;
   onReorder: (stages: WorkflowStage[]) => void;
+  onTrigger?: (stage: WorkflowStage) => void;
   isDeleting: boolean;
 }
 

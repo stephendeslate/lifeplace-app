@@ -29,7 +29,8 @@ import {
 import { useEventTypes } from '../../hooks/useEvents';
 import { WorkflowStagesTable } from './WorkflowStagesTable';
 import { WorkflowStageFormDialog } from './WorkflowStageFormDialog';
-import { useWorkflowStages } from '../../hooks/useWorkflows';
+import { ManualTriggerDialog } from './ManualTriggerDialog';
+import { useWorkflowStages, useWorkflowTriggers } from '../../hooks/useWorkflows';
 import type { 
   WorkflowTemplate, 
   CreateWorkflowTemplateData, 
@@ -81,6 +82,8 @@ export const WorkflowTemplateForm: React.FC<WorkflowTemplateFormProps> = ({
   const [activeTab, setActiveTab] = useState(0);
   const [stageDialogOpen, setStageDialogOpen] = useState(false);
   const [editingStage, setEditingStage] = useState<WorkflowStage | null>(null);
+  const [triggerDialogOpen, setTriggerDialogOpen] = useState(false);
+  const [stageToTrigger, setStageToTrigger] = useState<WorkflowStage | null>(null);
 
   const { useActiveEventTypes } = useEventTypes();
   const { data: eventTypes = [] } = useActiveEventTypes();
@@ -96,6 +99,8 @@ export const WorkflowTemplateForm: React.FC<WorkflowTemplateFormProps> = ({
   } = useWorkflowStages();
 
   const { data: stages = [], refetch: refetchStages } = useStagesForTemplate(template?.id || 0);
+
+  const { manualTrigger, isTriggering } = useWorkflowTriggers();
 
   const isEditing = !!template;
   const isLoading = isCreatingStage || isUpdatingStage;
@@ -198,6 +203,28 @@ export const WorkflowTemplateForm: React.FC<WorkflowTemplateFormProps> = ({
         }
       });
     }
+  };
+
+  const handleTriggerClick = (stage: WorkflowStage) => {
+    setStageToTrigger(stage);
+    setTriggerDialogOpen(true);
+  };
+
+  const handleTriggerDialogClose = () => {
+    setTriggerDialogOpen(false);
+    setStageToTrigger(null);
+  };
+
+  const handleTriggerConfirm = (stageId: number, eventId: number) => {
+    manualTrigger(
+      { stageId, eventId },
+      {
+        onSuccess: () => {
+          setTriggerDialogOpen(false);
+          setStageToTrigger(null);
+        },
+      }
+    );
   };
 
   return (
@@ -308,6 +335,7 @@ export const WorkflowTemplateForm: React.FC<WorkflowTemplateFormProps> = ({
                 onEdit={handleEditStage}
                 onDelete={handleDeleteStage}
                 onReorder={() => {}} // TODO: Implement reordering
+                onTrigger={handleTriggerClick}
                 isDeleting={isDeletingStage}
               />
             </Card>
@@ -352,6 +380,16 @@ export const WorkflowTemplateForm: React.FC<WorkflowTemplateFormProps> = ({
         templateId={template?.id}
         onSubmit={handleStageSubmit}
         isLoading={isLoading}
+      />
+
+      {/* Manual Trigger Dialog */}
+      <ManualTriggerDialog
+        open={triggerDialogOpen}
+        onClose={handleTriggerDialogClose}
+        stage={stageToTrigger}
+        templateId={template?.id || 0}
+        onTrigger={handleTriggerConfirm}
+        isTriggering={isTriggering}
       />
     </Box>
   );

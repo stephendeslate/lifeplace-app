@@ -2,3 +2,4 @@
 
 export { PaymentsOverview } from './PaymentsOverview';
 export { PaymentProfile } from './PaymentProfile';
+export { NewPayment } from './NewPayment';

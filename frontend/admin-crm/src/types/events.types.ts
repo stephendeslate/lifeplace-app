@@ -179,6 +179,7 @@ export interface EventTypeFilters {
 export interface EventFilters {
   search?: string;
   event_type?: number;
+  workflow_template?: number;
   status?: EventStatus;
   client?: number;
   start_date_from?: string;

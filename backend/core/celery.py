@@ -118,6 +118,12 @@ app.conf.update(
             'schedule': 24 * 60 * 60,  # Daily
             'options': {'queue': 'events'}
         },
+        # Workflow TIME_ELAPSED progression sweep
+        'process-time-elapsed-triggers': {
+            'task': 'core.domains.workflows.tasks.process_time_elapsed_triggers',
+            'schedule': 60 * 60,  # Hourly
+            'options': {'queue': 'events'}
+        },
         # Contract expiry tasks
         'expire-contracts': {
             'task': 'core.domains.contracts.tasks.expire_contracts',

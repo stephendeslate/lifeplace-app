@@ -534,52 +534,48 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
                 </Box>
               </Box>
 
-              {/* Event Types (only for packages) */}
-              {formData.type === 'PACKAGE' && (
-                <>
-                  <Divider sx={{ my: 3 }} />
+              {/* Event Types */}
+              <Divider sx={{ my: 3 }} />
 
-                  <Typography variant="h6" gutterBottom>
-                    Available For Event Types
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                    Select which booking flows this package should appear in. If none selected, this package will not appear in any booking flow.
-                  </Typography>
+              <Typography variant="h6" gutterBottom>
+                Available For Event Types
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                Select which booking flows this {formData.type === 'PACKAGE' ? 'package' : 'product'} should appear in. If none selected, it will not appear in any booking flow.
+              </Typography>
 
-                  <FormControl fullWidth>
-                    <InputLabel id="event-types-label">Event Types</InputLabel>
-                    <Select
-                      labelId="event-types-label"
-                      multiple
-                      value={formData.event_type_ids}
-                      onChange={handleEventTypesChange}
-                      input={<OutlinedInput label="Event Types" />}
-                      disabled={isLoadingEventTypes}
-                      renderValue={(selected) => (
-                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                          {(selected as number[]).map((id) => {
-                            const eventType = eventTypes.find(et => et.id === id);
-                            return (
-                              <Chip
-                                key={id}
-                                label={eventType?.name || `ID: ${id}`}
-                                size="small"
-                              />
-                            );
-                          })}
-                        </Box>
-                      )}
-                    >
-                      {eventTypes.map((eventType) => (
-                        <MenuItem key={eventType.id} value={eventType.id}>
-                          <Checkbox checked={formData.event_type_ids.includes(eventType.id)} />
-                          <ListItemText primary={eventType.name} />
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                </>
-              )}
+              <FormControl fullWidth>
+                <InputLabel id="event-types-label">Event Types</InputLabel>
+                <Select
+                  labelId="event-types-label"
+                  multiple
+                  value={formData.event_type_ids}
+                  onChange={handleEventTypesChange}
+                  input={<OutlinedInput label="Event Types" />}
+                  disabled={isLoadingEventTypes}
+                  renderValue={(selected) => (
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                      {(selected as number[]).map((id) => {
+                        const eventType = eventTypes.find(et => et.id === id);
+                        return (
+                          <Chip
+                            key={id}
+                            label={eventType?.name || `ID: ${id}`}
+                            size="small"
+                          />
+                        );
+                      })}
+                    </Box>
+                  )}
+                >
+                  {eventTypes.map((eventType) => (
+                    <MenuItem key={eventType.id} value={eventType.id}>
+                      <Checkbox checked={formData.event_type_ids.includes(eventType.id)} />
+                      <ListItemText primary={eventType.name} />
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
 
               <Divider sx={{ my: 3 }} />
 

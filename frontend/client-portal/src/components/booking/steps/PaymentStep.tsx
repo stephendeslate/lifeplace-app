@@ -121,10 +121,9 @@ export const PaymentStep: React.FC<PaymentStepProps> = ({
   const amounts = useMemo(() => {
     const total = parseFloat(totalAmount || '0');
 
-    // paymentPlanSettings should always be loaded (checked in loading state above)
-    // If not loaded, this code shouldn't execute
+    // Return defaults while paymentPlanSettings is loading
+    // The loading state UI is handled by the early return in the render function
     if (!paymentPlanSettings) {
-      if (import.meta.env.DEV) console.error('PaymentPlanSettings not loaded - should be caught by loading state');
       return {
         total: 0,
         deposit: 0,
@@ -482,13 +481,15 @@ export const PaymentStep: React.FC<PaymentStepProps> = ({
           </CardContent>
           
           <CardActions sx={{ p: 3, pt: 0 }}>
-            <Button 
-              variant="contained" 
+            <Button
+              variant="contained"
               size="large"
               fullWidth
               onClick={() => {
                 if (config?.accept_deposit) {
-                  updateData({ payment_type: 'DEPOSIT' });
+                  updateData({ payment_type: 'DEPOSIT', completion_type: 'payment' });
+                } else {
+                  updateData({ completion_type: 'payment' });
                 }
                 setCompletionChoice('payment');
               }}

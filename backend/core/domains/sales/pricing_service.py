@@ -353,11 +353,18 @@ class PricingCalculationService:
 
             # Determine tax rate using product's tax_rate with global fallback
             tax_rate = Decimal('0.00')
-            if product_id and product_id != -1:
+            # Ensure product_id is an integer for comparison (handles JSON string "24" -> 24)
+            if product_id is not None:
+                try:
+                    product_id = int(product_id)
+                except (ValueError, TypeError):
+                    logger.warning(f"Could not convert product_id to int: {product_id}")
+                    product_id = None
+            if product_id is not None and product_id > 0:
                 try:
                     product = ProductOption.objects.get(id=product_id)
                     tax_rate = get_tax_rate_for_product(product)
-                    logger.info(f"Package {name}: tax_rate={tax_rate}% (from product)")
+                    logger.info(f"Package {name}: tax_rate={tax_rate}% (is_tax_inclusive={product.is_tax_inclusive})")
                 except ProductOption.DoesNotExist:
                     tax_rate = get_default_tax_rate()
                     logger.warning(f"Product {product_id} not found, using default tax_rate={tax_rate}%")

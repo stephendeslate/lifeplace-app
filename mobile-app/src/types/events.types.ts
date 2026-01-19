@@ -167,6 +167,9 @@ export interface SignatureProgress {
   total_required: number;
   signed_count: number;
   percentage: number;
+  required_roles: string[];
+  signed_roles: string[];
+  missing_roles: string[];
 }
 
 // =============================================================================

@@ -94,7 +94,8 @@ class WorkflowTemplateViewSet(viewsets.ModelViewSet):
     def stages(self, request, pk=None):
         """Get all stages for a template"""
         stages = WorkflowStageService.get_stages_for_template(pk)
-        serializer = WorkflowStageSerializer(stages, many=True)
+        # Use detail serializer to include template names (email_template_name, contract_template_name)
+        serializer = WorkflowStageDetailSerializer(stages, many=True)
         return Response(serializer.data)
     
     @action(detail=False, methods=['get'])

@@ -5,8 +5,6 @@ Based on actual models in core/domains/payments/models.py:
 - PaymentGateway (with EncryptedJSONField config)
 - PaymentMethod (saved payment methods for users)
 - Payment (main payment record with state machine)
-- PaymentPlan (installment plans)
-- PaymentInstallment (individual installments)
 - Invoice (invoices with line items)
 """
 

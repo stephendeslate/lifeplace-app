@@ -98,36 +98,43 @@ class DateAvailabilityService:
         try:
             # Check cache first
             cache_key = self._get_cache_key(request)
-            cached_result = cache.get(cache_key)
-            if cached_result:
-                return cached_result
-            
+            try:
+                cached_result = cache.get(cache_key)
+                if cached_result:
+                    # Reconstruct DateAvailabilityInfo from cached dict
+                    return self._deserialize_availability_info(cached_result)
+            except Exception as cache_error:
+                self.logger.debug(f"Cache read failed, proceeding without cache: {cache_error}")
+
             # Get existing events for the date(s)
             existing_events = self._get_existing_events(request)
-            
+
             # Analyze conflicts
             conflicts = self._analyze_conflicts(existing_events, request)
-            
+
             # Check buffer conflicts
             buffer_conflicts = []
             if request.include_buffer_conflicts:
                 buffer_conflicts = self._check_buffer_conflicts(request)
-            
+
             # Check blocked dates
             blocked_reasons = self._check_blocked_dates(request)
-            
+
             # Check business rules and capacity
             capacity_issues = self._check_capacity_constraints(request, existing_events)
-            
+
             # Determine availability status
             availability_info = self._determine_availability_status(
-                request, existing_events, conflicts, buffer_conflicts, 
+                request, existing_events, conflicts, buffer_conflicts,
                 blocked_reasons, capacity_issues
             )
-            
-            # Cache the result
-            cache.set(cache_key, availability_info, self.CACHE_TIMEOUT)
-            
+
+            # Cache the result (serialize to dict for JSON compatibility)
+            try:
+                cache.set(cache_key, self._serialize_availability_info(availability_info), self.CACHE_TIMEOUT)
+            except Exception as cache_error:
+                self.logger.debug(f"Cache write failed, continuing without caching: {cache_error}")
+
             return availability_info
             
         except Exception as e:
@@ -330,7 +337,45 @@ class DateAvailabilityService:
             str(request.exclude_event_id or ''),
         ]
         return ":".join(key_parts)
-    
+
+    def _serialize_availability_info(self, info: DateAvailabilityInfo) -> Dict:
+        """Serialize DateAvailabilityInfo to JSON-compatible dict for caching"""
+        return {
+            'date': info.date.isoformat(),
+            'status': info.status.value,
+            'conflict_level': info.conflict_level.value,
+            'confirmed_events_count': info.confirmed_events_count,
+            'lead_events_count': info.lead_events_count,
+            'total_events_count': info.total_events_count,
+            'can_book_event': info.can_book_event,
+            'can_create_lead': info.can_create_lead,
+            'conflicts': info.conflicts,
+            'reasons': info.reasons,
+            'buffer_conflicts': info.buffer_conflicts,
+            'next_available_date': info.next_available_date.isoformat() if info.next_available_date else None,
+        }
+
+    def _deserialize_availability_info(self, data: Dict) -> DateAvailabilityInfo:
+        """Deserialize cached dict back to DateAvailabilityInfo"""
+        from datetime import datetime
+        return DateAvailabilityInfo(
+            date=datetime.fromisoformat(data['date']).date() if isinstance(data['date'], str) else data['date'],
+            status=AvailabilityStatus(data['status']),
+            conflict_level=ConflictLevel(data['conflict_level']),
+            confirmed_events_count=data['confirmed_events_count'],
+            lead_events_count=data['lead_events_count'],
+            total_events_count=data['total_events_count'],
+            can_book_event=data['can_book_event'],
+            can_create_lead=data['can_create_lead'],
+            conflicts=data['conflicts'],
+            reasons=data['reasons'],
+            buffer_conflicts=data['buffer_conflicts'],
+            next_available_date=(
+                datetime.fromisoformat(data['next_available_date']).date()
+                if data.get('next_available_date') else None
+            ),
+        )
+
     def _get_existing_events(self, request: AvailabilityRequest) -> QuerySet:
         """Get existing events that might conflict with the request"""
         # Base query for events on the target date(s)

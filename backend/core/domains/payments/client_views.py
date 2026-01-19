@@ -69,8 +69,6 @@ class ClientPaymentViewSet(viewsets.ReadOnlyModelViewSet):
             'processed_by',
             'quote',
             'invoice',
-            'installment',
-            'installment__payment_plan'
         ).prefetch_related(
             'transactions__gateway',  # Include gateway information for transaction-based inference
             'notifications',

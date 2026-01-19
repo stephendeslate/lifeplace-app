@@ -313,19 +313,10 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
               }
 
               // Check if session has meaningful progress worth recovering
-              // A session is only recoverable if:
-              // 1. progress_percentage > 0 OR
-              // 2. booking_data has meaningful content (not just empty object)
-              const bookingData = data.booking_data || {};
-              const hasBookingData = Object.keys(bookingData).length > 0 &&
-                // Check if there's actual data, not just empty arrays
-                Object.values(bookingData).some((val: unknown) => {
-                  if (Array.isArray(val)) return val.length > 0;
-                  if (typeof val === 'object' && val !== null) return Object.keys(val).length > 0;
-                  return val !== null && val !== undefined && val !== '';
-                });
+              // A session is only recoverable if progress_percentage > 0
+              // (Sessions at 0% are too early to warrant a recovery dialog)
               const progressPercentage = data.progress_percentage || 0;
-              const hasMeaningfulProgress = progressPercentage > 0 || hasBookingData;
+              const hasMeaningfulProgress = progressPercentage > 0;
 
               // Skip sessions with no meaningful progress
               if (!hasMeaningfulProgress) {

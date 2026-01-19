@@ -9,8 +9,8 @@ import { useAuth } from './contexts/AuthContext';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { Login, AcceptInvitation, ForgotPassword, ResetPassword } from './pages/auth';
 import { Dashboard } from './pages/dashboard';
-import { ClientsOverview, ClientProfile } from './pages/clients';
-import { EventsOverview, EventProfile, EventsCalendar } from './pages/events';
+import { ClientsOverview, ClientProfile, NewClient } from './pages/clients';
+import { EventsOverview, EventProfile, EventsCalendar, NewEvent } from './pages/events';
 import { ContractEdit, ContractView, ContractSign } from './pages/contracts';
 import { NotFound } from './pages/NotFound';
 import { TasksPage } from './pages/tasks';
@@ -33,7 +33,7 @@ import { CurrencyTaxes } from './pages/settings/commerce/CurrencyTaxes';
 import { VIPProgram } from './pages/settings/vip/VIPProgram';
 import { CommunicationTemplates } from './pages/settings/templates/CommunicationTemplates';
 import { LegalDocumentsPage } from './pages/settings/legal';
-import { PaymentsOverview, PaymentProfile } from './pages/payments';
+import { PaymentsOverview, PaymentProfile, NewPayment } from './pages/payments';
 // FunnelAnalytics removed - functionality now in AnalyticsDashboard
 
 // Protected Route Component
@@ -192,6 +192,14 @@ const AppRouter: React.FC = () => {
         }
       />
       <Route
+        path="/events/new"
+        element={
+          <ProtectedRoute>
+            <NewEvent />
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/events/:id"
         element={
           <ProtectedRoute>
@@ -259,6 +267,14 @@ const AppRouter: React.FC = () => {
         }
       />
       <Route
+        path="/clients/new"
+        element={
+          <ProtectedRoute>
+            <NewClient />
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/clients/:id"
         element={
           <ProtectedRoute>
@@ -273,6 +289,14 @@ const AppRouter: React.FC = () => {
         element={
           <ProtectedRoute>
             <PaymentsOverview />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/payments/new"
+        element={
+          <ProtectedRoute>
+            <NewPayment />
           </ProtectedRoute>
         }
       />

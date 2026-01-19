@@ -798,7 +798,7 @@ const CleanPackageSelectionStep: React.FC<CleanPackageSelectionStepProps> = ({
         formattedDiscount: '',
       });
     }
-  }, [totalPrice, subtotalPrice, state.taxRate, formatAmount, actions]);
+  }, [totalPrice, subtotalPrice, state.taxRate, formatAmount, actions.setOptimisticPrice, actions.setPricingBreakdown]);
 
   // Check if custom bundle is selected
   const isCustomBundleSelected = selectedPackageIds.includes(-1);

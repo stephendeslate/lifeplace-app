@@ -125,7 +125,7 @@ export const useAvailabilityWebSocket = (
   const getWebSocketUrl = useCallback(() => {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     // Use the API URL for WebSocket if configured, otherwise use current host
-    const apiUrl = import.meta.env.VITE_API_URL;
+    const apiUrl = import.meta.env.VITE_API_BASE_URL;
     if (apiUrl) {
       const url = new URL(apiUrl);
       return `${protocol}//${url.host}/ws/availability/`;

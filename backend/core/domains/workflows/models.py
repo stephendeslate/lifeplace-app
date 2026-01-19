@@ -16,6 +16,14 @@ class WorkflowTemplate(BaseModel):
     event_type = models.ForeignKey('events.EventType', on_delete=models.PROTECT, null=True, blank=True)
     is_active = models.BooleanField(default=True)
 
+    # Lead Stage Auto-Stop: When enabled, all remaining LEAD stage automations
+    # are automatically cancelled when an event transitions to PRODUCTION stage.
+    # This prevents follow-up/nurturing emails from being sent after booking.
+    lead_stage_auto_stop = models.BooleanField(
+        default=True,
+        help_text="Stop remaining LEAD automations when event enters PRODUCTION stage"
+    )
+
     def __str__(self):
         return self.name
 
@@ -122,7 +130,7 @@ class WorkflowStage(BaseModel):
             )
             if incomplete_tasks.exists():
                 return False
-        
+
         # Check progression conditions
         if self.progression_condition:
             condition = self.progression_condition.upper()
@@ -132,8 +140,59 @@ class WorkflowStage(BaseModel):
                 return event.quotes.filter(status='ACCEPTED').exists()
             elif condition == 'CONTRACT_SIGNED':
                 return event.contracts.filter(status='SIGNED').exists()
-        
+            elif condition == 'TASKS_COMPLETED':
+                # Check if ALL tasks for the current stage are completed
+                incomplete_tasks = event.tasks.filter(
+                    workflow_stage=event.current_stage,
+                    status__in=['PENDING', 'IN_PROGRESS', 'BLOCKED']
+                )
+                return not incomplete_tasks.exists()
+            elif condition.startswith('TIME_ELAPSED'):
+                return self._check_time_elapsed(event, condition)
+
         return True
+
+    def _check_time_elapsed(self, event, condition):
+        """
+        Check if enough time has elapsed since stage was assigned.
+
+        Supported formats:
+        - TIME_ELAPSED_X_DAYS
+        - TIME_ELAPSED_X_HOURS
+        - TIME_ELAPSED_X_WEEKS
+        """
+        import re
+        from core.domains.events.models import EventTimeline
+
+        match = re.match(r'TIME_ELAPSED_(\d+)_(DAYS?|HOURS?|WEEKS?)', condition)
+        if not match:
+            logger.warning(f"Invalid TIME_ELAPSED format: {condition}")
+            return True  # Invalid format - allow progression
+
+        amount = int(match.group(1))
+        unit = match.group(2).upper()
+
+        # Calculate required elapsed time
+        if unit.startswith('DAY'):
+            required_delta = timedelta(days=amount)
+        elif unit.startswith('HOUR'):
+            required_delta = timedelta(hours=amount)
+        elif unit.startswith('WEEK'):
+            required_delta = timedelta(weeks=amount)
+        else:
+            return True  # Unknown unit - allow progression
+
+        # Get the timestamp when this stage was assigned from timeline
+        stage_assignment = EventTimeline.objects.filter(
+            event=event,
+            action_type='STAGE_CHANGE'
+        ).order_by('-created_at').first()
+
+        # Use timeline entry timestamp, or fall back to event creation time
+        stage_assigned_at = stage_assignment.created_at if stage_assignment else event.created_at
+
+        # Check if enough time has elapsed
+        return timezone.now() >= stage_assigned_at + required_delta
     
     def apply_to_event(self, event):
         """Apply this stage to an event with validation"""
@@ -435,6 +494,150 @@ class WorkflowTrigger(BaseModel):
     
     class Meta:
         ordering = ['-created_at']
-    
+
     def __str__(self):
         return f"{self.event} - {self.get_trigger_type_display()}"
+
+
+class EventWorkflowOverride(BaseModel):
+    """
+    Per-event workflow customization overrides.
+
+    Allows individual events to have customized workflow behavior:
+    - Skip/disable specific stages
+    - Add custom one-off stages
+    - Modify stage properties for this event only
+
+    This enables StudioNinja-style per-job workflow customization where
+    you can remove certain automated emails or add extra steps for
+    specific clients without modifying the template.
+    """
+    OVERRIDE_TYPE_CHOICES = [
+        ('SKIP', 'Skip Stage'),           # Don't execute this stage for this event
+        ('DISABLE_AUTOMATION', 'Disable Automation'),  # Run stage but skip automation
+        ('CUSTOM_TIMING', 'Custom Timing'),  # Override trigger_time for this event
+        ('ADD_STAGE', 'Add Custom Stage'),   # Add a one-off stage just for this event
+    ]
+
+    event = models.ForeignKey(
+        'events.Event',
+        on_delete=models.CASCADE,
+        related_name='workflow_overrides',
+        help_text="The event this override applies to"
+    )
+    stage = models.ForeignKey(
+        WorkflowStage,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='event_overrides',
+        help_text="The template stage being overridden (null for ADD_STAGE)"
+    )
+    override_type = models.CharField(
+        max_length=20,
+        choices=OVERRIDE_TYPE_CHOICES,
+        help_text="Type of override to apply"
+    )
+
+    # For CUSTOM_TIMING overrides
+    custom_trigger_time = models.CharField(
+        max_length=255,
+        blank=True,
+        help_text="Custom trigger time for this event (overrides stage.trigger_time)"
+    )
+
+    # For ADD_STAGE overrides - custom stage properties
+    custom_stage_name = models.CharField(
+        max_length=255,
+        blank=True,
+        help_text="Name for custom added stage"
+    )
+    custom_stage_category = models.CharField(
+        max_length=20,
+        choices=[
+            ('LEAD', 'Lead'),
+            ('PRODUCTION', 'Production'),
+            ('POST_PRODUCTION', 'Post Production'),
+        ],
+        blank=True,
+        help_text="Stage category for custom added stage"
+    )
+    custom_order = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        help_text="Order position for custom stage"
+    )
+    custom_is_automated = models.BooleanField(
+        default=False,
+        help_text="Whether custom stage has automation"
+    )
+    custom_automation_type = models.CharField(
+        max_length=50,
+        blank=True,
+        help_text="Automation type for custom stage"
+    )
+    custom_email_template = models.ForeignKey(
+        'communications.CommunicationTemplate',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='event_override_emails',
+        help_text="Email template for custom stage"
+    )
+    custom_task_description = models.TextField(
+        blank=True,
+        help_text="Task description for custom stage"
+    )
+
+    # Tracking
+    reason = models.TextField(
+        blank=True,
+        help_text="Reason for this override (for audit trail)"
+    )
+    created_by = models.ForeignKey(
+        'users.User',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='workflow_overrides_created',
+        help_text="User who created this override"
+    )
+
+    # Execution tracking
+    executed = models.BooleanField(
+        default=False,
+        help_text="Whether this override has been applied/executed"
+    )
+    executed_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="When this override was applied"
+    )
+
+    class Meta:
+        ordering = ['event', 'custom_order']
+        constraints = [
+            # Only one override per stage per event (except for ADD_STAGE which has no stage)
+            models.UniqueConstraint(
+                fields=['event', 'stage'],
+                condition=models.Q(stage__isnull=False),
+                name='unique_event_stage_override'
+            ),
+        ]
+        indexes = [
+            models.Index(fields=['event', 'override_type']),
+            models.Index(fields=['stage', 'override_type']),
+        ]
+
+    def __str__(self):
+        if self.stage:
+            return f"{self.event} - {self.override_type} - {self.stage.name}"
+        return f"{self.event} - {self.override_type} - {self.custom_stage_name}"
+
+    def is_stage_skipped(self):
+        """Check if this override skips the stage entirely"""
+        return self.override_type == 'SKIP'
+
+    def is_automation_disabled(self):
+        """Check if automation is disabled for this stage"""
+        return self.override_type in ['SKIP', 'DISABLE_AUTOMATION']

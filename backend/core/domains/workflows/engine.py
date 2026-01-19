@@ -2,9 +2,10 @@
 import logging
 
 from core.domains.events.models import Event, EventTimeline
-from core.domains.workflows.models import WorkflowStage
+from core.domains.workflows.models import WorkflowStage, EventWorkflowOverride
 from core.domains.workflows.tasks import schedule_stage_actions, schedule_before_event_action
 from django.db import transaction
+from django.utils import timezone
 
 logger = logging.getLogger(__name__)
 
@@ -166,8 +167,11 @@ class WorkflowEngine:
                 return False
 
             if trigger_type == 'PAYMENT_RECEIVED':
-                if find_and_execute_triggered_stage('trigger_on_payment_received'):
-                    return []  # Stay on current stage
+                find_and_execute_triggered_stage('trigger_on_payment_received')
+                # For CONFIRMED events, continue to progression logic below
+                # For non-confirmed events, stay on current stage
+                if event.status != 'CONFIRMED':
+                    return []
 
             if trigger_type == 'QUOTE_ACCEPTED':
                 if find_and_execute_triggered_stage('trigger_on_quote_accepted'):
@@ -180,6 +184,20 @@ class WorkflowEngine:
             if trigger_type == 'QUOTE_SENT':
                 if find_and_execute_triggered_stage('trigger_on_quote_sent'):
                     return []  # Stay on current stage
+
+        # For CONFIRMED events in LEAD stage, skip to PRODUCTION
+        # This handles direct-payment bookings that skip quote review
+        if current_stage.stage == 'LEAD' and event.status == 'CONFIRMED':
+            next_stages = WorkflowStage.objects.filter(
+                template=event.workflow_template,
+                stage='PRODUCTION'
+            ).order_by('order')
+
+            if next_stages.exists():
+                next_stage = next_stages.first()
+                if next_stage.check_advancement_criteria(event):
+                    logger.info(f"CONFIRMED event {event.id} skipping remaining LEAD stages, moving to PRODUCTION '{next_stage.name}'")
+                    return [next_stage]
 
         # Normal sequential flow: next stage in the same category
         next_order = current_stage.order + 1

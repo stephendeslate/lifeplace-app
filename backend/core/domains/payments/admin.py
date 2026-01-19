@@ -35,10 +35,6 @@ class PaymentSettingsAdmin(admin.ModelAdmin):
             'fields': ('grace_period_days',),
             'description': 'Configure grace period before marking payments as overdue'
         }),
-        ('Installment Defaults', {
-            'fields': ('default_installments', 'default_installment_frequency'),
-            'description': 'Default settings for payment plan installments'
-        }),
         ('Late Fee Settings', {
             'fields': ('late_fee_enabled', 'default_late_fee_amount'),
             'description': 'Configure automatic late fee application'
@@ -92,7 +88,7 @@ class PaymentAdmin(admin.ModelAdmin):
             'classes': ('collapse',)
         }),
         ('Related Records', {
-            'fields': ('quote', 'invoice', 'installment'),
+            'fields': ('quote', 'invoice'),
             'classes': ('collapse',)
         })
     )

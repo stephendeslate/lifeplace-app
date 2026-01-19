@@ -8,6 +8,9 @@ __pycache__/
 *$py.class
 *.so
 
+# Celery Beat
+celerybeat-schedule*
+
 # Media uploads (test artifacts)
 backend/media/
 

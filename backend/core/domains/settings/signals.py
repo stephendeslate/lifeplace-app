@@ -99,8 +99,6 @@ def create_production_default_settings(sender, **kwargs):
             defaults={
                 'balance_due_days': 30,
                 'grace_period_days': 7,
-                'default_installments': 2,
-                'default_installment_frequency': 'MONTHLY',
                 'late_fee_enabled': True,
                 'default_late_fee_amount': Decimal('25.00'),
                 'default_deposit_percentage': Decimal('50.00'),

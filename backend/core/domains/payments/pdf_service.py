@@ -181,11 +181,7 @@ class PaymentReceiptPDFService:
             ['Description', 'Amount'],
             [payment.description or 'Event Payment', formatted_amount],
         ]
-        
-        # Add installment info if applicable
-        if payment.installment:
-            payment_data[1][0] = f"{payment.installment.description} (Installment {payment.installment.installment_number})"
-        
+
         payment_table = Table(payment_data, colWidths=[4*inch, 2*inch])
         payment_table.setStyle(TableStyle([
             # Header row

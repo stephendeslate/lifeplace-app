@@ -348,6 +348,18 @@ export const Discounts = () => {
     });
   };
 
+  // Fetch fresh discount data before editing to ensure we have the latest values
+  const handleFetchItem = async (id: string | number): Promise<Discount> => {
+    const { productsApi } = await import('../../../apis/products.api');
+    const detail = await productsApi.getDiscount(Number(id));
+    // Convert DiscountDetail back to Discount format (extract IDs from objects)
+    return {
+      ...detail,
+      applicable_products: detail.applicable_products.map(p => p.id),
+      applicable_categories: detail.applicable_categories.map(c => c.id),
+    };
+  };
+
   return (
     <PermissionAwareSettingsPage
       config={config}
@@ -360,6 +372,7 @@ export const Discounts = () => {
       onCreate={handleCreate}
       onUpdate={handleUpdate}
       onDelete={handleDelete}
+      onFetchItem={handleFetchItem}
       isCreating={isCreatingDiscount}
       isUpdating={isUpdatingDiscount}
       isDeleting={isDeletingDiscount}
