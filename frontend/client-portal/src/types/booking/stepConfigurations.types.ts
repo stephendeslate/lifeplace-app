@@ -76,6 +76,8 @@ export interface AddonSelectionStepConfiguration extends StepConfiguration {
   available_addons_details: ProductOption[];
   min_selection: number;
   max_selection: number;
+  /** When true, show all active add-ons for the booking flow's event type. Default: true */
+  filter_by_event_type?: boolean;
   group_by_category: boolean;
   show_recommendations: boolean;
   recommendation_logic: Record<string, string | number | boolean>;

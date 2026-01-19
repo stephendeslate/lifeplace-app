@@ -1,13 +1,16 @@
 // frontend/admin-crm/src/components/shared/TemplateContentEditor.tsx
 // Unified content editor for templates - supports visual, HTML, and text modes
 
-import React, { useRef, useImperativeHandle, forwardRef, useId } from 'react';
+import React, { useRef, useImperativeHandle, forwardRef, useId, useState } from 'react';
 import {
   Box,
   TextField,
   Typography,
   ToggleButton,
   ToggleButtonGroup,
+  FormControlLabel,
+  Switch,
+  Tooltip,
 } from '@mui/material';
 import {
   Code as CodeIcon,
@@ -72,6 +75,7 @@ export const TemplateContentEditor = forwardRef<
   onModeChange,
   showModeToggle = false,
   availableModes = ['visual', 'html'],
+  hideAdvancedModes = true,
   placeholder = 'Enter content...',
   rows = 10,
   minHeight = 200,
@@ -81,9 +85,27 @@ export const TemplateContentEditor = forwardRef<
   disabled = false,
   showCharacterCount = false,
   maxCharacters,
+  variableSchemas,
+  contextType,
 }, ref) => {
   const richTextEditorRef = useRef<RichTextEditorHandle>(null);
   const textareaId = useId();
+  const [showAdvanced, setShowAdvanced] = useState(false);
+
+  // Filter available modes based on Advanced toggle state
+  // HTML mode is considered "advanced" for non-technical users
+  const visibleModes = hideAdvancedModes && !showAdvanced
+    ? availableModes.filter(m => m === 'visual' || m === 'text')
+    : availableModes;
+
+  // Handle Advanced toggle change
+  const handleAdvancedToggle = (checked: boolean) => {
+    setShowAdvanced(checked);
+    // If disabling advanced mode and currently in HTML mode, switch to visual
+    if (!checked && mode === 'html' && onModeChange) {
+      onModeChange('visual');
+    }
+  };
 
   // Insert variable at cursor position
   const insertVariable = (variable: string) => {
@@ -193,31 +215,56 @@ export const TemplateContentEditor = forwardRef<
         )}
 
         {showModeToggle && availableModes.length > 1 && (
-          <ToggleButtonGroup
-            value={mode}
-            exclusive
-            onChange={handleModeChange}
-            size="small"
-            sx={{
-              borderRadius: tokens.spacing.radius.full,
-              border: `1px solid ${tokens.color.borders.glass}`,
-              overflow: 'hidden',
-              '& .MuiToggleButton-root': {
-                border: 'none',
-                borderRadius: 0,
-                px: 2,
-                py: 0.5,
-                fontWeight: 500,
-              },
-            }}
-          >
-            {availableModes.map((m) => (
-              <ToggleButton key={m} value={m} disabled={disabled}>
-                {getModeIcon(m)}
-                {getModeLabel(m)}
-              </ToggleButton>
-            ))}
-          </ToggleButtonGroup>
+          <Box display="flex" alignItems="center" gap={2}>
+            {/* Mode toggle - shows visible modes based on Advanced toggle state */}
+            <ToggleButtonGroup
+              value={mode}
+              exclusive
+              onChange={handleModeChange}
+              size="small"
+              sx={{
+                borderRadius: tokens.spacing.radius.full,
+                border: `1px solid ${tokens.color.borders.glass}`,
+                overflow: 'hidden',
+                '& .MuiToggleButton-root': {
+                  border: 'none',
+                  borderRadius: 0,
+                  px: 2,
+                  py: 0.5,
+                  fontWeight: 500,
+                },
+              }}
+            >
+              {visibleModes.map((m) => (
+                <ToggleButton key={m} value={m} disabled={disabled}>
+                  {getModeIcon(m)}
+                  {getModeLabel(m)}
+                </ToggleButton>
+              ))}
+            </ToggleButtonGroup>
+
+            {/* Advanced toggle - shows when HTML mode is available and hideAdvancedModes is true */}
+            {hideAdvancedModes && availableModes.includes('html') && (
+              <Tooltip title="Show HTML source editing mode for advanced users" arrow placement="top">
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={showAdvanced}
+                      onChange={(e) => handleAdvancedToggle(e.target.checked)}
+                      size="small"
+                      disabled={disabled}
+                    />
+                  }
+                  label={
+                    <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8125rem' }}>
+                      Advanced
+                    </Typography>
+                  }
+                  sx={{ ml: 0, mr: 0 }}
+                />
+              </Tooltip>
+            )}
+          </Box>
         )}
       </Box>
 
@@ -232,6 +279,8 @@ export const TemplateContentEditor = forwardRef<
           disabled={disabled}
           error={error}
           helperText={helperText}
+          variableSchemas={variableSchemas}
+          contextType={contextType}
         />
       ) : (
         <Box>

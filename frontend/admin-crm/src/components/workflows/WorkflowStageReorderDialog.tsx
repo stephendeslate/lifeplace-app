@@ -146,14 +146,14 @@ export const WorkflowStageReorderDialog: React.FC<WorkflowStageReorderDialogProp
 
   const hasStagesInType = (type: StageType) => getStagesByType(type).length > 0;
   const availableTabs = stageTypes.filter(hasStagesInType);
-  
-  // Find the first tab with stages
-  const initialTab = availableTabs.findIndex(type => hasStagesInType(type));
+
+  // Reset to first available tab when dialog opens or stages change
+  // Don't include activeTab in deps - we only want to reset on open/stage changes
   React.useEffect(() => {
-    if (initialTab !== -1 && activeTab !== initialTab) {
-      setActiveTab(initialTab);
+    if (open && availableTabs.length > 0) {
+      setActiveTab(0);
     }
-  }, [stages, initialTab, activeTab]);
+  }, [open, stages.length]);
 
   return (
     <Dialog

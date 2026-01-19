@@ -27,7 +27,7 @@ import { EnhancedSettings } from './pages/settings/EnhancedSettings';
 import { AccountSettings, AdminUsers, CompanySettings } from './pages/settings/account';
 import { Notifications } from './pages/settings/account/Notifications';
 import { BookingFlows, BookingFlowDetails, EventTypes, BookingFlowPreviewPage } from './pages/settings/booking';
-import { ContractTemplates, QuestionnaireTemplates, WorkflowTemplates, WorkflowTemplateDetails } from './pages/settings/templates';
+import { ContractTemplates, QuestionnaireTemplates, WorkflowTemplates, WorkflowTemplateDetails, WorkflowWebhooks } from './pages/settings/templates';
 import { ProductsPackages, Payments, Sales } from './pages/settings/commerce';
 import { CurrencyTaxes } from './pages/settings/commerce/CurrencyTaxes';
 import { VIPProgram } from './pages/settings/vip/VIPProgram';
@@ -437,6 +437,14 @@ const AppRouter: React.FC = () => {
         element={
           <SettingsRoute>
             <WorkflowTemplateDetails />
+          </SettingsRoute>
+        }
+      />
+      <Route
+        path="/settings/templates/workflow-webhooks"
+        element={
+          <SettingsRoute>
+            <WorkflowWebhooks />
           </SettingsRoute>
         }
       />

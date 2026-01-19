@@ -211,12 +211,15 @@ export const ContractTemplateForm: React.FC<ContractTemplateFormProps> = ({
             onModeChange={setEditorMode}
             showModeToggle={true}
             availableModes={['visual', 'html']}
-            placeholder="Enter contract content with {{variable_name}} placeholders..."
+            placeholder="Enter contract content... Type {{ to insert variables."
             rows={12}
             minHeight={300}
             error={!!errors.content}
-            helperText={errors.content || 'Use {{variable_name}} syntax for dynamic content'}
+            helperText={errors.content || 'Type {{ to insert variables with autocomplete'}
             label="Contract Content"
+            variableSchemas={variableSchemas}
+            contextType="CONTRACT"
+            hideAdvancedModes={true}
           />
         </Box>
 

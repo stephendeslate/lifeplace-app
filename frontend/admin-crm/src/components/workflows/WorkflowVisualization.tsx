@@ -22,6 +22,7 @@ import {
   Task as TaskIcon,
   RequestQuote as QuoteIcon,
   Description as ContractIcon,
+  Quiz as QuestionnaireIcon,
   Schedule as ScheduleIcon,
   Notifications as NotificationIcon,
   Handyman as ManualIcon,
@@ -40,6 +41,7 @@ export const WorkflowVisualization: React.FC<WorkflowVisualizationProps> = ({
       TASK: <TaskIcon />,
       QUOTE: <QuoteIcon />,
       CONTRACT: <ContractIcon />,
+      QUESTIONNAIRE: <QuestionnaireIcon />,
       REMINDER: <ScheduleIcon />,
       NOTIFICATION: <NotificationIcon />,
     };
@@ -255,6 +257,13 @@ export const WorkflowVisualization: React.FC<WorkflowVisualizationProps> = ({
                                   {stage.contract_template_name && (
                                     <Chip
                                       label={`Contract: ${stage.contract_template_name}`}
+                                      size="small"
+                                      variant="outlined"
+                                    />
+                                  )}
+                                  {stage.questionnaire_template_name && (
+                                    <Chip
+                                      label={`Questionnaire: ${stage.questionnaire_template_name}`}
                                       size="small"
                                       variant="outlined"
                                     />

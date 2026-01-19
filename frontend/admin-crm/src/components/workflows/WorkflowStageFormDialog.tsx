@@ -30,6 +30,7 @@ import {
 import { useCommunications } from '../../hooks/useCommunications';
 import { useContractTemplates } from '../../hooks/useContracts';
 import { useQuoteTemplates } from '../../hooks/useSales';
+import { useQuestionnaires } from '../../hooks/useQuestionnaires';
 import { useConfirmDialog } from '../common/ConfirmDialog';
 import type {
   WorkflowStageFormDialogProps,
@@ -41,9 +42,9 @@ import type {
 import {
   STAGE_TYPES,
   AUTOMATION_TYPES,
-  TRIGGER_TIMES,
   PROGRESSION_CONDITIONS
 } from '../../types/workflows.types';
+import { CustomTimingInput } from './CustomTimingInput';
 
 const defaultFormData: CreateWorkflowStageData = {
   name: '',
@@ -54,6 +55,7 @@ const defaultFormData: CreateWorkflowStageData = {
   trigger_time: 'ON_CREATION',
   email_template: null,
   contract_template: null,
+  questionnaire_template: null,
   task_description: '',
   progression_condition: '',
   required_tasks_completed: false,
@@ -85,6 +87,9 @@ export const WorkflowStageFormDialog: React.FC<WorkflowStageFormDialogProps> = (
   const { data: contractTemplates = [] } = useContractTemplates();
   const { data: quoteTemplates = [] } = useQuoteTemplates();
 
+  const { useActiveQuestionnaires } = useQuestionnaires();
+  const { data: questionnaires = [] } = useActiveQuestionnaires();
+
   const isEditing = !!editingStage;
 
   useEffect(() => {
@@ -99,6 +104,7 @@ export const WorkflowStageFormDialog: React.FC<WorkflowStageFormDialogProps> = (
           trigger_time: editingStage.trigger_time,
           email_template: editingStage.email_template,
           contract_template: editingStage.contract_template,
+          questionnaire_template: editingStage.questionnaire_template,
           task_description: editingStage.task_description || '',
           progression_condition: editingStage.progression_condition || '',
           required_tasks_completed: editingStage.required_tasks_completed,
@@ -164,6 +170,10 @@ export const WorkflowStageFormDialog: React.FC<WorkflowStageFormDialogProps> = (
       newErrors.contract_template = 'Contract template is required for contract automation';
     }
 
+    if (formData.is_automated && formData.automation_type === 'QUESTIONNAIRE' && !formData.questionnaire_template) {
+      newErrors.questionnaire_template = 'Questionnaire template is required for questionnaire automation';
+    }
+
     if (formData.order && formData.order < 1) {
       newErrors.order = 'Order must be a positive number';
     }
@@ -218,6 +228,7 @@ export const WorkflowStageFormDialog: React.FC<WorkflowStageFormDialogProps> = (
 
   const requiresEmailTemplate = formData.is_automated && formData.automation_type === 'EMAIL';
   const requiresContractTemplate = formData.is_automated && formData.automation_type === 'CONTRACT';
+  const requiresQuestionnaireTemplate = formData.is_automated && formData.automation_type === 'QUESTIONNAIRE';
 
   return (
     <Dialog 
@@ -339,33 +350,12 @@ export const WorkflowStageFormDialog: React.FC<WorkflowStageFormDialogProps> = (
                               </Select>
                             </FormControl>
 
-                            <FormControl fullWidth>
-                              <InputLabel>Trigger Time</InputLabel>
-                              <Select
-                                value={formData.trigger_time}
-                                label="Trigger Time"
-                                onChange={(e) => handleInputChange('trigger_time', e.target.value)}
-                              >
-                                <ListSubheader>Immediate</ListSubheader>
-                                {TRIGGER_TIMES.filter(t => t.category === 'immediate').map((trigger) => (
-                                  <MenuItem key={trigger.value} value={trigger.value}>
-                                    {trigger.label}
-                                  </MenuItem>
-                                ))}
-                                <ListSubheader>After Stage Start</ListSubheader>
-                                {TRIGGER_TIMES.filter(t => t.category === 'after').map((trigger) => (
-                                  <MenuItem key={trigger.value} value={trigger.value}>
-                                    {trigger.label}
-                                  </MenuItem>
-                                ))}
-                                <ListSubheader>Before Event Date</ListSubheader>
-                                {TRIGGER_TIMES.filter(t => t.category === 'before_event').map((trigger) => (
-                                  <MenuItem key={trigger.value} value={trigger.value}>
-                                    {trigger.label}
-                                  </MenuItem>
-                                ))}
-                              </Select>
-                            </FormControl>
+                            <CustomTimingInput
+                              value={formData.trigger_time}
+                              onChange={(value) => handleInputChange('trigger_time', value)}
+                              label="Scheduled Execution"
+                              showBeforeEvent={true}
+                            />
                           </Box>
 
                           {requiresEmailTemplate && (
@@ -418,6 +408,57 @@ export const WorkflowStageFormDialog: React.FC<WorkflowStageFormDialogProps> = (
                             </FormControl>
                           )}
 
+                          {requiresQuestionnaireTemplate && (
+                            <>
+                              <FormControl fullWidth error={!!errors.questionnaire_template}>
+                                <InputLabel>Questionnaire Template</InputLabel>
+                                <Select
+                                  value={formData.questionnaire_template || ''}
+                                  label="Questionnaire Template"
+                                  onChange={(e) => handleInputChange('questionnaire_template', e.target.value || null)}
+                                >
+                                  <MenuItem value="">
+                                    <em>Select a questionnaire template</em>
+                                  </MenuItem>
+                                  {questionnaires.map((questionnaire) => (
+                                    <MenuItem key={questionnaire.id} value={questionnaire.id}>
+                                      {questionnaire.name}
+                                    </MenuItem>
+                                  ))}
+                                </Select>
+                                {errors.questionnaire_template && (
+                                  <Typography variant="caption" color="error" sx={{ mt: 0.5, ml: 1.5 }}>
+                                    {errors.questionnaire_template}
+                                  </Typography>
+                                )}
+                              </FormControl>
+
+                              <FormControl fullWidth>
+                                <InputLabel>Notification Email Template (Optional)</InputLabel>
+                                <Select
+                                  value={formData.email_template || ''}
+                                  label="Notification Email Template (Optional)"
+                                  onChange={(e) => handleInputChange('email_template', e.target.value || null)}
+                                >
+                                  <MenuItem value="">
+                                    <em>No email (in-app notification only)</em>
+                                  </MenuItem>
+                                  {emailTemplates.map((template) => (
+                                    <MenuItem key={template.id} value={template.id}>
+                                      {template.name}
+                                    </MenuItem>
+                                  ))}
+                                </Select>
+                              </FormControl>
+
+                              <Alert severity="info">
+                                This automation sends a notification to the client with a link to complete the questionnaire.
+                                If the questionnaire is already complete, the notification is skipped.
+                                If partially complete, it acts as a reminder.
+                              </Alert>
+                            </>
+                          )}
+
                           {formData.automation_type === 'EMAIL' && !emailTemplates.length && (
                             <Alert severity="warning">
                               No email templates found. Create email templates in Communication Settings first.
@@ -427,6 +468,12 @@ export const WorkflowStageFormDialog: React.FC<WorkflowStageFormDialogProps> = (
                           {formData.automation_type === 'CONTRACT' && !contractTemplates.length && (
                             <Alert severity="warning">
                               No contract templates found. Create contract templates in Template Settings first.
+                            </Alert>
+                          )}
+
+                          {formData.automation_type === 'QUESTIONNAIRE' && !questionnaires.length && (
+                            <Alert severity="warning">
+                              No questionnaire templates found. Create questionnaire templates in Template Settings first.
                             </Alert>
                           )}
 
@@ -515,17 +562,18 @@ export const WorkflowStageFormDialog: React.FC<WorkflowStageFormDialogProps> = (
                   </AccordionDetails>
                 </Accordion>
 
-                {/* Event Triggers - Execute automation when specific events occur */}
+                {/* Business Event Triggers - Execute automation when specific business events occur */}
                 {formData.is_automated && (
                   <Accordion>
                     <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                      <Typography variant="h6">Event Triggers</Typography>
+                      <Typography variant="h6">Also Execute On Business Events</Typography>
                     </AccordionSummary>
                     <AccordionDetails>
                       <Stack spacing={2}>
                         <Alert severity="info" sx={{ mb: 1 }}>
-                          These triggers execute the automation when specific events occur, without advancing to the next stage.
-                          This is useful for sending notifications or performing actions in response to business events.
+                          <strong>Optional:</strong> In addition to the scheduled execution above, you can also trigger
+                          this automation immediately when specific business events occur. This runs the automation
+                          without waiting for the scheduled time and without advancing to the next stage.
                         </Alert>
 
                         <FormControlLabel

@@ -302,3 +302,30 @@ def process_time_elapsed_triggers(self):
         f"{processed_count} progressions, {error_count} errors"
     )
     return {'processed': processed_count, 'errors': error_count}
+
+
+@shared_task(
+    bind=True,
+    max_retries=1,
+)
+def process_webhook_retries(self):
+    """
+    Process pending webhook deliveries that are due for retry.
+
+    This task should run every minute via Celery beat to check for
+    webhook deliveries that failed and are scheduled for retry.
+
+    Returns:
+        dict: Summary of retried deliveries
+    """
+    from core.domains.workflows.webhook_service import WorkflowWebhookService
+
+    logger.info("Starting webhook retry processing")
+
+    try:
+        retried_count = WorkflowWebhookService.retry_pending_deliveries()
+        logger.info(f"Webhook retry processing completed: {retried_count} retried")
+        return {'retried': retried_count}
+    except Exception as e:
+        logger.error(f"Error processing webhook retries: {e}")
+        return {'retried': 0, 'error': str(e)}

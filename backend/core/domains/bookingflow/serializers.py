@@ -180,14 +180,13 @@ class AddonSelectionStepConfigurationSerializer(serializers.ModelSerializer):
     # Use SerializerMethodField for ID arrays to avoid ManyRelatedManager issues
     available_categories = serializers.SerializerMethodField()
     available_addons = serializers.SerializerMethodField()
-    
+
     # Keep the detailed serializers
     available_categories_details = ProductCategorySerializer(
         source='available_categories', many=True, read_only=True
     )
-    available_addons_details = ProductOptionSerializer(
-        source='available_addons', many=True, read_only=True
-    )
+    # Use SerializerMethodField for addons to support event type filtering
+    available_addons_details = serializers.SerializerMethodField()
 
     class Meta:
         model = AddonSelectionStepConfiguration
@@ -196,9 +195,9 @@ class AddonSelectionStepConfigurationSerializer(serializers.ModelSerializer):
             'available_categories',  # ID array
             'available_addons',      # ID array
             'available_categories_details',
-            'available_addons_details', 
+            'available_addons_details',
             'min_selection',
-            'max_selection', 'group_by_category', 'show_recommendations',
+            'max_selection', 'filter_by_event_type', 'group_by_category', 'show_recommendations',
             'recommendation_logic', 'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'step', 'created_at', 'updated_at']
@@ -212,7 +211,7 @@ class AddonSelectionStepConfigurationSerializer(serializers.ModelSerializer):
         except Exception as e:
             logger.warning(f"Error serializing available_categories for addon step {obj.id if hasattr(obj, 'id') else 'unknown'}: {e}")
             return []
-    
+
     def get_available_addons(self, obj):
         """Get list of addon IDs - uses model's safe method"""
         try:
@@ -221,6 +220,47 @@ class AddonSelectionStepConfigurationSerializer(serializers.ModelSerializer):
             return []
         except Exception as e:
             logger.warning(f"Error serializing available_addons for addon step {obj.id if hasattr(obj, 'id') else 'unknown'}: {e}")
+            return []
+
+    def get_available_addons_details(self, obj):
+        """
+        Get add-on details with optional event type filtering.
+
+        When filter_by_event_type is True:
+        - Returns all active PRODUCT-type items associated with the booking flow's event type
+        - Falls back to configured available_addons if no event type is set
+
+        When filter_by_event_type is False:
+        - Returns only explicitly configured available_addons
+        """
+        try:
+            if not obj:
+                return []
+
+            # Check if we should filter by event type
+            if obj.filter_by_event_type:
+                # Get the event type from the booking flow
+                event_type_id = None
+                if obj.step and obj.step.booking_flow and obj.step.booking_flow.event_type:
+                    event_type_id = obj.step.booking_flow.event_type_id
+
+                if event_type_id:
+                    # Fetch all active add-ons (PRODUCT type) for this event type
+                    # Note: ProductOption uses event_types (ManyToMany), not event_type (ForeignKey)
+                    from core.domains.products.models import ProductOption
+                    addons = ProductOption.objects.filter(
+                        type='PRODUCT',
+                        is_active=True,
+                        event_types__id=event_type_id
+                    ).distinct().order_by('sort_order', 'name')
+                    return ProductOptionSerializer(addons, many=True, context=self.context).data
+
+            # Fall back to configured available_addons
+            addons = obj.available_addons.all()
+            return ProductOptionSerializer(addons, many=True, context=self.context).data
+
+        except Exception as e:
+            logger.warning(f"Error serializing available_addons_details for addon step {obj.id if hasattr(obj, 'id') else 'unknown'}: {e}")
             return []
 
 class PricingSummaryStepConfigurationSerializer(serializers.ModelSerializer):

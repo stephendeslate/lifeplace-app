@@ -2045,3 +2045,9 @@ LINE 1: INSERT INTO "security_events" ("timestamp", "event_type", "s...
 🔒 SECURITY 2026-01-19 09:20:16,650 WARNING [ADMIN_ACTION] Admin request: POST /admin/events/event/
 🔒 SECURITY 2026-01-19 09:28:16,206 WARNING [ADMIN_ACTION] Admin request: POST /admin/events/event/
 🔒 SECURITY 2026-01-19 09:28:18,341 WARNING [ADMIN_ACTION] Admin request: POST /admin/events/event/
+🔒 SECURITY 2026-01-19 10:44:49,551 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully
+🔒 SECURITY 2026-01-19 11:10:37,469 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully
+🔒 SECURITY 2026-01-19 11:24:20,753 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully
+🔒 SECURITY 2026-01-19 11:28:01,666 WARNING [ADMIN_ACTION] Admin request: POST /admin/events/eventtype/
+🔒 SECURITY 2026-01-19 11:28:02,920 WARNING [ADMIN_ACTION] Admin request: POST /admin/events/eventtype/
+🔒 SECURITY 2026-01-19 11:29:36,900 INFO [LOGIN_SUCCESS] User john.test@gmail.com logged in successfully

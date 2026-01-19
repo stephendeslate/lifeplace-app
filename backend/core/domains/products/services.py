@@ -195,8 +195,18 @@ class ProductService:
             # Auto-generate SKU if not provided
             if not product_data.get('sku'):
                 product_data['sku'] = ProductService._generate_sku(product_data)
-            
+
+            # Handle ManyToMany field: event_types (via input_event_type_ids)
+            event_type_ids = None
+            if 'input_event_type_ids' in product_data:
+                event_type_ids = product_data.pop('input_event_type_ids')
+
             product = ProductOption.objects.create(**product_data)
+
+            # Set ManyToMany relationships after creation
+            if event_type_ids is not None:
+                product.event_types.set(event_type_ids)
+
             logger.info(f"Created new {product.get_type_display()}: {product.name}")
             return product
     
@@ -204,12 +214,22 @@ class ProductService:
     def update_product(product_id, product_data):
         """Update an existing product"""
         product = ProductService.get_product_by_id(product_id)
-        
+
         with transaction.atomic():
+            # Handle ManyToMany field: event_types (via input_event_type_ids)
+            event_type_ids = None
+            if 'input_event_type_ids' in product_data:
+                event_type_ids = product_data.pop('input_event_type_ids')
+
             for key, value in product_data.items():
                 setattr(product, key, value)
-            
+
             product.save()
+
+            # Update ManyToMany relationships after save
+            if event_type_ids is not None:
+                product.event_types.set(event_type_ids)
+
             logger.info(f"Updated {product.get_type_display()}: {product.name}")
             return product
     

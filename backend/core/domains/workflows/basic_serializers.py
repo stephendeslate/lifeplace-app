@@ -18,7 +18,8 @@ class WorkflowTemplateSerializer(serializers.ModelSerializer):
         model = WorkflowTemplate
         fields = [
             'id', 'name', 'description', 'event_type',
-            'is_active', 'stages_count', 'events_using_count', 'created_at', 'updated_at'
+            'is_active', 'lead_stage_auto_stop',
+            'stages_count', 'events_using_count', 'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
 
@@ -40,8 +41,8 @@ class WorkflowStageSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'template', 'name', 'stage', 'stage_display', 'order',
             'is_automated', 'automation_type', 'trigger_time', 'email_template',
-            'contract_template', 'task_description', 'progression_condition',
-            'required_tasks_completed',
+            'contract_template', 'questionnaire_template', 'task_description',
+            'progression_condition', 'required_tasks_completed',
             # Trigger-on flags for conditional automation
             'trigger_on_payment_received', 'trigger_on_quote_accepted',
             'trigger_on_contract_signed', 'trigger_on_event_created',

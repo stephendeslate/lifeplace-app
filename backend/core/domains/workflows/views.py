@@ -6,7 +6,7 @@ from rest_framework import filters, status, viewsets, serializers
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
-from .models import WorkflowStage, WorkflowTemplate, WorkflowTrigger
+from .models import WorkflowStage, WorkflowTemplate, WorkflowTrigger, EventWorkflowOverride
 from .serializers import (
     WorkflowStageDetailSerializer,
     WorkflowStageSerializer,
@@ -14,6 +14,8 @@ from .serializers import (
     WorkflowTemplateSerializer,
     WorkflowTemplateWithStagesSerializer,
     WorkflowTriggerSerializer,
+    EventWorkflowOverrideSerializer,
+    EventWorkflowOverrideCreateSerializer,
 )
 from .services import WorkflowStageService, WorkflowTemplateService
 
@@ -103,13 +105,35 @@ class WorkflowTemplateViewSet(viewsets.ModelViewSet):
         """Get only active templates"""
         active_templates = WorkflowTemplateService.get_all_templates(is_active=True)
         page = self.paginate_queryset(active_templates)
-        
+
         if page is not None:
             serializer = self.get_serializer(page, many=True)
             return self.get_paginated_response(serializer.data)
-        
+
         serializer = self.get_serializer(active_templates, many=True)
         return Response(serializer.data)
+
+    @action(detail=True, methods=['post'])
+    def duplicate(self, request, pk=None):
+        """
+        Duplicate a workflow template with all its stages
+
+        POST /workflows/templates/{id}/duplicate/
+        Body (optional): { "name": "New Template Name" }
+
+        Returns the newly created template with all stages cloned.
+        The new template starts as inactive for safety.
+        """
+        # Get optional new name from request body
+        new_name = request.data.get('name')
+
+        with transaction.atomic():
+            new_template = WorkflowTemplateService.duplicate_template(pk, new_name)
+
+        return Response(
+            WorkflowTemplateDetailSerializer(new_template).data,
+            status=status.HTTP_201_CREATED
+        )
 
 
 class WorkflowStageViewSet(viewsets.ModelViewSet):
@@ -291,3 +315,238 @@ class WorkflowTriggerViewSet(viewsets.ReadOnlyModelViewSet):
             queryset = queryset.filter(processed=processed.lower() == 'true')
 
         return queryset
+
+
+class EventWorkflowOverrideViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet for managing per-event workflow overrides.
+
+    Allows admins to customize workflow behavior for specific events:
+    - SKIP: Skip a stage entirely for this event
+    - DISABLE_AUTOMATION: Run stage but don't execute automation
+    - CUSTOM_TIMING: Use different trigger timing for this event
+    - ADD_STAGE: Add a custom one-off stage for this event
+    """
+    permission_classes = [IsAdmin]
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ['reason', 'custom_stage_name']
+    ordering_fields = ['created_at', 'custom_order']
+    ordering = ['custom_order', '-created_at']
+
+    def get_queryset(self):
+        queryset = EventWorkflowOverride.objects.select_related(
+            'event', 'stage', 'stage__template', 'created_by', 'custom_email_template'
+        )
+
+        # Filter by event_id
+        event_id = self.request.query_params.get('event_id')
+        if event_id:
+            queryset = queryset.filter(event_id=event_id)
+
+        # Filter by stage_id
+        stage_id = self.request.query_params.get('stage_id')
+        if stage_id:
+            queryset = queryset.filter(stage_id=stage_id)
+
+        # Filter by override_type
+        override_type = self.request.query_params.get('override_type')
+        if override_type:
+            queryset = queryset.filter(override_type=override_type)
+
+        # Filter by executed status
+        executed = self.request.query_params.get('executed')
+        if executed is not None:
+            queryset = queryset.filter(executed=executed.lower() == 'true')
+
+        return queryset
+
+    def get_serializer_class(self):
+        if self.action == 'create':
+            return EventWorkflowOverrideCreateSerializer
+        return EventWorkflowOverrideSerializer
+
+    @action(detail=False, methods=['get'])
+    def for_event(self, request):
+        """Get all workflow overrides for a specific event with stage info"""
+        event_id = request.query_params.get('event_id')
+        if not event_id:
+            return Response(
+                {"detail": "event_id query parameter is required"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        overrides = self.get_queryset().filter(event_id=event_id)
+        serializer = self.get_serializer(overrides, many=True)
+        return Response(serializer.data)
+
+    @action(detail=False, methods=['post'])
+    def skip_stage(self, request):
+        """Quick action to skip a stage for an event"""
+        event_id = request.data.get('event_id')
+        stage_id = request.data.get('stage_id')
+        reason = request.data.get('reason', '')
+
+        if not event_id or not stage_id:
+            return Response(
+                {"detail": "event_id and stage_id are required"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            override, created = EventWorkflowOverride.objects.get_or_create(
+                event_id=event_id,
+                stage_id=stage_id,
+                defaults={
+                    'override_type': 'SKIP',
+                    'reason': reason,
+                    'created_by': request.user if request.user.is_authenticated else None
+                }
+            )
+
+            if not created:
+                # Update existing override to SKIP
+                override.override_type = 'SKIP'
+                override.reason = reason
+                override.save()
+
+            serializer = self.get_serializer(override)
+            return Response(serializer.data, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
+
+        except Exception as e:
+            return Response(
+                {"detail": str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+    @action(detail=False, methods=['post'])
+    def disable_automation(self, request):
+        """Quick action to disable automation for a stage on an event"""
+        event_id = request.data.get('event_id')
+        stage_id = request.data.get('stage_id')
+        reason = request.data.get('reason', '')
+
+        if not event_id or not stage_id:
+            return Response(
+                {"detail": "event_id and stage_id are required"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            override, created = EventWorkflowOverride.objects.get_or_create(
+                event_id=event_id,
+                stage_id=stage_id,
+                defaults={
+                    'override_type': 'DISABLE_AUTOMATION',
+                    'reason': reason,
+                    'created_by': request.user if request.user.is_authenticated else None
+                }
+            )
+
+            if not created:
+                override.override_type = 'DISABLE_AUTOMATION'
+                override.reason = reason
+                override.save()
+
+            serializer = self.get_serializer(override)
+            return Response(serializer.data, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
+
+        except Exception as e:
+            return Response(
+                {"detail": str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+    @action(detail=True, methods=['delete'])
+    def remove_override(self, request, pk=None):
+        """Remove an override (restore default behavior)"""
+        override = self.get_object()
+        override.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class WorkflowWebhookViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet for managing workflow webhooks.
+
+    Webhooks allow external systems to be notified when workflow events occur.
+    Supports CRUD operations plus test webhook functionality.
+    """
+    permission_classes = [IsAdmin]
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ['name', 'url']
+    ordering_fields = ['name', 'created_at', 'last_triggered_at']
+    ordering = ['name']
+
+    def get_queryset(self):
+        from .models import WorkflowWebhook
+        queryset = WorkflowWebhook.objects.select_related('workflow_template')
+
+        # Filter by workflow_template if provided (support both parameter names)
+        template_id = self.request.query_params.get('workflow_template') or \
+                      self.request.query_params.get('workflow_template_id')
+        if template_id:
+            queryset = queryset.filter(workflow_template_id=template_id)
+
+        # Filter by is_active if provided
+        is_active = self.request.query_params.get('is_active')
+        if is_active is not None:
+            queryset = queryset.filter(is_active=is_active.lower() == 'true')
+
+        return queryset
+
+    def get_serializer_class(self):
+        from .serializers import WorkflowWebhookSerializer, WorkflowWebhookDetailSerializer
+        if self.action == 'retrieve':
+            return WorkflowWebhookDetailSerializer
+        return WorkflowWebhookSerializer
+
+    @action(detail=True, methods=['post'])
+    def test(self, request, pk=None):
+        """
+        Send a test webhook to verify configuration.
+
+        POST /workflows/webhooks/{id}/test/
+        """
+        from .webhook_service import WorkflowWebhookService
+        from .serializers import WorkflowWebhookDeliverySerializer
+
+        webhook = self.get_object()
+        delivery = WorkflowWebhookService.send_test_webhook(webhook)
+
+        return Response({
+            'message': f"Test webhook sent to {webhook.url}",
+            'delivery': WorkflowWebhookDeliverySerializer(delivery).data
+        })
+
+    @action(detail=True, methods=['get'])
+    def deliveries(self, request, pk=None):
+        """
+        Get delivery history for a webhook.
+
+        GET /workflows/webhooks/{id}/deliveries/
+        """
+        from .serializers import WorkflowWebhookDeliverySerializer
+        from .models import WorkflowWebhookDelivery
+
+        webhook = self.get_object()
+        limit = int(request.query_params.get('limit', 50))
+
+        deliveries = WorkflowWebhookDelivery.objects.filter(
+            webhook=webhook
+        ).order_by('-created_at')[:limit]
+
+        serializer = WorkflowWebhookDeliverySerializer(deliveries, many=True)
+        return Response(serializer.data)
+
+    @action(detail=False, methods=['get'])
+    def event_types(self, request):
+        """
+        Get available webhook event types.
+
+        GET /workflows/webhooks/event_types/
+        """
+        from .models import WorkflowWebhook
+        return Response([
+            {'value': choice[0], 'label': choice[1]}
+            for choice in WorkflowWebhook.WEBHOOK_EVENT_CHOICES
+        ])

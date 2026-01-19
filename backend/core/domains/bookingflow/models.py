@@ -621,7 +621,14 @@ class AddonSelectionStepConfiguration(BaseModel):
     # Selection behavior
     min_selection = models.PositiveIntegerField(default=0)
     max_selection = models.PositiveIntegerField(default=0, help_text="0 means unlimited")
-    
+
+    # Event type filtering
+    filter_by_event_type = models.BooleanField(
+        default=True,
+        help_text="When enabled, show all active add-ons associated with the booking flow's event type. "
+                  "When disabled, only show add-ons explicitly configured in available_addons."
+    )
+
     # Display options
     group_by_category = models.BooleanField(default=True)
     show_recommendations = models.BooleanField(default=True)

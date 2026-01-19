@@ -70,6 +70,7 @@ export interface BookingState {
     sessionId: string;
     lastUpdated: string;
     stepName: string;
+    progressPercentage: number;
   } | null;
 }
 

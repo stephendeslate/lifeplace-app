@@ -105,28 +105,138 @@ class WorkflowEngine:
             logger.debug(f"Event {event.id} already at stage '{current_stage.name}' - skipping duplicate progression")
             return False
 
+        # Check if this stage should be skipped due to per-event override
+        if cls._is_stage_skipped(event, next_stage):
+            logger.info(f"Stage '{next_stage.name}' skipped for event {event.id} due to workflow override")
+            # Log the skip and try to progress to the following stage
+            EventTimeline.objects.create(
+                event=event,
+                action_type='STAGE_CHANGE',
+                description=f"Skipped stage '{next_stage.name}' (workflow override)",
+                action_data={
+                    'skipped_stage': next_stage.id,
+                    'override_type': 'SKIP'
+                },
+                is_public=False
+            )
+            # Recursively try next stage
+            event.current_stage = next_stage
+            event.save(update_fields=['current_stage'])
+            return cls.progress_workflow(event, trigger_type, data)
+
         with transaction.atomic():
+            # Check for Lead Stage Auto-Stop: when transitioning from LEAD to PRODUCTION
+            is_cross_category_to_production = (
+                current_stage.stage == 'LEAD' and
+                next_stage.stage == 'PRODUCTION' and
+                event.workflow_template.lead_stage_auto_stop
+            )
+
+            if is_cross_category_to_production:
+                # Execute Lead Stage Auto-Stop
+                cls._execute_lead_stage_auto_stop(event, current_stage)
+
             # Update event stage
             event.current_stage = next_stage
             event.save(update_fields=['current_stage'])
 
             # Log the stage transition
+            transition_description = f"Moved from '{current_stage.name}' to '{next_stage.name}'"
+            if is_cross_category_to_production:
+                transition_description += " (LEAD stage auto-stop activated)"
+
             EventTimeline.objects.create(
                 event=event,
                 action_type='STAGE_CHANGE',
-                description=f"Moved from '{current_stage.name}' to '{next_stage.name}'",
+                description=transition_description,
                 action_data={
                     'previous_stage': current_stage.id,
-                    'trigger_type': trigger_type
+                    'trigger_type': trigger_type,
+                    'lead_auto_stop': is_cross_category_to_production
                 },
                 is_public=True
             )
 
-            # Execute stage actions
+            # Execute stage actions (respecting overrides)
             cls.execute_stage_actions(event, next_stage)
 
             logger.info(f"Event {event.id} progressed from '{current_stage.name}' to '{next_stage.name}'")
             return True
+
+    @classmethod
+    def _is_stage_skipped(cls, event, stage):
+        """Check if a stage should be skipped for this event due to override"""
+        return EventWorkflowOverride.objects.filter(
+            event=event,
+            stage=stage,
+            override_type='SKIP'
+        ).exists()
+
+    @classmethod
+    def _is_automation_disabled(cls, event, stage):
+        """Check if automation is disabled for this stage for this event"""
+        return EventWorkflowOverride.objects.filter(
+            event=event,
+            stage=stage,
+            override_type__in=['SKIP', 'DISABLE_AUTOMATION']
+        ).exists()
+
+    @classmethod
+    def _get_custom_trigger_time(cls, event, stage):
+        """Get custom trigger time if overridden for this event"""
+        override = EventWorkflowOverride.objects.filter(
+            event=event,
+            stage=stage,
+            override_type='CUSTOM_TIMING'
+        ).first()
+        return override.custom_trigger_time if override else None
+
+    @classmethod
+    def _execute_lead_stage_auto_stop(cls, event, current_lead_stage):
+        """
+        Execute Lead Stage Auto-Stop when transitioning from LEAD to PRODUCTION.
+
+        This creates SKIP overrides for all remaining LEAD stages that haven't
+        been executed yet, preventing any future LEAD automations from running.
+        """
+        # Find all LEAD stages that come after the current stage
+        remaining_lead_stages = WorkflowStage.objects.filter(
+            template=event.workflow_template,
+            stage='LEAD',
+            order__gt=current_lead_stage.order
+        )
+
+        skipped_stages = []
+        for stage in remaining_lead_stages:
+            # Create a SKIP override for each remaining LEAD stage
+            override, created = EventWorkflowOverride.objects.get_or_create(
+                event=event,
+                stage=stage,
+                defaults={
+                    'override_type': 'SKIP',
+                    'reason': 'Lead Stage Auto-Stop: Event transitioned to PRODUCTION',
+                    'executed': True,
+                    'executed_at': timezone.now()
+                }
+            )
+            if created:
+                skipped_stages.append(stage.name)
+                logger.info(
+                    f"Lead Auto-Stop: Skipped stage '{stage.name}' for event {event.id}"
+                )
+
+        if skipped_stages:
+            # Log the auto-stop action
+            EventTimeline.objects.create(
+                event=event,
+                action_type='SYSTEM_UPDATE',
+                description=f"Lead Stage Auto-Stop: Skipped {len(skipped_stages)} remaining LEAD stage(s)",
+                action_data={
+                    'skipped_stages': skipped_stages,
+                    'action': 'lead_stage_auto_stop'
+                },
+                is_public=False
+            )
     
     @classmethod
     def _get_eligible_next_stages(cls, event, trigger_type=None, data=None):
@@ -274,14 +384,31 @@ class WorkflowEngine:
         - ON_CREATION: Execute immediately when stage is reached
         - AFTER_X_DAYS, AFTER_X_HOURS, AFTER_X_WEEKS: Delay after stage start
         - X_DAYS_BEFORE_EVENT: Execute X days before event.start_date
+
+        Respects per-event overrides:
+        - SKIP: Stage is completely skipped (handled in progress_workflow)
+        - DISABLE_AUTOMATION: Stage progresses but automation doesn't run
+        - CUSTOM_TIMING: Uses custom trigger time instead of stage default
         """
+        # Check if automation is disabled for this event
+        if cls._is_automation_disabled(event, stage):
+            logger.info(
+                f"Automation disabled for stage '{stage.name}' on event {event.id} "
+                f"(per-event override)"
+            )
+            return
+
         if stage.is_automated:
+            # Check for custom trigger time override
+            custom_trigger_time = cls._get_custom_trigger_time(event, stage)
+            trigger_time = custom_trigger_time or stage.trigger_time
+
             # Execute the stage's automation (handles all automation types)
             stage._execute_automation(event)
 
             # Schedule delayed actions if needed
-            if stage.trigger_time:
-                trigger_upper = stage.trigger_time.upper()
+            if trigger_time:
+                trigger_upper = trigger_time.upper()
 
                 if trigger_upper.startswith('AFTER_'):
                     # Delay after stage start (existing behavior)

@@ -108,6 +108,8 @@ export interface TemplateContentEditorProps {
   showModeToggle?: boolean;
   /** Modes available in the toggle (default: ['visual', 'html']) */
   availableModes?: TemplateEditorMode[];
+  /** Hide HTML mode behind Advanced toggle for non-technical users (default: true) */
+  hideAdvancedModes?: boolean;
   /** Placeholder text */
   placeholder?: string;
   /** Number of rows for textarea modes (default: 10) */
@@ -126,6 +128,10 @@ export interface TemplateContentEditorProps {
   showCharacterCount?: boolean;
   /** Maximum character count (for SMS) */
   maxCharacters?: number;
+  /** Variable schemas for autocomplete in visual mode */
+  variableSchemas?: VariableSchemas;
+  /** Current context type for filtering available variables */
+  contextType?: ContextType;
 }
 
 /**
