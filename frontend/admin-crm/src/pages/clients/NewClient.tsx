@@ -8,7 +8,7 @@ import { useLayout } from '../../contexts/LayoutContext';
 import { useClients } from '../../hooks/useClients';
 import { ClientForm } from '../../components/clients/ClientForm';
 import { ModernPageLayout, ModernPageHeader } from '../../components/common';
-import type { CreateClientData } from '../../types/clients.types';
+import type { CreateClientData, UpdateClientData } from '../../types/clients.types';
 
 export const NewClient: React.FC = () => {
   const navigate = useNavigate();
@@ -23,8 +23,8 @@ export const NewClient: React.FC = () => {
     ]);
   }, [setBreadcrumbs]);
 
-  const handleSubmit = (data: CreateClientData) => {
-    createClient(data, {
+  const handleSubmit = (data: CreateClientData | UpdateClientData) => {
+    createClient(data as CreateClientData, {
       onSuccess: (newClient) => {
         navigate(`/clients/${newClient.id}`);
       },

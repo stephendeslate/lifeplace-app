@@ -95,7 +95,7 @@ export function useFlowchartState({
 
   // Handle node drag end for reordering
   const handleNodeDragStop = useCallback(
-    (event: React.MouseEvent, node: FlowchartNode) => {
+    (_event: React.MouseEvent, node: FlowchartNode) => {
       if (mode !== 'edit' || !node.id.startsWith('stage-')) return;
 
       const stageId = parseInt(node.id.replace('stage-', ''), 10);

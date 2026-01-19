@@ -1,7 +1,7 @@
 // frontend/admin-crm/src/components/shared/ConditionalBlockExtension.tsx
 // TipTap extension for visual conditional content blocks
 
-import { Node, mergeAttributes } from '@tiptap/core';
+import { Node, mergeAttributes, type ChainedCommands } from '@tiptap/core';
 import { ReactNodeViewRenderer, NodeViewWrapper, NodeViewContent } from '@tiptap/react';
 import React, { useState } from 'react';
 import {
@@ -353,7 +353,7 @@ export const ConditionalBlock = Node.create({
     return {
       insertConditionalBlock:
         () =>
-        ({ chain }) => {
+        ({ chain }: { chain: () => ChainedCommands }) => {
           return chain()
             .insertContent({
               type: 'conditionalBlock',

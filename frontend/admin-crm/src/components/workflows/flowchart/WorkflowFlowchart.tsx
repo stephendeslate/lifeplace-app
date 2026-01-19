@@ -38,7 +38,7 @@ const edgeTypes: EdgeTypes = {
 // Inner component that uses useReactFlow hook
 const FlowchartInner: React.FC<WorkflowFlowchartProps> = ({
   stages,
-  templateId,
+  _templateId,
   mode = 'view',
   selectedStageId: externalSelectedStageId,
   onStageSelect,
@@ -96,7 +96,7 @@ const FlowchartInner: React.FC<WorkflowFlowchartProps> = ({
   }, [setSelectedStageId]);
 
   // Calculate bounds for minimap
-  const bounds = getFlowchartBounds(stages);
+  const _bounds = getFlowchartBounds(stages);
 
   if (stages.length === 0) {
     return (

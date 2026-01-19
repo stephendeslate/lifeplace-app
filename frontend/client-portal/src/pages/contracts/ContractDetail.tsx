@@ -29,7 +29,6 @@ import {
 import { contractsApi, contractUtils } from '../../apis/contracts.api';
 import { ContractViewer } from '../../components/contracts/ContractViewer';
 import ContractSigningDialog from '../../components/contracts/ContractSigningDialog';
-import type { Contract } from '../../types/contracts.types';
 
 const ContractDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();

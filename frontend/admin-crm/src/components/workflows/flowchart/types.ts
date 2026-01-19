@@ -14,6 +14,7 @@ export interface StageNodeData {
   onEdit: (stage: WorkflowStage) => void;
   onDelete: (id: number) => void;
   onSelect: (id: number) => void;
+  [key: string]: unknown;
 }
 
 // Data structure for swimlane header nodes
@@ -22,6 +23,7 @@ export interface SwimlaneHeaderData {
   label: string;
   color: string;
   stageCount: number;
+  [key: string]: unknown;
 }
 
 // Data structure for add stage nodes
@@ -29,6 +31,7 @@ export interface AddStageNodeData {
   stageType: StageType;
   onClick: (stageType: StageType, position: number) => void;
   position: number;
+  [key: string]: unknown;
 }
 
 // Custom node types
@@ -45,11 +48,13 @@ export type FlowchartEdgeType = 'progression' | 'eventTrigger';
 export interface ProgressionEdgeData {
   condition?: string;
   label?: string;
+  [key: string]: unknown;
 }
 
 // Data structure for event trigger edges
 export interface EventTriggerEdgeData {
   triggerType: string;
+  [key: string]: unknown;
 }
 
 export type FlowchartEdge = Edge<ProgressionEdgeData | EventTriggerEdgeData>;

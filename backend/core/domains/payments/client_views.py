@@ -3,6 +3,8 @@
 import logging
 from decimal import Decimal
 from django.db import models
+from django.db.models import OuterRef, Subquery
+from django.db.models.functions import Coalesce
 from django.http import HttpResponse
 from django.utils import timezone
 from rest_framework import status, viewsets, filters
@@ -152,27 +154,74 @@ class ClientPaymentViewSet(viewsets.ReadOnlyModelViewSet):
 
     @action(detail=False, methods=['get'])
     def summary(self, request):
-        """Get payment summary for client"""
+        """Get payment summary for client
+
+        Returns summary based on:
+        - total_paid: Sum of COMPLETED payments (accurate)
+        - total_pending: Sum of remaining balance on unpaid/partially paid invoices (invoice-based)
+        - total_overdue: Sum of remaining balance on overdue invoices (invoice-based)
+
+        This provides an accurate view of outstanding balance based on invoices,
+        not just payment record status.
+        """
         queryset = self.get_queryset()
-        
+
+        # Get completed payments total
+        total_paid = queryset.filter(status='COMPLETED').aggregate(
+            total=models.Sum('amount')
+        )['total'] or Decimal('0.00')
+
+        # Get invoice-based outstanding balance for accurate pending/overdue amounts
+        # This is more accurate than counting PENDING payment records
+        if self.request.user.role == 'ADMIN' or self.request.user.is_superuser:
+            invoice_queryset = Invoice.objects.all()
+        else:
+            invoice_queryset = Invoice.objects.filter(client=self.request.user)
+
+        # Filter to only unpaid/partially paid invoices (exclude PAID and CANCELLED)
+        unpaid_invoices = invoice_queryset.filter(
+            status__in=['ISSUED', 'PARTIALLY_PAID']
+        )
+
+        # Calculate remaining balance for each invoice using annotation
+        # paid_amount and remaining_amount are properties, so we need to compute them
+        # by summing related completed payments and subtracting from total_amount
+
+        # Subquery to calculate paid amount for each invoice
+        paid_subquery = Payment.objects.filter(
+            invoice=OuterRef('pk'),
+            status='COMPLETED'
+        ).values('invoice').annotate(
+            paid_sum=models.Sum('amount')
+        ).values('paid_sum')[:1]
+
+        # Annotate invoices with calculated remaining balance
+        unpaid_invoices_with_balance = unpaid_invoices.annotate(
+            calculated_paid=Coalesce(Subquery(paid_subquery), Decimal('0.00')),
+            calculated_remaining=models.F('total_amount') - Coalesce(Subquery(paid_subquery), Decimal('0.00'))
+        )
+
+        # Calculate total pending (remaining balance on all unpaid invoices)
+        total_pending = unpaid_invoices_with_balance.aggregate(
+            total=models.Sum('calculated_remaining')
+        )['total'] or Decimal('0.00')
+
+        # Calculate total overdue (remaining balance on overdue invoices)
+        total_overdue = unpaid_invoices_with_balance.filter(
+            due_date__lt=timezone.now().date()
+        ).aggregate(
+            total=models.Sum('calculated_remaining')
+        )['total'] or Decimal('0.00')
+
         summary = {
-            'total_paid': queryset.filter(status='COMPLETED').aggregate(
-                total=models.Sum('amount')
-            )['total'] or Decimal('0.00'),
-            'total_pending': queryset.filter(status='PENDING').aggregate(
-                total=models.Sum('amount')
-            )['total'] or Decimal('0.00'),
-            'total_overdue': queryset.filter(
-                status='PENDING',
-                due_date__lt=timezone.now().date()
-            ).aggregate(
-                total=models.Sum('amount')
-            )['total'] or Decimal('0.00'),
+            'total_paid': total_paid,
+            'total_pending': total_pending,
+            'total_overdue': total_overdue,
             'payment_count': queryset.count(),
             'completed_count': queryset.filter(status='COMPLETED').count(),
-            'pending_count': queryset.filter(status='PENDING').count(),
+            'pending_count': unpaid_invoices.count(),  # Count of unpaid invoices
         }
-        
+
         return Response(summary)
 
 
