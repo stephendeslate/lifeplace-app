@@ -7,8 +7,8 @@ import { Add as AddIcon } from '@mui/icons-material';
 import type { AddStageNodeData } from '../types';
 import { getSwimlaneConfig } from '../types';
 
-const AddStageNodeComponent: React.FC<NodeProps<AddStageNodeData>> = ({ data }) => {
-  const { stageType, onClick, position } = data;
+const AddStageNodeComponent: React.FC<NodeProps> = ({ data }) => {
+  const { stageType, onClick, position } = data as AddStageNodeData;
   const swimlaneConfig = getSwimlaneConfig(stageType);
 
   const handleClick = () => {

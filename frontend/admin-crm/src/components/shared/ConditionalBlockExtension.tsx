@@ -371,7 +371,7 @@ export const ConditionalBlock = Node.create({
             })
             .run();
         },
-    };
+    } as Partial<Record<string, (...args: unknown[]) => unknown>>;
   },
 });
 

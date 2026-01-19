@@ -10,7 +10,7 @@ import {
 import { Chip } from '@mui/material';
 import type { ProgressionEdgeData } from '../types';
 
-export const ProgressionEdge: React.FC<EdgeProps<ProgressionEdgeData>> = ({
+export const ProgressionEdge: React.FC<EdgeProps> = ({
   id,
   sourceX,
   sourceY,
@@ -31,7 +31,8 @@ export const ProgressionEdge: React.FC<EdgeProps<ProgressionEdgeData>> = ({
     targetPosition,
   });
 
-  const label = data?.label || (data?.condition ? data.condition.replace(/_/g, ' ') : null);
+  const edgeData = data as ProgressionEdgeData | undefined;
+  const label = edgeData?.label || (edgeData?.condition ? edgeData.condition.replace(/_/g, ' ') : null);
 
   return (
     <>

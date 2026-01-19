@@ -8,7 +8,7 @@ import { useLayout } from '../../contexts/LayoutContext';
 import { useEvents } from '../../hooks/useEvents';
 import { EventForm } from '../../components/events/EventForm';
 import { ModernPageLayout, ModernPageHeader } from '../../components/common';
-import type { CreateEventData, UpdateEventData } from '../../types/events.types';
+import type { CreateEventData } from '../../types/events.types';
 
 export const NewEvent: React.FC = () => {
   const navigate = useNavigate();

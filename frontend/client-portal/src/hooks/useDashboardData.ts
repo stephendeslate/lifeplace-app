@@ -403,18 +403,30 @@ export const useDashboardData = (): DashboardData => {
 
     // ============ FINANCIAL SUMMARY ============
 
-    // Process outstanding invoices
+    // Process outstanding invoices - only include invoices with actual remaining balance
+    // Use is_fully_paid boolean (calculated on backend) as the source of truth
     const outstandingInvoices = invoices
-      .filter(invoice => invoice.status === 'ISSUED')
+      .filter(invoice => {
+        // Exclude fully paid invoices (is_fully_paid is calculated from related payments)
+        if (invoice.is_fully_paid) {
+          return false;
+        }
+        // Also check remaining_amount as a fallback
+        const remainingAmount = parseFloat(invoice.remaining_amount || '0');
+        return remainingAmount > 0.01; // Use small epsilon to handle floating point
+      })
       .map(invoice => ({
         ...invoice,
         daysPastDue: calculateDaysPastDue(invoice.due_date)
       }))
       .sort((a, b) => b.daysPastDue - a.daysPastDue);
 
-    // Calculate total outstanding amount
+    // Calculate total outstanding amount using remaining_amount (not total_amount)
     const totalOutstanding = outstandingInvoices
-      .reduce((sum, invoice) => sum + parseFloat(invoice.total_amount), 0)
+      .reduce((sum, invoice) => {
+        const remainingAmount = parseFloat(invoice.remaining_amount || '0');
+        return sum + remainingAmount;
+      }, 0)
       .toFixed(2);
 
     // Recent payments (already processed in financialOverview)

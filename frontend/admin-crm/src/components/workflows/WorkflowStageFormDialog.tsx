@@ -351,7 +351,7 @@ export const WorkflowStageFormDialog: React.FC<WorkflowStageFormDialogProps> = (
                             </FormControl>
 
                             <CustomTimingInput
-                              value={formData.trigger_time}
+                              value={formData.trigger_time ?? 'ON_CREATION'}
                               onChange={(value) => handleInputChange('trigger_time', value)}
                               label="Scheduled Execution"
                               showBeforeEvent={true}

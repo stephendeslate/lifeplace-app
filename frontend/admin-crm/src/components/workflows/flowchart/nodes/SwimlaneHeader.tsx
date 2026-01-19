@@ -5,8 +5,8 @@ import type { NodeProps } from '@xyflow/react';
 import { Box, Typography, Chip } from '@mui/material';
 import type { SwimlaneHeaderData } from '../types';
 
-const SwimlaneHeaderComponent: React.FC<NodeProps<SwimlaneHeaderData>> = ({ data }) => {
-  const { label, color, stageCount } = data;
+const SwimlaneHeaderComponent: React.FC<NodeProps> = ({ data }) => {
+  const { label, color, stageCount } = data as SwimlaneHeaderData;
 
   return (
     <Box
