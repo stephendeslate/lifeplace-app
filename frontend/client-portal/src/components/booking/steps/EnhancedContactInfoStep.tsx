@@ -1,6 +1,6 @@
 // frontend/client-portal/src/components/booking/steps/EnhancedContactInfoStep.tsx
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import {
   Box,
   Typography,
@@ -149,6 +149,9 @@ export const EnhancedContactInfoStep: React.FC<EnhancedContactInfoStepProps> = (
   // Get fresh auth state for sign-in success handling
   const { user: authUser, isAuthenticated: authIsAuthenticated } = useAuth();
 
+  // Ref to track if sign-in just occurred (to trigger form update)
+  const justSignedInRef = useRef(false);
+
   // Update form data with real-time validation
   const updateFormData = useCallback((field: keyof ContactInfoStepData, value: unknown) => {
     const newData = { ...formData, [field]: value };
@@ -237,43 +240,21 @@ export const EnhancedContactInfoStep: React.FC<EnhancedContactInfoStepProps> = (
     );
   };
 
-  // Handle successful sign-in - update form with user data
+  // Handle successful sign-in - set flag to trigger form update
   const handleSignInSuccess = useCallback(() => {
-    // The auth context will update, and we need to refresh the form data
-    // We use a small delay to ensure auth state is updated
-    setTimeout(() => {
-      if (authUser) {
-        const newData: ContactInfoStepData = {
-          full_name: `${authUser.first_name || ''} ${authUser.last_name || ''}`.trim(),
-          email: authUser.email || '',
-          phone: authUser.profile?.phone || formData.phone || '',
-          address: formData.address || '',
-          company: formData.company || '',
-          create_account: false,
-        };
-        setFormData(newData);
-        onDataChange(newData);
-
-        // Update validation states for auto-filled fields
-        if (newData.email) {
-          setValidationState(prev => ({ ...prev, email: 'valid' }));
-          setEmailStrength(100);
-        }
-        if (newData.full_name && newData.full_name.includes(' ')) {
-          setValidationState(prev => ({ ...prev, full_name: 'valid' }));
-        }
-        if (newData.phone && validatePhoneNumber(newData.phone)) {
-          setValidationState(prev => ({ ...prev, phone: 'valid' }));
-          setPhoneStrength(100);
-        }
-      }
-    }, 100);
-  }, [authUser, formData.address, formData.company, formData.phone, onDataChange]);
+    // Set the ref to indicate sign-in just happened
+    // The effect below will handle updating the form when authUser becomes available
+    justSignedInRef.current = true;
+  }, []);
 
   // Effect to handle auth state changes after sign-in
   useEffect(() => {
-    if (authIsAuthenticated && authUser && !isAuthenticated) {
-      // User just signed in via the dialog
+    // Only auto-fill if user just signed in via the dialog
+    if (justSignedInRef.current && authIsAuthenticated && authUser) {
+      // Reset the flag
+      justSignedInRef.current = false;
+
+      // Update form with user data
       const newData: ContactInfoStepData = {
         full_name: `${authUser.first_name || ''} ${authUser.last_name || ''}`.trim(),
         email: authUser.email || '',
@@ -285,7 +266,7 @@ export const EnhancedContactInfoStep: React.FC<EnhancedContactInfoStepProps> = (
       setFormData(newData);
       onDataChange(newData);
 
-      // Update validation states
+      // Update validation states for auto-filled fields
       if (newData.email) {
         setValidationState(prev => ({ ...prev, email: 'valid' }));
         setEmailStrength(100);
@@ -297,8 +278,11 @@ export const EnhancedContactInfoStep: React.FC<EnhancedContactInfoStepProps> = (
         setValidationState(prev => ({ ...prev, phone: 'valid' }));
         setPhoneStrength(100);
       }
+
+      // Announce to screen reader
+      announceToScreenReader('Your contact information has been filled in from your account');
     }
-  }, [authIsAuthenticated, authUser]);
+  }, [authIsAuthenticated, authUser, formData.phone, formData.address, formData.company, onDataChange, announceToScreenReader]);
 
   return (
     <Box>
