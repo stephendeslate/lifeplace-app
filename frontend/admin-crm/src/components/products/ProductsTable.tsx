@@ -13,6 +13,7 @@ interface ProductsTableProps {
   onEdit: (product: ProductOption) => void;
   onDelete: (id: number) => void;
   isDeleting: boolean;
+  typeFilter?: 'PRODUCT' | 'PACKAGE';
 }
 
 export const ProductsTable: React.FC<ProductsTableProps> = ({
@@ -20,7 +21,15 @@ export const ProductsTable: React.FC<ProductsTableProps> = ({
   isLoading,
   onEdit,
   onDelete,
+  typeFilter,
 }) => {
+  // Filter products by type if typeFilter is provided
+  const filteredProducts = typeFilter
+    ? products.filter(p => p.type === typeFilter)
+    : products;
+
+  const isPackageView = typeFilter === 'PACKAGE';
+  const itemLabel = isPackageView ? 'Package' : typeFilter === 'PRODUCT' ? 'Product' : 'Product';
   const formatPrice = (product: ProductOption) => {
     if (product.pricing_model === 'CUSTOM') {
       return 'Custom Quote';
@@ -54,7 +63,7 @@ export const ProductsTable: React.FC<ProductsTableProps> = ({
     />
   );
 
-  const columns: ModernTableColumn[] = [
+  const baseColumns: ModernTableColumn[] = [
     {
       key: 'name',
       label: 'Name',
@@ -96,14 +105,6 @@ export const ProductsTable: React.FC<ProductsTableProps> = ({
       },
     },
     {
-      key: 'type',
-      label: 'Type',
-      render: (_, row) => {
-        const product = row as unknown as ProductOption;
-        return getTypeChip(product.type_display, product.type === 'PACKAGE');
-      },
-    },
-    {
       key: 'pricing',
       label: 'Pricing',
       render: (_, row) => {
@@ -136,7 +137,7 @@ export const ProductsTable: React.FC<ProductsTableProps> = ({
         const product = row as unknown as ProductOption;
         return (
           product.is_featured ? (
-            <Tooltip title="Featured product">
+            <Tooltip title={`Featured ${itemLabel.toLowerCase()}`}>
               <StarIcon color="warning" />
             </Tooltip>
           ) : (
@@ -147,12 +148,26 @@ export const ProductsTable: React.FC<ProductsTableProps> = ({
     },
   ];
 
+  // Only add type column if not filtering by a specific type
+  const typeColumn: ModernTableColumn = {
+    key: 'type',
+    label: 'Type',
+    render: (_, row) => {
+      const product = row as unknown as ProductOption;
+      return getTypeChip(product.type_display, product.type === 'PACKAGE');
+    },
+  };
+
+  const columns: ModernTableColumn[] = typeFilter
+    ? baseColumns
+    : [...baseColumns.slice(0, 2), typeColumn, ...baseColumns.slice(2)];
+
   const actions = createStandardActions(
     (product: ProductOption) => onEdit(product),
     (product: ProductOption) => onDelete(product.id),
     {
-      editLabel: 'Edit Product',
-      deleteLabel: 'Delete Product',
+      editLabel: `Edit ${itemLabel}`,
+      deleteLabel: `Delete ${itemLabel}`,
     }
   );
 
@@ -160,13 +175,31 @@ export const ProductsTable: React.FC<ProductsTableProps> = ({
     return <ModernLoadingStates.ModernTableSkeleton />;
   }
 
-  if (products.length === 0) {
+  if (filteredProducts.length === 0) {
+    const emptyTitle = isPackageView
+      ? 'No packages found'
+      : typeFilter === 'PRODUCT'
+        ? 'No products found'
+        : 'No products found';
+
+    const emptyDescription = isPackageView
+      ? 'Create your first package to bundle services together'
+      : typeFilter === 'PRODUCT'
+        ? 'Create your first product to get started'
+        : 'Create your first product or package to get started';
+
+    const emptyTip = isPackageView
+      ? 'Packages bundle multiple products and services together for clients'
+      : typeFilter === 'PRODUCT'
+        ? 'Products are individual services you offer to clients'
+        : 'Start with individual products, then create packages to bundle services together';
+
     return (
       <ModernEmptyState
         icon={ProductIcon}
-        title="No products found"
-        description="Create your first product or package to get started"
-        tip={{ text: "Start with individual products, then create packages to bundle services together", type: "info" }}
+        title={emptyTitle}
+        description={emptyDescription}
+        tip={{ text: emptyTip, type: "info" }}
       />
     );
   }
@@ -174,7 +207,7 @@ export const ProductsTable: React.FC<ProductsTableProps> = ({
   return (
     <ModernTable
       columns={columns as unknown as ModernTableColumn<Record<string, unknown>>[]}
-      data={products as unknown as Record<string, unknown>[]}
+      data={filteredProducts as unknown as Record<string, unknown>[]}
       actions={actions as unknown as ModernTableAction<Record<string, unknown>>[]}
       onRowClick={(row) => onEdit(row as unknown as ProductOption)}
       sortBy="name"

@@ -318,6 +318,12 @@ export const Products = () => {
     });
   };
 
+  // Fetch fresh product data before editing to ensure we have the latest values
+  const handleFetchItem = async (id: string | number): Promise<ProductOption> => {
+    const { productsApi } = await import('../../../apis/products.api');
+    return productsApi.getProduct(Number(id));
+  };
+
   return (
     <PermissionAwareSettingsPage
       config={config}
@@ -330,6 +336,7 @@ export const Products = () => {
       onCreate={handleCreate}
       onUpdate={handleUpdate}
       onDelete={handleDelete}
+      onFetchItem={handleFetchItem}
       isCreating={isCreatingProduct}
       isUpdating={isUpdatingProduct}
       isDeleting={isDeletingProduct}

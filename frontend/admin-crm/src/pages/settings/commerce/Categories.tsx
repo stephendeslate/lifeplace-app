@@ -258,6 +258,12 @@ export const Categories = () => {
     });
   };
 
+  // Fetch fresh category data before editing to ensure we have the latest values
+  const handleFetchItem = async (id: string | number): Promise<ProductCategory> => {
+    const { productsApi } = await import('../../../apis/products.api');
+    return productsApi.getCategory(Number(id));
+  };
+
   return (
     <PermissionAwareSettingsPage
       config={config}
@@ -270,6 +276,7 @@ export const Categories = () => {
       onCreate={handleCreate}
       onUpdate={handleUpdate}
       onDelete={handleDelete}
+      onFetchItem={handleFetchItem}
       isCreating={isCreatingCategory}
       isUpdating={isUpdatingCategory}
       isDeleting={isDeletingCategory}

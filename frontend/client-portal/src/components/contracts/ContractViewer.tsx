@@ -175,7 +175,7 @@ export const ContractViewer: React.FC<ContractViewerProps> = ({
 
           {/* Individual signatures */}
           <Stack spacing={2}>
-            {(contract.template.signature_requirements || []).map((role) => {
+            {(contract.signature_progress?.required_roles || []).map((role) => {
               const signature = contract.signatures.find(s => s.role === role);
               const isSigned = !!signature;
 

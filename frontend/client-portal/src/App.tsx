@@ -35,6 +35,7 @@ const EventDetail = React.lazy(() => import('./pages/events').then(m => ({ defau
 const DocumentsPage = React.lazy(() => import('./pages/documents/DocumentsPage').then(m => ({ default: m.DocumentsPage })));
 const RecordsPage = React.lazy(() => import('./pages/records/RecordsPage').then(m => ({ default: m.RecordsPage })));
 const ActionCenterPage = React.lazy(() => import('./pages/actions/ActionCenterPage').then(m => ({ default: m.ActionCenterPage })));
+const ContractDetail = React.lazy(() => import('./pages/contracts').then(m => ({ default: m.ContractDetail })));
 
 // Legal pages lazy imports
 const TermsPage = React.lazy(() => import('./pages/legal').then(m => ({ default: m.TermsPage })));
@@ -411,7 +412,18 @@ const AppRouter: React.FC = () => {
           </ProtectedRoute>
         }
       />
-      {/* Redirect old contracts route to documents for backward compatibility */}
+      {/* Contract detail page */}
+      <Route
+        path="/contracts/:id"
+        element={
+          <ProtectedRoute>
+            <ClientLayoutWrapper>
+              <ContractDetail />
+            </ClientLayoutWrapper>
+          </ProtectedRoute>
+        }
+      />
+      {/* Redirect old contracts list route to documents for backward compatibility */}
       <Route
         path="/contracts"
         element={<Navigate to="/documents" replace />}

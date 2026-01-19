@@ -342,13 +342,19 @@ export default function ContractDetailScreen() {
               {/* Signature Requirements */}
               <Card style={styles.card}>
                 <Text style={styles.sectionTitle}>Required Signatures</Text>
-                {contract.signatures.map((signature) => (
-                  <SignatureItem
-                    key={signature.id}
-                    signature={signature}
-                    isCurrentUser={signature.is_client_signature}
-                  />
-                ))}
+                {(contract.signature_progress?.required_roles || []).map((role) => {
+                  const signature = contract.signatures?.find(
+                    (s) => s.signer_role === role
+                  );
+                  return (
+                    <SignatureItem
+                      key={role}
+                      role={role}
+                      signature={signature}
+                      isCurrentUser={role === 'CLIENT'}
+                    />
+                  );
+                })}
               </Card>
 
               {/* Dates */}

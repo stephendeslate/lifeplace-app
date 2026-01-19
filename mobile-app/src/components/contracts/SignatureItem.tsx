@@ -2,6 +2,7 @@
  * SignatureItem Component
  *
  * Displays a signature requirement with status.
+ * Can be used with either a signature object or just a role for pending signatures.
  */
 
 import React from 'react';
@@ -12,12 +13,36 @@ import { formatCardDate } from '@/utils/formatting';
 import type { ContractSignature } from '@/apis/contracts.api';
 
 interface SignatureItemProps {
-  signature: ContractSignature;
+  /** The signature object if this role has been signed */
+  signature?: ContractSignature | null;
+  /** The role this signature requirement is for */
+  role: string;
+  /** Whether this is the current user's signature requirement */
   isCurrentUser?: boolean;
 }
 
-export function SignatureItem({ signature, isCurrentUser = false }: SignatureItemProps) {
-  const isSigned = signature.is_signed;
+/** Get display name for a signature role */
+function getRoleDisplayName(role: string): string {
+  switch (role) {
+    case 'CLIENT':
+      return 'Client Signature';
+    case 'COMPANY_REP':
+      return 'LifePlace Representative';
+    case 'WITNESS':
+      return 'Witness Signature';
+    case 'GUARDIAN':
+      return 'Legal Guardian';
+    case 'PARTNER':
+      return 'Business Partner';
+    default:
+      return role.replace('_', ' ');
+  }
+}
+
+export function SignatureItem({ signature, role, isCurrentUser = false }: SignatureItemProps) {
+  const isSigned = signature?.is_signed ?? false;
+  const signerName = signature?.signer_name || getRoleDisplayName(role);
+  const roleDisplay = getRoleDisplayName(role);
 
   return (
     <View style={[styles.container, isCurrentUser && styles.containerHighlighted]}>
@@ -31,21 +56,21 @@ export function SignatureItem({ signature, isCurrentUser = false }: SignatureIte
 
       <View style={styles.content}>
         <View style={styles.nameRow}>
-          <Text style={styles.name}>{signature.signer_name}</Text>
+          <Text style={styles.name}>{isSigned ? signerName : roleDisplay}</Text>
           {isCurrentUser && (
             <View style={styles.youBadge}>
               <Text style={styles.youBadgeText}>You</Text>
             </View>
           )}
         </View>
-        <Text style={styles.role}>{signature.signer_role}</Text>
+        <Text style={styles.role}>{isSigned ? roleDisplay : 'Awaiting signature'}</Text>
       </View>
 
       <View style={styles.status}>
         {isSigned ? (
           <>
             <Text style={styles.signedLabel}>Signed</Text>
-            {signature.signed_at && (
+            {signature?.signed_at && (
               <Text style={styles.signedDate}>{formatCardDate(signature.signed_at)}</Text>
             )}
           </>

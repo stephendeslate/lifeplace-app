@@ -222,6 +222,12 @@ export const QuestionnaireTemplates = () => {
     });
   };
 
+  // Fetch fresh questionnaire data before editing to ensure we have the latest values
+  const handleFetchItem = async (id: string | number): Promise<Questionnaire> => {
+    const { questionnairesApi } = await import('../../../apis/questionnaires.api');
+    return questionnairesApi.getQuestionnaire(Number(id));
+  };
+
   const handleManageQuestions = (questionnaire: Questionnaire) => {
     setSelectedQuestionnaire(questionnaire);
     setManageQuestionsOpen(true);
@@ -255,6 +261,7 @@ export const QuestionnaireTemplates = () => {
         onCreate={handleCreate}
         onUpdate={handleUpdate}
         onDelete={handleDelete}
+        onFetchItem={handleFetchItem}
         isCreating={isCreatingQuestionnaire}
         isUpdating={isUpdatingQuestionnaire}
         isDeleting={isDeletingQuestionnaire}

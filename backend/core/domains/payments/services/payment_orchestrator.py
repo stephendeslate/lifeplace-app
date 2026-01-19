@@ -29,14 +29,13 @@ class PaymentRequest:
     notes: str = ''
 
     # Payment context
-    payment_type: str = 'STANDARD'  # STANDARD, DEPOSIT, INSTALLMENT, INVOICE
+    payment_type: str = 'STANDARD'  # STANDARD, DEPOSIT, INVOICE
     created_by: str = 'system'
     metadata: Dict[str, Any] = None
 
     # Related objects
     quote_id: Optional[int] = None
     invoice_id: Optional[int] = None
-    installment_id: Optional[int] = None
     payment_method_id: Optional[int] = None
 
     # Payment processing options
@@ -479,10 +478,6 @@ class PaymentOrchestrator:
             if request.is_deposit or request.payment_type == 'DEPOSIT':
                 cls._handle_deposit_payment(payment, request, user)
 
-            # Handle installment payments
-            if request.installment_id:
-                cls._handle_installment_payment(payment, request, user)
-
             # Auto-create payment plan if requested
             if request.create_payment_plan:
                 cls._create_payment_plan(payment, request, user)
@@ -504,25 +499,6 @@ class PaymentOrchestrator:
             payment.save(update_fields=['description'])
 
         logger.info(f"Applied deposit payment rules to {payment.payment_number}")
-
-    @classmethod
-    def _handle_installment_payment(cls, payment: 'Payment', request: PaymentRequest, user):
-        """Handle installment payment specific logic"""
-        from ..models import PaymentInstallment
-
-        try:
-            installment = PaymentInstallment.objects.get(id=request.installment_id)
-
-            # Link payment to installment
-            payment.installment = installment
-            payment.description = f"Payment for {installment.description}"
-            payment.save(update_fields=['installment', 'description'])
-
-            logger.info(f"Linked payment {payment.payment_number} to installment {installment.id}")
-
-        except PaymentInstallment.DoesNotExist:
-            logger.error(f"Installment {request.installment_id} not found")
-            raise ValidationError(f"Installment {request.installment_id} not found")
 
     @classmethod
     def _handle_invoice_payment(cls, payment: 'Payment', request: PaymentRequest, user):

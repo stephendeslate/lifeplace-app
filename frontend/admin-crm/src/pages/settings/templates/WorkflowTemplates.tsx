@@ -216,6 +216,12 @@ export const WorkflowTemplates = () => {
     });
   };
 
+  // Fetch fresh workflow template data before editing to ensure we have the latest values
+  const handleFetchItem = async (id: string | number): Promise<WorkflowTemplate> => {
+    const { workflowsApi } = await import('../../../apis/workflows.api');
+    return workflowsApi.getWorkflowTemplate(Number(id));
+  };
+
   const handleRowClick = (template: WorkflowTemplate) => {
     navigate(`/settings/templates/workflow-templates/${template.id}`);
   };
@@ -232,6 +238,7 @@ export const WorkflowTemplates = () => {
       onCreate={handleCreate}
       onUpdate={handleUpdate}
       onDelete={handleDelete}
+      onFetchItem={handleFetchItem}
       onRowClick={handleRowClick}
       isCreating={isCreatingTemplate}
       isUpdating={isUpdatingTemplate}

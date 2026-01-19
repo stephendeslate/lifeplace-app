@@ -31,6 +31,7 @@ import {
   Description as ContractIcon,
   Notifications as NotificationIcon,
   Handyman as ManualIcon,
+  PlayArrow as TriggerIcon,
 } from '@mui/icons-material';
 import type { WorkflowStage, WorkflowStageTableProps } from '../../types/workflows.types';
 
@@ -39,6 +40,7 @@ export const WorkflowStagesTable: React.FC<WorkflowStageTableProps> = ({
   isLoading,
   onEdit,
   onDelete,
+  onTrigger,
   isDeleting,
 }) => {
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
@@ -69,6 +71,12 @@ export const WorkflowStagesTable: React.FC<WorkflowStageTableProps> = ({
     handleMenuClose();
   };
 
+  const handleTrigger = () => {
+    if (selectedStage && onTrigger) {
+      onTrigger(selectedStage as unknown as WorkflowStage);
+    }
+    handleMenuClose();
+  };
 
   const getAutomationIcon = (automationType: string) => {
     const icons = {
@@ -240,7 +248,16 @@ export const WorkflowStagesTable: React.FC<WorkflowStageTableProps> = ({
           </ListItemIcon>
           <ListItemText>Edit Stage</ListItemText>
         </MenuItem>
-        
+
+        {onTrigger && (selectedStage as unknown as WorkflowStage)?.is_automated && (
+          <MenuItem onClick={handleTrigger}>
+            <ListItemIcon>
+              <TriggerIcon fontSize="small" color="primary" />
+            </ListItemIcon>
+            <ListItemText>Trigger Now</ListItemText>
+          </MenuItem>
+        )}
+
         <MenuItem onClick={handleDelete} sx={{ color: 'error.main' }}>
           <ListItemIcon>
             <DeleteIcon fontSize="small" color="error" />

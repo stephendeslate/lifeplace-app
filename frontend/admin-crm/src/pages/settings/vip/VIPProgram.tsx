@@ -481,6 +481,12 @@ const TiersTab = () => {
     await deleteTier(Number(id));
   };
 
+  // Fetch fresh tier data before editing to ensure we have the latest values
+  const handleFetchItem = async (id: string | number): Promise<VIPTier> => {
+    const { vipApi } = await import('../../../apis/vip.api');
+    return vipApi.getTier(Number(id));
+  };
+
   return (
     <PermissionAwareSettingsPage
       config={config}
@@ -493,6 +499,7 @@ const TiersTab = () => {
       onCreate={handleCreate}
       onUpdate={handleUpdate}
       onDelete={handleDelete}
+      onFetchItem={handleFetchItem}
       isCreating={isCreatingTier}
       isUpdating={isUpdatingTier}
       isDeleting={isDeletingTier}
@@ -739,6 +746,12 @@ const BenefitsTab = () => {
     await deleteBenefit(Number(id));
   };
 
+  // Fetch fresh benefit data before editing to ensure we have the latest values
+  const handleFetchItem = async (id: string | number): Promise<VIPBenefit> => {
+    const { vipApi } = await import('../../../apis/vip.api');
+    return vipApi.getBenefit(Number(id));
+  };
+
   return (
     <PermissionAwareSettingsPage
       config={config}
@@ -751,6 +764,7 @@ const BenefitsTab = () => {
       onCreate={handleCreate}
       onUpdate={handleUpdate}
       onDelete={handleDelete}
+      onFetchItem={handleFetchItem}
       isCreating={isCreatingBenefit}
       isUpdating={isUpdatingBenefit}
       isDeleting={isDeletingBenefit}

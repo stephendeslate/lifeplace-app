@@ -30,20 +30,39 @@ class ContractTemplate(BaseModel):
     
     def __str__(self):
         return self.name
-        
+
+    def save(self, *args, **kwargs):
+        """Sync signature_requirements from boolean fields on save"""
+        self._sync_signature_requirements()
+        super().save(*args, **kwargs)
+
+    def _sync_signature_requirements(self):
+        """
+        Build signature_requirements list from boolean fields.
+        This ensures the JSON field stays in sync with the boolean toggles.
+        """
+        requirements = ['CLIENT']  # Client signature is always required
+        if self.requires_company_signature:
+            requirements.append('COMPANY_REP')
+        if self.requires_witness:
+            requirements.append('WITNESS')
+        self.signature_requirements = requirements
+
     def get_sections(self):
         """Returns parsed sections or an empty list"""
         return self.sections or []
-    
+
     def get_signature_requirements(self):
         """Returns required signature roles"""
+        # signature_requirements is now always kept in sync via save()
+        # but we keep the fallback for safety
         if not self.signature_requirements:
-            base_requirements = ['CLIENT']
+            requirements = ['CLIENT']
             if self.requires_company_signature:
-                base_requirements.append('COMPANY_REP')
+                requirements.append('COMPANY_REP')
             if self.requires_witness:
-                base_requirements.append('WITNESS')
-            return base_requirements
+                requirements.append('WITNESS')
+            return requirements
         return self.signature_requirements
 
 

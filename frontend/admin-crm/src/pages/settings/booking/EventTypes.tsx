@@ -195,6 +195,12 @@ export const EventTypes = () => {
     });
   };
 
+  // Fetch fresh event type data before editing to ensure we have the latest values
+  const handleFetchItem = async (id: string | number): Promise<EventType> => {
+    const { eventsApi } = await import('../../../apis/events.api');
+    return eventsApi.getEventType(Number(id));
+  };
+
   return (
     <PermissionAwareSettingsPage
       config={config}
@@ -207,6 +213,7 @@ export const EventTypes = () => {
       onCreate={handleCreate}
       onUpdate={handleUpdate}
       onDelete={handleDelete}
+      onFetchItem={handleFetchItem}
       isCreating={isCreatingEventType}
       isUpdating={isUpdatingEventType}
       isDeleting={isDeletingEventType}

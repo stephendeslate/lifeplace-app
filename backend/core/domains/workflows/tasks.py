@@ -239,3 +239,66 @@ def process_before_event_triggers(self):
         f"{processed_count} scheduled, {error_count} errors"
     )
     return {'processed': processed_count, 'errors': error_count}
+
+
+@shared_task(
+    bind=True,
+    max_retries=1,
+)
+def process_time_elapsed_triggers(self):
+    """
+    Hourly sweep to check for events that meet TIME_ELAPSED progression conditions.
+
+    Finds events with stages that have TIME_ELAPSED progression conditions
+    and triggers workflow progression if the time requirement is met.
+
+    Called hourly via Celery beat.
+    """
+    from core.domains.events.models import Event
+    from core.domains.workflows.engine import WorkflowEngine
+    from core.domains.workflows.models import WorkflowStage
+
+    logger.info("Starting TIME_ELAPSED trigger sweep")
+
+    processed_count = 0
+    error_count = 0
+
+    # Find all stages with TIME_ELAPSED progression conditions
+    time_elapsed_stages = WorkflowStage.objects.filter(
+        progression_condition__istartswith='TIME_ELAPSED'
+    ).select_related('template')
+
+    for stage in time_elapsed_stages:
+        # Find events currently at this stage
+        events = Event.objects.filter(
+            workflow_template=stage.template,
+            current_stage=stage,
+        ).exclude(status='CANCELLED')
+
+        for event in events:
+            try:
+                # Check if the stage's criteria are now met
+                if stage.check_advancement_criteria(event):
+                    # Attempt to progress the workflow
+                    progressed = WorkflowEngine.progress_workflow(
+                        event,
+                        trigger_type='TIME_ELAPSED',
+                        data={'stage_id': stage.id}
+                    )
+                    if progressed:
+                        processed_count += 1
+                        logger.info(
+                            f"TIME_ELAPSED triggered progression for event {event.id} "
+                            f"from stage '{stage.name}'"
+                        )
+            except Exception as e:
+                logger.error(
+                    f"Error processing TIME_ELAPSED trigger for event {event.id}: {e}"
+                )
+                error_count += 1
+
+    logger.info(
+        f"TIME_ELAPSED trigger sweep completed: "
+        f"{processed_count} progressions, {error_count} errors"
+    )
+    return {'processed': processed_count, 'errors': error_count}

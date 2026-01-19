@@ -90,9 +90,9 @@ const transformContractResponse = (apiResponse: ContractApiResponse): Contract =
       total_required: extResponse.signature_progress.total_required,
       signed_count: extResponse.signature_progress.signed_count,
       percentage: extResponse.signature_progress.percentage,
-      required_roles: [],
-      signed_roles: [],
-      missing_roles: []
+      required_roles: (extResponse.signature_progress as { required_roles?: string[] }).required_roles || [],
+      signed_roles: (extResponse.signature_progress as { signed_roles?: string[] }).signed_roles || [],
+      missing_roles: (extResponse.signature_progress as { missing_roles?: string[] }).missing_roles || [],
     } : undefined,
     can_client_sign: extResponse.can_client_sign ?? (apiResponse.status === 'SENT' && !apiResponse.is_fully_signed),
     // Expiry-related fields from backend

@@ -1,7 +1,7 @@
 // Simplified unified pricing hook - single source of truth
 // Supports venue-based excess hours pricing (Phase 6)
 // The backend API returns PricingLineItem[] with venue_details for per-venue breakdown
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useBooking } from '../../contexts/BookingContext';
 import { BookingCoreApi } from '../../apis/booking/core.api';
 import type { SelectedPackage, SelectedAddon, PricingLineItem } from '../../types/booking';
@@ -46,6 +46,11 @@ export const useSimplePricing = (
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Use ref to track tax rate for comparison without causing re-renders
+  // This prevents the infinite loop where setTaxRate -> state change -> callback recreate -> effect trigger
+  const taxRateRef = useRef(state.taxRate);
+  taxRateRef.current = state.taxRate;
+
   // Simple check if we have items
   const hasItems = selectedPackages.length > 0 || selectedAddons.length > 0;
   const totalItemCount = selectedPackages.reduce((sum, pkg) => sum + pkg.quantity, 0) +
@@ -86,10 +91,13 @@ export const useSimplePricing = (
       const discount = parseFloat(result.discount);
       const total = parseFloat(result.total);
 
-      // Store the tax rate from backend for optimistic calculations
+      // Store the tax rate from backend for optimistic calculations (only if changed)
+      // Use ref for comparison to avoid stale closure issues that cause infinite loops
       if (result.tax_rate) {
         const taxRateDecimal = parseFloat(result.tax_rate) / 100; // Convert from percentage to decimal
-        actions.setTaxRate(taxRateDecimal);
+        if (taxRateRef.current !== taxRateDecimal) {
+          actions.setTaxRate(taxRateDecimal);
+        }
       }
 
       setPricing({
@@ -108,10 +116,10 @@ export const useSimplePricing = (
       setError('Failed to calculate pricing');
       if (import.meta.env.DEV) console.error('Pricing calculation error:', err);
 
-      // Fallback calculation if server fails - use context tax rate, no hardcoded default
+      // Fallback calculation if server fails - use ref tax rate, no hardcoded default
       const subtotal = selectedPackages.reduce((sum, pkg) => sum + parseFloat(pkg.price) * pkg.quantity, 0) +
                      selectedAddons.reduce((sum, addon) => sum + parseFloat(addon.price) * addon.quantity, 0);
-      const tax = subtotal * (state.taxRate || 0);
+      const tax = subtotal * (taxRateRef.current || 0);
       const total = subtotal + tax;
 
       setPricing({
@@ -128,6 +136,11 @@ export const useSimplePricing = (
     } finally {
       setLoading(false);
     }
+  // Note: actions is intentionally omitted from deps - it's not memoized in BookingContext
+  // and would cause infinite loops. The individual action functions (setTaxRate) are stable.
+  // taxRateRef is used instead of state.taxRate to avoid circular dependency:
+  // setTaxRate -> state change -> callback recreate -> useEffect trigger -> API call -> repeat
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.currentSession, hasItems, discountCode, selectedPackages, selectedAddons, venueAdditionalHours, venueHoursKey]);
 
   // Recalculate when dependencies change

@@ -67,13 +67,14 @@ export const eventsApi = {
     const params = new URLSearchParams();
     if (filters?.search) params.append('search', filters.search);
     if (filters?.event_type) params.append('event_type', filters.event_type.toString());
+    if (filters?.workflow_template) params.append('workflow_template', filters.workflow_template.toString());
     if (filters?.status) params.append('status', filters.status);
     if (filters?.client) params.append('client', filters.client.toString());
     if (filters?.start_date_from) params.append('start_date_from', filters.start_date_from);
     if (filters?.start_date_to) params.append('start_date_to', filters.start_date_to);
     if (filters?.page) params.append('page', filters.page.toString());
     if (filters?.page_size) params.append('page_size', filters.page_size.toString());
-    
+
     const response = await api.get<PaginatedResponse<Event>>(`/events/events/?${params.toString()}`);
     return response.data;
   },

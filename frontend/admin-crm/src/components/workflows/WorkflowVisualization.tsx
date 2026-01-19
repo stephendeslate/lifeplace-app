@@ -26,6 +26,7 @@ import {
   Notifications as NotificationIcon,
   Handyman as ManualIcon,
   EventNote as EventIcon,
+  FlashOn as TriggerIcon,
 } from '@mui/icons-material';
 import type { WorkflowVisualizationProps } from '../../types/workflows.types';
 import { tokens } from '../../design-system';
@@ -236,18 +237,71 @@ export const WorkflowVisualization: React.FC<WorkflowVisualizationProps> = ({
                                 <Typography variant="subtitle2" gutterBottom>
                                   Automation Details:
                                 </Typography>
-                                <Stack direction="row" spacing={1} flexWrap="wrap">
-                                  <Chip
-                                    label={`Trigger: ${getTriggerTimeDisplay(stage.trigger_time)}`}
-                                    size="small"
-                                    variant="outlined"
-                                  />
-                                  {stage.email_template_name && (
+                                <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                                  {stage.trigger_time && (
                                     <Chip
-                                      label={`Template: ${stage.email_template_name}`}
+                                      label={`Timing: ${getTriggerTimeDisplay(stage.trigger_time)}`}
                                       size="small"
                                       variant="outlined"
                                     />
+                                  )}
+                                  {stage.email_template_name && (
+                                    <Chip
+                                      label={`Email: ${stage.email_template_name}`}
+                                      size="small"
+                                      variant="outlined"
+                                    />
+                                  )}
+                                  {stage.contract_template_name && (
+                                    <Chip
+                                      label={`Contract: ${stage.contract_template_name}`}
+                                      size="small"
+                                      variant="outlined"
+                                    />
+                                  )}
+                                  {stage.automation_type === 'TASK' && stage.metadata?.task_priority && (
+                                    <Chip
+                                      label={`Priority: ${stage.metadata.task_priority}`}
+                                      size="small"
+                                      variant="outlined"
+                                    />
+                                  )}
+                                  {stage.automation_type === 'CONTRACT' && stage.metadata?.signature_deadline_hours && (
+                                    <Chip
+                                      label={`Deadline: ${stage.metadata.signature_deadline_hours}h`}
+                                      size="small"
+                                      variant="outlined"
+                                    />
+                                  )}
+                                </Stack>
+                              </Box>
+                            )}
+
+                            {/* Event Triggers - show which business events trigger this automation */}
+                            {(stage.trigger_on_event_created ||
+                              stage.trigger_on_quote_sent ||
+                              stage.trigger_on_quote_accepted ||
+                              stage.trigger_on_contract_signed ||
+                              stage.trigger_on_payment_received) && (
+                              <Box>
+                                <Typography variant="subtitle2" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                  <TriggerIcon fontSize="small" /> Event Triggers:
+                                </Typography>
+                                <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                                  {stage.trigger_on_event_created && (
+                                    <Chip label="Event Created" size="small" color="info" variant="outlined" />
+                                  )}
+                                  {stage.trigger_on_quote_sent && (
+                                    <Chip label="Quote Sent" size="small" color="info" variant="outlined" />
+                                  )}
+                                  {stage.trigger_on_quote_accepted && (
+                                    <Chip label="Quote Accepted" size="small" color="info" variant="outlined" />
+                                  )}
+                                  {stage.trigger_on_contract_signed && (
+                                    <Chip label="Contract Signed" size="small" color="info" variant="outlined" />
+                                  )}
+                                  {stage.trigger_on_payment_received && (
+                                    <Chip label="Payment Received" size="small" color="success" variant="outlined" />
                                   )}
                                 </Stack>
                               </Box>

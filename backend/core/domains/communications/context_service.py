@@ -135,8 +135,6 @@ VARIABLE_GROUPS = {
             "receipt_link": {"description": "Link to download receipt PDF", "required": False},
             "transaction_id": {"description": "Gateway transaction ID", "required": False},
             "is_deposit": {"description": "Whether this is a deposit payment", "required": False},
-            "is_installment": {"description": "Whether this is an installment payment", "required": False},
-            "installment_number": {"description": "Installment number (e.g., 1 of 4)", "required": False},
             "remaining_balance": {"description": "Remaining balance after this payment", "required": False},
             "remaining_balance_formatted": {"description": "Remaining balance formatted", "required": False},
         }
@@ -161,21 +159,6 @@ VARIABLE_GROUPS = {
             "invoice_pdf_link": {"description": "Link to download invoice PDF", "required": False},
             "line_items_summary": {"description": "Summary of invoice line items", "required": False},
             "payment_terms": {"description": "Payment terms text", "required": False},
-        }
-    },
-    "payment_plan": {
-        "label": "Payment Plan",
-        "icon": "calendar_month",
-        "available_in": [ContextType.PAYMENT],
-        "variables": {
-            "plan_total_amount": {"description": "Total payment plan amount", "required": False},
-            "plan_down_payment": {"description": "Down payment amount", "required": False},
-            "plan_installments_count": {"description": "Number of installments", "required": False},
-            "plan_frequency": {"description": "Payment frequency (Weekly, Monthly, etc.)", "required": False},
-            "plan_next_payment_date": {"description": "Next payment due date", "required": False},
-            "plan_next_payment_amount": {"description": "Next payment amount", "required": False},
-            "plan_completion_percentage": {"description": "Percentage of plan completed", "required": False},
-            "plan_remaining_installments": {"description": "Number of remaining installments", "required": False},
         }
     },
     "booking": {
@@ -726,12 +709,8 @@ class CommunicationContextService:
             method_name = payment.payment_method.get_type_display()
             method_last_four = payment.payment_method.last_four or ''
 
-        # Check if deposit/installment
+        # Check if deposit
         is_deposit = bool(payment.description and 'deposit' in payment.description.lower())
-        is_installment = payment.installment is not None
-        installment_info = ''
-        if is_installment and payment.installment:
-            installment_info = f"{payment.installment.installment_number} of {payment.installment.payment_plan.number_of_installments}"
 
         # Calculate remaining balance
         remaining_balance = Decimal('0')
@@ -766,8 +745,6 @@ class CommunicationContextService:
             'receipt_link': receipt_link,
             'transaction_id': transaction_id,
             'is_deposit': is_deposit,
-            'is_installment': is_installment,
-            'installment_number': installment_info,
             'remaining_balance': str(remaining_balance),
             'remaining_balance_formatted': remaining_formatted,
         }
@@ -808,28 +785,9 @@ class CommunicationContextService:
 
     @staticmethod
     def _get_payment_plan_context(payment) -> Dict[str, Any]:
-        """Get payment plan context if payment is part of a plan."""
-        if not payment.installment or not payment.installment.payment_plan:
-            return {}
+        """Get payment plan context if payment is part of a plan.
 
-        plan = payment.installment.payment_plan
-        currency_symbol = '₱' if plan.currency == 'PHP' else '$'
-
-        # Get next pending installment
-        next_installment = plan.installments.filter(status='PENDING').order_by('due_date').first()
-
-        # Completion percentage
-        paid_installments = plan.installments.filter(status='PAID').count()
-        total_installments = plan.number_of_installments
-        completion_pct = int((paid_installments / total_installments) * 100) if total_installments > 0 else 0
-
-        return {
-            'plan_total_amount': f"{currency_symbol}{plan.total_amount:,.0f}",
-            'plan_down_payment': f"{currency_symbol}{plan.down_payment_amount:,.0f}",
-            'plan_installments_count': str(plan.number_of_installments),
-            'plan_frequency': plan.get_frequency_display(),
-            'plan_next_payment_date': next_installment.due_date.strftime('%B %d, %Y') if next_installment else 'N/A',
-            'plan_next_payment_amount': f"{currency_symbol}{next_installment.amount:,.0f}" if next_installment else 'N/A',
-            'plan_completion_percentage': f"{completion_pct}%",
-            'plan_remaining_installments': str(total_installments - paid_installments),
-        }
+        Note: Payment plans/installments have been deprecated. This method
+        now returns an empty dict for backwards compatibility.
+        """
+        return {}

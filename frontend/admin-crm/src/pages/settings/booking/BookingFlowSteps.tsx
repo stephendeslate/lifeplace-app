@@ -449,6 +449,12 @@ export const BookingFlowSteps: React.FC<BookingFlowStepsProps> = ({
     });
   };
 
+  // Fetch fresh step data before editing to ensure we have the latest values
+  const handleFetchItem = async (id: string | number): Promise<BookingFlowStep> => {
+    const { bookingFlowsApi } = await import('../../../apis/bookingflows.api');
+    return bookingFlowsApi.getBookingFlowStep(Number(id));
+  };
+
   // Handle configuration click
   const handleConfigure = (step: BookingFlowStep) => {
     setSelectedStep(step);
@@ -587,6 +593,7 @@ export const BookingFlowSteps: React.FC<BookingFlowStepsProps> = ({
           onCreate={handleCreate}
           onUpdate={handleUpdate}
           onDelete={handleDelete}
+          onFetchItem={handleFetchItem}
           isCreating={isCreatingStep}
           isUpdating={isUpdatingStep}
           isDeleting={isDeletingStep}
