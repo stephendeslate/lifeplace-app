@@ -131,7 +131,7 @@ export const SettingsPage = <T extends { id: string | number }>({
 }: SettingsPageProps<T>) => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<T | null>(null);
-  const [isFetchingItem, setIsFetchingItem] = useState(false);
+  const [_isFetchingItem, setIsFetchingItem] = useState(false);
   const [sortBy, setSortBy] = useState<string>(config.table.defaultSort?.key || '');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>(config.table.defaultSort?.order || 'asc');
 

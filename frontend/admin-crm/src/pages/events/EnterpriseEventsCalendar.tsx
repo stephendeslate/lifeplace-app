@@ -44,7 +44,6 @@ import {
   CheckCircle as AvailableIcon,
   Block as BlockedIcon,
   Warning as WarningIcon,
-  Settings as SettingsIcon,
   Close as CloseIcon,
 } from '@mui/icons-material';
 import {
@@ -53,10 +52,8 @@ import {
   endOfMonth,
   startOfWeek,
   endOfWeek,
-  addDays,
   addMonths,
   subMonths,
-  isSameMonth,
   isSameDay,
   parseISO,
   addWeeks,
@@ -174,7 +171,6 @@ export const EnterpriseEventsCalendar: React.FC = () => {
   
   // Availability data
   const {
-    stats: availabilityStats,
     isLoading: isLoadingAvailability,
     error: availabilityError,
     refetch: refetchAvailability,
@@ -258,16 +254,13 @@ export const EnterpriseEventsCalendar: React.FC = () => {
   // Enhanced date selection with availability info
   const handleDateSelect = useCallback((date: Date) => {
     const dateStr = formatDateForApi(date);
-    const availability = getDateAvailability(dateStr);
 
     setSelectedDate(dateStr);
     setCurrentDate(date);
-    
-    // Show availability details if there are conflicts or restrictions
-    if (availability && (!availability.can_book_event || availability.conflicts.length > 0)) {
-      setAvailabilityDetailOpen(true);
-    }
-  }, [getDateAvailability]);
+
+    // Open create event dialog
+    setCreateDialogOpen(true);
+  }, []);
 
   // Initialize breadcrumbs
   useEffect(() => {
@@ -812,71 +805,6 @@ export const EnterpriseEventsCalendar: React.FC = () => {
         secondaryActions={secondaryActions}
         size="medium"
       />
-
-      {/* Availability Stats */}
-      {settings.showAvailabilityStats && availabilityStats && (
-        <ModernCard variant="flat" size="medium" sx={{ mb: 3 }}>
-            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={3} alignItems="center">
-              <Box>
-                <Typography variant="h6" color="primary">
-                  Availability Overview
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  {availabilityStats.totalDaysChecked} days analyzed
-                </Typography>
-              </Box>
-
-              <Stack direction="row" spacing={3} divider={<Divider orientation="vertical" flexItem />}>
-                <Stack alignItems="center" spacing={0.5}>
-                  <Typography variant="h5" color="success.main">
-                    {Math.round(availabilityStats.availabilityRate)}%
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    Available
-                  </Typography>
-                </Stack>
-
-                <Stack alignItems="center" spacing={0.5}>
-                  <Typography variant="h5" color="warning.main">
-                    {availabilityStats.partiallyBookedDays}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    Partial
-                  </Typography>
-                </Stack>
-
-                <Stack alignItems="center" spacing={0.5}>
-                  <Typography variant="h5" color="error.main">
-                    {availabilityStats.fullyBookedDays}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    Booked
-                  </Typography>
-                </Stack>
-
-                {availabilityStats.blockedDays > 0 && (
-                  <Stack alignItems="center" spacing={0.5}>
-                    <Typography variant="h5" color="grey.600">
-                      {availabilityStats.blockedDays}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      Blocked
-                    </Typography>
-                  </Stack>
-                )}
-              </Stack>
-
-              <Button
-                variant="outlined"
-                size="small"
-                startIcon={<SettingsIcon />}
-                onClick={() => setSettingsOpen(true)}
-              >
-                Settings
-              </Button>
-            </Stack>
-        </ModernCard>
-      )}
 
       {/* Availability Error Alert */}
       {availabilityError && (

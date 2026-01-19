@@ -52,13 +52,13 @@ export const WorkflowWebhooks: React.FC = () => {
     isLoadingWebhooks,
     isCreatingWebhook,
     isUpdatingWebhook,
-    isDeletingWebhook,
+    isDeletingWebhook: _isDeletingWebhook,
     isTestingWebhook,
     createWebhook,
     updateWebhook,
     deleteWebhook,
     testWebhook,
-    refetchWebhooks,
+    refetchWebhooks: _refetchWebhooks,
     useWebhookDeliveries,
   } = useWorkflowWebhooks();
 
@@ -74,10 +74,8 @@ export const WorkflowWebhooks: React.FC = () => {
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
   const [menuWebhook, setMenuWebhook] = useState<WorkflowWebhook | null>(null);
 
-  // Delivery history query
-  const deliveriesQuery = selectedWebhookForLog
-    ? useWebhookDeliveries(selectedWebhookForLog.id)
-    : { data: [], isLoading: false, refetch: () => {} };
+  // Delivery history query - always call the hook unconditionally (it has enabled: !!webhookId internally)
+  const deliveriesQuery = useWebhookDeliveries(selectedWebhookForLog?.id ?? 0);
 
   // Handlers
   const handleOpenCreate = () => {

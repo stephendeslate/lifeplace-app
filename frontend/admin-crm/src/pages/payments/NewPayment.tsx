@@ -8,7 +8,7 @@ import { useLayout } from '../../contexts/LayoutContext';
 import { usePayments } from '../../hooks/usePayments';
 import { PaymentForm } from '../../components/payments/PaymentForm';
 import { ModernPageLayout, ModernPageHeader } from '../../components/common';
-import type { CreatePaymentData } from '../../types/payments.types';
+import type { CreatePaymentData, UpdatePaymentData } from '../../types/payments.types';
 
 export const NewPayment: React.FC = () => {
   const navigate = useNavigate();
@@ -23,8 +23,8 @@ export const NewPayment: React.FC = () => {
     ]);
   }, [setBreadcrumbs]);
 
-  const handleSubmit = (data: CreatePaymentData) => {
-    createPayment(data, {
+  const handleSubmit = (data: CreatePaymentData | UpdatePaymentData) => {
+    createPayment(data as CreatePaymentData, {
       onSuccess: (newPayment) => {
         navigate(`/payments/${newPayment.id}`);
       },

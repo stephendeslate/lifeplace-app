@@ -9,6 +9,7 @@ import type {
   ContractStatus,
   ContractAmendment,
   ContractDocument,
+  SignatureRole,
 } from '../types/contracts.types';
 
 // Interface for detailed contract status  
@@ -90,9 +91,9 @@ const transformContractResponse = (apiResponse: ContractApiResponse): Contract =
       total_required: extResponse.signature_progress.total_required,
       signed_count: extResponse.signature_progress.signed_count,
       percentage: extResponse.signature_progress.percentage,
-      required_roles: (extResponse.signature_progress as { required_roles?: string[] }).required_roles || [],
-      signed_roles: (extResponse.signature_progress as { signed_roles?: string[] }).signed_roles || [],
-      missing_roles: (extResponse.signature_progress as { missing_roles?: string[] }).missing_roles || [],
+      required_roles: ((extResponse.signature_progress as { required_roles?: string[] }).required_roles || []) as SignatureRole[],
+      signed_roles: ((extResponse.signature_progress as { signed_roles?: string[] }).signed_roles || []) as SignatureRole[],
+      missing_roles: ((extResponse.signature_progress as { missing_roles?: string[] }).missing_roles || []) as SignatureRole[],
     } : undefined,
     can_client_sign: extResponse.can_client_sign ?? (apiResponse.status === 'SENT' && !apiResponse.is_fully_signed),
     // Expiry-related fields from backend
