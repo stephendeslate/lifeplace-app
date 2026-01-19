@@ -11,6 +11,28 @@ import { communicationsApi } from '../../../apis/communications.api';
 import type { CommunicationTemplate } from '../../../types/communications.types';
 import type { ModernFormSection } from '../../../components/common/ModernForm';
 
+// Helper function to extract variables from template content
+const extractVariablesFromTemplate = (template: CommunicationTemplate): string[] => {
+  const variablePattern = /\{\{\s*(\w+)\s*\}\}/g;
+  const variables = new Set<string>();
+
+  // Extract from body_template
+  let match;
+  while ((match = variablePattern.exec(template.body_template)) !== null) {
+    variables.add(match[1]);
+  }
+
+  // Extract from subject_template if it exists
+  if (template.subject_template) {
+    variablePattern.lastIndex = 0; // Reset regex
+    while ((match = variablePattern.exec(template.subject_template)) !== null) {
+      variables.add(match[1]);
+    }
+  }
+
+  return Array.from(variables);
+};
+
 // Table columns configuration
 const columns: SettingsTableColumn<CommunicationTemplate>[] = [
   {
@@ -270,7 +292,7 @@ export const CommunicationTemplates = () => {
           onClose={() => setPreviewDialogOpen(false)}
           templateName={selectedTemplate.name}
           templateType="communication"
-          variables={[]}
+          variables={extractVariablesFromTemplate(selectedTemplate)}
           onPreview={handlePreviewTemplate}
         />
       )}
