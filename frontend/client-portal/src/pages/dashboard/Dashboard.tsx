@@ -497,7 +497,8 @@ const Dashboard: React.FC = () => {
                             </Typography>
                             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
                               {safeFormatDate(dashboardData.eventStatus.nextUpcomingEvent.start_date, PHILIPPINE_TIMEZONE, 'MMM dd, yyyy')}
-                              {safeFormatDate(dashboardData.eventStatus.nextUpcomingEvent.start_date, PHILIPPINE_TIMEZONE, 'yyyy-MM-dd') !== safeFormatDate(dashboardData.eventStatus.nextUpcomingEvent.end_date, PHILIPPINE_TIMEZONE, 'yyyy-MM-dd') &&
+                              {dashboardData.eventStatus.nextUpcomingEvent.end_date &&
+                                safeFormatDate(dashboardData.eventStatus.nextUpcomingEvent.start_date, PHILIPPINE_TIMEZONE, 'yyyy-MM-dd') !== safeFormatDate(dashboardData.eventStatus.nextUpcomingEvent.end_date, PHILIPPINE_TIMEZONE, 'yyyy-MM-dd') &&
                                 ` - ${safeFormatDate(dashboardData.eventStatus.nextUpcomingEvent.end_date, PHILIPPINE_TIMEZONE, 'MMM dd, yyyy')}`
                               }
                             </Typography>
