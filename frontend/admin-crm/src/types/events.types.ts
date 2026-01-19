@@ -110,9 +110,24 @@ export interface Event {
   can_rebook: boolean;
   // Guest count
   num_participants: number | null;
+  // Preferences (includes inquiry data from contact form submissions)
+  preferences?: EventPreferences;
   // Timestamps
   created_at: string;
   updated_at: string;
+}
+
+// Inquiry data stored in preferences when event is created from contact form
+export interface InquiryData {
+  type: 'GENERAL' | 'EVENT_QUESTION' | 'PARTNERSHIP' | 'PRICING' | 'OTHER';
+  message: string;
+  phone?: string;
+  submitted_at: string;
+}
+
+export interface EventPreferences {
+  inquiry?: InquiryData;
+  [key: string]: unknown;
 }
 
 export const DATE_HOLD_STATUSES = [

@@ -76,6 +76,7 @@ import { EventQuotes } from '../../components/events/EventQuotes';
 import { EventContracts } from '../../components/events/EventContracts';
 import { EventInvoices } from '../../components/events/EventInvoices';
 import { EventFiles } from '../../components/events/EventFiles';
+import { InquiryDetails } from '../../components/events/InquiryDetails';
 import { NotesList } from '../../components/notes';
 import {
   ActivityTimeline,
@@ -776,6 +777,13 @@ export const EventProfile: React.FC = () => {
           </Box>
         </Box>
       </Box>
+
+      {/* Inquiry Details (shown for leads from contact form) */}
+      {event.preferences?.inquiry && (
+        <Box sx={{ mb: 4 }}>
+          <InquiryDetails inquiry={event.preferences.inquiry} />
+        </Box>
+      )}
 
       {/* Check-in/Out Tracking Card */}
       {event.status !== 'CANCELLED' && (
