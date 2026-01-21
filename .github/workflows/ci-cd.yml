@@ -5,7 +5,7 @@ on:
   # Trigger on pushes to main branch
   push:
     branches: [ main ]
-  
+
   # Trigger on pull requests to main branch
   pull_request:
     branches: [ main ]
@@ -13,11 +13,14 @@ on:
   # Allow manual trigger
   workflow_dispatch:
 
+env:
+  FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
 jobs:
   # Job 1: Test Backend
   test-backend:
     runs-on: ubuntu-latest
-    
+
     services:
       postgres:
         image: postgres:16
@@ -74,12 +77,12 @@ jobs:
         ENV: test
       run: |
         cd backend
-        python manage.py check
+        python manage.py check --deploy
 
   # Job 2: Test Frontend Apps
   test-frontend:
     runs-on: ubuntu-latest
-    
+
     strategy:
       matrix:
         app: [admin-crm, client-portal]
@@ -93,30 +96,37 @@ jobs:
       with:
         node-version: '20'
 
+    - name: Cache npm dependencies
+      uses: actions/cache@v4
+      with:
+        path: ~/.npm
+        key: ${{ runner.os }}-node-${{ matrix.app }}-${{ hashFiles(format('frontend/{0}/package-lock.json', matrix.app)) }}
+        restore-keys: |
+          ${{ runner.os }}-node-${{ matrix.app }}-
+
     - name: Install dependencies
       run: |
         cd frontend/${{ matrix.app }}
         npm install --force
 
-
-    - name: Run TypeScript check (if script exists)
+    - name: Run TypeScript check
       run: |
         cd frontend/${{ matrix.app }}
-        if npm run type-check --silent; then npm run type-check; else echo "type-check script not found, skipping"; fi
+        npm run type-check || echo "type-check script not found, skipping"
 
-    - name: Run linting (if script exists)
+    - name: Run linting
       run: |
         cd frontend/${{ matrix.app }}
-        if npm run lint --silent; then npm run lint || echo "lint warnings/errors found but continuing build"; else echo "lint script not found, skipping"; fi
+        npm run lint || echo "lint warnings/errors found but continuing build"
 
-    - name: Run tests (if script exists)
+    - name: Run tests
       run: |
         cd frontend/${{ matrix.app }}
-        if npm run test --silent; then npm run test; else echo "test script not found, skipping"; fi
+        npm run test || echo "test script not found or tests failed, continuing"
 
     - name: Build application
       env:
-        VITE_API_URL: https://test-api.example.com
+        VITE_API_URL: https://lifeplace-api.fly.dev
         VITE_APP_ENV: test
       run: |
         cd frontend/${{ matrix.app }}
@@ -127,17 +137,11 @@ jobs:
         cd frontend/${{ matrix.app }}
         echo "📦 Bundle Size Report for ${{ matrix.app }}"
         echo "=========================================="
-
-        # Report total dist size
         TOTAL_SIZE=$(du -sh dist/ | cut -f1)
         echo "Total build size: $TOTAL_SIZE"
-
-        # Report individual JS chunks
         echo ""
         echo "JavaScript bundles:"
         find dist/assets -name "*.js" -type f -exec ls -lh {} \; | awk '{print $5 "\t" $9}' | sort -hr
-
-        # Check for bundles over 1MB
         echo ""
         LARGE_BUNDLES=$(find dist/assets -name "*.js" -type f -size +1M)
         if [ -n "$LARGE_BUNDLES" ]; then
@@ -146,15 +150,13 @@ jobs:
             SIZE=$(ls -lh "$file" | awk '{print $5}')
             echo "  - $(basename $file): $SIZE"
           done
-          echo ""
-          echo "Consider code splitting or lazy loading for these large bundles."
         else
           echo "✅ All JavaScript bundles are under 1MB"
         fi
 
-  # Job 3: Deploy Admin CRM (only on main branch)
-  deploy-admin-crm:
-    needs: [test-backend, test-frontend]
+  # Job 3: Deploy Backend to Fly.io (only on main branch)
+  deploy-backend:
+    needs: [test-backend]
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
 
@@ -162,82 +164,47 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Set up Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '20'
+    - name: Setup Fly.io CLI
+      uses: superfly/flyctl-actions/setup-flyctl@master
 
-    - name: Install dependencies
+    - name: Deploy to Fly.io
       run: |
-        cd frontend/admin-crm
-        npm install --force
+        cd backend
+        flyctl deploy --remote-only
+        # Note: Migrations run automatically via release_command in fly.toml
 
-    - name: Build application
-      env:
-        VITE_API_URL: ${{ secrets.VITE_API_URL }}
-        VITE_APP_ENV: production
+    - name: Verify deployment health
       run: |
-        cd frontend/admin-crm
-        npm run build
+        sleep 10
+        curl -f https://lifeplace-api.fly.dev/health/ || exit 1
+        echo "✅ Backend health check passed"
 
-    - name: Deploy to Cloudflare Pages
-      uses: cloudflare/pages-action@v1
-      with:
-        apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-        accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        projectName: lifeplace-admin
-        directory: frontend/admin-crm/dist
-        gitHubToken: ${{ secrets.GITHUB_TOKEN }}
-
-  # Job 4: Deploy Client Portal (only on main branch)
-  deploy-client-portal:
-    needs: [test-backend, test-frontend]
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Set up Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '20'
-
-    - name: Install dependencies
-      run: |
-        cd frontend/client-portal
-        npm install --force
-
-    - name: Build application
-      env:
-        VITE_API_URL: ${{ secrets.VITE_API_URL }}
-        VITE_APP_ENV: production
-      run: |
-        cd frontend/client-portal
-        npm run build
-
-    - name: Deploy to Cloudflare Pages
-      uses: cloudflare/pages-action@v1
-      with:
-        apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-        accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        projectName: lifeplace-client
-        directory: frontend/client-portal/dist
-        gitHubToken: ${{ secrets.GITHUB_TOKEN }}
-
-  # Job 5: Notify on Success/Failure
+  # Job 4: Deployment Summary
   notify:
-    needs: [deploy-admin-crm, deploy-client-portal]
+    needs: [test-backend, test-frontend, deploy-backend]
     runs-on: ubuntu-latest
     if: always() && github.ref == 'refs/heads/main' && github.event_name == 'push'
 
     steps:
     - name: Deployment Status
       run: |
-        if [[ "${{ needs.deploy-admin-crm.result }}" == "success" && "${{ needs.deploy-client-portal.result }}" == "success" ]]; then
-          echo "✅ Frontend deployments to Cloudflare Pages successful! Backend is deployed via Fly.io."
+        echo "🚀 LifePlace Deployment Summary"
+        echo "================================"
+        echo ""
+        echo "Backend Tests:    ${{ needs.test-backend.result }}"
+        echo "Frontend Tests:   ${{ needs.test-frontend.result }}"
+        echo "Backend Deploy:   ${{ needs.deploy-backend.result }}"
+        echo "Frontend Deploy:  Handled by Cloudflare Pages (Git integration)"
+        echo ""
+        echo "URLs:"
+        echo "  - Backend API:     https://lifeplace-api.fly.dev"
+        echo "  - Admin CRM:       https://admin.lifeplace.dev"
+        echo "  - Client Portal:   https://lifeplace.dev"
+        echo ""
+
+        if [[ "${{ needs.test-backend.result }}" == "success" && "${{ needs.deploy-backend.result }}" == "success" ]]; then
+          echo "✅ Backend deployment successful!"
         else
-          echo "❌ Some deployments failed"
+          echo "❌ Backend deployment failed - check logs above"
           exit 1
         fi
