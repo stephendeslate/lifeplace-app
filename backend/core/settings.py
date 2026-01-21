@@ -153,9 +153,14 @@ DATABASES = {
 }
 
 # SECURITY: Require SSL for database connections in production
+# Exception: Fly.io internal networking (.flycast/.internal) uses WireGuard encryption
 if IS_PRODUCTION:
     DATABASES['default']['OPTIONS'] = DATABASES['default'].get('OPTIONS', {})
-    DATABASES['default']['OPTIONS']['sslmode'] = 'require'
+    # Fly Postgres internal connections don't need SSL (already encrypted via WireGuard)
+    if '.flycast' in DATABASE_URL or '.internal' in DATABASE_URL:
+        DATABASES['default']['OPTIONS']['sslmode'] = 'disable'
+    else:
+        DATABASES['default']['OPTIONS']['sslmode'] = 'require'
 
 
 # Password validation
@@ -666,25 +671,10 @@ LOGGING = {
             'class': 'logging.StreamHandler',
             'formatter': 'products',
         },
-        'file': {
-            'class': 'logging.handlers.RotatingFileHandler',
-            'filename': 'debug.log',
-            'formatter': 'verbose',
-            'maxBytes': 10 * 1024 * 1024,  # 10 MB per file
-            'backupCount': 5,  # Keep 5 backup files
-        },
         'security_console': {
             'class': 'logging.StreamHandler',
             'formatter': 'security',
-            'level': 'WARNING',
-        },
-        'security_file': {
-            'class': 'logging.handlers.RotatingFileHandler',
-            'filename': 'security.log',
-            'formatter': 'security',
             'level': 'INFO',
-            'maxBytes': 10 * 1024 * 1024,  # 10 MB per file
-            'backupCount': 10,  # Keep 10 backup files for security logs
         },
         'notifications_console': {
             'class': 'logging.StreamHandler',
@@ -713,7 +703,7 @@ LOGGING = {
             'propagate': True,
         },
         'security': {
-            'handlers': ['security_console', 'security_file'],
+            'handlers': ['security_console'],
             'level': 'INFO',
             'propagate': False,
         },
@@ -723,7 +713,7 @@ LOGGING = {
             'propagate': False,
         },
         'core.utils.security_logging': {
-            'handlers': ['security_console', 'security_file'],
+            'handlers': ['security_console'],
             'level': 'INFO',
             'propagate': False,
         },

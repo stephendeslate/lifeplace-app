@@ -50,17 +50,3 @@ primary_region = "sin"
   cpu_kind = "shared"
   cpus = 1
   memory_mb = 512
-
-# Scaling configuration per process
-[processes.web]
-  # Web servers can scale horizontally
-  # min_machines_running = 1
-
-[processes.worker]
-  # Workers can scale based on queue depth
-  # min_machines_running = 1
-
-[processes.beat]
-  # IMPORTANT: Only 1 beat instance should ever run (scheduler)
-  # min_machines_running = 1
-  # max_machines_running = 1
