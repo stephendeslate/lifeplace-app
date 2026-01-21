@@ -4,12 +4,26 @@ from django.db.models.signals import post_save, post_migrate
 from django.dispatch import receiver
 from django.contrib.auth import get_user_model
 from django.apps import apps
-from .models import CurrencySettings
+from .models import CurrencySettings, CompanySettings
 from decimal import Decimal
 import logging
 
 logger = logging.getLogger(__name__)
 User = get_user_model()
+
+
+@receiver(post_save, sender=CompanySettings)
+def invalidate_caches_on_company_update(sender, instance, **kwargs):
+    """
+    Invalidate relevant caches when company settings are updated.
+    This ensures template variable schemas reflect the latest company data.
+    """
+    try:
+        from core.domains.communications.cache_service import communications_cache_service
+        communications_cache_service.invalidate_variable_schemas_cache()
+        logger.info("Invalidated variable schemas cache after CompanySettings update")
+    except Exception as e:
+        logger.warning(f"Could not invalidate variable schemas cache: {e}")
 
 
 @receiver(post_save, sender=User)

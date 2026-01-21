@@ -69,7 +69,9 @@ export const ClientContracts: React.FC<ClientContractsProps> = ({ client }) => {
   };
 
   const handleCreateContract = () => {
-    navigate(`/contracts/new?client=${client.id}`);
+    // Contracts are created from the event page
+    // Navigate to events list filtered by client
+    navigate(`/events?client=${client.id}`);
   };
 
   const handleSendForSignature = (contract: EventContract) => {
@@ -131,11 +133,11 @@ export const ClientContracts: React.FC<ClientContractsProps> = ({ client }) => {
           Create a contract to formalize agreements with this client.
         </Typography>
         <Button
-          variant="contained"
+          variant="outlined"
           startIcon={<AddIcon />}
           onClick={handleCreateContract}
         >
-          Create Contract
+          View Events to Create Contract
         </Button>
       </Paper>
     );
@@ -146,12 +148,12 @@ export const ClientContracts: React.FC<ClientContractsProps> = ({ client }) => {
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
         <Typography variant="h6">Contracts</Typography>
         <Button
-          variant="contained"
+          variant="outlined"
           startIcon={<AddIcon />}
           onClick={handleCreateContract}
           size="small"
         >
-          Create Contract
+          View Events
         </Button>
       </Box>
 

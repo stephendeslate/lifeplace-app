@@ -232,9 +232,63 @@ VARIABLE_GROUPS = {
             "current_date": {"description": "Today's date", "required": True},
             "current_year": {"description": "Current year", "required": True},
             "support_email": {"description": "Support email address", "required": True},
-            "dashboard_url": {"description": "Client portal/dashboard URL", "required": True},
-            "login_link": {"description": "Login page URL", "required": False},
             "reset_link": {"description": "Password reset URL (for password reset)", "required": False},
+        }
+    },
+    "company": {
+        "label": "Company",
+        "icon": "business",
+        "available_in": [ContextType.CLIENT, ContextType.EVENT, ContextType.BOOKING,
+                         ContextType.QUOTE, ContextType.CONTRACT, ContextType.ADMIN,
+                         ContextType.NOTIFICATION, ContextType.MANUAL,
+                         ContextType.PAYMENT, ContextType.INVOICE],
+        "variables": {
+            "company_name": {"description": "Official company name", "required": True},
+            "company_tagline": {"description": "Company tagline/slogan", "required": False},
+            "company_email": {"description": "Primary company email", "required": True},
+            "company_phone": {"description": "Primary phone number", "required": False},
+            "company_support_email": {"description": "Support email address", "required": True},
+            "company_support_phone": {"description": "Support phone number", "required": False},
+            "company_address": {"description": "Full formatted company address", "required": False},
+            "company_city": {"description": "City", "required": False},
+            "company_province": {"description": "Province/State", "required": False},
+            "company_country": {"description": "Country", "required": False},
+            "company_website": {"description": "Company website URL", "required": True},
+            "company_facebook": {"description": "Facebook page URL", "required": False},
+            "company_instagram": {"description": "Instagram profile URL", "required": False},
+            "bank_name": {"description": "Bank name for payments", "required": False},
+            "bank_account_name": {"description": "Bank account holder name", "required": False},
+            "bank_account_number": {"description": "Bank account number", "required": False},
+            "bank_branch": {"description": "Bank branch name", "required": False},
+            "bank_swift_code": {"description": "SWIFT/BIC code", "required": False},
+            "business_registration_number": {"description": "Business registration/TIN number", "required": False},
+            "vat_number": {"description": "VAT registration number", "required": False},
+            "invoice_terms": {"description": "Default invoice payment terms", "required": False},
+        }
+    },
+    "urls": {
+        "label": "Links",
+        "icon": "link",
+        "available_in": [ContextType.CLIENT, ContextType.EVENT, ContextType.BOOKING,
+                         ContextType.QUOTE, ContextType.CONTRACT, ContextType.ADMIN,
+                         ContextType.NOTIFICATION, ContextType.MANUAL,
+                         ContextType.PAYMENT, ContextType.INVOICE],
+        "variables": {
+            "dashboard_url": {"description": "Client dashboard URL", "required": True},
+            "login_link": {"description": "Login page URL", "required": True},
+            "support_link": {"description": "Support/help page URL", "required": True},
+            "payments_link": {"description": "Payments portal URL", "required": True},
+            "documents_link": {"description": "Documents page URL", "required": True},
+            "profile_link": {"description": "Profile settings URL", "required": True},
+            "terms_of_service_link": {"description": "Terms of Service URL", "required": True},
+            "privacy_policy_link": {"description": "Privacy Policy URL", "required": True},
+            "event_link": {"description": "Event detail page URL", "required": False},
+            "event_timeline_link": {"description": "Event timeline tab URL", "required": False},
+            "event_contracts_link": {"description": "Event contracts tab URL", "required": False},
+            "event_quotes_link": {"description": "Event quotes tab URL", "required": False},
+            "event_invoices_link": {"description": "Event invoices tab URL", "required": False},
+            "event_questionnaires_link": {"description": "Event questionnaires tab URL", "required": False},
+            "event_tasks_link": {"description": "Event tasks tab URL", "required": False},
         }
     },
 }
@@ -372,6 +426,7 @@ class CommunicationContextService:
 
         if event:
             context.update(cls._get_event_context(event))
+            context.update(cls._get_event_url_context(event))
 
         if booking_session and event:
             context.update(cls._get_booking_context(booking_session, event))
@@ -407,17 +462,54 @@ class CommunicationContextService:
 
     @staticmethod
     def _get_system_context() -> Dict[str, Any]:
-        """Get system-level context variables."""
-        now = timezone.now()
-        frontend_url = getattr(settings, 'CLIENT_FRONTEND_URL', 'https://lifeplace.dev')
+        """Get system-level context variables including company info and URLs."""
+        from core.utils.url_builder import ClientPortalURLBuilder
+        from core.utils.company_context import CompanyContextMixin
 
-        return {
+        now = timezone.now()
+
+        # Start with base system variables
+        context = {
             'site_name': getattr(settings, 'SITE_NAME', 'LifePlace'),
             'current_date': now.strftime('%B %d, %Y'),
             'current_year': now.year,
             'support_email': getattr(settings, 'SUPPORT_EMAIL', 'support@lifeplace.com'),
-            'dashboard_url': f'{frontend_url}/portal',
-            'login_link': f'{frontend_url}/login',
+        }
+
+        # Add all URL variables using the centralized URL builder
+        context.update({
+            'dashboard_url': ClientPortalURLBuilder.dashboard_url(),
+            'login_link': ClientPortalURLBuilder.login_url(),
+            'support_link': ClientPortalURLBuilder.support_url(),
+            'payments_link': ClientPortalURLBuilder.payments_url(),
+            'documents_link': ClientPortalURLBuilder.documents_url(),
+            'profile_link': ClientPortalURLBuilder.profile_url(),
+            'terms_of_service_link': ClientPortalURLBuilder.terms_of_service_url(),
+            'privacy_policy_link': ClientPortalURLBuilder.privacy_policy_url(),
+            'booking_link': ClientPortalURLBuilder.booking_url(),
+            'contact_link': ClientPortalURLBuilder.contact_url(),
+        })
+
+        # Add company context from CompanySettings
+        context.update(CompanyContextMixin.get_company_context())
+
+        return context
+
+    @staticmethod
+    def _get_event_url_context(event) -> Dict[str, Any]:
+        """Get event-specific URL context with deep linking to tabs."""
+        from core.utils.url_builder import ClientPortalURLBuilder
+
+        return {
+            'event_link': ClientPortalURLBuilder.event_url(event.id),
+            'event_timeline_link': ClientPortalURLBuilder.event_timeline_url(event.id),
+            'event_questionnaires_link': ClientPortalURLBuilder.event_questionnaires_url(event.id),
+            'event_contracts_link': ClientPortalURLBuilder.event_contracts_url(event.id),
+            'event_documents_link': ClientPortalURLBuilder.event_documents_url(event.id),
+            'event_tasks_link': ClientPortalURLBuilder.event_tasks_url(event.id),
+            'event_feedback_link': ClientPortalURLBuilder.event_feedback_url(event.id),
+            'event_quotes_link': ClientPortalURLBuilder.event_quotes_url(event.id),
+            'event_invoices_link': ClientPortalURLBuilder.event_invoices_url(event.id),
         }
 
     @staticmethod
@@ -562,7 +654,7 @@ class CommunicationContextService:
     @staticmethod
     def _get_contract_context(contract) -> Dict[str, Any]:
         """Get contract-related context variables."""
-        frontend_url = getattr(settings, 'CLIENT_FRONTEND_URL', 'https://lifeplace.dev')
+        from core.utils.url_builder import ClientPortalURLBuilder
 
         # Get signature deadline if available
         signature_deadline = ''
@@ -579,7 +671,10 @@ class CommunicationContextService:
             cancellation_policy = 'Cancellations made more than 30 days before the event date are eligible for a full refund minus processing fees.'
 
         return {
-            'contract_link': f'{frontend_url}/contracts/{contract.id}/sign',
+            # Fixed: contract page is /contracts/{id}, not /contracts/{id}/sign
+            # Signing is handled within the contract detail page via a dialog
+            'contract_link': ClientPortalURLBuilder.contract_url(contract.id),
+            'contract_pdf_link': ClientPortalURLBuilder.contract_pdf_url(contract.id),
             'signature_deadline': signature_deadline,
             'contract_date': timezone.now().strftime('%B %d, %Y'),
             'payment_terms': payment_terms,
@@ -693,7 +788,7 @@ class CommunicationContextService:
     @staticmethod
     def _get_payment_context(payment) -> Dict[str, Any]:
         """Get payment-related context variables."""
-        frontend_url = getattr(settings, 'CLIENT_FRONTEND_URL', 'https://lifeplace.dev')
+        from core.utils.url_builder import ClientPortalURLBuilder
 
         # Format amount
         try:
@@ -721,10 +816,14 @@ class CommunicationContextService:
         currency_symbol = '₱' if payment.currency == 'PHP' else '$'
         remaining_formatted = f"{currency_symbol}{remaining_balance:,.0f}" if payment.currency == 'PHP' else f"{currency_symbol}{remaining_balance:,.2f}"
 
-        # Receipt link
+        # Receipt link - receipts are accessed via the payments portal page
+        # The frontend displays receipts in a dialog, not a separate route
         receipt_link = ''
+        receipt_pdf_link = ''
         if payment.status == 'COMPLETED' and payment.receipt_number:
-            receipt_link = f"{frontend_url}/portal/payments/{payment.id}/receipt"
+            # Link to payments page where user can view/download receipt
+            receipt_link = ClientPortalURLBuilder.payments_url()
+            receipt_pdf_link = ClientPortalURLBuilder.payment_receipt_pdf_url(payment.id)
 
         # Transaction ID
         transaction_id = ''
@@ -743,6 +842,7 @@ class CommunicationContextService:
             'payment_method_last_four': method_last_four,
             'receipt_number': payment.receipt_number or '',
             'receipt_link': receipt_link,
+            'receipt_pdf_link': receipt_pdf_link,
             'transaction_id': transaction_id,
             'is_deposit': is_deposit,
             'remaining_balance': str(remaining_balance),
@@ -752,7 +852,8 @@ class CommunicationContextService:
     @staticmethod
     def _get_invoice_context(invoice) -> Dict[str, Any]:
         """Get invoice-related context variables."""
-        frontend_url = getattr(settings, 'CLIENT_FRONTEND_URL', 'https://lifeplace.dev')
+        from core.utils.url_builder import ClientPortalURLBuilder
+
         currency_symbol = '₱' if invoice.currency == 'PHP' else '$'
 
         # Line items summary
@@ -764,6 +865,14 @@ class CommunicationContextService:
         # Paid and remaining
         paid_amount = invoice.paid_amount or Decimal('0')
         remaining = invoice.remaining_amount or invoice.total_amount
+
+        # Invoice link - invoices are accessed via the payments portal
+        # The frontend displays invoices in a dialog, not a separate route
+        # If invoice has an event, link to event's invoices tab for context
+        if invoice.event_id:
+            invoice_link = ClientPortalURLBuilder.event_invoices_url(invoice.event_id)
+        else:
+            invoice_link = ClientPortalURLBuilder.payments_url()
 
         return {
             'invoice_number': invoice.invoice_id,
@@ -777,8 +886,8 @@ class CommunicationContextService:
             'invoice_paid_amount': str(paid_amount),
             'invoice_remaining': str(remaining),
             'invoice_remaining_formatted': f"{currency_symbol}{remaining:,.0f}",
-            'invoice_link': f"{frontend_url}/portal/invoices/{invoice.id}",
-            'invoice_pdf_link': f"{frontend_url}/api/payments/client/invoices/{invoice.id}/download_pdf/",
+            'invoice_link': invoice_link,
+            'invoice_pdf_link': ClientPortalURLBuilder.invoice_pdf_url(invoice.id),
             'line_items_summary': line_items_summary,
             'payment_terms': invoice.payment_terms or '',
         }

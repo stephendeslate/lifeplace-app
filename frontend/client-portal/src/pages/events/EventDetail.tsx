@@ -1,7 +1,7 @@
 // frontend/client-portal/src/pages/events/EventDetail.tsx
 
 import React, { useState } from 'react';
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useParams, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { useCurrencySettings } from '../../hooks/useCurrency';
 import {
   Box,
@@ -65,6 +65,26 @@ import ContractSigningDialog from '../../components/contracts/ContractSigningDia
 import { contractsApi } from '../../apis/contracts.api';
 import type { Contract } from '../../types/contracts.types';
 
+/**
+ * Tab index constants for EventDetail page.
+ * These correspond to the tab order in the EventDetail component.
+ * Exported for use in navigation from other components.
+ */
+export const EVENT_TAB_INDICES = {
+  TIMELINE: 0,
+  QUESTIONNAIRES: 1,
+  CONTRACTS: 2,
+  DOCUMENTS: 3,
+  TASKS: 4,
+  FEEDBACK: 5,
+  QUOTES: 6,
+  INVOICES: 7,
+  CHECKIN: 8,
+  NOTES: 9,
+} as const;
+
+export type EventTabIndex = typeof EVENT_TAB_INDICES[keyof typeof EVENT_TAB_INDICES];
+
 interface TabPanelProps {
   children?: React.ReactNode;
   index: number;
@@ -95,9 +115,22 @@ const EventDetail: React.FC = () => {
   const theme = useTheme();
   const { formatAmount } = useCurrencySettings();
   const location = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
 
-  // State management - initialize activeTab from navigation state if present
+  // State management - initialize activeTab from:
+  // 1. URL query param (?tab=N) - enables deep linking from emails
+  // 2. Navigation state ({ activeTab: N }) - for internal navigation
+  // 3. Default to 0 (Timeline)
   const [activeTab, setActiveTab] = useState(() => {
+    // First check URL query param for deep linking support
+    const tabParam = searchParams.get('tab');
+    if (tabParam !== null) {
+      const tabIndex = parseInt(tabParam, 10);
+      if (!isNaN(tabIndex) && tabIndex >= 0 && tabIndex <= EVENT_TAB_INDICES.NOTES) {
+        return tabIndex;
+      }
+    }
+    // Fall back to navigation state for internal navigation
     return (location.state as { activeTab?: number })?.activeTab ?? 0;
   });
   const [preferencesDialogOpen, setPreferencesDialogOpen] = useState(false);
@@ -140,6 +173,8 @@ const EventDetail: React.FC = () => {
   // Event handlers
   const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
+    // Update URL query param for shareable deep links
+    setSearchParams({ tab: newValue.toString() }, { replace: true });
   };
 
   const handleBack = () => {

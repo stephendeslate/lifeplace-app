@@ -130,12 +130,45 @@ class CommunicationTemplateService:
         return True
     
     @staticmethod
-    def preview_template(template_id: int, context_data: Dict[str, Any] = None) -> Dict[str, str]:
-        """Preview a template with context data - Enhanced for manual messages and layout support"""
+    def preview_template(
+        template_id: int,
+        context_data: Dict[str, Any] = None,
+        body_template_override: Optional[str] = None,
+        subject_template_override: Optional[str] = None,
+        layout_id_override: Optional[int] = None
+    ) -> Dict[str, str]:
+        """Preview a template with context data - Enhanced for manual messages, layout support, and live editing.
+
+        Args:
+            template_id: The ID of the template to preview
+            context_data: Dictionary of context variables for rendering
+            body_template_override: Override the saved body_template (for live editing preview)
+            subject_template_override: Override the saved subject_template (for live editing preview)
+            layout_id_override: Override the saved layout ID (for live editing preview).
+                               Pass 0 or explicit value to override; None means use saved layout.
+        """
+        from .models import EmailLayout
+
         template = CommunicationTemplateService.get_template_by_id(template_id)
 
         if context_data is None:
             context_data = {}
+
+        # Determine effective templates (use overrides if provided, otherwise use saved)
+        effective_body_template = body_template_override if body_template_override is not None else template.body_template
+        effective_subject_template = subject_template_override if subject_template_override is not None else template.subject_template
+
+        # Determine effective layout (use override if provided)
+        effective_layout = template.layout
+        if layout_id_override is not None:
+            if layout_id_override == 0 or layout_id_override == '':
+                # Explicitly no layout
+                effective_layout = None
+            else:
+                try:
+                    effective_layout = EmailLayout.objects.get(id=layout_id_override, is_active=True)
+                except EmailLayout.DoesNotExist:
+                    effective_layout = None
 
         try:
             # Check if this is a custom/manual message with overrides
@@ -152,10 +185,10 @@ class CommunicationTemplateService:
                 except TemplateSandboxError:
                     # If custom subject fails validation, use it as-is
                     subject = custom_subject
-            elif template.subject_template:
-                # Use template subject with sandboxed rendering
+            elif effective_subject_template:
+                # Use effective subject template with sandboxed rendering
                 subject = sandboxed_template_engine.render(
-                    template.subject_template, context_data, validate_first=True
+                    effective_subject_template, context_data, validate_first=True
                 )
             else:
                 subject = None
@@ -163,7 +196,7 @@ class CommunicationTemplateService:
             # Handle body with layout support
             if custom_body and template.category == 'MANUAL':
                 # For manual templates, create a combined template that includes the custom content
-                base_template = template.body_template
+                base_template = effective_body_template
 
                 # Look for content placeholders in the template
                 content_placeholders = [
@@ -204,10 +237,10 @@ class CommunicationTemplateService:
                 )
 
                 # Apply layout if assigned (even for manual messages)
-                if template.layout and template.channel == 'EMAIL':
+                if effective_layout and template.channel == 'EMAIL':
                     body = LayoutCompositionService.compose_content_only(
                         content=rendered_content,
-                        layout=template.layout,
+                        layout=effective_layout,
                         context=context_data,
                         subject=subject
                     )
@@ -215,17 +248,19 @@ class CommunicationTemplateService:
                     body = rendered_content
             else:
                 # Standard template rendering
-                if template.layout and template.channel == 'EMAIL':
-                    # Use layout composition
-                    body = LayoutCompositionService.compose_email(
-                        template=template,
+                if effective_layout and template.channel == 'EMAIL':
+                    # Use layout composition with effective body template
+                    # Create a temporary template-like object for rendering
+                    body = LayoutCompositionService.compose_email_with_content(
+                        body_template=effective_body_template,
+                        layout=effective_layout,
                         content_context=context_data,
                         subject=subject
                     )
                 else:
                     # Legacy: render body_template directly (SMS or no layout)
                     body = sandboxed_template_engine.render(
-                        template.body_template, context_data, validate_first=True
+                        effective_body_template, context_data, validate_first=True
                     )
 
             return {

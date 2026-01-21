@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { EVENT_TAB_INDICES } from '../events/EventDetail';
 import { formatInTimeZone } from 'date-fns-tz';
 import { isValid, parseISO } from 'date-fns';
 import {
@@ -265,7 +266,7 @@ const Dashboard: React.FC = () => {
                           border: `1px solid ${alpha(theme.palette.error.main, 0.3)}`,
                           cursor: 'pointer',
                         }}
-                        onClick={() => navigate(`/events/${quote.event_details.id}`, { state: { activeTab: 5 } })}
+                        onClick={() => navigate(`/events/${quote.event_details.id}`, { state: { activeTab: EVENT_TAB_INDICES.QUOTES } })}
                       >
                         <Box display="flex" alignItems="center" gap={2} p={2}>
                           <Box
@@ -369,7 +370,7 @@ const Dashboard: React.FC = () => {
                           border: `1px solid ${alpha(theme.palette.warning.main, 0.3)}`,
                           cursor: 'pointer',
                         }}
-                        onClick={() => navigate(`/events/${task.eventId}`, { state: { activeTab: 3 } })}
+                        onClick={() => navigate(`/events/${task.eventId}`, { state: { activeTab: EVENT_TAB_INDICES.TASKS } })}
                       >
                         <Box display="flex" alignItems="center" gap={2} p={2}>
                           <Box
@@ -416,7 +417,7 @@ const Dashboard: React.FC = () => {
                           border: `1px solid ${alpha(theme.palette.warning.main, 0.3)}`,
                           cursor: 'pointer',
                         }}
-                        onClick={() => navigate(`/events/${contract.eventId}`, { state: { activeTab: 6 } })}
+                        onClick={() => navigate(`/events/${contract.eventId}`, { state: { activeTab: EVENT_TAB_INDICES.CONTRACTS } })}
                       >
                         <Box display="flex" alignItems="center" gap={2} p={2}>
                           <Box
@@ -442,7 +443,7 @@ const Dashboard: React.FC = () => {
                             size="small"
                             onClick={(e) => {
                               e.stopPropagation();
-                              navigate(`/events/${contract.eventId}`, { state: { activeTab: 6 } });
+                              navigate(`/events/${contract.eventId}`, { state: { activeTab: EVENT_TAB_INDICES.CONTRACTS } });
                             }}
                           >
                             Sign Contract

@@ -12,14 +12,14 @@ These serializers should be kept simple and only include essential fields.
 
 class ContractTemplateSerializer(serializers.ModelSerializer):
     """Basic serializer for the ContractTemplate model"""
-    
+
     class Meta:
         model = ContractTemplate
         fields = [
-            'id', 'name', 'description', 'event_type', 'content', 'variables', 
+            'id', 'name', 'description', 'event_type', 'content', 'variables',
             'sections', 'signature_requirements', 'requires_signature',
             'requires_witness', 'requires_company_signature', 'allows_amendments',
-            'amendment_requires_signature', 'created_at', 'updated_at'
+            'amendment_requires_signature', 'is_active', 'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
 

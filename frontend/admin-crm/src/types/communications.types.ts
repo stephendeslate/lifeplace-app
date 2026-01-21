@@ -94,6 +94,10 @@ export interface BulkSendData {
 export interface PreviewData {
   template_id: number;
   context_data?: Record<string, unknown>;
+  // Override parameters for live editing preview
+  body_template?: string;
+  subject_template?: string;
+  layout_id?: number | null;
 }
 
 export interface ManualPreviewData extends PreviewData {

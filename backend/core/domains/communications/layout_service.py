@@ -291,6 +291,82 @@ class LayoutCompositionService:
         return len(errors) == 0, errors
 
     @classmethod
+    def compose_email_with_content(
+        cls,
+        body_template: str,
+        layout: 'EmailLayout',
+        content_context: Dict[str, Any],
+        subject: Optional[str] = None,
+    ) -> str:
+        """
+        Compose a complete email by combining layout with body template content.
+        This is similar to compose_email but accepts body_template as a string
+        instead of reading from a CommunicationTemplate object.
+
+        Used for live editing preview where the body content hasn't been saved yet.
+
+        Args:
+            body_template: The body template string to render
+            layout: The EmailLayout to use
+            content_context: Context variables for template rendering
+            subject: Email subject (used for email title)
+
+        Returns:
+            Fully rendered HTML email string
+        """
+        logger.debug(f"Composing email with layout '{layout.name}' (direct content)")
+
+        # Build combined context
+        layout_context = cls.get_layout_context(layout, content_context)
+
+        # 1. Render content (body_template)
+        rendered_content = sandboxed_template_engine.render(
+            body_template,
+            layout_context,
+            validate_first=True
+        )
+
+        # 2. Render header
+        rendered_header = sandboxed_template_engine.render(
+            layout.header_template,
+            layout_context,
+            validate_first=True
+        )
+
+        # 3. Render footer
+        rendered_footer = sandboxed_template_engine.render(
+            layout.footer_template,
+            layout_context,
+            validate_first=True
+        )
+
+        # 4. Wrap content using wrapper_template
+        wrapper_context = {**layout_context, 'content': rendered_content}
+        wrapped_content = sandboxed_template_engine.render(
+            layout.wrapper_template,
+            wrapper_context,
+            validate_first=True
+        )
+
+        # 5. Assemble email body (header + wrapped content + footer)
+        email_body = rendered_header + wrapped_content + rendered_footer
+
+        # 6. Wrap in outer HTML structure
+        outer_context = {
+            'email_title': subject or 'Email Preview',
+            'custom_styles': layout.base_styles or '',
+            'email_content': email_body,
+        }
+
+        final_html = sandboxed_template_engine.render(
+            cls.OUTER_WRAPPER,
+            outer_context,
+            validate_first=False  # Our own wrapper, already safe
+        )
+
+        return final_html
+
+    @classmethod
     def compose_content_only(
         cls,
         content: str,

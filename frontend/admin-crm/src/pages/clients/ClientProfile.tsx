@@ -184,7 +184,7 @@ export const ClientProfile: React.FC = () => {
           setTabValue(2); // Switch to communications tab
           break;
         case 'create-quote':
-          navigate(`/sales/quotes/new?client=${clientId}`);
+          setTabValue(3); // Switch to quotes tab where quotes can be created
           break;
         case 'send-invitation':
           handleSendInvitation();
@@ -198,7 +198,7 @@ export const ClientProfile: React.FC = () => {
           }
           break;
         case 'create-invoice':
-          navigate(`/invoices/new?client=${clientId}`);
+          navigate(`/payments/new?client=${clientId}`);
           break;
       }
     }, clientPhone);

@@ -95,15 +95,17 @@ export const TemplateForm: React.FC<TemplateFormProps> = ({
   // Debounced preview using backend API
   const [debouncedBody, setDebouncedBody] = useState(formData.body_template);
   const [debouncedSubject, setDebouncedSubject] = useState(formData.subject_template);
+  const [debouncedLayout, setDebouncedLayout] = useState(formData.layout);
 
-  // Debounce the body and subject template changes
+  // Debounce the body, subject, and layout changes
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedBody(formData.body_template);
       setDebouncedSubject(formData.subject_template);
+      setDebouncedLayout(formData.layout);
     }, 800);
     return () => clearTimeout(timer);
-  }, [formData.body_template, formData.subject_template]);
+  }, [formData.body_template, formData.subject_template, formData.layout]);
 
   // Trigger backend preview when debounced values change (only when editing)
   useEffect(() => {
@@ -112,16 +114,15 @@ export const TemplateForm: React.FC<TemplateFormProps> = ({
         id: template.id,
         data: {
           template_id: template.id,
-          context_data: {
-            ...samplePreviewData,
-            // Override with current unsaved content
-            body_template: debouncedBody,
-            subject_template: debouncedSubject,
-          },
+          context_data: samplePreviewData,
+          // Pass override parameters for live editing preview
+          body_template: debouncedBody,
+          subject_template: debouncedSubject || undefined,
+          layout_id: debouncedLayout,
         },
       });
     }
-  }, [isEditing, template?.id, debouncedBody, debouncedSubject, previewTemplate, samplePreviewData]);
+  }, [isEditing, template?.id, debouncedBody, debouncedSubject, debouncedLayout, previewTemplate, samplePreviewData]);
 
   // Live preview - uses backend API result when editing, falls back to client-side for new templates
   const livePreview = useMemo(() => {

@@ -124,6 +124,10 @@ export const getVariableGroupTitle = (groupKey: string): string => {
     admin: 'Admin',
     notification: 'Notification',
     system: 'System',
+    company: 'Company',
+    urls: 'Links',
+    invoice: 'Invoice',
+    payment: 'Payment',
 
     // Legacy group names (for backwards compatibility)
     client_variables: 'Client Information',
@@ -156,6 +160,10 @@ export const getVariableGroupColor = (
     admin: 'error',
     notification: 'warning',
     system: 'primary',
+    company: 'secondary',
+    urls: 'info',
+    invoice: 'success',
+    payment: 'success',
 
     // Legacy names
     client_variables: 'secondary',
@@ -185,6 +193,10 @@ export const getVariableGroupIcon = (groupKey: string): string => {
     admin: 'admin_panel_settings',
     notification: 'notifications',
     system: 'settings',
+    company: 'business',
+    urls: 'link',
+    invoice: 'receipt',
+    payment: 'credit_card',
   };
 
   return icons[groupKey] || 'help';

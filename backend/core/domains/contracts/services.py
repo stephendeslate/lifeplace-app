@@ -39,20 +39,30 @@ class ContractTemplateService:
     """Service for managing contract templates"""
     
     @staticmethod
-    def get_all_templates(search_query=None, event_type_id=None, is_active=None):
-        """Get all contract templates with optional filtering"""
+    def get_all_templates(search_query=None, event_type_id=None, is_active=True):
+        """Get all contract templates with optional filtering
+
+        Args:
+            search_query: Search term for name/description
+            event_type_id: Filter by event type
+            is_active: Filter by active status (defaults to True to hide deactivated templates)
+        """
         queryset = ContractTemplate.objects.all()
-        
+
+        # Filter by active status (default: only active templates)
+        if is_active is not None:
+            queryset = queryset.filter(is_active=is_active)
+
         # Apply filters if provided
         if search_query:
             queryset = queryset.filter(
                 Q(name__icontains=search_query) |
                 Q(description__icontains=search_query)
             )
-        
+
         if event_type_id:
             queryset = queryset.filter(event_type_id=event_type_id)
-            
+
         return queryset.order_by('name')
     
     @staticmethod
@@ -87,20 +97,18 @@ class ContractTemplateService:
     
     @staticmethod
     def delete_template(template_id):
-        """Delete a contract template"""
+        """Soft delete a contract template by setting is_active=False.
+
+        This preserves the template for historical records while hiding it
+        from selection in the admin interface. Templates can be reactivated
+        through Django admin if needed.
+        """
         template = ContractTemplateService.get_template_by_id(template_id)
-        
-        # Check if template is used by any contracts
-        contract_count = EventContract.objects.filter(template=template).count()
-        if contract_count > 0:
-            raise InvalidContractTemplate(
-                detail=f"Cannot delete template as it is used by {contract_count} contracts"
-            )
-        
+
         with transaction.atomic():
-            template_name = template.name
-            template.delete()
-            logger.info(f"Deleted contract template: {template_name}")
+            template.is_active = False
+            template.save(update_fields=['is_active', 'updated_at'])
+            logger.info(f"Deactivated contract template: {template.name}")
             return True
             
     @staticmethod

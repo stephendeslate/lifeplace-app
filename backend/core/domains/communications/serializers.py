@@ -170,20 +170,34 @@ class SendCommunicationSerializer(serializers.Serializer):
 
 
 class PreviewCommunicationSerializer(serializers.Serializer):
-    """Serializer for previewing communications - Enhanced for manual messages"""
+    """Serializer for previewing communications - Enhanced for manual messages and live editing"""
     template_id = serializers.IntegerField()
     context_data = serializers.JSONField(required=False, default=dict)
-    
+
     # Fields for manual message preview
     custom_subject = serializers.CharField(required=False, allow_blank=True)
     custom_body = serializers.CharField(required=False, allow_blank=True)
-    
+
+    # Fields for live preview during editing (override saved template content)
+    body_template = serializers.CharField(required=False, allow_blank=True)
+    subject_template = serializers.CharField(required=False, allow_blank=True)
+    layout_id = serializers.IntegerField(required=False, allow_null=True)
+
+    def validate_layout_id(self, value):
+        """Validate layout exists and is active if provided"""
+        if value is not None:
+            try:
+                EmailLayout.objects.get(id=value, is_active=True)
+            except EmailLayout.DoesNotExist:
+                raise serializers.ValidationError("Layout does not exist or is inactive.")
+        return value
+
     def validate(self, data):
         """Enhanced validation for manual message previews"""
         # If custom content is provided, add it to context_data
         custom_subject = data.get('custom_subject')
         custom_body = data.get('custom_body')
-        
+
         if custom_subject or custom_body:
             context_data = data.get('context_data', {})
             if custom_subject:
@@ -195,7 +209,7 @@ class PreviewCommunicationSerializer(serializers.Serializer):
                     'content': custom_body,
                 })
             data['context_data'] = context_data
-        
+
         return data
 
 

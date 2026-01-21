@@ -134,12 +134,14 @@ export const EventInvoices: React.FC<EventInvoicesProps> = ({ event }) => {
     setDetailDialogOpen(true);
   };
 
-  const handleEditInvoice = (invoice: Invoice) => {
-    navigate(`/payments/invoices/${invoice.id}/edit`);
+  const handleEditInvoice = (_invoice: Invoice) => {
+    // Invoice editing is done through the details dialog
+    // No dedicated edit route exists
   };
 
-  const handleRecordPayment = (invoice: Invoice) => {
-    navigate(`/payments/new?invoiceId=${invoice.id}`);
+  const handleRecordPayment = (_invoice: Invoice) => {
+    // Navigate to payments page to record a payment
+    navigate(`/payments/new`);
   };
 
   const handleDeleteInvoice = () => {
