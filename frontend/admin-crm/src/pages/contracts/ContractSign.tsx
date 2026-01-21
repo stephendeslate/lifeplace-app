@@ -4,31 +4,49 @@ import React, { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Box,
-  Paper,
   Typography,
   Button,
-  CircularProgress,
   Alert,
-  Breadcrumbs,
-  Link,
+  Chip,
   Stack,
+  CircularProgress,
 } from '@mui/material';
 import {
   ArrowBack as ArrowBackIcon,
   Description as ContractIcon,
+  Create as SignIcon,
 } from '@mui/icons-material';
 import { useEventContract } from '../../hooks/useContracts';
+import { useLayout } from '../../contexts/LayoutContext';
 import AdminContractSigningDialog from '../../components/contracts/AdminContractSigningDialog';
 
 export const ContractSign: React.FC = () => {
   const { contractId } = useParams<{ contractId: string }>();
   const navigate = useNavigate();
-  
+  const { setBreadcrumbs } = useLayout();
+
   const { data: contract, isLoading, error } = useEventContract(contractId ? parseInt(contractId) : 0);
   const [signingDialogOpen, setSigningDialogOpen] = React.useState(false);
 
-  const handleBack = () => {
-    navigate(-1);
+  // Set breadcrumbs via layout context
+  useEffect(() => {
+    if (contract) {
+      setBreadcrumbs([
+        { label: 'Events', path: '/events' },
+        { label: contract.event_details?.name || 'Event', path: contract.event_details?.id ? `/events/${contract.event_details.id}` : '/events' },
+        { label: `Contract #${contract.id}`, path: `/contracts/${contract.id}` },
+        { label: 'Sign' },
+      ]);
+    }
+  }, [contract, setBreadcrumbs]);
+
+  // Navigation handlers - use deterministic routes
+  const handleBackToContract = () => {
+    if (contractId) {
+      navigate(`/contracts/${contractId}`);
+    } else {
+      navigate('/events');
+    }
   };
 
   const handleSignComplete = () => {
@@ -36,8 +54,8 @@ export const ContractSign: React.FC = () => {
     navigate(`/contracts/${contractId}`);
   };
 
-  const handleSignError = (error: string) => {
-    console.error('Contract signing error:', error);
+  const handleSignError = (err: string) => {
+    console.error('Contract signing error:', err);
   };
 
   // Automatically open signing dialog when component loads
@@ -50,14 +68,21 @@ export const ContractSign: React.FC = () => {
     }
   }, [contract, signingDialogOpen]);
 
+  // Loading state
   if (isLoading) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight={400}>
-        <CircularProgress />
+      <Box sx={{ p: 3 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', py: 8 }}>
+          <CircularProgress size={40} />
+          <Typography variant="body1" color="text.secondary" sx={{ ml: 2 }}>
+            Loading contract...
+          </Typography>
+        </Box>
       </Box>
     );
   }
 
+  // Error state
   if (error) {
     return (
       <Box sx={{ p: 3 }}>
@@ -68,6 +93,7 @@ export const ContractSign: React.FC = () => {
     );
   }
 
+  // Not found state
   if (!contract) {
     return (
       <Box sx={{ p: 3 }}>
@@ -83,63 +109,111 @@ export const ContractSign: React.FC = () => {
 
   return (
     <Box sx={{ p: 3 }}>
-      {/* Breadcrumbs */}
-      <Breadcrumbs sx={{ mb: 3 }}>
-        <Link
-          component="button"
-          variant="body2"
-          onClick={() => navigate('/events')}
-          sx={{ textDecoration: 'underline' }}
-        >
-          Events
-        </Link>
-        <Link
-          component="button"
-          variant="body2"
-          onClick={handleBack}
-          sx={{ textDecoration: 'underline' }}
-        >
-          Contract #{contract.id}
-        </Link>
-        <Typography variant="body2" color="text.primary">
-          Sign Contract
-        </Typography>
-      </Breadcrumbs>
-
       {/* Header */}
-      <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 3 }}>
-        <Button
-          startIcon={<ArrowBackIcon />}
-          onClick={handleBack}
-          variant="outlined"
-          size="small"
+      <Box
+        sx={{
+          mb: 4,
+          p: 3,
+          borderRadius: 1,
+          bgcolor: 'background.paper',
+          border: '1px solid',
+          borderColor: 'divider',
+        }}
+      >
+        <Box
+          display="flex"
+          flexDirection={{ xs: 'column', md: 'row' }}
+          justifyContent="space-between"
+          alignItems={{ xs: 'flex-start', md: 'center' }}
+          gap={2}
         >
-          Back
-        </Button>
-        <Box>
-          <Typography variant="h4" sx={{ fontWeight: 700, color: 'primary.main' }}>
-            Sign Contract #{contract.id}
-          </Typography>
-          <Typography variant="h6" color="text.secondary">
-            {contract.template_name}
-          </Typography>
+          <Box display="flex" alignItems="center" gap={2}>
+            <ContractIcon color="primary" sx={{ fontSize: 32 }} />
+            <Box>
+              <Box display="flex" alignItems="center" gap={2}>
+                <Typography variant="h4" component="h1" fontWeight="bold">
+                  Sign Contract #{contract.id}
+                </Typography>
+                <Chip
+                  label={contract.status_display || contract.status}
+                  color={canSign ? 'info' : 'secondary'}
+                  size="small"
+                />
+              </Box>
+              <Typography variant="body1" color="text.secondary">
+                {contract.template_name}
+              </Typography>
+            </Box>
+          </Box>
+          <Stack direction="row" spacing={2}>
+            <Button
+              variant="outlined"
+              startIcon={<ArrowBackIcon />}
+              onClick={handleBackToContract}
+            >
+              Back to Contract
+            </Button>
+            {canSign && (
+              <Button
+                variant="contained"
+                startIcon={<SignIcon />}
+                onClick={() => setSigningDialogOpen(true)}
+              >
+                Sign Contract
+              </Button>
+            )}
+          </Stack>
         </Box>
-      </Stack>
+      </Box>
 
       {/* Main Content */}
-      <Paper elevation={0} sx={{ p: 4, border: (theme) => `1px solid ${theme.palette.divider}` }}>
+      <Box
+        sx={{
+          p: 3,
+          borderRadius: 1,
+          bgcolor: 'background.paper',
+          border: '1px solid',
+          borderColor: 'divider',
+        }}
+      >
         {canSign ? (
           <Box sx={{ textAlign: 'center', py: 4 }}>
-            <ContractIcon sx={{ fontSize: 64, color: 'primary.main', mb: 2 }} />
-            <Typography variant="h5" gutterBottom>
+            <Box
+              sx={{
+                width: 80,
+                height: 80,
+                borderRadius: '50%',
+                bgcolor: 'primary.50',
+                border: '1px solid',
+                borderColor: 'primary.200',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                mx: 'auto',
+                mb: 3,
+              }}
+            >
+              <ContractIcon sx={{ fontSize: 40, color: 'primary.main' }} />
+            </Box>
+            <Typography
+              variant="h5"
+              fontWeight={700}
+              color="primary.main"
+              gutterBottom
+            >
               Ready to Sign
             </Typography>
-            <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
+            <Typography
+              variant="body1"
+              color="text.secondary"
+              sx={{ mb: 4, maxWidth: 400, mx: 'auto' }}
+            >
               This contract is ready for your signature as a company representative.
             </Typography>
             <Button
               variant="contained"
               size="large"
+              startIcon={<SignIcon />}
               onClick={() => setSigningDialogOpen(true)}
               sx={{ minWidth: 200 }}
             >
@@ -148,10 +222,13 @@ export const ContractSign: React.FC = () => {
           </Box>
         ) : (
           <Box sx={{ textAlign: 'center', py: 4 }}>
-            <Alert severity="info" sx={{ mb: 3 }}>
+            <Alert
+              severity="info"
+              sx={{ mb: 3, maxWidth: 500, mx: 'auto' }}
+            >
               This contract is not available for signing at this time.
             </Alert>
-            <Typography variant="body1" color="text.secondary" gutterBottom>
+            <Typography variant="body1" color="text.secondary" sx={{ mb: 1 }}>
               Current status: <strong>{contract.status}</strong>
             </Typography>
             <Typography variant="body2" color="text.secondary">
@@ -159,7 +236,7 @@ export const ContractSign: React.FC = () => {
             </Typography>
           </Box>
         )}
-      </Paper>
+      </Box>
 
       {/* Signing Dialog */}
       <AdminContractSigningDialog

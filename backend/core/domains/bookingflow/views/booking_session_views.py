@@ -92,8 +92,9 @@ class BookingSessionViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_201_CREATED
             )
         except Exception as e:
+            logger.error(f"Booking session error: {e}", exc_info=True)
             return Response(
-                {"detail": str(e)},
+                {"detail": "An error occurred processing your request. Please try again."},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
@@ -114,8 +115,9 @@ class BookingSessionViewSet(viewsets.ModelViewSet):
                 BookingSessionSerializer(session, context=self.get_serializer_context()).data
             )
         except Exception as e:
+            logger.error(f"Booking session update error: {e}", exc_info=True)
             return Response(
-                {"detail": str(e)},
+                {"detail": "An error occurred processing your request. Please try again."},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
@@ -289,21 +291,22 @@ class PublicBookingFlowViewSet(viewsets.ReadOnlyModelViewSet):
             step_data = request.data.get('step_data', {})
             mark_completed = request.data.get('mark_completed', False)
             
-            print(f"API DEBUG: step_id={step_id}, mark_completed={mark_completed}, session_uuid={session_uuid}")
-            
+            # SECURITY FIX: Replaced print statements with proper logging
+            logger.debug(f"update_session_data: step_id={step_id}, mark_completed={mark_completed}, session_uuid={session_uuid}")
+
             if not step_id:
                 return Response(
                     {"detail": "step_id is required"},
                     status=status.HTTP_400_BAD_REQUEST
                 )
-            
-            print(f"API DEBUG: About to call service method")
+
+            logger.debug("update_session_data: About to call service method")
             session = BookingSessionService.update_session_data(
                 session_id=session_uuid,
                 step_data=step_data,
                 mark_completed=mark_completed
             )
-            print(f"API DEBUG: Service method completed")
+            logger.debug("update_session_data: Service method completed")
             
             # Return minimal session data
             return Response({
@@ -446,11 +449,10 @@ class PublicBookingFlowViewSet(viewsets.ReadOnlyModelViewSet):
                 )
             
             completion_type = request.data.get('completion_type', 'payment')
+            reservation_token = request.data.get('reservation_token')
 
-            # ENHANCED DEBUGGING: Log the incoming request data
-            logger.info(f"🔥 PUBLIC COMPLETION ENDPOINT: session_uuid={session_uuid}")
-            logger.info(f"🔥 REQUEST DATA: {request.data}")
-            logger.info(f"🔥 EXTRACTED COMPLETION_TYPE: '{completion_type}'")
+            # Log request info (sanitized - no sensitive data)
+            logger.debug(f"Public completion endpoint: session_uuid={session_uuid}, completion_type={completion_type}")
 
             # Validate completion_type
             if completion_type not in ['payment', 'quote']:
@@ -459,7 +461,11 @@ class PublicBookingFlowViewSet(viewsets.ReadOnlyModelViewSet):
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
-            event = BookingSessionService.complete_booking(session_uuid, completion_type)
+            event = BookingSessionService.complete_booking(
+                session_uuid,
+                completion_type,
+                reservation_token=reservation_token
+            )
             
             from core.domains.events.serializers import EventSerializer
             response_message = "Booking completed successfully"
@@ -530,27 +536,36 @@ class PublicBookingFlowViewSet(viewsets.ReadOnlyModelViewSet):
         """Calculate pricing for current session state using centralized pricing service"""
         try:
             session = BookingSessionService.get_session_by_id(session_uuid)
-            
+
             # Get booking data
             booking_data = session.booking_data or {}
-            
+
             # Add discount code to booking data if provided
             discount_code = request.data.get('discount_code', '')
             if discount_code:
                 booking_data['applied_discount_code'] = discount_code
-            
-            # Get event duration from booking data
-            event_duration = self._get_session_duration(booking_data)
-            
+
+            # Extract venue_additional_hours - prefer request body over session data
+            # This allows frontend to pass current local state for real-time pricing updates
+            venue_additional_hours = request.data.get('venue_additional_hours') or booking_data.get('venue_additional_hours', {})
+
+            # Get event_type_id from booking flow for event-type-specific pricing
+            event_type_id = None
+            if session.booking_flow and session.booking_flow.event_type:
+                event_type_id = session.booking_flow.event_type_id
+
             # Log for debugging
             logger.info(f"=== PRICING API USING CENTRALIZED SERVICE ===")
-            logger.info(f"Session: {session_uuid}, Duration: {event_duration}h, Discount: '{discount_code}'")
-            
+            logger.info(f"Session: {session_uuid}, Discount: '{discount_code}'")
+            logger.info(f"Venue Additional Hours: {venue_additional_hours}")
+            logger.info(f"Event Type ID: {event_type_id}")
+
             # Use centralized pricing service for consistent calculations
             from core.domains.sales.pricing_service import PricingCalculationService
             pricing_breakdown = PricingCalculationService.calculate_from_booking_data(
-                booking_data, 
-                event_duration
+                booking_data=booking_data,
+                venue_additional_hours=venue_additional_hours,
+                event_type_id=event_type_id
             )
             
             # Prepare discount details if discount was applied
@@ -589,6 +604,7 @@ class PublicBookingFlowViewSet(viewsets.ReadOnlyModelViewSet):
             return Response({
                 'subtotal': str(pricing_breakdown.subtotal.quantize(Decimal('0.01'))),
                 'tax': str(pricing_breakdown.tax_amount.quantize(Decimal('0.01'))),
+                'tax_rate': str(pricing_breakdown.tax_rate.quantize(Decimal('0.01'))),
                 'discount': str(pricing_breakdown.discount_amount.quantize(Decimal('0.01'))),
                 'total': str(pricing_breakdown.total_amount.quantize(Decimal('0.01'))),
                 'discount_details': discount_details,
@@ -747,7 +763,7 @@ class PublicBookingFlowViewSet(viewsets.ReadOnlyModelViewSet):
                             event_time_formatted = event_time
                     else:
                         event_time_formatted = 'TBD'
-                except:
+                except (ValueError, AttributeError, TypeError, IndexError):
                     # Fallback to raw values if parsing fails
                     event_date_formatted = event_date
                     event_time_formatted = event_time or 'TBD'
@@ -817,13 +833,25 @@ class PublicBookingFlowViewSet(viewsets.ReadOnlyModelViewSet):
             logger.info(f"Sending confirmation email for session {session.session_id}")
             logger.debug(f"Email context - Date: {event_date_formatted}, Time: {event_time_formatted}")
             
+            # Try to find the event associated with this session
+            from core.domains.events.models import Event
+            event = None
+            try:
+                # Look for the most recent event for this client created around the session completion time
+                event = Event.objects.filter(
+                    client=session.client
+                ).order_by('-created_at').first()
+            except Exception as e:
+                logger.warning(f"Could not find event for session {session.session_id}: {e}")
+
             # Send the email
             if session.booking_flow.confirmation_email_template:
                 result = comm_service.send_communication(
                     template_name=session.booking_flow.confirmation_email_template.name,
                     recipient=session.client.email,
                     context_data=context,
-                    client=session.client
+                    client=session.client,
+                    event=event
                 )
                 
                 # Mark as sent in session data
@@ -852,7 +880,157 @@ class PublicBookingFlowViewSet(viewsets.ReadOnlyModelViewSet):
     
     # NOTE: Step validation is now handled by BookingSessionService._validate_step_data()
     # This provides enhanced validation including authenticated user context
-    
+
+    @action(detail=False, methods=['post'], url_path='session/(?P<session_uuid>[^/]+)/validate-availability')
+    def validate_availability(self, request, session_uuid=None):
+        """
+        Validate date availability and create a temporary reservation.
+
+        This endpoint should be called BEFORE processing payment to ensure the date
+        is still available. It creates a 5-minute reservation window during which
+        the payment can be processed.
+
+        Request body:
+            None required - uses date from session data
+
+        Returns:
+            {
+                "available": true/false,
+                "reservation_token": "uuid" (if available),
+                "expires_at": "datetime" (if available),
+                "error": "string" (if not available)
+            }
+        """
+        try:
+            session = BookingSessionService.get_session_by_id(session_uuid)
+
+            # Extract the event date from booking data
+            booking_data = session.booking_data or {}
+            event_date = None
+
+            # Check root level first
+            if 'start_date' in booking_data:
+                event_date = booking_data.get('start_date')
+            else:
+                # Check in step data
+                for step_key, step_data in booking_data.items():
+                    if isinstance(step_data, dict) and 'start_date' in step_data:
+                        event_date = step_data.get('start_date')
+                        break
+
+            if not event_date:
+                return Response(
+                    {
+                        "available": False,
+                        "error": "No event date found in booking session"
+                    },
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            # Parse the date
+            from datetime import datetime
+            if isinstance(event_date, str):
+                try:
+                    # Handle ISO format with timezone
+                    date_obj = datetime.fromisoformat(event_date.replace('Z', '+00:00'))
+                    check_date = date_obj.date()
+                except ValueError:
+                    # Try simple date format
+                    check_date = datetime.strptime(event_date[:10], '%Y-%m-%d').date()
+            else:
+                check_date = event_date
+
+            # Use atomic availability service to validate and reserve
+            from core.domains.events.services import AtomicAvailabilityService
+
+            result = AtomicAvailabilityService.validate_and_reserve_date(
+                event_date=check_date,
+                booking_session_id=session_uuid
+            )
+
+            if result['available']:
+                return Response({
+                    "available": True,
+                    "reservation_token": result['reservation_token'],
+                    "expires_at": result['expires_at'].isoformat() if result['expires_at'] else None,
+                    "message": "Date is available. You have 5 minutes to complete payment."
+                })
+            else:
+                return Response({
+                    "available": False,
+                    "error": result['error'] or "Date is no longer available",
+                    "blocking_event_id": result.get('blocking_event_id')
+                })
+
+        except Exception as e:
+            logger.error(f"Error validating availability: {e}")
+            return Response(
+                {
+                    "available": False,
+                    "error": str(e)
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+    @action(detail=False, methods=['post'], url_path='session/(?P<session_uuid>[^/]+)/release-reservation')
+    def release_reservation(self, request, session_uuid=None):
+        """
+        Release a date reservation.
+
+        This endpoint should be called if:
+        1. Payment fails
+        2. User cancels during payment
+        3. Any error occurs after reservation was created
+
+        Request body:
+            {
+                "reservation_token": "uuid"
+            }
+
+        Returns:
+            {
+                "success": true/false,
+                "error": "string" (if failed)
+            }
+        """
+        try:
+            reservation_token = request.data.get('reservation_token')
+
+            if not reservation_token:
+                return Response(
+                    {
+                        "success": False,
+                        "error": "reservation_token is required"
+                    },
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            # Use atomic availability service to release
+            from core.domains.events.services import AtomicAvailabilityService
+
+            result = AtomicAvailabilityService.release_reservation(reservation_token)
+
+            if result['success']:
+                return Response({
+                    "success": True,
+                    "message": "Reservation released successfully"
+                })
+            else:
+                return Response({
+                    "success": False,
+                    "error": result['error']
+                })
+
+        except Exception as e:
+            logger.error(f"Error releasing reservation: {e}")
+            return Response(
+                {
+                    "success": False,
+                    "error": str(e)
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
     def _get_session_duration(self, booking_data):
         """Extract event duration from booking session data"""
         # Look for duration in various places in booking data

@@ -3,7 +3,7 @@
 
 import React from 'react';
 import { Description as EventTypeIcon } from '@mui/icons-material';
-import { SettingsPage, type SettingsPageConfig, type SettingsTableColumn } from '../../../components/common/settings';
+import { PermissionAwareSettingsPage, type SettingsPageConfig, type SettingsTableColumn } from '../../../components/common/settings';
 import { useEventTypes } from '../../../hooks/useEvents';
 import type { CreateEventTypeData, UpdateEventTypeData } from '../../../types/events.types';
 import type { ModernFormSection } from '../../../components/common/ModernForm';
@@ -195,9 +195,16 @@ export const EventTypes = () => {
     });
   };
 
+  // Fetch fresh event type data before editing to ensure we have the latest values
+  const handleFetchItem = async (id: string | number): Promise<EventType> => {
+    const { eventsApi } = await import('../../../apis/events.api');
+    return eventsApi.getEventType(Number(id));
+  };
+
   return (
-    <SettingsPage
+    <PermissionAwareSettingsPage
       config={config}
+      requiredPermissions={['can_manage_booking_flows']}
       data={eventTypes}
       defaultValues={defaultEventType}
       isLoading={isLoadingEventTypes}
@@ -206,6 +213,7 @@ export const EventTypes = () => {
       onCreate={handleCreate}
       onUpdate={handleUpdate}
       onDelete={handleDelete}
+      onFetchItem={handleFetchItem}
       isCreating={isCreatingEventType}
       isUpdating={isUpdatingEventType}
       isDeleting={isDeletingEventType}

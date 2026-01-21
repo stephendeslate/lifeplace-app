@@ -1,5 +1,4 @@
 # Gunicorn configuration file for production deployment
-# Used by Railway.app for Django backend
 
 import multiprocessing
 import os

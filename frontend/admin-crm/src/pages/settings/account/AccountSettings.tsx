@@ -31,10 +31,7 @@ import type { AccountSettingsFormData, PasswordChangeFormData } from '../../../t
 
 // Modern Design System imports
 import { ModernSettingsLayout } from '../../../components/common/ModernPageLayout';
-import { ModernCard } from '../../../components/common/ModernCard';
 import { ModernPageHeader } from '../../../components/common/ModernPageHeader';
-import { tokens } from '../../../design-system';
-import { glassPresets } from '../../../design-system/utils/glassmorphism';
 
 export const AccountSettings: React.FC = () => {
   const { user } = useAuth();
@@ -190,7 +187,7 @@ export const AccountSettings: React.FC = () => {
 
   return (
     <ModernSettingsLayout>
-      {/* Modern Header */}
+      {/* Header */}
       <ModernPageHeader
         title="Account Settings"
         subtitle="Manage your personal information and account security"
@@ -201,270 +198,133 @@ export const AccountSettings: React.FC = () => {
           { label: 'Account Settings' },
         ]}
         size="medium"
-        gradient
-        glass
       />
 
       {/* Profile Settings */}
-      <Box sx={{ mb: 4 }}>
-        <ModernCard
-          variant="glass"
-          size="large"
-          color="primary"
-          animation="none"
-          title="Profile Information"
-          subtitle="Update your personal information and contact details"
-          sx={{
-            '&::before': {
-              background: `linear-gradient(135deg, ${tokens.color.primary[500]}04 0%, ${tokens.color.primary[600]}03 100%)`,
-            },
-          }}
-        >
-          <Box sx={{ position: 'relative' }}>
-            <Typography 
-              variant="h6" 
-              sx={{ 
-                color: tokens.color.neutral[800],
-                fontWeight: 600,
-                mb: 1,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 1.5,
-              }}
-            >
-              <EditIcon sx={{ color: tokens.color.primary[600] }} />
+      <Box sx={{ mb: 4, borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
+        <Box sx={{ position: 'relative' }}>
+          <Box display="flex" alignItems="center" gap={1.5} mb={1}>
+            <EditIcon color="primary" />
+            <Typography variant="h6" fontWeight={600}>
               Personal Details
             </Typography>
-            <Typography 
-              variant="body2" 
-              sx={{ 
-                color: tokens.color.neutral[600],
-                mb: 3,
-              }}
-            >
-              This information will be displayed on your profile and used for account identification.
-            </Typography>
+          </Box>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+            This information will be displayed on your profile and used for account identification.
+          </Typography>
 
-            {isUpdatingProfile && (
-              <Box sx={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255, 255, 255, 0.8)' }}>
-                <CircularProgress />
-              </Box>
-            )}
+          {isUpdatingProfile && (
+            <Box sx={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255, 255, 255, 0.8)' }}>
+              <CircularProgress />
+            </Box>
+          )}
 
-            <form onSubmit={handleProfileSubmit}>
-              <Stack spacing={3}>
-                <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2 }}>
-                  <TextField
-                    fullWidth
-                    label="First Name"
-                    value={profileData.first_name}
-                    onChange={handleProfileInputChange('first_name')}
-                    disabled={isUpdatingProfile}
-                    sx={{
-                      '& .MuiOutlinedInput-root': {
-                        ...glassPresets.light,
-                        borderRadius: tokens.spacing.radius.lg,
-                        border: `1px solid ${tokens.color.borders.glass}`,
-                        '&:hover': {
-                          border: `1px solid ${tokens.color.primary[300]}`,
-                        },
-                        '&.Mui-focused': {
-                          border: `1px solid ${tokens.color.primary[500]}`,
-                          boxShadow: `0 0 0 3px ${tokens.color.primary[500]}15`,
-                        },
-                      },
-                    }}
-                    InputProps={{
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <Person sx={{ color: tokens.color.primary[600] }} />
-                        </InputAdornment>
-                      ),
-                    }}
-                  />
-                  <TextField
-                    fullWidth
-                    label="Last Name"
-                    value={profileData.last_name}
-                    onChange={handleProfileInputChange('last_name')}
-                    disabled={isUpdatingProfile}
-                    sx={{
-                      '& .MuiOutlinedInput-root': {
-                        ...glassPresets.light,
-                        borderRadius: tokens.spacing.radius.lg,
-                        border: `1px solid ${tokens.color.borders.glass}`,
-                        '&:hover': {
-                          border: `1px solid ${tokens.color.primary[300]}`,
-                        },
-                        '&.Mui-focused': {
-                          border: `1px solid ${tokens.color.primary[500]}`,
-                          boxShadow: `0 0 0 3px ${tokens.color.primary[500]}15`,
-                        },
-                      },
-                    }}
-                    InputProps={{
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <Person sx={{ color: tokens.color.primary[600] }} />
-                        </InputAdornment>
-                      ),
-                    }}
-                  />
-                </Box>
-
+          <form onSubmit={handleProfileSubmit}>
+            <Stack spacing={3}>
+              <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2 }}>
                 <TextField
                   fullWidth
-                  label="Email Address"
-                  type="email"
-                  value={profileData.email}
-                  onChange={handleProfileInputChange('email')}
+                  label="First Name"
+                  value={profileData.first_name}
+                  onChange={handleProfileInputChange('first_name')}
                   disabled={isUpdatingProfile}
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      ...glassPresets.light,
-                      borderRadius: tokens.spacing.radius.lg,
-                      border: `1px solid ${tokens.color.borders.glass}`,
-                      '&:hover': {
-                        border: `1px solid ${tokens.color.primary[300]}`,
-                      },
-                      '&.Mui-focused': {
-                        border: `1px solid ${tokens.color.primary[500]}`,
-                        boxShadow: `0 0 0 3px ${tokens.color.primary[500]}15`,
-                      },
-                    },
-                  }}
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position="start">
-                        <Email sx={{ color: tokens.color.primary[600] }} />
+                        <Person color="primary" />
                       </InputAdornment>
                     ),
                   }}
                 />
+                <TextField
+                  fullWidth
+                  label="Last Name"
+                  value={profileData.last_name}
+                  onChange={handleProfileInputChange('last_name')}
+                  disabled={isUpdatingProfile}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <Person color="primary" />
+                      </InputAdornment>
+                    ),
+                  }}
+                />
+              </Box>
 
-                <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2 }}>
-                  <TextField
-                    fullWidth
-                    label="Phone Number"
-                    value={profileData.profile.phone}
-                    onChange={handleProfileInputChange('profile.phone')}
-                    disabled={isUpdatingProfile}
-                    sx={{
-                      '& .MuiOutlinedInput-root': {
-                        ...glassPresets.light,
-                        borderRadius: tokens.spacing.radius.lg,
-                        border: `1px solid ${tokens.color.borders.glass}`,
-                        '&:hover': {
-                          border: `1px solid ${tokens.color.primary[300]}`,
-                        },
-                        '&.Mui-focused': {
-                          border: `1px solid ${tokens.color.primary[500]}`,
-                          boxShadow: `0 0 0 3px ${tokens.color.primary[500]}15`,
-                        },
-                      },
-                    }}
-                    InputProps={{
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <Phone sx={{ color: tokens.color.primary[600] }} />
-                        </InputAdornment>
-                      ),
-                    }}
-                  />
-                  <TextField
-                    fullWidth
-                    label="Company"
-                    value={profileData.profile.company}
-                    onChange={handleProfileInputChange('profile.company')}
-                    disabled={isUpdatingProfile}
-                    sx={{
-                      '& .MuiOutlinedInput-root': {
-                        ...glassPresets.light,
-                        borderRadius: tokens.spacing.radius.lg,
-                        border: `1px solid ${tokens.color.borders.glass}`,
-                        '&:hover': {
-                          border: `1px solid ${tokens.color.primary[300]}`,
-                        },
-                        '&.Mui-focused': {
-                          border: `1px solid ${tokens.color.primary[500]}`,
-                          boxShadow: `0 0 0 3px ${tokens.color.primary[500]}15`,
-                        },
-                      },
-                    }}
-                    InputProps={{
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <Business sx={{ color: tokens.color.primary[600] }} />
-                        </InputAdornment>
-                      ),
-                    }}
-                  />
-                </Box>
+              <TextField
+                fullWidth
+                label="Email Address"
+                type="email"
+                value={profileData.email}
+                onChange={handleProfileInputChange('email')}
+                disabled={isUpdatingProfile}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <Email color="primary" />
+                    </InputAdornment>
+                  ),
+                }}
+              />
 
-                <Box sx={{ display: 'flex', justifyContent: 'flex-end', pt: 2 }}>
-                  <Button
-                    type="submit"
-                    variant="contained"
-                    disabled={isUpdatingProfile}
-                    startIcon={isUpdatingProfile ? <CircularProgress size={16} color="inherit" /> : <EditIcon />}
-                    sx={{
-                      background: `linear-gradient(135deg, ${tokens.color.primary[500]} 0%, ${tokens.color.primary[600]} 100%)`,
-                      borderRadius: tokens.spacing.radius.full,
-                      px: 4,
-                      py: 1.25,
-                      boxShadow: `0 8px 32px ${tokens.color.primary[500]}25`,
-                      fontWeight: 600,
-                      '&:hover': {
-                        background: `linear-gradient(135deg, ${tokens.color.primary[600]} 0%, ${tokens.color.primary[700]} 100%)`,
-                        boxShadow: `0 12px 40px ${tokens.color.primary[500]}35`,
-                      },
-                    }}
-                  >
-                    {isUpdatingProfile ? 'Updating...' : 'Update Profile'}
-                  </Button>
-                </Box>
-              </Stack>
-            </form>
-          </Box>
-        </ModernCard>
+              <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2 }}>
+                <TextField
+                  fullWidth
+                  label="Phone Number"
+                  value={profileData.profile.phone}
+                  onChange={handleProfileInputChange('profile.phone')}
+                  disabled={isUpdatingProfile}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <Phone color="primary" />
+                      </InputAdornment>
+                    ),
+                  }}
+                />
+                <TextField
+                  fullWidth
+                  label="Company"
+                  value={profileData.profile.company}
+                  onChange={handleProfileInputChange('profile.company')}
+                  disabled={isUpdatingProfile}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <Business color="primary" />
+                      </InputAdornment>
+                    ),
+                  }}
+                />
+              </Box>
+
+              <Box sx={{ display: 'flex', justifyContent: 'flex-end', pt: 2 }}>
+                <Button
+                  type="submit"
+                  variant="contained"
+                  color="primary"
+                  disabled={isUpdatingProfile}
+                  startIcon={isUpdatingProfile ? <CircularProgress size={16} color="inherit" /> : <EditIcon />}
+                >
+                  {isUpdatingProfile ? 'Updating...' : 'Update Profile'}
+                </Button>
+              </Box>
+            </Stack>
+          </form>
+        </Box>
       </Box>
 
       {/* Password Settings */}
-      <ModernCard
-        variant="glass"
-        size="large"
-        color="secondary"
-        animation="none"
-        title="Password Security"
-        subtitle="Update your password to keep your account secure"
-        sx={{
-          '&::before': {
-            background: `linear-gradient(135deg, ${tokens.color.secondary[500]}04 0%, ${tokens.color.secondary[600]}03 100%)`,
-          },
-        }}
-      >
+      <Box sx={{ borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
         <Box sx={{ position: 'relative' }}>
-          <Typography 
-            variant="h6" 
-            sx={{ 
-              color: tokens.color.neutral[800],
-              fontWeight: 600,
-              mb: 1,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 1.5,
-            }}
-          >
-            <SecurityIcon sx={{ color: tokens.color.secondary[600] }} />
-            Change Password
-          </Typography>
-          <Typography 
-            variant="body2" 
-            sx={{ 
-              color: tokens.color.neutral[600],
-              mb: 3,
-            }}
-          >
+          <Box display="flex" alignItems="center" gap={1.5} mb={1}>
+            <SecurityIcon color="secondary" />
+            <Typography variant="h6" fontWeight={600}>
+              Change Password
+            </Typography>
+          </Box>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
             Choose a strong password that you haven't used elsewhere.
           </Typography>
 
@@ -485,35 +345,10 @@ export const AccountSettings: React.FC = () => {
                 error={!!passwordErrors.current_password}
                 helperText={passwordErrors.current_password}
                 disabled={isChangingPassword}
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    ...glassPresets.light,
-                    borderRadius: tokens.spacing.radius.lg,
-                    border: `1px solid ${passwordErrors.current_password 
-                      ? tokens.color.error[300] 
-                      : tokens.color.borders.glass}`,
-                    '&:hover': {
-                      border: `1px solid ${passwordErrors.current_password 
-                        ? tokens.color.error[400] 
-                        : tokens.color.secondary[300]}`,
-                    },
-                    '&.Mui-focused': {
-                      border: `1px solid ${passwordErrors.current_password 
-                        ? tokens.color.error[500] 
-                        : tokens.color.secondary[500]}`,
-                      boxShadow: `0 0 0 3px ${passwordErrors.current_password 
-                        ? tokens.color.error[500] 
-                        : tokens.color.secondary[500]}15`,
-                    },
-                  },
-                }}
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
-                      <Lock sx={{ color: passwordErrors.current_password 
-                        ? tokens.color.error[600] 
-                        : tokens.color.secondary[600] 
-                      }} />
+                      <Lock color={passwordErrors.current_password ? 'error' : 'secondary'} />
                     </InputAdornment>
                   ),
                   endAdornment: (
@@ -522,7 +357,6 @@ export const AccountSettings: React.FC = () => {
                         onClick={() => togglePasswordVisibility('current')}
                         edge="end"
                         disabled={isChangingPassword}
-                        sx={{ color: tokens.color.secondary[600] }}
                       >
                         {showPasswords.current ? <VisibilityOff /> : <Visibility />}
                       </IconButton>
@@ -531,7 +365,7 @@ export const AccountSettings: React.FC = () => {
                 }}
               />
 
-              <Divider sx={{ my: 1, borderColor: tokens.color.borders.glass }} />
+              <Divider sx={{ my: 1 }} />
 
               <TextField
                 fullWidth
@@ -542,35 +376,10 @@ export const AccountSettings: React.FC = () => {
                 error={!!passwordErrors.new_password}
                 helperText={passwordErrors.new_password || 'Must be at least 8 characters'}
                 disabled={isChangingPassword}
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    ...glassPresets.light,
-                    borderRadius: tokens.spacing.radius.lg,
-                    border: `1px solid ${passwordErrors.new_password 
-                      ? tokens.color.error[300] 
-                      : tokens.color.borders.glass}`,
-                    '&:hover': {
-                      border: `1px solid ${passwordErrors.new_password 
-                        ? tokens.color.error[400] 
-                        : tokens.color.secondary[300]}`,
-                    },
-                    '&.Mui-focused': {
-                      border: `1px solid ${passwordErrors.new_password 
-                        ? tokens.color.error[500] 
-                        : tokens.color.secondary[500]}`,
-                      boxShadow: `0 0 0 3px ${passwordErrors.new_password 
-                        ? tokens.color.error[500] 
-                        : tokens.color.secondary[500]}15`,
-                    },
-                  },
-                }}
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
-                      <Lock sx={{ color: passwordErrors.new_password 
-                        ? tokens.color.error[600] 
-                        : tokens.color.secondary[600] 
-                      }} />
+                      <Lock color={passwordErrors.new_password ? 'error' : 'secondary'} />
                     </InputAdornment>
                   ),
                   endAdornment: (
@@ -579,7 +388,6 @@ export const AccountSettings: React.FC = () => {
                         onClick={() => togglePasswordVisibility('new')}
                         edge="end"
                         disabled={isChangingPassword}
-                        sx={{ color: tokens.color.secondary[600] }}
                       >
                         {showPasswords.new ? <VisibilityOff /> : <Visibility />}
                       </IconButton>
@@ -597,35 +405,10 @@ export const AccountSettings: React.FC = () => {
                 error={!!passwordErrors.confirm_password}
                 helperText={passwordErrors.confirm_password}
                 disabled={isChangingPassword}
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    ...glassPresets.light,
-                    borderRadius: tokens.spacing.radius.lg,
-                    border: `1px solid ${passwordErrors.confirm_password 
-                      ? tokens.color.error[300] 
-                      : tokens.color.borders.glass}`,
-                    '&:hover': {
-                      border: `1px solid ${passwordErrors.confirm_password 
-                        ? tokens.color.error[400] 
-                        : tokens.color.secondary[300]}`,
-                    },
-                    '&.Mui-focused': {
-                      border: `1px solid ${passwordErrors.confirm_password 
-                        ? tokens.color.error[500] 
-                        : tokens.color.secondary[500]}`,
-                      boxShadow: `0 0 0 3px ${passwordErrors.confirm_password 
-                        ? tokens.color.error[500] 
-                        : tokens.color.secondary[500]}15`,
-                    },
-                  },
-                }}
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
-                      <Lock sx={{ color: passwordErrors.confirm_password 
-                        ? tokens.color.error[600] 
-                        : tokens.color.secondary[600] 
-                      }} />
+                      <Lock color={passwordErrors.confirm_password ? 'error' : 'secondary'} />
                     </InputAdornment>
                   ),
                   endAdornment: (
@@ -634,7 +417,6 @@ export const AccountSettings: React.FC = () => {
                         onClick={() => togglePasswordVisibility('confirm')}
                         edge="end"
                         disabled={isChangingPassword}
-                        sx={{ color: tokens.color.secondary[600] }}
                       >
                         {showPasswords.confirm ? <VisibilityOff /> : <Visibility />}
                       </IconButton>
@@ -647,20 +429,9 @@ export const AccountSettings: React.FC = () => {
                 <Button
                   type="submit"
                   variant="contained"
+                  color="secondary"
                   disabled={isChangingPassword}
                   startIcon={isChangingPassword ? <CircularProgress size={16} color="inherit" /> : <SecurityIcon />}
-                  sx={{
-                    background: `linear-gradient(135deg, ${tokens.color.secondary[500]} 0%, ${tokens.color.secondary[600]} 100%)`,
-                    borderRadius: tokens.spacing.radius.full,
-                    px: 4,
-                    py: 1.25,
-                    boxShadow: `0 8px 32px ${tokens.color.secondary[500]}25`,
-                    fontWeight: 600,
-                    '&:hover': {
-                      background: `linear-gradient(135deg, ${tokens.color.secondary[600]} 0%, ${tokens.color.secondary[700]} 100%)`,
-                      boxShadow: `0 12px 40px ${tokens.color.secondary[500]}35`,
-                    },
-                  }}
                 >
                   {isChangingPassword ? 'Updating...' : 'Update Password'}
                 </Button>
@@ -668,7 +439,7 @@ export const AccountSettings: React.FC = () => {
             </Stack>
           </form>
         </Box>
-      </ModernCard>
+      </Box>
     </ModernSettingsLayout>
   );
 };

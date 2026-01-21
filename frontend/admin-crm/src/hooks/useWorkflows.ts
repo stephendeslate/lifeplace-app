@@ -6,11 +6,16 @@ import { useToastActions } from '../contexts/ToastContext';
 import type {
   WorkflowTemplateFilters,
   WorkflowStageFilters,
+  WorkflowTriggerFilters,
   CreateWorkflowTemplateData,
   UpdateWorkflowTemplateData,
   CreateWorkflowStageData,
   UpdateWorkflowStageData,
   ReorderStagesData,
+  WorkflowWebhookFilters,
+  WebhookDeliveryFilters,
+  CreateWorkflowWebhookData,
+  UpdateWorkflowWebhookData,
 } from '../types/workflows.types';
 
 interface ApiError {
@@ -94,28 +99,44 @@ export const useWorkflowTemplates = (filters?: WorkflowTemplateFilters) => {
     },
   });
 
+  const duplicateTemplateMutation = useMutation({
+    mutationFn: ({ id, newName }: { id: number; newName?: string }) =>
+      workflowsApi.duplicateWorkflowTemplate(id, newName),
+    onSuccess: (newTemplate) => {
+      queryClient.invalidateQueries({ queryKey: ['workflow-templates'] });
+      showSuccess('Template Duplicated', `${newTemplate.name} has been created as a copy.`);
+    },
+    onError: (error: ApiError) => {
+      const message = error.response?.data?.detail || 'Failed to duplicate workflow template';
+      showError('Duplicate Failed', message);
+    },
+  });
+
   return {
     // Data
     templates,
-    
+
     // Loading states
     isLoadingTemplates,
     isCreatingTemplate: createTemplateMutation.isPending,
     isUpdatingTemplate: updateTemplateMutation.isPending,
     isDeletingTemplate: deleteTemplateMutation.isPending,
-    
+    isDuplicatingTemplate: duplicateTemplateMutation.isPending,
+
     // Error states
     templatesError,
     createError: createTemplateMutation.error,
     updateError: updateTemplateMutation.error,
     deleteError: deleteTemplateMutation.error,
-    
+    duplicateError: duplicateTemplateMutation.error,
+
     // Actions
     createTemplate: createTemplateMutation.mutate,
     updateTemplate: updateTemplateMutation.mutate,
     deleteTemplate: deleteTemplateMutation.mutate,
+    duplicateTemplate: duplicateTemplateMutation.mutate,
     refetchTemplates,
-    
+
     // Hooks for specific queries
     useWorkflowTemplate,
     useActiveWorkflowTemplates,
@@ -238,5 +259,184 @@ export const useWorkflowStages = (filters?: WorkflowStageFilters) => {
     // Hooks for specific queries
     useWorkflowStage,
     useStagesForTemplate,
+  };
+};
+
+export const useWorkflowTriggers = (filters?: WorkflowTriggerFilters) => {
+  const queryClient = useQueryClient();
+  const { showSuccess, showError } = useToastActions();
+
+  // Queries
+  const {
+    data: triggers = [],
+    isLoading: isLoadingTriggers,
+    error: triggersError,
+    refetch: refetchTriggers
+  } = useQuery({
+    queryKey: ['workflow-triggers', filters],
+    queryFn: () => workflowsApi.getWorkflowTriggers(filters),
+    staleTime: 2 * 60 * 1000, // 2 minutes
+  });
+
+  const useWorkflowTrigger = (id: number) => {
+    return useQuery({
+      queryKey: ['workflow-trigger', id],
+      queryFn: () => workflowsApi.getWorkflowTrigger(id),
+      enabled: !!id,
+    });
+  };
+
+  // Mutations
+  const manualTriggerMutation = useMutation({
+    mutationFn: ({ stageId, eventId }: { stageId: number; eventId: number }) =>
+      workflowsApi.manuallyTriggerStage(stageId, eventId),
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ['workflow-triggers'] });
+      showSuccess('Trigger Executed', result.message);
+    },
+    onError: (error: ApiError) => {
+      const message = error.response?.data?.detail || 'Failed to trigger stage automation';
+      showError('Trigger Failed', message);
+    },
+  });
+
+  return {
+    // Data
+    triggers,
+
+    // Loading states
+    isLoadingTriggers,
+    isTriggering: manualTriggerMutation.isPending,
+
+    // Error states
+    triggersError,
+    triggerError: manualTriggerMutation.error,
+
+    // Actions
+    manualTrigger: manualTriggerMutation.mutate,
+    refetchTriggers,
+
+    // Hooks for specific queries
+    useWorkflowTrigger,
+  };
+};
+
+export const useWorkflowWebhooks = (filters?: WorkflowWebhookFilters) => {
+  const queryClient = useQueryClient();
+  const { showSuccess, showError } = useToastActions();
+
+  // Queries
+  const {
+    data: webhooks = [],
+    isLoading: isLoadingWebhooks,
+    error: webhooksError,
+    refetch: refetchWebhooks,
+  } = useQuery({
+    queryKey: ['workflow-webhooks', filters],
+    queryFn: () => workflowsApi.getWorkflowWebhooks(filters),
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const useWorkflowWebhook = (id: number) => {
+    return useQuery({
+      queryKey: ['workflow-webhook', id],
+      queryFn: () => workflowsApi.getWorkflowWebhook(id),
+      enabled: !!id,
+      staleTime: 2 * 60 * 1000,
+    });
+  };
+
+  const useWebhookDeliveries = (webhookId: number, filters?: WebhookDeliveryFilters) => {
+    return useQuery({
+      queryKey: ['webhook-deliveries', webhookId, filters],
+      queryFn: () => workflowsApi.getWebhookDeliveries(webhookId, filters),
+      enabled: !!webhookId,
+      staleTime: 1 * 60 * 1000,
+    });
+  };
+
+  // Mutations
+  const createWebhookMutation = useMutation({
+    mutationFn: (data: CreateWorkflowWebhookData) => workflowsApi.createWorkflowWebhook(data),
+    onSuccess: (newWebhook) => {
+      queryClient.invalidateQueries({ queryKey: ['workflow-webhooks'] });
+      showSuccess('Webhook Created', `${newWebhook.name} has been created successfully.`);
+    },
+    onError: (error: ApiError) => {
+      const message = error.response?.data?.detail || 'Failed to create webhook';
+      showError('Create Failed', message);
+    },
+  });
+
+  const updateWebhookMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: UpdateWorkflowWebhookData }) =>
+      workflowsApi.updateWorkflowWebhook(id, data),
+    onSuccess: (updatedWebhook) => {
+      queryClient.invalidateQueries({ queryKey: ['workflow-webhooks'] });
+      queryClient.invalidateQueries({ queryKey: ['workflow-webhook', updatedWebhook.id] });
+      showSuccess('Webhook Updated', `${updatedWebhook.name} has been updated successfully.`);
+    },
+    onError: (error: ApiError) => {
+      const message = error.response?.data?.detail || 'Failed to update webhook';
+      showError('Update Failed', message);
+    },
+  });
+
+  const deleteWebhookMutation = useMutation({
+    mutationFn: (id: number) => workflowsApi.deleteWorkflowWebhook(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['workflow-webhooks'] });
+      showSuccess('Webhook Deleted', 'Webhook has been deleted successfully.');
+    },
+    onError: (error: ApiError) => {
+      const message = error.response?.data?.detail || 'Failed to delete webhook';
+      showError('Delete Failed', message);
+    },
+  });
+
+  const testWebhookMutation = useMutation({
+    mutationFn: (id: number) => workflowsApi.testWorkflowWebhook(id),
+    onSuccess: (delivery) => {
+      queryClient.invalidateQueries({ queryKey: ['webhook-deliveries'] });
+      if (delivery.status === 'SUCCESS') {
+        showSuccess('Test Successful', 'Webhook test was delivered successfully.');
+      } else {
+        showError('Test Failed', delivery.error_message || 'Webhook test delivery failed.');
+      }
+    },
+    onError: (error: ApiError) => {
+      const message = error.response?.data?.detail || 'Failed to test webhook';
+      showError('Test Failed', message);
+    },
+  });
+
+  return {
+    // Data
+    webhooks,
+
+    // Loading states
+    isLoadingWebhooks,
+    isCreatingWebhook: createWebhookMutation.isPending,
+    isUpdatingWebhook: updateWebhookMutation.isPending,
+    isDeletingWebhook: deleteWebhookMutation.isPending,
+    isTestingWebhook: testWebhookMutation.isPending,
+
+    // Error states
+    webhooksError,
+    createWebhookError: createWebhookMutation.error,
+    updateWebhookError: updateWebhookMutation.error,
+    deleteWebhookError: deleteWebhookMutation.error,
+    testWebhookError: testWebhookMutation.error,
+
+    // Actions
+    createWebhook: createWebhookMutation.mutate,
+    updateWebhook: updateWebhookMutation.mutate,
+    deleteWebhook: deleteWebhookMutation.mutate,
+    testWebhook: testWebhookMutation.mutate,
+    refetchWebhooks,
+
+    // Hooks for specific queries
+    useWorkflowWebhook,
+    useWebhookDeliveries,
   };
 };

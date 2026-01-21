@@ -32,10 +32,10 @@ class NoteCreateSerializer(serializers.ModelSerializer):
     """Serializer for creating a note"""
     content_type_model = serializers.CharField(write_only=True)
     object_id = serializers.IntegerField()
-    
+
     class Meta:
         model = Note
-        fields = ['title', 'content', 'content_type_model', 'object_id']
+        fields = ['title', 'content', 'content_type_model', 'object_id', 'is_client_visible']
     
     def validate(self, attrs):
         content_type_model = attrs.pop('content_type_model', None)

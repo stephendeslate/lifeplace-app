@@ -48,6 +48,9 @@ export interface RecentUpdate {
   created_at: string;
 }
 
+// Cancellation reason types
+export type CancelledReason = 'CLIENT_REQUEST' | 'PAYMENT_TIMEOUT' | 'DATE_TAKEN' | 'ADMIN';
+
 // Base Event interface matching backend ClientEventSerializer
 export interface Event {
   id: number;
@@ -65,7 +68,17 @@ export interface Event {
   contracts_count?: number;
   pending_signature_required?: boolean;
   contract_expiry_days?: number | null;
+  // Date blocking and rebooking fields
+  date_blocked?: boolean;
+  date_blocked_at?: string | null;
+  downpayment_deadline?: string | null;
+  cancelled_reason?: CancelledReason | null;
+  cancelled_at?: string | null;
+  can_rebook?: boolean;
 }
+
+// Check-in status type
+export type CheckInStatus = 'PENDING' | 'CHECKED_IN' | 'CHECKED_OUT' | 'NO_SHOW';
 
 // Detailed Event interface matching backend ClientEventDetailSerializer
 export interface EventDetail extends Event {
@@ -83,6 +96,11 @@ export interface EventDetail extends Event {
     signed_count: number;
     percentage: number;
   };
+  // Check-in fields for client self-check-in
+  check_in_status: CheckInStatus;
+  scheduled_check_in_time: string | null;
+  actual_check_in_time: string | null;
+  can_self_check_in: boolean;
 }
 
 // Contract summary for events
@@ -114,6 +132,7 @@ export interface EventPreferencesUpdate {
 // Note interface for event notes (from notes domain)
 export interface EventNote {
   id: number;
+  title?: string;
   content: string;
   created_at: string;
   updated_at: string;

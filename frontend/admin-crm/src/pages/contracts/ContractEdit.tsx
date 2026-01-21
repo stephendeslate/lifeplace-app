@@ -4,36 +4,52 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Box,
-  Paper,
   Typography,
-  Button,
   TextField,
   Stack,
   Alert,
-  CircularProgress,
-  Breadcrumbs,
-  Link,
+  Button,
   Chip,
+  CircularProgress,
 } from '@mui/material';
 import {
   ArrowBack as ArrowBackIcon,
   Save as SaveIcon,
+  Edit as EditIcon,
+  Settings as DetailsIcon,
+  Article as ContentIcon,
 } from '@mui/icons-material';
 import { useEventContract, useUpdateEventContract } from '../../hooks/useContracts';
 import { useToast } from '../../contexts/ToastContext';
+import { useLayout } from '../../contexts/LayoutContext';
 import type { UpdateEventContractData } from '../../types/contracts.types';
 
 export const ContractEdit: React.FC = () => {
   const { contractId } = useParams<{ contractId: string }>();
   const navigate = useNavigate();
   const { showToast } = useToast();
-  
+  const { setBreadcrumbs } = useLayout();
+
   const [content, setContent] = useState('');
   const [contractValue, setContractValue] = useState('');
   const [validUntil, setValidUntil] = useState('');
 
   const { data: contract, isLoading, error } = useEventContract(contractId ? parseInt(contractId) : 0);
   const { mutate: updateContract, isPending: isUpdating } = useUpdateEventContract();
+
+  // Set breadcrumbs via layout context
+  useEffect(() => {
+    if (contract) {
+      const eventName = contract.event_details?.name || 'Event';
+
+      setBreadcrumbs([
+        { label: 'Events', path: '/events' },
+        { label: eventName, path: contract.event_details?.id ? `/events/${contract.event_details.id}` : '/events' },
+        { label: `Contract #${contract.id}`, path: `/contracts/${contract.id}` },
+        { label: 'Edit' },
+      ]);
+    }
+  }, [contract, setBreadcrumbs]);
 
   useEffect(() => {
     if (contract) {
@@ -42,6 +58,15 @@ export const ContractEdit: React.FC = () => {
       setValidUntil(contract.valid_until ? contract.valid_until.split('T')[0] : '');
     }
   }, [contract]);
+
+  // Navigation handlers - use deterministic routes
+  const handleBackToContract = () => {
+    if (contractId) {
+      navigate(`/contracts/${contractId}`);
+    } else {
+      navigate('/events');
+    }
+  };
 
   const handleSave = () => {
     if (!contractId || !contract) return;
@@ -61,7 +86,7 @@ export const ContractEdit: React.FC = () => {
             title: 'Contract Updated',
             message: 'The contract has been updated successfully.',
           });
-          navigate(-1); // Go back to previous page
+          navigate(`/contracts/${contractId}`);
         },
         onError: () => {
           showToast({
@@ -74,21 +99,24 @@ export const ContractEdit: React.FC = () => {
     );
   };
 
-  const handleBack = () => {
-    navigate(-1);
-  };
-
+  // Loading state
   if (isLoading) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
-        <CircularProgress />
+      <Box sx={{ p: 3 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', py: 8 }}>
+          <CircularProgress size={40} />
+          <Typography variant="body1" color="text.secondary" sx={{ ml: 2 }}>
+            Loading contract...
+          </Typography>
+        </Box>
       </Box>
     );
   }
 
+  // Error state
   if (error || !contract) {
     return (
-      <Box>
+      <Box sx={{ p: 3 }}>
         <Alert severity="error">
           Failed to load contract. Please try again.
         </Alert>
@@ -96,135 +124,154 @@ export const ContractEdit: React.FC = () => {
     );
   }
 
+  // Get status color
+  const getStatusColor = (): 'secondary' | 'info' | 'success' | 'warning' => {
+    switch (contract.status) {
+      case 'DRAFT': return 'secondary';
+      case 'SENT': return 'info';
+      case 'SIGNED': return 'success';
+      default: return 'warning';
+    }
+  };
+
   return (
-    <Box>
+    <Box sx={{ p: 3 }}>
       {/* Header */}
-      <Box mb={3}>
-        <Breadcrumbs sx={{ mb: 2 }}>
-          <Link color="inherit" onClick={handleBack} sx={{ cursor: 'pointer' }}>
-            Events
-          </Link>
-          <Link color="inherit" onClick={handleBack} sx={{ cursor: 'pointer' }}>
-            {contract.event_details?.name || 'Event'}
-          </Link>
-          <Typography color="text.primary">Edit Contract #{contract.id}</Typography>
-        </Breadcrumbs>
-        
-        <Box display="flex" alignItems="center" justifyContent="space-between">
-          <Box>
-            <Typography variant="h4" gutterBottom>
-              Edit Contract #{contract.id}
-            </Typography>
-            <Box display="flex" alignItems="center" gap={2}>
+      <Box
+        sx={{
+          mb: 4,
+          p: 3,
+          borderRadius: 1,
+          bgcolor: 'background.paper',
+          border: '1px solid',
+          borderColor: 'divider',
+        }}
+      >
+        <Box
+          display="flex"
+          flexDirection={{ xs: 'column', md: 'row' }}
+          justifyContent="space-between"
+          alignItems={{ xs: 'flex-start', md: 'center' }}
+          gap={2}
+        >
+          <Box display="flex" alignItems="center" gap={2}>
+            <EditIcon color="primary" sx={{ fontSize: 32 }} />
+            <Box>
+              <Box display="flex" alignItems="center" gap={2}>
+                <Typography variant="h4" component="h1" fontWeight="bold">
+                  Edit Contract #{contract.id}
+                </Typography>
+                <Chip
+                  label={contract.status_display || contract.status}
+                  color={getStatusColor()}
+                  size="small"
+                />
+              </Box>
               <Typography variant="body1" color="text.secondary">
                 Template: {contract.template_name}
               </Typography>
-              <Chip
-                label={contract.status_display || contract.status}
-                color={
-                  contract.status === 'DRAFT' ? 'default' :
-                  contract.status === 'SENT' ? 'info' :
-                  contract.status === 'SIGNED' ? 'success' : 'warning'
-                }
-                size="small"
-              />
             </Box>
           </Box>
-          
-          <Box display="flex" gap={2}>
+          <Stack direction="row" spacing={2}>
             <Button
               variant="outlined"
               startIcon={<ArrowBackIcon />}
-              onClick={handleBack}
-            >
-              Back
-            </Button>
-            <Button
-              variant="contained"
-              startIcon={<SaveIcon />}
-              onClick={handleSave}
-              disabled={isUpdating}
-            >
-              {isUpdating ? 'Saving...' : 'Save Changes'}
-            </Button>
-          </Box>
-        </Box>
-      </Box>
-
-      {/* Edit Form */}
-      <Paper sx={{ p: 4 }}>
-        <Stack spacing={4}>
-          {/* Contract Details */}
-          <Box>
-            <Typography variant="h6" gutterBottom>
-              Contract Details
-            </Typography>
-            <Stack spacing={3}>
-              <Box display="flex" gap={3}>
-                <TextField
-                  label="Contract Value"
-                  value={contractValue}
-                  onChange={(e) => setContractValue(e.target.value)}
-                  placeholder="e.g., 50000.00"
-                  helperText="Optional contract value"
-                  sx={{ minWidth: 200 }}
-                />
-                <TextField
-                  label="Valid Until"
-                  type="date"
-                  value={validUntil}
-                  onChange={(e) => setValidUntil(e.target.value)}
-                  InputLabelProps={{ shrink: true }}
-                  helperText="Leave empty for no expiration"
-                  sx={{ minWidth: 200 }}
-                />
-              </Box>
-            </Stack>
-          </Box>
-
-          {/* Contract Content */}
-          <Box>
-            <Typography variant="h6" gutterBottom>
-              Contract Content
-            </Typography>
-            <TextField
-              fullWidth
-              multiline
-              minRows={20}
-              maxRows={30}
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              placeholder="Enter contract content..."
-              helperText="Edit the contract content. You can use HTML formatting."
-              sx={{
-                '& .MuiInputBase-input': {
-                  fontFamily: 'monospace',
-                  fontSize: '14px',
-                  lineHeight: 1.5,
-                },
-              }}
-            />
-          </Box>
-
-          {/* Action Buttons */}
-          <Box display="flex" justifyContent="flex-end" gap={2} pt={2}>
-            <Button
-              variant="outlined"
-              onClick={handleBack}
+              onClick={handleBackToContract}
             >
               Cancel
             </Button>
             <Button
               variant="contained"
-              startIcon={<SaveIcon />}
+              startIcon={isUpdating ? <CircularProgress size={20} color="inherit" /> : <SaveIcon />}
               onClick={handleSave}
               disabled={isUpdating}
             >
               {isUpdating ? 'Saving...' : 'Save Changes'}
             </Button>
+          </Stack>
+        </Box>
+      </Box>
+
+      {/* Edit Form */}
+      <Stack spacing={3}>
+        {/* Contract Details */}
+        <Box
+          sx={{
+            p: 3,
+            borderRadius: 1,
+            bgcolor: 'background.paper',
+            border: '1px solid',
+            borderColor: 'divider',
+          }}
+        >
+          {/* Section Header with Icon */}
+          <Box display="flex" alignItems="center" gap={1.5} mb={3}>
+            <DetailsIcon color="primary" />
+            <Typography variant="h6" fontWeight="600">
+              Contract Details
+            </Typography>
           </Box>
-        </Stack>
-      </Paper>
+
+          <Stack spacing={3}>
+            <Box display="flex" gap={3} flexWrap="wrap">
+              <TextField
+                label="Contract Value"
+                value={contractValue}
+                onChange={(e) => setContractValue(e.target.value)}
+                placeholder="e.g., 50000.00"
+                helperText="Optional contract value"
+                sx={{ minWidth: 200, flex: 1 }}
+              />
+              <TextField
+                label="Valid Until"
+                type="date"
+                value={validUntil}
+                onChange={(e) => setValidUntil(e.target.value)}
+                slotProps={{ inputLabel: { shrink: true } }}
+                helperText="Leave empty for no expiration"
+                sx={{ minWidth: 200, flex: 1 }}
+              />
+            </Box>
+          </Stack>
+        </Box>
+
+        {/* Contract Content */}
+        <Box
+          sx={{
+            p: 3,
+            borderRadius: 1,
+            bgcolor: 'background.paper',
+            border: '1px solid',
+            borderColor: 'divider',
+          }}
+        >
+          {/* Section Header with Icon */}
+          <Box display="flex" alignItems="center" gap={1.5} mb={3}>
+            <ContentIcon color="action" />
+            <Typography variant="h6" fontWeight="600">
+              Contract Content
+            </Typography>
+          </Box>
+
+          <TextField
+            fullWidth
+            multiline
+            minRows={20}
+            maxRows={30}
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            placeholder="Enter contract content..."
+            helperText="Edit the contract content. You can use HTML formatting."
+            sx={{
+              '& .MuiInputBase-input': {
+                fontFamily: 'monospace',
+                fontSize: '14px',
+                lineHeight: 1.5,
+              },
+            }}
+          />
+        </Box>
+      </Stack>
     </Box>
   );
 };

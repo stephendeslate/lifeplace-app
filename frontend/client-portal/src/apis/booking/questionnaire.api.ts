@@ -297,7 +297,7 @@ export class QuestionnaireApi {
           uploadedFiles.push('unknown_file');
         }
       } catch (error) {
-        console.error(`Failed to upload file ${file.name}:`, error);
+        if (import.meta.env.DEV) console.error(`Failed to upload file ${file.name}:`, error);
         throw new Error(`Failed to upload ${file.name}`);
       }
     }
@@ -378,15 +378,6 @@ export class QuestionnaireApi {
    */
   static handleQuestionnaireError(error: unknown): string {
     return ErrorHandler.extractMessage(error);
-  }
-
-  /**
-   * Extract questionnaire field errors
-   * @deprecated Use ErrorHandler.extractValidationErrorsAsRecord() instead
-   */
-  static extractQuestionnaireErrors(error: unknown): Record<string, string[]> {
-    const errorData = error as {response?: {data?: {field_errors?: Record<string, string[]>}}};
-    return errorData.response?.data?.field_errors || {};
   }
 }
 

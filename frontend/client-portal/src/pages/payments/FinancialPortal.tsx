@@ -45,6 +45,7 @@ import {
   Edit as EditIcon,
   Delete as DeleteIcon,
 } from '@mui/icons-material';
+import { SEO } from '../../hooks/useSEO';
 import { GlassCard } from '../../design-system/components/GlassCard';
 import { AnimatedElement } from '../../design-system/components/AnimatedElement';
 import { useFinancialOverview, useDownloadPaymentReceipt, useDownloadInvoicePdf, usePaymentMethods } from '../../hooks/useFinancial';
@@ -244,23 +245,30 @@ const FinancialPortal: React.FC = () => {
 
   if (error) {
     return (
-      <Box sx={{ p: 4, textAlign: 'center' }}>
-        <ErrorIcon sx={{ fontSize: 64, color: 'error.main', mb: 2 }} />
-        <Typography variant="h6" gutterBottom>
-          Error Loading Financial Data
-        </Typography>
-        <Typography variant="body2" color="text.secondary" gutterBottom>
-          {error}
-        </Typography>
-        <Button 
-          variant="contained" 
-          onClick={() => refetch()}
-          startIcon={<RefreshIcon />}
-          sx={{ mt: 2 }}
-        >
-          Retry
-        </Button>
-      </Box>
+      <>
+        <SEO
+          title="Payments & Invoices | LifePlace Alfonso"
+          description="Manage your payments and invoices."
+          noIndex={true}
+        />
+        <Box sx={{ p: 4, textAlign: 'center' }}>
+          <ErrorIcon sx={{ fontSize: 64, color: 'error.main', mb: 2 }} />
+          <Typography variant="h6" gutterBottom>
+            Error Loading Financial Data
+          </Typography>
+          <Typography variant="body2" color="text.secondary" gutterBottom>
+            {error}
+          </Typography>
+          <Button
+            variant="contained"
+            onClick={() => refetch()}
+            startIcon={<RefreshIcon />}
+            sx={{ mt: 2 }}
+          >
+            Retry
+          </Button>
+        </Box>
+      </>
     );
   }
 
@@ -269,8 +277,14 @@ const FinancialPortal: React.FC = () => {
   const getTotalOverdue = () => summary?.total_overdue ? parseFloat(summary.total_overdue) : 0;
 
   return (
-    <Box>
-      {/* Header */}
+    <>
+      <SEO
+        title="Payments & Invoices | LifePlace Alfonso"
+        description="Manage your payments and invoices."
+        noIndex={true}
+      />
+      <Box>
+        {/* Header */}
       <AnimatedElement animation="slideDown" delay={100}>
         <Box sx={{ mb: 4 }}>
           <Typography variant="h4" sx={{ fontWeight: 600, mb: 1, color: 'primary.main' }}>
@@ -473,16 +487,16 @@ const FinancialPortal: React.FC = () => {
                 },
               }}
             >
-              <Tab 
-                label={`Payment History (${Array.isArray(payments) ? payments.length : 0})`}
-                icon={<PaymentIcon />} 
+              <Tab
+                label={`Invoices (${Array.isArray(invoices) ? invoices.length : 0})`}
+                icon={<ReceiptIcon />}
                 iconPosition="start"
                 id="financial-tab-0"
                 aria-controls="financial-tabpanel-0"
               />
               <Tab
-                label={`Invoices (${Array.isArray(invoices) ? invoices.length : 0})`}
-                icon={<ReceiptIcon />}
+                label={`Payment History (${Array.isArray(payments) ? payments.length : 0})`}
+                icon={<PaymentIcon />}
                 iconPosition="start"
                 id="financial-tab-1"
                 aria-controls="financial-tabpanel-1"
@@ -498,7 +512,7 @@ const FinancialPortal: React.FC = () => {
           </Box>
 
           {/* Payment History Tab */}
-          <TabPanel value={activeTab} index={0}>
+          <TabPanel value={activeTab} index={1}>
             <Box sx={{ p: 3 }}>
               <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
                 <Typography variant="h6" sx={{ fontWeight: 600 }}>
@@ -664,7 +678,7 @@ const FinancialPortal: React.FC = () => {
           </TabPanel>
 
           {/* Invoices Tab */}
-          <TabPanel value={activeTab} index={1}>
+          <TabPanel value={activeTab} index={0}>
             <Box sx={{ p: 3 }}>
               <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
                 <Typography variant="h6" sx={{ fontWeight: 600 }}>
@@ -1257,13 +1271,14 @@ const FinancialPortal: React.FC = () => {
         isOnlyMethod={Array.isArray(paymentMethods) && paymentMethods.length === 1}
       />
 
-      {/* Add Payment Method Dialog */}
-      <AddPaymentMethodDialog
-        open={addPaymentMethodOpen}
-        onClose={handleAddPaymentMethodClose}
-        onSuccess={handlePaymentMethodSuccess}
-      />
-    </Box>
+        {/* Add Payment Method Dialog */}
+        <AddPaymentMethodDialog
+          open={addPaymentMethodOpen}
+          onClose={handleAddPaymentMethodClose}
+          onSuccess={handlePaymentMethodSuccess}
+        />
+      </Box>
+    </>
   );
 };
 

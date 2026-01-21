@@ -9,42 +9,34 @@ import { useAuth } from './contexts/AuthContext';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { Login, AcceptInvitation, ForgotPassword, ResetPassword } from './pages/auth';
 import { Dashboard } from './pages/dashboard';
-import { ClientsOverview, ClientProfile } from './pages/clients';
-import { EventsOverview, EventProfile, EventsCalendar } from './pages/events';
+import { ClientsOverview, ClientProfile, NewClient } from './pages/clients';
+import { EventsOverview, EventProfile, EventsCalendar, NewEvent } from './pages/events';
 import { ContractEdit, ContractView, ContractSign } from './pages/contracts';
+import { NotFound } from './pages/NotFound';
+import { TasksPage } from './pages/tasks';
 import { CommunicationRecords } from './pages/records';
 import { NotificationsPage } from './pages/notifications';
 import { AppLayout } from './components/layout';
 
-// Analytics imports
-import { 
-  AnalyticsOverview,
-  MetricsManagement,
-  DashboardsManagement,
-  DashboardView,
-  ReportsManagement,
-  ReportView,
-  FunnelsManagement,
-  AlertsManagement,
-  EventsExplorer,
-  AnalyticsSettings,
-} from './pages/analytics';
+// Analytics imports - New simplified dashboard
+import { AnalyticsDashboard } from './pages/analytics';
 
 // Enhanced Settings imports
 import { EnhancedSettingsLayout } from './pages/settings/EnhancedSettingsLayout';
 import { EnhancedSettings } from './pages/settings/EnhancedSettings';
-import { AccountSettings, AdminUsers } from './pages/settings/account';
+import { AccountSettings, AdminUsers, CompanySettings } from './pages/settings/account';
 import { Notifications } from './pages/settings/account/Notifications';
 import { BookingFlows, BookingFlowDetails, EventTypes, BookingFlowPreviewPage } from './pages/settings/booking';
-import { ContractTemplates, QuestionnaireTemplates, WorkflowTemplates, WorkflowTemplateDetails } from './pages/settings/templates';
+import { ContractTemplates, QuestionnaireTemplates, WorkflowTemplates, WorkflowTemplateDetails, WorkflowWebhooks } from './pages/settings/templates';
 import { ProductsPackages, Payments, Sales } from './pages/settings/commerce';
 import { CurrencyTaxes } from './pages/settings/commerce/CurrencyTaxes';
+import { VIPProgram } from './pages/settings/vip/VIPProgram';
 import { CommunicationTemplates } from './pages/settings/templates/CommunicationTemplates';
-import { PaymentsOverview, PaymentProfile } from './pages/payments';
-import { FunnelAnalytics } from './pages/analytics/funnels/FunnelAnalytics';
-
-// Messaging imports
-import { MessagesOverview } from './pages/messages/MessagesOverview';
+import { EmailLayouts } from './pages/settings/templates/EmailLayouts';
+import { LegalDocumentsPage } from './pages/settings/legal';
+import { PaymentsOverview, PaymentProfile, NewPayment } from './pages/payments';
+import { SupportPage } from './pages/support';
+// FunnelAnalytics removed - functionality now in AnalyticsDashboard
 
 // Protected Route Component
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -180,95 +172,17 @@ const AppRouter: React.FC = () => {
         }
       />
 
-      {/* Analytics Routes */}
+      {/* Analytics Routes - Simplified single dashboard */}
       <Route
         path="/analytics"
         element={
           <ProtectedRoute>
-            <AnalyticsOverview />
+            <AnalyticsDashboard />
           </ProtectedRoute>
         }
       />
-      <Route
-        path="/analytics/metrics"
-        element={
-          <ProtectedRoute>
-            <MetricsManagement />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/analytics/dashboards"
-        element={
-          <ProtectedRoute>
-            <DashboardsManagement />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/analytics/dashboards/:id"
-        element={
-          <ProtectedRoute>
-            <DashboardView />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/analytics/reports"
-        element={
-          <ProtectedRoute>
-            <ReportsManagement />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/analytics/reports/:id"
-        element={
-          <ProtectedRoute>
-            <ReportView />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/analytics/funnels"
-        element={
-          <ProtectedRoute>
-            <FunnelsManagement />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/analytics/funnels/:id/analytics"
-        element={
-          <ProtectedRoute>
-            <FunnelAnalytics />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/analytics/alerts"
-        element={
-          <ProtectedRoute>
-            <AlertsManagement />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/analytics/events"
-        element={
-          <ProtectedRoute>
-            <EventsExplorer />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/analytics/settings"
-        element={
-          <ProtectedRoute>
-            <AnalyticsSettings />
-          </ProtectedRoute>
-        }
-      />
+      {/* Legacy routes redirect to main analytics */}
+      <Route path="/analytics/*" element={<Navigate to="/analytics" replace />} />
 
       {/* Event Management Routes */}
       <Route
@@ -276,6 +190,14 @@ const AppRouter: React.FC = () => {
         element={
           <ProtectedRoute>
             <EventsOverview />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/events/new"
+        element={
+          <ProtectedRoute>
+            <NewEvent />
           </ProtectedRoute>
         }
       />
@@ -324,12 +246,33 @@ const AppRouter: React.FC = () => {
         }
       />
 
+      {/* Tasks Route */}
+      <Route
+        path="/tasks"
+        element={
+          <ProtectedRoute>
+            <TasksPage />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Legacy quotes route redirects to tasks */}
+      <Route path="/quotes" element={<Navigate to="/tasks" replace />} />
+
       {/* Client Management Routes */}
       <Route
         path="/clients"
         element={
           <ProtectedRoute>
             <ClientsOverview />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/clients/new"
+        element={
+          <ProtectedRoute>
+            <NewClient />
           </ProtectedRoute>
         }
       />
@@ -352,6 +295,14 @@ const AppRouter: React.FC = () => {
         }
       />
       <Route
+        path="/payments/new"
+        element={
+          <ProtectedRoute>
+            <NewPayment />
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/payments/:id"
         element={
           <ProtectedRoute>
@@ -359,17 +310,6 @@ const AppRouter: React.FC = () => {
           </ProtectedRoute>
         }
       />
-
-      {/* Messages Routes */}
-      <Route
-        path="/messages"
-        element={
-          <ProtectedRoute>
-            <MessagesOverview />
-          </ProtectedRoute>
-        }
-      />
-
 
       {/* Records Route */}
       <Route
@@ -423,6 +363,14 @@ const AppRouter: React.FC = () => {
         element={
           <SettingsRoute>
             <Notifications />
+          </SettingsRoute>
+        }
+      />
+      <Route
+        path="/settings/account/company-settings"
+        element={
+          <SettingsRoute>
+            <CompanySettings />
           </SettingsRoute>
         }
       />
@@ -495,10 +443,26 @@ const AppRouter: React.FC = () => {
         }
       />
       <Route
+        path="/settings/templates/workflow-webhooks"
+        element={
+          <SettingsRoute>
+            <WorkflowWebhooks />
+          </SettingsRoute>
+        }
+      />
+      <Route
         path="/settings/templates/communication-templates"
         element={
           <SettingsRoute>
             <CommunicationTemplates />
+          </SettingsRoute>
+        }
+      />
+      <Route
+        path="/settings/templates/email-layouts"
+        element={
+          <SettingsRoute>
+            <EmailLayouts />
           </SettingsRoute>
         }
       />
@@ -533,6 +497,24 @@ const AppRouter: React.FC = () => {
         element={
           <SettingsRoute>
             <Sales />
+          </SettingsRoute>
+        }
+      />
+      <Route
+        path="/settings/commerce/vip-loyalty"
+        element={
+          <SettingsRoute>
+            <VIPProgram />
+          </SettingsRoute>
+        }
+      />
+
+      {/* Legal & Compliance */}
+      <Route
+        path="/settings/legal/legal-documents"
+        element={
+          <SettingsRoute>
+            <LegalDocumentsPage />
           </SettingsRoute>
         }
       />
@@ -602,10 +584,7 @@ const AppRouter: React.FC = () => {
         path="/support"
         element={
           <ProtectedRoute>
-            <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
-              <Typography variant="h4">Support</Typography>
-              <Typography color="text.secondary">Coming soon...</Typography>
-            </Box>
+            <SupportPage />
           </ProtectedRoute>
         }
       />
@@ -614,8 +593,8 @@ const AppRouter: React.FC = () => {
       {/* Default Route */}
       <Route path="/" element={<Navigate to="/dashboard" replace />} />
 
-      {/* Catch-all Route */}
-      <Route path="*" element={<Navigate to="/dashboard" replace />} />
+      {/* 404 Not Found - Better for SEO than redirect */}
+      <Route path="*" element={<NotFound />} />
     </Routes>
   );
 };

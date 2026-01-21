@@ -21,7 +21,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const userData = await authApi.getCurrentUser();
       return userData;
     } catch (error) {
-      console.error('Error fetching current user:', error);
+      if (import.meta.env.DEV) console.error('Error fetching current user:', error);
       return null;
     }
   };
@@ -50,7 +50,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         storage.setUser(userWithToken);
       }
     } catch (error) {
-      console.error('Error refreshing token:', error);
+      if (import.meta.env.DEV) console.error('Error refreshing token:', error);
       logout();
       throw error;
     }
@@ -70,7 +70,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       storage.setUser(userWithToken);
       setUser(userWithToken);
     } catch (error) {
-      console.error('Login error:', error);
+      if (import.meta.env.DEV) console.error('Login error:', error);
       throw error;
     }
   };
@@ -86,7 +86,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       storage.setUser(userWithToken);
       setUser(userWithToken);
     } catch (error) {
-      console.error('Registration error:', error);
+      if (import.meta.env.DEV) console.error('Registration error:', error);
       throw error;
     }
   };
@@ -132,7 +132,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         
         // Check if storage is available
         if (!storage.isStorageAvailable()) {
-          console.warn('localStorage is not available');
+          if (import.meta.env.DEV) console.warn('localStorage is not available');
           setIsLoading(false);
           return;
         }
@@ -163,13 +163,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             try {
               await refreshToken();
             } catch (refreshError) {
-              console.error('Failed to refresh token:', refreshError);
+              if (import.meta.env.DEV) console.error('Failed to refresh token:', refreshError);
               storage.clearAuth();
             }
           }
         }
       } catch (error) {
-        console.error('Error initializing auth:', error);
+        if (import.meta.env.DEV) console.error('Error initializing auth:', error);
         storage.clearAuth();
       } finally {
         setIsLoading(false);
@@ -185,7 +185,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Refresh token every 25 minutes (tokens expire in 30 minutes)
       const interval = setInterval(() => {
         refreshToken().catch((error) => {
-          console.error('Background token refresh failed:', error);
+          if (import.meta.env.DEV) console.error('Background token refresh failed:', error);
         });
       }, 25 * 60 * 1000);
 
@@ -218,7 +218,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (document.visibilityState === 'visible' && user) {
         // Refresh token when page becomes visible after being hidden
         refreshToken().catch((error) => {
-          console.error('Visibility refresh failed:', error);
+          if (import.meta.env.DEV) console.error('Visibility refresh failed:', error);
         });
         
         // Clean up expired cart items when page becomes visible

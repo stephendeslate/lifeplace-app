@@ -2,7 +2,7 @@
 from decimal import Decimal
 
 from core.utils.models import BaseModel
-from django.db import models
+from django.db import models, transaction
 from django.utils import timezone
 
 
@@ -20,6 +20,7 @@ class EventQuote(BaseModel):
     ])
     subtotal = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     tax_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    service_charge_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     discount_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     total_amount = models.DecimalField(max_digits=10, decimal_places=2)
     valid_until = models.DateField()
@@ -44,43 +45,96 @@ class EventQuote(BaseModel):
     
     
     def accept(self, signature_data=None):
-        """Mark quote as accepted and create contract/invoice if needed"""
-        self.status = 'ACCEPTED'
-        self.accepted_at = timezone.now()
-        if signature_data:
-            self.signature_data = signature_data
-        self.save()
-        
-        # Update event status
-        self.event.status = 'CONFIRMED'
-        self.event.accepted_quote = self
-        self.event.save()
-        
-        # Record activity
-        QuoteActivity.objects.create(
-            quote=self,
-            action='ACCEPTED',
-            action_by=self.event.client,
-            notes=f"Quote accepted by {self.event.client}"
-        )
-        
-        # This would typically trigger creation of contract and initial invoice via signals
+        """Mark quote as accepted and create contract/invoice if needed.
+
+        Uses atomic transaction with row locking to prevent race conditions
+        where multiple concurrent requests could accept the same quote.
+
+        Raises:
+            ValueError: If quote cannot be accepted (wrong status or expired)
+        """
+        with transaction.atomic():
+            # Re-fetch with row lock to prevent race conditions
+            # This ensures only one request can proceed with acceptance
+            locked_quote = EventQuote.objects.select_for_update().get(pk=self.pk)
+
+            # Validate quote can be accepted (using locked instance)
+            if locked_quote.status != 'SENT':
+                raise ValueError(f"Cannot accept quote with status '{locked_quote.status}'. Quote must be in SENT status.")
+
+            # Check if quote has expired
+            if locked_quote.valid_until and locked_quote.valid_until < timezone.now().date():
+                raise ValueError(
+                    f"Cannot accept expired quote. This quote expired on {locked_quote.valid_until}."
+                )
+
+            # Update the locked instance
+            locked_quote.status = 'ACCEPTED'
+            locked_quote.accepted_at = timezone.now()
+            if signature_data:
+                locked_quote.signature_data = signature_data
+
+            # IMPORTANT: Save quote FIRST before updating event status.
+            # This ensures QUOTE_ACCEPTED signal fires while workflow is still at LEAD stage
+            # (which has trigger_on_quote_accepted=True for contract generation).
+            #
+            # Signal handlers use instance (quote) directly for pricing calculations,
+            # NOT event.accepted_quote, so this order is safe.
+            locked_quote.save()
+
+            # Now update event - triggers STATUS_CHANGE signal which advances workflow.
+            # This must happen AFTER quote.save() so contract automation fires correctly.
+            locked_quote.event.status = 'CONFIRMED'
+            locked_quote.event.accepted_quote = locked_quote
+            locked_quote.event.save()
+
+            # Record activity
+            QuoteActivity.objects.create(
+                quote=locked_quote,
+                action='ACCEPTED',
+                action_by=locked_quote.event.client,
+                notes=f"Quote accepted by {locked_quote.event.client}"
+            )
+
+            # Sync self with locked_quote for consistency
+            self.status = locked_quote.status
+            self.accepted_at = locked_quote.accepted_at
+            self.signature_data = locked_quote.signature_data
+
+        # Contract and invoice creation is handled via signals (handle_quote_acceptance)
         
     def reject(self, reason=None):
-        """Mark quote as rejected"""
-        self.status = 'REJECTED'
-        self.rejected_at = timezone.now()
-        if reason:
-            self.rejection_reason = reason
-        self.save()
-        
-        # Record activity
-        QuoteActivity.objects.create(
-            quote=self,
-            action='REJECTED',
-            action_by=self.event.client,
-            notes=f"Quote rejected: {reason}"
-        )
+        """Mark quote as rejected.
+
+        Uses atomic transaction with row locking to prevent race conditions
+        where accept and reject could be called concurrently.
+        """
+        with transaction.atomic():
+            # Re-fetch with row lock to prevent race conditions
+            locked_quote = EventQuote.objects.select_for_update().get(pk=self.pk)
+
+            # Only allow rejection of SENT quotes
+            if locked_quote.status != 'SENT':
+                raise ValueError(f"Cannot reject quote with status '{locked_quote.status}'. Quote must be in SENT status.")
+
+            locked_quote.status = 'REJECTED'
+            locked_quote.rejected_at = timezone.now()
+            if reason:
+                locked_quote.rejection_reason = reason
+            locked_quote.save()
+
+            # Record activity
+            QuoteActivity.objects.create(
+                quote=locked_quote,
+                action='REJECTED',
+                action_by=locked_quote.event.client,
+                notes=f"Quote rejected: {reason}"
+            )
+
+            # Sync self with locked_quote for consistency
+            self.status = locked_quote.status
+            self.rejected_at = locked_quote.rejected_at
+            self.rejection_reason = locked_quote.rejection_reason
     
     def send_to_client(self, user=None):
         """Mark quote as sent, send email notification, and trigger workflow"""
@@ -112,29 +166,31 @@ class EventQuote(BaseModel):
         # Send email notification to client
         try:
             from core.domains.communications.services import CommunicationService
+            from core.domains.communications.context_service import (
+                CommunicationContextService, ContextType
+            )
 
             client = self.event.client
             if client and client.email:
                 # Initialize communication service
                 comm_service = CommunicationService()
 
-                template_data = {
-                    'client_name': client.get_full_name(),
-                    'quote_id': self.id,
-                    'quote_version': self.version,
-                    'total_amount': str(self.total_amount),
-                    'valid_until': self.valid_until.strftime('%B %d, %Y') if self.valid_until else 'N/A',
-                    'event_name': self.event.name or f'Event #{self.event.id}',
-                    'event_date': self.event.start_date.strftime('%B %d, %Y') if self.event.start_date else 'TBD',
-                }
+                # Generate context using the unified context service
+                template_data = CommunicationContextService.generate_context(
+                    context_type=ContextType.QUOTE,
+                    client=client,
+                    event=self.event,
+                    quote=self,
+                )
 
                 comm_service.send_communication(
-                    template_name='quote_sent_to_client',
+                    template_name='Quote Sent to Client',
                     recipient=client.email,
                     context_data=template_data,
                     client=client,
                     sent_by=None,
-                    use_async=False
+                    use_async=False,
+                    event=self.event
                 )
 
                 logger.info(f"Sent quote notification email to {client.email} for quote {self.id}")
@@ -144,13 +200,19 @@ class EventQuote(BaseModel):
     
     def create_next_version(self):
         """Create a new version based on this quote"""
+        # Calculate valid_until bounded by event date to prevent quotes being valid after the event
+        default_valid_until = timezone.now().date() + timezone.timedelta(days=30)
+        event_date = self.event.start_date.date() if hasattr(self.event.start_date, 'date') else self.event.start_date
+        max_valid_until = event_date - timezone.timedelta(days=1)  # At least 1 day before event
+        quote_valid_until = min(default_valid_until, max_valid_until)
+
         new_quote = EventQuote.objects.create(
             event=self.event,
             template=self.template,
             version=self.version + 1,
             status='DRAFT',
             total_amount=self.total_amount,
-            valid_until=timezone.now().date() + timezone.timedelta(days=30),
+            valid_until=quote_valid_until,
             terms_and_conditions=self.terms_and_conditions,
             notes=self.notes,
             created_by=self.created_by
@@ -166,7 +228,13 @@ class EventQuote(BaseModel):
                 tax_rate=item.tax_rate,
                 total=item.total,
                 product=item.product,
-                notes=item.notes
+                notes=item.notes,
+                item_type=item.item_type,
+                base_unit_price=item.base_unit_price,
+                excess_hours=item.excess_hours,
+                excess_hour_price=item.excess_hour_price,
+                excess_cost=item.excess_cost,
+                venue_hours_breakdown=item.venue_hours_breakdown
             )
         
         # Copy options if they exist
@@ -225,6 +293,12 @@ class QuoteTemplate(BaseModel):
         Creates a new quote for an event based on this template
         Returns the newly created quote
         """
+        # Calculate valid_until bounded by event date to prevent quotes being valid after the event
+        default_valid_until = timezone.now().date() + timezone.timedelta(days=self.default_validity_days)
+        event_date = event.start_date.date() if hasattr(event.start_date, 'date') else event.start_date
+        max_valid_until = event_date - timezone.timedelta(days=1)  # At least 1 day before event
+        quote_valid_until = min(default_valid_until, max_valid_until)
+
         # Create the quote
         quote = EventQuote.objects.create(
             event=event,
@@ -232,20 +306,32 @@ class QuoteTemplate(BaseModel):
             version=1,
             status='DRAFT',
             total_amount=0,  # Will be calculated after adding items
-            valid_until=timezone.now().date() + timezone.timedelta(days=self.default_validity_days),
+            valid_until=quote_valid_until,
             terms_and_conditions=self.terms_and_conditions,
             created_by=created_by
         )
         
         # Add products from template
-        for template_product in self.quotetemplateplateproduct_set.all():
+        for template_product in self.quotetemplateproduct_set.all():
+            # Get tax rate: if tax-inclusive use 0, otherwise use template/global default
+            product = template_product.product
+            if getattr(product, 'is_tax_inclusive', False):
+                tax_rate = Decimal('0')
+            elif self.default_tax_rate:
+                tax_rate = self.default_tax_rate.rate
+            else:
+                # Fall back to global TaxRate
+                from core.domains.payments.models import TaxRate
+                default_tax = TaxRate.objects.filter(is_default=True).first()
+                tax_rate = default_tax.rate if default_tax else Decimal('0')
+
             QuoteLineItem.objects.create(
                 quote=quote,
-                description=template_product.product.name,
+                description=product.name,
                 quantity=template_product.quantity,
-                unit_price=template_product.product.base_price,
-                tax_rate=self.default_tax_rate.rate if self.default_tax_rate else Decimal('0'),
-                product=template_product.product
+                unit_price=product.base_price,
+                tax_rate=tax_rate,
+                product=product
             )
         
         # Calculate totals manually (legacy template quotes don't go through booking flow)
@@ -326,6 +412,11 @@ class QuoteLineItem(BaseModel):
         decimal_places=2,
         default=Decimal('0.00'),
         help_text='Total excess cost (excess_hours * excess_hour_price)'
+    )
+    venue_hours_breakdown = models.JSONField(
+        null=True,
+        blank=True,
+        help_text='Per-venue hours breakdown: [{venue_id, venue_name, included_hours, additional_hours, excess_hour_price, venue_cost}]'
     )
 
     @property

@@ -1,4 +1,6 @@
 # backend/core/domains/products/serializers.py
+import json
+
 from django.utils import timezone
 from rest_framework import serializers
 from django.utils.text import slugify
@@ -76,46 +78,209 @@ class ProductOptionSerializer(serializers.ModelSerializer):
     category_path = serializers.CharField(source='category.full_path', read_only=True)
     formatted_price = serializers.CharField(read_only=True)
     price_with_tax = serializers.DecimalField(max_digits=15, decimal_places=2, read_only=True)
-    
+    # Event types - ManyToMany field for filtering packages by event type
+    # Read: returns list of IDs via SerializerMethodField
+    # Write: accepts list of IDs via input_event_type_ids
+    event_type_ids = serializers.SerializerMethodField()
+    event_type_names = serializers.SerializerMethodField()
+    # Writable field for setting event types (accepts array of IDs or JSON string)
+    input_event_type_ids = serializers.ListField(
+        child=serializers.IntegerField(),
+        write_only=True,
+        required=False,
+        allow_empty=True,
+        help_text="List of event type IDs this package is available for"
+    )
+
+    def to_internal_value(self, data):
+        """Handle JSON string input for event_type_ids (from FormData)"""
+        if 'input_event_type_ids' in data and isinstance(data.get('input_event_type_ids'), str):
+            try:
+                # Parse JSON string to list
+                data = data.copy()  # Don't modify original
+                data['input_event_type_ids'] = json.loads(data['input_event_type_ids'])
+            except (json.JSONDecodeError, TypeError):
+                pass  # Let validation handle invalid format
+        return super().to_internal_value(data)
+    # Capacity fields
+    minimum_guests = serializers.IntegerField(read_only=True, allow_null=True)
+    maximum_guests = serializers.IntegerField(read_only=True, allow_null=True)
+    # Image inheritance fields - fall back to venue images if product has none
+    effective_featured_image = serializers.SerializerMethodField()
+    effective_gallery_images = serializers.SerializerMethodField()
+    # Package inclusions - venues included in this package
+    included_venues = serializers.SerializerMethodField()
+
     class Meta:
         model = ProductOption
         fields = [
             'id', 'name', 'description', 'category', 'category_name', 'category_path',
-            'pricing_model', 'pricing_model_display', 'base_price', 'currency', 'tax_rate',
+            'pricing_model', 'pricing_model_display', 'base_price', 'currency',
+            'is_tax_inclusive',  # Indicates if base_price already includes tax
             'type', 'type_display', 'is_active', 'is_featured', 'allow_multiple', 'requires_approval',
-            'has_excess_hours', 'included_hours', 'excess_hour_price',
             'minimum_hours', 'maximum_hours', 'advance_booking_days', 'maximum_booking_days',
-            'sku', 'sort_order', 'event_type', 'formatted_price', 'price_with_tax',
+            'event_days', 'minimum_guests', 'maximum_guests',
+            'sku', 'sort_order', 'event_types', 'event_type_ids', 'event_type_names',
+            'input_event_type_ids',  # Writable field for setting event types
+            'formatted_price', 'price_with_tax',
+            'featured_image', 'gallery_images',
+            'effective_featured_image', 'effective_gallery_images',
+            'included_venues',
             'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
-    
+
+    def create(self, validated_data):
+        """Handle creation with event_type_ids"""
+        event_type_ids = validated_data.pop('input_event_type_ids', None)
+        instance = super().create(validated_data)
+
+        if event_type_ids is not None:
+            instance.event_types.set(event_type_ids)
+
+        return instance
+
+    def update(self, instance, validated_data):
+        """Handle update with event_type_ids"""
+        event_type_ids = validated_data.pop('input_event_type_ids', None)
+        instance = super().update(instance, validated_data)
+
+        if event_type_ids is not None:
+            instance.event_types.set(event_type_ids)
+
+        return instance
+
+    def get_event_type_ids(self, obj):
+        """Return list of event type IDs this package is available for"""
+        return list(obj.event_types.values_list('id', flat=True))
+
+    def get_event_type_names(self, obj):
+        """Return list of event type names this package is available for"""
+        return list(obj.event_types.values_list('name', flat=True))
+
+    def get_effective_featured_image(self, obj):
+        """
+        Return the product's featured image if set, otherwise fall back to
+        the primary venue's featured image (for packages).
+        """
+        # If product has its own featured image, use it
+        if obj.featured_image:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.featured_image.url)
+            return obj.featured_image.url
+
+        # For packages, try to get image from primary venue
+        if obj.type == 'PACKAGE' and hasattr(obj, 'package_venues'):
+            primary_venue = obj.package_venues.filter(is_primary=True).first()
+            if primary_venue and primary_venue.venue.featured_image:
+                request = self.context.get('request')
+                if request:
+                    return request.build_absolute_uri(primary_venue.venue.featured_image.url)
+                return primary_venue.venue.featured_image.url
+
+            # If no primary, try first venue
+            first_venue = obj.package_venues.first()
+            if first_venue and first_venue.venue.featured_image:
+                request = self.context.get('request')
+                if request:
+                    return request.build_absolute_uri(first_venue.venue.featured_image.url)
+                return first_venue.venue.featured_image.url
+
+        return None
+
+    def get_effective_gallery_images(self, obj):
+        """
+        Return the product's gallery images if set, otherwise fall back to
+        collecting images from all associated venues (for packages).
+        """
+        # If product has its own gallery images, use them
+        if obj.gallery_images and len(obj.gallery_images) > 0:
+            return obj.gallery_images
+
+        # For packages, collect images from all venues
+        if obj.type == 'PACKAGE' and hasattr(obj, 'package_venues'):
+            gallery = []
+            request = self.context.get('request')
+
+            for pv in obj.package_venues.select_related('venue').order_by('access_order'):
+                venue = pv.venue
+                # Add venue's featured image
+                if venue.featured_image:
+                    url = venue.featured_image.url
+                    if request:
+                        url = request.build_absolute_uri(url)
+                    gallery.append(url)
+
+                # Add venue's gallery images
+                if venue.gallery_images:
+                    for img_url in venue.gallery_images:
+                        if request and not img_url.startswith('http'):
+                            img_url = request.build_absolute_uri(img_url)
+                        gallery.append(img_url)
+
+            return gallery if gallery else []
+
+        return []
+
+    def get_included_venues(self, obj):
+        """
+        Return list of venues included in this package with enriched data.
+        Only applicable for packages (type='PACKAGE').
+        Includes venue details needed for mini card display in mobile app.
+
+        Uses the same URL building pattern as RentableVenueSerializer.get_featured_image()
+        to ensure consistent image URL handling across the API.
+        """
+        if obj.type != 'PACKAGE' or not hasattr(obj, 'package_venues'):
+            return []
+
+        venues = []
+        request = self.context.get('request')
+
+        for pv in obj.package_venues.select_related('venue').order_by('access_order'):
+            venue = pv.venue
+
+            # Build featured image URL using the same pattern as RentableVenueSerializer
+            # The venue.featured_image is an ImageFieldFile - check if it has a file
+            featured_image_url = None
+            try:
+                if venue.featured_image and venue.featured_image.name:
+                    if request:
+                        featured_image_url = request.build_absolute_uri(venue.featured_image.url)
+                    else:
+                        featured_image_url = venue.featured_image.url
+            except (ValueError, AttributeError):
+                # Handle case where ImageField has no associated file
+                featured_image_url = None
+
+            venues.append({
+                'id': venue.id,
+                'name': venue.name,
+                'code': venue.code,
+                'is_primary': pv.is_primary,
+                'is_overnight': venue.is_overnight,
+                'featured_image': featured_image_url,
+                'minimum_capacity': venue.minimum_capacity,
+                'maximum_capacity': venue.maximum_capacity,
+                'location_description': venue.location_description or '',
+            })
+        return venues
+
     def validate(self, data):
         """Validate product data"""
-        # If product has excess hours, ensure included_hours and excess_hour_price are provided
-        if data.get('has_excess_hours', False):
-            if not data.get('included_hours'):
-                raise serializers.ValidationError({'included_hours': 'Required when has_excess_hours is True'})
-            if not data.get('excess_hour_price'):
-                raise serializers.ValidationError({'excess_hour_price': 'Required when has_excess_hours is True'})
-        
-        # Validate hourly pricing requirements
-        if data.get('pricing_model') == 'HOURLY':
-            if not data.get('included_hours'):
-                raise serializers.ValidationError({'included_hours': 'Required for hourly pricing model'})
-        
         # Validate hour constraints
         min_hours = data.get('minimum_hours')
         max_hours = data.get('maximum_hours')
         if min_hours and max_hours and min_hours > max_hours:
             raise serializers.ValidationError({'maximum_hours': 'Maximum hours must be greater than minimum hours'})
-        
+
         # Validate booking day constraints
         advance_days = data.get('advance_booking_days', 0)
         max_booking_days = data.get('maximum_booking_days')
         if max_booking_days and advance_days > max_booking_days:
             raise serializers.ValidationError({'maximum_booking_days': 'Maximum booking days must be greater than advance booking days'})
-        
+
         return data
 
 

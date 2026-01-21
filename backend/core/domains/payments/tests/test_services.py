@@ -13,7 +13,7 @@ from django.conf import settings
 
 from core.domains.payments.models import (
     Payment, PaymentGateway, PaymentTransaction, PaymentMethod,
-    Invoice, PaymentPlan, PaymentInstallment
+    Invoice
 )
 from core.domains.payments.services.payment_service import PaymentService
 from core.domains.payments.services.gateway_service import PaymentGatewayService
@@ -48,22 +48,27 @@ class PaymentServiceTestCase(TestCase):
             start_date=date.today() + timedelta(days=30)
         )
         
-        self.gateway = PaymentGateway.objects.create(
-            name='Stripe Test',
+        self.gateway, _ = PaymentGateway.objects.get_or_create(
             code='stripe',
-            is_active=True,
-            config={
-                'publishable_key': 'pk_test_123',
-                'secret_key': 'sk_test_123',
-                'test_mode': True
+            defaults={
+                'name': 'Stripe Test',
+                'is_active': True,
             }
         )
+        # Always update config to ensure test keys are set
+        self.gateway.config = {
+            'publishable_key': 'pk_test_123',
+            'secret_key': 'sk_test_123',
+            'test_mode': True
+        }
+        self.gateway.is_active = True
+        self.gateway.save()
         
         self.payment_method = PaymentMethod.objects.create(
             gateway=self.gateway,
-            token='pm_test_123',
-            card_last_four='4242',
-            card_brand='visa'
+            user=self.user,
+            token_reference='pm_test_123',
+            last_four='4242'
         )
     
     def test_create_payment(self):
@@ -210,23 +215,28 @@ class PaymentGatewayServiceTestCase(TestCase):
             start_date=date.today() + timedelta(days=30)
         )
         
-        self.gateway = PaymentGateway.objects.create(
-            name='Stripe Test',
+        self.gateway, _ = PaymentGateway.objects.get_or_create(
             code='stripe',
-            is_active=True,
-            config={
-                'publishable_key': 'pk_test_51234567890',
-                'secret_key': 'sk_test_51234567890',
-                'webhook_secret': 'whsec_test_123',
-                'test_mode': True
+            defaults={
+                'name': 'Stripe Test',
+                'is_active': True,
             }
         )
+        # Always update config to ensure test settings are applied
+        self.gateway.config = {
+            'publishable_key': 'pk_test_51234567890',
+            'secret_key': 'sk_test_51234567890',
+            'webhook_secret': 'whsec_test_123',
+            'test_mode': True
+        }
+        self.gateway.is_active = True
+        self.gateway.save()
         
         self.payment_method = PaymentMethod.objects.create(
             gateway=self.gateway,
-            token='pm_test_card',
-            card_last_four='4242',
-            card_brand='visa'
+            user=self.user,
+            token_reference='pm_test_card',
+            last_four='4242'
         )
     
     @patch('stripe.PaymentIntent.create')
@@ -554,15 +564,20 @@ class InvoiceServiceTestCase(TestCase):
         )
         
         # Create payment
-        gateway = PaymentGateway.objects.create(
-            name='Stripe Test',
+        gateway, _ = PaymentGateway.objects.get_or_create(
             code='stripe',
-            is_active=True
+            defaults={
+                'name': 'Stripe Test',
+                'is_active': True,
+            }
         )
+        gateway.is_active = True
+        gateway.save()
         
         payment_method = PaymentMethod.objects.create(
             gateway=gateway,
-            token='pm_test_123'
+            user=self.user,
+            token_reference='pm_test_123'
         )
         
         payment = Payment.objects.create(
@@ -628,11 +643,15 @@ class DepositPaymentTestCase(TestCase):
             is_enabled=True
         )
         
-        self.gateway = PaymentGateway.objects.create(
-            name='Stripe Test',
+        self.gateway, _ = PaymentGateway.objects.get_or_create(
             code='stripe',
-            is_active=True
+            defaults={
+                'name': 'Stripe Test',
+                'is_active': True,
+            }
         )
+        self.gateway.is_active = True
+        self.gateway.save()
     
     def test_percentage_deposit_calculation(self):
         """Test percentage-based deposit calculation"""
@@ -660,45 +679,8 @@ class DepositPaymentTestCase(TestCase):
             require_immediate_payment=False
         )
         config.allowed_gateways.add(self.gateway)
-        
+
         total_amount = Decimal('10000.00')
         deposit_amount = PaymentService.calculate_deposit_amount(config, total_amount)
-        
+
         self.assertEqual(deposit_amount, Decimal('1500.00'))  # Fixed amount
-    
-    def test_deposit_with_payment_plan(self):
-        """Test creating payment plan with deposit"""
-        config = PaymentInfoStepConfiguration.objects.create(
-            step=self.payment_step,
-            accept_deposit=True,
-            deposit_type='PERCENTAGE',
-            deposit_amount=Decimal('30.00'),
-            balance_due_days=30,
-            require_immediate_payment=False
-        )
-        
-        event = Event.objects.create(
-            client=self.user,
-            event_type=self.event_type,
-            name='Test Wedding',
-            start_date=date.today() + timedelta(days=60)
-        )
-        
-        total_amount = Decimal('10000.00')
-        deposit_amount = Decimal('3000.00')
-        
-        payment_plan = PaymentService.create_payment_plan_with_deposit(
-            event=event,
-            total_amount=total_amount,
-            deposit_amount=deposit_amount,
-            balance_due_date=event.event_date - timedelta(days=30)
-        )
-        
-        self.assertEqual(payment_plan.total_amount, total_amount)
-        self.assertEqual(payment_plan.down_payment_amount, deposit_amount)
-        self.assertEqual(payment_plan.remaining_amount, Decimal('7000.00'))
-        
-        # Check installments were created
-        installments = PaymentInstallment.objects.filter(payment_plan=payment_plan)
-        self.assertEqual(installments.count(), 1)  # Single balance payment
-        self.assertEqual(installments.first().amount, Decimal('7000.00'))

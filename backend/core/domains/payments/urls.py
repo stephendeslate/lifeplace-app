@@ -7,22 +7,19 @@ from .views import (
     InvoiceTaxViewSet,
     InvoiceViewSet,
     PaymentGatewayViewSet,
-    PaymentInstallmentViewSet,
     PaymentMethodViewSet,
     PaymentNotificationViewSet,
-    PaymentPlanViewSet,
     PaymentSettingsViewSet,
     PaymentTransactionViewSet,
     PaymentViewSet,
     RefundViewSet,
+    StripeWebhookView,
     TaxRateViewSet,
 )
 from .client_views import (
     ClientInvoiceViewSet,
     ClientPaymentViewSet,
-    ClientPaymentInstallmentViewSet,
     ClientPaymentMethodViewSet,
-    ClientPaymentPlanViewSet,
     ClientRefundViewSet,
 )
 from .public_views import (
@@ -34,8 +31,6 @@ from .public_views import (
 router = DefaultRouter()
 router.register(r'payments', PaymentViewSet, basename='payment')
 router.register(r'invoices', InvoiceViewSet, basename='invoice')
-router.register(r'payment-plans', PaymentPlanViewSet, basename='payment-plan')
-router.register(r'installments', PaymentInstallmentViewSet, basename='installment')
 router.register(r'payment-methods', PaymentMethodViewSet, basename='payment-method')
 router.register(r'gateways', PaymentGatewayViewSet, basename='payment-gateway')
 router.register(r'settings', PaymentSettingsViewSet, basename='payment-settings')
@@ -50,8 +45,6 @@ router.register(r'notifications', PaymentNotificationViewSet, basename='notifica
 client_router = DefaultRouter()
 client_router.register(r'payments', ClientPaymentViewSet, basename='client-payment')
 client_router.register(r'invoices', ClientInvoiceViewSet, basename='client-invoice')
-client_router.register(r'payment-plans', ClientPaymentPlanViewSet, basename='client-payment-plan')
-client_router.register(r'installments', ClientPaymentInstallmentViewSet, basename='client-installment')
 client_router.register(r'payment-methods', ClientPaymentMethodViewSet, basename='client-payment-method')
 client_router.register(r'refunds', ClientRefundViewSet, basename='client-refund')
 
@@ -64,4 +57,6 @@ urlpatterns = [
     path('', include(router.urls)),
     path('client/', include(client_router.urls)),
     path('public/', include(public_router.urls)),
+    # Stripe webhook endpoint
+    path('webhooks/stripe/', StripeWebhookView.as_view(), name='stripe-webhook'),
 ]

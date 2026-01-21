@@ -1,0 +1,87 @@
+[
+  {
+    "model": "bookingflow.confirmationstepconfiguration",
+    "pk": 3,
+    "fields": {
+      "created_at": "2026-01-08T08:54:54.555",
+      "updated_at": "2026-01-08T08:54:54.555",
+      "step": 50,
+      "title": "Congratulations on Your Wedding Booking!",
+      "message": "Your wedding venue booking has been received! We're thrilled to be part of your special day.\n\nOur Wedding Coordinator will contact you within 24 hours to discuss:\n- Venue walkthrough scheduling\n- Supplier coordination\n- Timeline planning\n- Any special requests\n\nThank you for choosing LifePlace Retreat and Events Center!",
+      "show_booking_summary": true,
+      "show_next_steps": true,
+      "next_steps_content": "Next Steps:\n1. Await confirmation from our Wedding Coordinator\n2. Schedule an on-site venue visit\n3. Finalize supplier arrangements\n4. Complete your 30% downpayment within 7 days to confirm your date",
+      "send_confirmation_email": true,
+      "send_calendar_invite": false,
+      "create_event_immediately": true
+    }
+  },
+  {
+    "model": "bookingflow.confirmationstepconfiguration",
+    "pk": 4,
+    "fields": {
+      "created_at": "2026-01-08T08:54:54.563",
+      "updated_at": "2026-01-08T08:54:54.563",
+      "step": 58,
+      "title": "Camp/Retreat Booking Received!",
+      "message": "Thank you for choosing LifePlace for your camp or retreat!\n\nYour booking request has been received. Our Accounts Executive will contact you within 24 hours to:\n- Confirm availability and finalize details\n- Discuss any special requirements\n- Schedule an on-site visit if needed\n- Send the official contract for signing\n\nPlease note: Your date will be officially blocked upon receipt of the 30% downpayment (14 days before event).",
+      "show_booking_summary": true,
+      "show_next_steps": true,
+      "next_steps_content": "Next Steps:\n1. Await confirmation from our Accounts Executive\n2. Review and sign the contract\n3. Submit reservation fee (PHP 5,000)\n4. Complete 30% downpayment 14 days before event\n5. Prepare Event Order with guest list and requirements",
+      "send_confirmation_email": true,
+      "send_calendar_invite": false,
+      "create_event_immediately": true
+    }
+  },
+  {
+    "model": "bookingflow.confirmationstepconfiguration",
+    "pk": 5,
+    "fields": {
+      "created_at": "2026-01-08T08:54:54.570",
+      "updated_at": "2026-01-08T08:54:54.570",
+      "step": 66,
+      "title": "Team Building Booking Received!",
+      "message": "Your team building event booking has been received!\n\nOur Accounts Executive will contact you within 24 hours to:\n- Confirm availability\n- Discuss your team's objectives and customize activities\n- Coordinate with M-Zone facilitators\n- Prepare the official contract\n\nWe look forward to helping your team grow stronger!",
+      "show_booking_summary": true,
+      "show_next_steps": true,
+      "next_steps_content": "Next Steps:\n1. Await confirmation from our team\n2. Discuss objectives and finalize activities\n3. Submit reservation fee\n4. Complete 30% downpayment 14 days before event",
+      "send_confirmation_email": true,
+      "send_calendar_invite": false,
+      "create_event_immediately": true
+    }
+  },
+  {
+    "model": "bookingflow.confirmationstepconfiguration",
+    "pk": 6,
+    "fields": {
+      "created_at": "2026-01-08T08:54:54.575",
+      "updated_at": "2026-01-08T08:54:54.575",
+      "step": 72,
+      "title": "Workshop Inquiry Received!",
+      "message": "Thank you for your interest in hosting your workshop at LifePlace!\n\nOur team will contact you within 24 hours to:\n- Understand your workshop requirements\n- Recommend the best venue setup\n- Prepare a customized quote\n\nWe look forward to hosting your event!",
+      "show_booking_summary": true,
+      "show_next_steps": true,
+      "next_steps_content": "Next Steps:\n1. Await our call to discuss requirements\n2. Review the customized proposal\n3. Confirm booking and submit deposit",
+      "send_confirmation_email": true,
+      "send_calendar_invite": false,
+      "create_event_immediately": true
+    }
+  },
+  {
+    "model": "bookingflow.confirmationstepconfiguration",
+    "pk": 7,
+    "fields": {
+      "created_at": "2026-01-08T08:54:54.582",
+      "updated_at": "2026-01-08T08:54:54.582",
+      "step": 79,
+      "title": "Event Booking Received!",
+      "message": "Thank you for choosing LifePlace for your celebration!\n\nYour booking request has been received. Our Accounts Executive will contact you within 24 hours to:\n- Confirm availability\n- Discuss your event requirements\n- Provide a customized quotation\n- Schedule an on-site visit if needed\n\nWe look forward to making your event memorable!",
+      "show_booking_summary": true,
+      "show_next_steps": true,
+      "next_steps_content": "Next Steps:\n1. Await confirmation from our Accounts Executive\n2. Review and sign the contract\n3. Submit reservation fee\n4. Complete 30% downpayment within 7 days to officially block your date\n5. Prepare Event Order with requirements and guest list",
+      "send_confirmation_email": true,
+      "send_calendar_invite": false,
+      "create_event_immediately": true
+    }
+  }
+]

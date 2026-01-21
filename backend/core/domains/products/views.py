@@ -1,7 +1,12 @@
 # backend/core/domains/products/views.py
+import json
+import uuid
+
 from core.utils.permissions import IsAdmin
 from django.db import transaction
 from django.utils import timezone
+from django.core.files.storage import default_storage
+from django.core.files.base import ContentFile
 from rest_framework import filters, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -17,7 +22,7 @@ from .serializers import (
     ProductCategorySerializer,
     ProductCategoryTreeSerializer,
 )
-from .services import DiscountService, ProductService, ProductCategoryService
+from .services import DiscountService, ProductService, ProductCategoryService, CustomPackageService
 from .cache_service import product_cache_service
 
 logger = logging.getLogger(__name__)
@@ -33,12 +38,21 @@ class LargePagination(PageNumberPagination):
 class ProductCategoryViewSet(viewsets.ModelViewSet):
     """
     ViewSet for Product Categories
+
+    Permissions:
+    - List/Retrieve: Public (AllowAny) - categories are public catalog data
+    - Create/Update/Delete: Admin only (IsAdmin)
     """
     serializer_class = ProductCategorySerializer
-    permission_classes = [IsAdmin]
     filter_backends = [filters.SearchFilter]
     search_fields = ['name', 'description']
     pagination_class = LargePagination  # Use larger pagination for categories
+
+    def get_permissions(self):
+        """Allow public read access, require admin for write operations."""
+        if self.action in ['list', 'retrieve']:
+            return [AllowAny()]
+        return [IsAdmin()]
     
     def get_queryset(self):
         is_active = self.request.query_params.get('is_active', None)
@@ -148,63 +162,133 @@ class ProductCategoryViewSet(viewsets.ModelViewSet):
 class ProductOptionViewSet(viewsets.ModelViewSet):
     """
     ViewSet for Product options (products and packages)
+
+    Permissions:
+    - List/Retrieve: Public (AllowAny) - products are public catalog data
+    - Create/Update/Delete: Admin only (IsAdmin)
+    - create_from_venues/find_matching_packages: Public (used in booking flow)
     """
     serializer_class = ProductOptionSerializer
-    permission_classes = [AllowAny]  # Allow any user to view product options
     filter_backends = [filters.SearchFilter]
     search_fields = ['name', 'description', 'sku']
     pagination_class = LargePagination  # Use larger pagination for products
-    
+
+    def get_permissions(self):
+        """
+        SECURITY FIX (P0-B13): Allow public read access, require admin for write operations.
+        Booking flow endpoints (create_from_venues, find_matching_packages) are public.
+        """
+        # Public endpoints for reading and booking flow
+        if self.action in ['list', 'retrieve', 'packages', 'products', 'active',
+                           'batch', 'featured', 'by_category', 'all',
+                           'create_from_venues', 'find_matching_packages']:
+            return [AllowAny()]
+        # Admin required for create, update, destroy
+        return [IsAdmin()]
+
     def get_queryset(self):
         product_type = self.request.query_params.get('type', None)
         is_active = self.request.query_params.get('is_active', None)
         category_id = self.request.query_params.get('category_id', None)
         is_featured = self.request.query_params.get('is_featured', None)
-        
+        event_type_id = self.request.query_params.get('event_type_id', None)
+        event_days = self.request.query_params.get('event_days', None)
+
         # Convert string parameters to appropriate types
         if is_active is not None:
             is_active = is_active.lower() == 'true'
-        
+
         if is_featured is not None:
             is_featured = is_featured.lower() == 'true'
-        
+
         if category_id is not None:
             try:
                 category_id = int(category_id)
             except ValueError:
                 category_id = None
-        
+
+        if event_type_id is not None:
+            try:
+                event_type_id = int(event_type_id)
+            except ValueError:
+                event_type_id = None
+
+        if event_days is not None:
+            try:
+                event_days = int(event_days)
+            except ValueError:
+                event_days = None
+
         return ProductService.get_all_products(
             product_type=product_type,
             is_active=is_active,
             category_id=category_id,
-            is_featured=is_featured
+            is_featured=is_featured,
+            event_type_id=event_type_id,
+            event_days=event_days
         )
-    
+
+    def _process_gallery_images(self, request, product):
+        """Process gallery image uploads and merge with existing URLs."""
+        gallery_images = []
+
+        # Get existing gallery images from request (JSON string)
+        # Frontend sends as 'gallery_images' JSON string
+        existing_gallery_json = request.data.get('gallery_images', '[]')
+        if isinstance(existing_gallery_json, str):
+            try:
+                existing_urls = json.loads(existing_gallery_json)
+                if isinstance(existing_urls, list):
+                    gallery_images.extend(existing_urls)
+            except json.JSONDecodeError:
+                pass
+
+        # Process uploaded gallery image files
+        # Frontend sends multiple files under 'gallery_image_files'
+        gallery_files = request.FILES.getlist('gallery_image_files')
+        for file in gallery_files:
+            # Generate unique filename
+            ext = file.name.split('.')[-1] if '.' in file.name else 'jpg'
+            filename = f"products/gallery/{product.id}/{uuid.uuid4().hex}.{ext}"
+            # Save file
+            saved_path = default_storage.save(filename, ContentFile(file.read()))
+            # Build URL
+            file_url = request.build_absolute_uri(f'/media/{saved_path}')
+            gallery_images.append(file_url)
+
+        # Update product's gallery_images if we have any changes
+        if gallery_images or 'gallery_images' in request.data or 'gallery_image_files' in request.FILES:
+            product.gallery_images = gallery_images
+            product.save(update_fields=['gallery_images'])
+
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        
+
         with transaction.atomic():
             product = ProductService.create_product(serializer.validated_data)
-        
+            # Process gallery images after product is created
+            self._process_gallery_images(request, product)
+
         return Response(
-            self.get_serializer(product).data, 
+            self.get_serializer(product).data,
             status=status.HTTP_201_CREATED
         )
-    
+
     def update(self, request, *args, **kwargs):
         partial = kwargs.pop('partial', False)
         instance = self.get_object()
         serializer = self.get_serializer(instance, data=request.data, partial=partial)
         serializer.is_valid(raise_exception=True)
-        
+
         with transaction.atomic():
             product = ProductService.update_product(
-                instance.id, 
+                instance.id,
                 serializer.validated_data
             )
-        
+            # Process gallery images after product is updated
+            self._process_gallery_images(request, product)
+
         return Response(self.get_serializer(product).data)
     
     def destroy(self, request, *args, **kwargs):
@@ -300,9 +384,9 @@ class ProductOptionViewSet(viewsets.ModelViewSet):
             
             # Cache miss - get from database with optimization
             products = ProductOption.objects.filter(
-                id__in=product_ids, 
+                id__in=product_ids,
                 is_active=True
-            ).select_related('category', 'event_type')
+            ).select_related('category').prefetch_related('event_types')
             
             # Serialize and cache the result
             serializer = self.get_serializer(products, many=True)
@@ -393,10 +477,116 @@ class ProductOptionViewSet(viewsets.ModelViewSet):
         is_active = self.request.query_params.get('is_active', None)
         if is_active is not None:
             is_active = is_active.lower() == 'true'
-        
+
         products = ProductService.get_all_products(is_active=is_active)
         serializer = self.get_serializer(products, many=True)
         return Response(serializer.data)
+
+    @action(detail=False, methods=['post'])
+    def create_from_venues(self, request):
+        """
+        Create a custom package from selected venues.
+        Used by the package selection booking flow step.
+
+        Request body:
+        {
+            "venue_ids": [1, 2, 3],
+            "booking_session_id": "session-uuid",
+            "event_type_id": 1  // Optional - for event-type-specific pricing
+        }
+
+        The first venue in the list is used for excess hour pricing.
+        """
+        venue_ids = request.data.get('venue_ids', [])
+        booking_session_id = request.data.get('booking_session_id')
+        category_id = request.data.get('category_id')
+        event_type_id = request.data.get('event_type_id')
+
+        if not venue_ids:
+            return Response(
+                {'error': 'venue_ids is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if not booking_session_id:
+            return Response(
+                {'error': 'booking_session_id is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            package = CustomPackageService.create_from_venues(
+                venue_ids=venue_ids,
+                booking_session_id=booking_session_id,
+                category_id=category_id,
+                event_type_id=event_type_id,
+            )
+
+            # Get venue breakdown for response
+            breakdown = CustomPackageService.get_package_venue_breakdown(package.id)
+
+            return Response({
+                'id': package.id,
+                'name': package.name,
+                'description': package.description,
+                'base_price': str(package.base_price),
+                'is_custom': package.is_custom,
+                'bundle_discount_percent': str(package.bundle_discount_percent),
+                'venues': breakdown.get('venues', []) if breakdown else [],
+            }, status=status.HTTP_201_CREATED)
+
+        except Exception as e:
+            logger.error(f"Failed to create custom package: {str(e)}")
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+    @action(detail=False, methods=['post'])
+    def find_matching_packages(self, request):
+        """
+        Find pre-made packages that match or partially match the selected venues.
+        Returns packages with price comparison data for recommendation.
+
+        Request body:
+        {
+            "venue_ids": [1, 2, 3],
+            "bundle_discount_percent": "10.00",  // Optional
+            "event_type_id": 1  // Optional - for event-type-specific pricing
+        }
+
+        Returns:
+        {
+            "exact_matches": [...],
+            "partial_matches": [...],
+            "custom_package_estimate": {...}
+        }
+        """
+        venue_ids = request.data.get('venue_ids', [])
+        bundle_discount_percent = request.data.get('bundle_discount_percent')
+        event_type_id = request.data.get('event_type_id')
+
+        if not venue_ids:
+            return Response(
+                {'error': 'venue_ids is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            result = CustomPackageService.find_matching_packages(
+                venue_ids=venue_ids,
+                bundle_discount_percent=bundle_discount_percent,
+                event_type_id=event_type_id,
+            )
+
+            return Response(result)
+
+        except Exception as e:
+            logger.error(f"Failed to find matching packages: {str(e)}")
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
 
 class DiscountViewSet(viewsets.ModelViewSet):

@@ -1,5 +1,6 @@
 # backend/core/domains/products/models.py
 from core.utils.models import BaseModel
+from decimal import Decimal
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.utils.text import slugify
@@ -80,19 +81,19 @@ class ProductOption(BaseModel):
     pricing_model = models.CharField(max_length=10, choices=PRICING_MODEL_CHOICES, default='FIXED')
     base_price = models.DecimalField(max_digits=15, decimal_places=2)
     currency = models.CharField(max_length=3, default='PHP')
-    tax_rate = models.DecimalField(max_digits=5, decimal_places=2, default=12.00)
-    
+    is_tax_inclusive = models.BooleanField(
+        default=False,
+        help_text="If True, base_price already includes tax (no additional tax applied)"
+    )
+
     # Product configuration
     type = models.CharField(max_length=10, choices=TYPE_CHOICES)
     is_active = models.BooleanField(default=True)
     is_featured = models.BooleanField(default=False)
     allow_multiple = models.BooleanField(default=False, help_text="Allow multiple quantities per booking")
     requires_approval = models.BooleanField(default=False, help_text="Requires admin approval before booking")
-    
+
     # Time-based configuration
-    has_excess_hours = models.BooleanField(default=False)
-    included_hours = models.PositiveIntegerField(null=True, blank=True)
-    excess_hour_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     minimum_hours = models.PositiveIntegerField(null=True, blank=True, help_text="Minimum booking duration")
     maximum_hours = models.PositiveIntegerField(null=True, blank=True, help_text="Maximum booking duration")
     
@@ -105,12 +106,56 @@ class ProductOption(BaseModel):
     maximum_guests = models.PositiveIntegerField(null=True, blank=True, help_text="Maximum guest capacity")
     recommended_guests = models.PositiveIntegerField(null=True, blank=True, help_text="Recommended guest count")
 
+    # Event duration configuration (for multi-day event types like camps/retreats)
+    event_days = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        help_text="Exact number of days for this package (e.g., 2 for 2D1N, 3 for 3D2N). Null means no restriction."
+    )
+
     # Business metadata
     sku = models.CharField(max_length=50, unique=True, null=True, blank=True)
     sort_order = models.PositiveIntegerField(default=0)
-    
-    # Event type compatibility (keep for backwards compatibility)
-    event_type = models.ForeignKey('events.EventType', on_delete=models.PROTECT, null=True, blank=True)
+
+    # Images
+    featured_image = models.ImageField(
+        upload_to='products/images/',
+        null=True,
+        blank=True,
+        help_text="Main image shown in listings and cards"
+    )
+    gallery_images = models.JSONField(
+        default=list,
+        blank=True,
+        help_text="List of image URLs for product gallery"
+    )
+
+    # Event type compatibility - packages can be available for multiple event types
+    # If empty, package is hidden when filter_by_event_type is enabled
+    event_types = models.ManyToManyField(
+        'events.EventType',
+        blank=True,
+        related_name='packages',
+        help_text="Event types this package is available for. Empty = hidden when filtering by event type."
+    )
+
+    # Custom package tracking (for venue selection curation)
+    is_custom = models.BooleanField(
+        default=False,
+        help_text="True if this package was generated from venue selection"
+    )
+    booking_session_id = models.CharField(
+        max_length=100,
+        null=True,
+        blank=True,
+        help_text="Booking session that created this custom package (for cleanup)"
+    )
+    bundle_discount_percent = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        default=Decimal('0.00'),
+        help_text="Discount applied for multi-venue custom packages"
+    )
 
     class Meta:
         ordering = ['category__sort_order', 'sort_order', 'name']
@@ -131,10 +176,20 @@ class ProductOption(BaseModel):
     
     @property
     def price_with_tax(self):
-        """Calculate price including tax"""
+        """Calculate price including tax using global default tax rate"""
+        from core.domains.payments.models import TaxRate
+
         if self.pricing_model == 'CUSTOM':
             return None
-        tax_multiplier = 1 + (self.tax_rate / 100)
+
+        # If tax-inclusive, price already includes tax
+        if self.is_tax_inclusive:
+            return self.base_price
+
+        # Get global default tax rate
+        default_tax = TaxRate.objects.filter(is_default=True).first()
+        tax_rate = default_tax.rate if default_tax else 0
+        tax_multiplier = 1 + (tax_rate / 100)
         return self.base_price * tax_multiplier
 
 
@@ -205,7 +260,7 @@ class Discount(BaseModel):
         
         # Check client usage limits
         if self.max_uses_per_client:
-            # from core.domains.orders.models import Order  # Assuming future orders domain
+            # TODO: Implement per-client tracking when orders domain is created
             client_usage = self.current_uses  # Simplified for now
             if client_usage >= self.max_uses_per_client:
                 return False

@@ -108,7 +108,7 @@ export class PaymentFlowManager {
    */
   public async initializePayment(config: PaymentConfig): Promise<PaymentSession> {
     try {
-      console.log('🚀 Initializing payment with config:', config);
+      if (import.meta.env.DEV) console.log('🚀 Initializing payment with config:', config);
 
       // Determine best gateway for this payment
       const gatewayCode = await this.selectOptimalGateway(config);
@@ -128,11 +128,11 @@ export class PaymentFlowManager {
       // Store active session
       this.activeSessions.set(session.sessionId, session);
 
-      console.log('✅ Payment session initialized:', session.sessionId);
+      if (import.meta.env.DEV) console.log('✅ Payment session initialized:', session.sessionId);
       return session;
 
     } catch (error) {
-      console.error('❌ Failed to initialize payment:', error);
+      if (import.meta.env.DEV) console.error('❌ Failed to initialize payment:', error);
       throw this.createPaymentError('initialization_failed', 'Failed to initialize payment', error);
     }
   }
@@ -142,7 +142,7 @@ export class PaymentFlowManager {
    */
   public async processPayment(session: PaymentSession, paymentData?: unknown): Promise<PaymentResult> {
     try {
-      console.log('💳 Processing payment for session:', session.sessionId);
+      if (import.meta.env.DEV) console.log('💳 Processing payment for session:', session.sessionId);
 
       // Update session status
       session.status = 'processing';
@@ -164,7 +164,7 @@ export class PaymentFlowManager {
       return result;
 
     } catch (error) {
-      console.error('❌ Payment processing failed:', error);
+      if (import.meta.env.DEV) console.error('❌ Payment processing failed:', error);
       session.status = 'failed';
       session.error = this.createPaymentError('processing_failed', 'Payment processing failed', error);
 
@@ -181,7 +181,7 @@ export class PaymentFlowManager {
    */
   public async handlePaymentError(error: PaymentError, session?: PaymentSession): Promise<ErrorRecovery> {
     try {
-      console.log('🔧 Handling payment error:', error);
+      if (import.meta.env.DEV) console.log('🔧 Handling payment error:', error);
 
       const recovery: ErrorRecovery = {
         canRetry: false,
@@ -211,7 +211,7 @@ export class PaymentFlowManager {
       return recovery;
 
     } catch (recoveryError) {
-      console.error('❌ Error handling failed:', recoveryError);
+      if (import.meta.env.DEV) console.error('❌ Error handling failed:', recoveryError);
       return {
         canRetry: false,
         suggestedAction: 'Please contact support for assistance'
@@ -224,7 +224,7 @@ export class PaymentFlowManager {
    */
   public async retryPayment(session: PaymentSession, useAlternativeGateway?: boolean): Promise<PaymentResult> {
     try {
-      console.log('🔄 Retrying payment for session:', session.sessionId);
+      if (import.meta.env.DEV) console.log('🔄 Retrying payment for session:', session.sessionId);
 
       if (useAlternativeGateway) {
         // Switch to alternative gateway
@@ -243,7 +243,7 @@ export class PaymentFlowManager {
       return await this.processPayment(session);
 
     } catch (error) {
-      console.error('❌ Payment retry failed:', error);
+      if (import.meta.env.DEV) console.error('❌ Payment retry failed:', error);
       return {
         success: false,
         message: 'Payment retry failed',
@@ -272,7 +272,7 @@ export class PaymentFlowManager {
       return [];
 
     } catch (error) {
-      console.error('❌ Failed to get available gateways:', error);
+      if (import.meta.env.DEV) console.error('❌ Failed to get available gateways:', error);
       return [];
     }
   }
@@ -282,7 +282,7 @@ export class PaymentFlowManager {
    */
   private async initializeGateways(): Promise<void> {
     try {
-      console.log('🔧 Initializing payment gateways...');
+      if (import.meta.env.DEV) console.log('🔧 Initializing payment gateways...');
 
       // Get available gateways from backend
       const gateways = await this.getAvailableGateways();
@@ -291,14 +291,14 @@ export class PaymentFlowManager {
         try {
           await this.initializeGateway(gateway);
         } catch (error) {
-          console.warn(`⚠️ Failed to initialize gateway ${gateway.code}:`, error);
+          if (import.meta.env.DEV) console.warn(`⚠️ Failed to initialize gateway ${gateway.code}:`, error);
         }
       }
 
-      console.log('✅ Payment gateways initialized');
+      if (import.meta.env.DEV) console.log('✅ Payment gateways initialized');
 
     } catch (error) {
-      console.error('❌ Failed to initialize gateways:', error);
+      if (import.meta.env.DEV) console.error('❌ Failed to initialize gateways:', error);
     }
   }
 
@@ -314,7 +314,7 @@ export class PaymentFlowManager {
         await this.initializePayPal(config);
         break;
       default:
-        console.warn(`⚠️ Unknown gateway: ${config.code}`);
+        if (import.meta.env.DEV) console.warn(`⚠️ Unknown gateway: ${config.code}`);
     }
   }
 
@@ -332,7 +332,7 @@ export class PaymentFlowManager {
     }
 
     this.gatewayInstances.set('stripe', stripe);
-    console.log('✅ Stripe initialized');
+    if (import.meta.env.DEV) console.log('✅ Stripe initialized');
   }
 
   /**
@@ -340,7 +340,7 @@ export class PaymentFlowManager {
    */
   private async initializePayPal(_config: GatewayConfig): Promise<void> {
     // TODO: Implement PayPal initialization
-    console.log('⚠️ PayPal gateway not yet implemented');
+    if (import.meta.env.DEV) console.log('⚠️ PayPal gateway not yet implemented');
   }
 
   /**
@@ -466,7 +466,7 @@ export class PaymentFlowManager {
       }
 
     } catch (error) {
-      console.error('❌ Stripe payment failed:', error);
+      if (import.meta.env.DEV) console.error('❌ Stripe payment failed:', error);
       const errorMessage = error instanceof Error ? error.message : 'Payment failed';
       const errorCode = (error && typeof error === 'object' && 'code' in error) ? String(error.code) : 'stripe_error';
 

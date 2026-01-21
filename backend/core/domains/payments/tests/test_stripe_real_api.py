@@ -77,10 +77,9 @@ class StripeRealAPITestCase(TestCase):
         # Create payment method with test card
         self.payment_method = PaymentMethod.objects.create(
             gateway=self.gateway,
-            client=self.user,
-            token='pm_card_visa',  # Stripe test payment method
-            card_last_four='4242',
-            card_brand='visa',
+            user=self.user,
+            token_reference='pm_card_visa',  # Stripe test payment method
+            last_four='4242',
             is_default=True
         )
     

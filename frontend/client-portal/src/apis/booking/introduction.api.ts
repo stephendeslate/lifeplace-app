@@ -1,7 +1,6 @@
 // frontend/client-portal/src/apis/booking/introduction.api.ts
 
 import api from '../../utils/api';
-import { ErrorHandler } from '../../utils/errorHandler';
 import type {
   IntroductionStepData,
   StepValidationResult,
@@ -83,22 +82,6 @@ export class IntroductionApi {
     return {
       acknowledged: false,
     };
-  }
-
-  /**
-   * Handle API errors
-   * @deprecated Use ErrorHandler.extractMessage() instead
-   */
-  static handleApiError(error: unknown): string {
-    return ErrorHandler.extractMessage(error);
-  }
-
-  /**
-   * Extract validation errors from API response
-   * @deprecated Use ErrorHandler.extractValidationErrorsAsRecord() instead
-   */
-  static extractValidationErrors(error: unknown): Record<string, string[]> {
-    return ErrorHandler.extractValidationErrorsAsRecord(error);
   }
 }
 

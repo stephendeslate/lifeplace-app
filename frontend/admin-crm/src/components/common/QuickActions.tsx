@@ -33,7 +33,6 @@ import {
   Flag as FlagIcon,
   MoreVert as MoreVertIcon,
   Phone as PhoneIcon,
-  Videocam as VideoIcon,
 } from '@mui/icons-material';
 
 export interface QuickAction {
@@ -298,11 +297,11 @@ export const createEventActions = (eventId: number, onAction: (actionType: strin
   },
   {
     id: 'send-message',
-    label: 'Send Message',
+    label: 'Send Email',
     icon: <EmailIcon />,
     category: 'primary',
     onClick: () => onAction('send-message', eventId),
-    tooltip: 'Send email or SMS to client',
+    tooltip: 'Send email to client',
   },
   {
     id: 'create-quote',
@@ -334,55 +333,64 @@ export const createEventActions = (eventId: number, onAction: (actionType: strin
   },
 ];
 
-export const createClientActions = (clientId: number, onAction: (actionType: string, clientId: number) => void): QuickAction[] => [
-  {
-    id: 'create-event',
-    label: 'Create Event',
-    icon: <AddIcon />,
-    color: 'primary',
-    category: 'primary',
-    onClick: () => onAction('create-event', clientId),
-    tooltip: 'Create new event for this client',
-  },
-  {
-    id: 'send-message',
-    label: 'Send Message',
-    icon: <EmailIcon />,
-    category: 'primary',
-    onClick: () => onAction('send-message', clientId),
-    tooltip: 'Send email or SMS',
-  },
-  {
-    id: 'call-client',
-    label: 'Call Client',
-    icon: <PhoneIcon />,
-    category: 'primary',
-    onClick: () => onAction('call-client', clientId),
-    tooltip: 'Initiate phone call',
-  },
-  {
-    id: 'video-meeting',
-    label: 'Video Meeting',
-    icon: <VideoIcon />,
-    category: 'secondary',
-    onClick: () => onAction('video-meeting', clientId),
-  },
-  {
-    id: 'send-invoice',
-    label: 'Send Invoice',
-    icon: <ReceiptIcon />,
-    color: 'secondary',
-    category: 'secondary',
-    onClick: () => onAction('send-invoice', clientId),
-  },
-  {
-    id: 'add-note',
-    label: 'Add Note',
-    icon: <NoteIcon />,
-    category: 'tertiary',
-    onClick: () => onAction('add-note', clientId),
-  },
-];
+export const createClientActions = (
+  clientId: number,
+  onAction: (actionType: string, clientId: number) => void,
+  clientPhone?: string
+): QuickAction[] => {
+  const actions: QuickAction[] = [
+    {
+      id: 'create-event',
+      label: 'Create Event',
+      icon: <AddIcon />,
+      color: 'primary',
+      category: 'primary',
+      onClick: () => onAction('create-event', clientId),
+      tooltip: 'Create new event for this client',
+    },
+    {
+      id: 'send-message',
+      label: 'Send Email',
+      icon: <EmailIcon />,
+      category: 'primary',
+      onClick: () => onAction('send-message', clientId),
+      tooltip: 'Send email to client',
+    },
+  ];
+
+  // Only add call client if phone number is available
+  if (clientPhone) {
+    actions.push({
+      id: 'call-client',
+      label: 'Call Client',
+      icon: <PhoneIcon />,
+      category: 'primary',
+      onClick: () => onAction('call-client', clientId),
+      tooltip: `Call ${clientPhone}`,
+    });
+  }
+
+  actions.push(
+    {
+      id: 'create-invoice',
+      label: 'Create Invoice',
+      icon: <ReceiptIcon />,
+      color: 'secondary',
+      category: 'secondary',
+      onClick: () => onAction('create-invoice', clientId),
+      tooltip: 'Create invoice for this client',
+    },
+    {
+      id: 'add-note',
+      label: 'Add Note',
+      icon: <NoteIcon />,
+      category: 'tertiary',
+      onClick: () => onAction('add-note', clientId),
+    }
+  );
+
+  return actions;
+};
 
 export const createPaymentActions = (paymentId: number, status: string, onAction: (actionType: string, paymentId: number) => void): QuickAction[] => {
   const actions: QuickAction[] = [

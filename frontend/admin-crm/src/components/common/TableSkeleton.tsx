@@ -28,7 +28,7 @@ export const TableSkeleton: React.FC<TableSkeletonProps> = ({
 }) => {
   return (
     <TableContainer component={Paper}>
-      <Table>
+      <Table size="small">
         <TableHead>
           <TableRow>
             {Array.from({ length: columns }).map((_, index) => (

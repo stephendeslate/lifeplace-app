@@ -74,7 +74,6 @@ export const DiscountFormDialog: React.FC<DiscountFormDialogProps> = ({
   useEffect(() => {
     if (open) {
       if (editingDiscount) {
-        console.log('Editing discount:', editingDiscount);
         setFormData({
           name: editingDiscount.name || '',
           code: editingDiscount.code || '',

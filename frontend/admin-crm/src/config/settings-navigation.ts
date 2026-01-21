@@ -14,6 +14,10 @@ import {
   TrendingUp,
   Psychology,
   CurrencyExchange,
+  Star,
+  Gavel,
+  Business,
+  DesignServices,
 } from '@mui/icons-material';
 import type { SettingsNavigationGroup } from '../types/settings.types';
 
@@ -42,6 +46,13 @@ export const settingsNavigationConfig: SettingsNavigationGroup[] = [
         path: '/settings/account/notifications',
         icon: Notifications,
         description: 'Configure notification preferences',
+      },
+      {
+        id: 'company-settings',
+        label: 'Company Settings',
+        path: '/settings/account/company-settings',
+        icon: Business,
+        description: 'Configure company branding and PDF settings',
       },
     ],
   },
@@ -97,6 +108,13 @@ export const settingsNavigationConfig: SettingsNavigationGroup[] = [
         icon: Message,
         description: 'Manage email and SMS templates',
       },
+      {
+        id: 'email-layouts',
+        label: 'Email Layouts',
+        path: '/settings/templates/email-layouts',
+        icon: DesignServices,
+        description: 'Manage email layout branding',
+      },
     ],
   },
   {
@@ -130,6 +148,26 @@ export const settingsNavigationConfig: SettingsNavigationGroup[] = [
         path: '/settings/commerce/sales',
         icon: TrendingUp,
         description: 'Manage sales settings',
+      },
+      {
+        id: 'vip-loyalty',
+        label: 'VIP & Loyalty',
+        path: '/settings/commerce/vip-loyalty',
+        icon: Star,
+        description: 'Configure VIP program and rewards',
+      },
+    ],
+  },
+  {
+    id: 'legal',
+    label: 'Legal & Compliance',
+    items: [
+      {
+        id: 'legal-documents',
+        label: 'Legal Documents',
+        path: '/settings/legal/legal-documents',
+        icon: Gavel,
+        description: 'Manage Terms of Service and Privacy Policy',
       },
     ],
   },

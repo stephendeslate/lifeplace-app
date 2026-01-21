@@ -17,7 +17,7 @@ import {
   type UpdateEventTypeData,
 } from '../../types/events.types';
 import { tokens } from '../../design-system';
-import { glassPresets } from '../../design-system/utils/glassmorphism';
+import { glassInputStyles } from '../../design-system/utils/glassmorphism';
 
 const defaultFormData: EventTypeFormData = {
   name: '',
@@ -142,24 +142,7 @@ export const EventTypeFormDialog: React.FC<EventTypeFormDialogProps> = ({
                   helperText={errors.name}
                   required
                   placeholder="e.g., Wedding, Corporate Event, Birthday Party"
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      ...glassPresets.light,
-                      borderRadius: tokens.spacing.radius.lg,
-                      border: `1px solid ${tokens.color.borders.glass}`,
-                      '&:hover': {
-                        border: `1px solid ${tokens.color.primary[300]}`,
-                      },
-                      '&.Mui-focused': {
-                        border: `1px solid ${tokens.color.primary[500]}`,
-                        boxShadow: `0 0 0 3px ${tokens.color.primary[500]}15`,
-                      },
-                      '&.Mui-error': {
-                        border: `1px solid ${tokens.color.error[500]}`,
-                        boxShadow: `0 0 0 3px ${tokens.color.error[500]}15`,
-                      },
-                    },
-                  }}
+                  sx={glassInputStyles}
                 />
                 
                 <TextField
@@ -172,28 +155,15 @@ export const EventTypeFormDialog: React.FC<EventTypeFormDialogProps> = ({
                   multiline
                   rows={4}
                   placeholder="Describe this event type and what makes it unique..."
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      ...glassPresets.light,
-                      borderRadius: tokens.spacing.radius.lg,
-                      border: `1px solid ${tokens.color.borders.glass}`,
-                      '&:hover': {
-                        border: `1px solid ${tokens.color.primary[300]}`,
-                      },
-                      '&.Mui-focused': {
-                        border: `1px solid ${tokens.color.primary[500]}`,
-                        boxShadow: `0 0 0 3px ${tokens.color.primary[500]}15`,
-                      },
-                    },
-                  }}
+                  sx={glassInputStyles}
                 />
 
                 <Box
                   sx={{
                     p: 3,
                     borderRadius: tokens.spacing.radius.lg,
-                    ...glassPresets.light,
                     border: `1px solid ${tokens.color.borders.glass}`,
+                    backgroundColor: tokens.color.neutral[50],
                   }}
                 >
                   <FormControlLabel

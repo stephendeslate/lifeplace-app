@@ -59,6 +59,24 @@ export const spacing = {
   },
 };
 
+export const layoutComponents = {
+  // Header heights
+  header: {
+    height: '64px',
+    heightMobile: '56px',
+  },
+  // Sidebar dimensions
+  sidebar: {
+    width: '280px',
+    widthCollapsed: '64px',
+  },
+  // Header padding offsets (for content below fixed header)
+  contentOffset: {
+    mobile: '120px',
+    desktop: '140px',
+  },
+};
+
 export const layout = {
   // Container widths
   maxWidth: {

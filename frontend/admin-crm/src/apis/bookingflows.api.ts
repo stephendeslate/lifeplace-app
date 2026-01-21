@@ -21,6 +21,7 @@ import type {
   DuplicateFlowData,
   AssignQuestionnairesData,
   StepConfiguration,
+  PaymentTermsConfiguration,
 } from '../types/bookingflows.types';
 import type { PaginatedResponse } from '../types/common.types';
 
@@ -190,6 +191,32 @@ export const bookingFlowsApi = {
 
   updateStepConfiguration: async (stepId: number, data: Record<string, unknown>): Promise<StepConfiguration> => {
     const response = await api.patch<StepConfiguration>(`/bookingflow/steps/${stepId}/update_configuration/`, data);
+    return response.data;
+  },
+
+  // Payment Terms Configuration (for payment_info steps)
+  getPaymentTermsConfiguration: async (stepId: number): Promise<PaymentTermsConfiguration | null> => {
+    try {
+      const response = await api.get<PaymentTermsConfiguration>(
+        `/bookingflow/steps/${stepId}/payment_terms_configuration/`
+      );
+      return response.data;
+    } catch (error) {
+      if ((error as { response?: { status?: number } }).response?.status === 404) {
+        return null;
+      }
+      throw error;
+    }
+  },
+
+  updatePaymentTermsConfiguration: async (
+    stepId: number,
+    data: Partial<PaymentTermsConfiguration>
+  ): Promise<PaymentTermsConfiguration> => {
+    const response = await api.patch<PaymentTermsConfiguration>(
+      `/bookingflow/steps/${stepId}/update_payment_terms_configuration/`,
+      data
+    );
     return response.data;
   },
 

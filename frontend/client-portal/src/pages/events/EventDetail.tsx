@@ -1,7 +1,7 @@
 // frontend/client-portal/src/pages/events/EventDetail.tsx
 
 import React, { useState } from 'react';
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useParams, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { useCurrencySettings } from '../../hooks/useCurrency';
 import {
   Box,
@@ -32,18 +32,20 @@ import {
   Timeline as TimelineIcon,
   Folder as DocumentsIcon,
   Task as TasksIcon,
-  Note as NotesIcon,
   CalendarToday as CalendarIcon,
   Payment as PaymentIcon,
   Assignment as ContractIcon,
   Assignment as QuestionnaireIcon,
   Feedback as FeedbackIcon,
   RequestQuote as RequestQuoteIcon,
+  Receipt as InvoiceIcon,
+  Login as CheckInIcon,
+  Note as NotesIcon,
 } from '@mui/icons-material';
-import { format } from 'date-fns';
-import { formatInTimeZone } from 'date-fns-tz';
 import { useEventsWithContracts } from '../../hooks/useEventsWithContracts';
+import { formatPhilippinesTime } from '../../utils/timezone';
 import { useEventQuotes } from '../../hooks/useEventQuotes';
+import { useInvoices } from '../../hooks/useFinancial';
 import {
   EventStatusBadge,
   EventCountdown,
@@ -53,11 +55,35 @@ import {
   EventFeedback,
   EventQuestionnaires,
   EventQuotes,
-  ContractStatusChip
+  EventInvoices,
+  EventNotes,
+  ContractStatusChip,
+  EventMilestones,
 } from '../../components/events';
+import { EventCheckIn } from '../../components/events/EventCheckIn';
 import ContractSigningDialog from '../../components/contracts/ContractSigningDialog';
 import { contractsApi } from '../../apis/contracts.api';
 import type { Contract } from '../../types/contracts.types';
+
+/**
+ * Tab index constants for EventDetail page.
+ * These correspond to the tab order in the EventDetail component.
+ * Exported for use in navigation from other components.
+ */
+export const EVENT_TAB_INDICES = {
+  TIMELINE: 0,
+  QUESTIONNAIRES: 1,
+  CONTRACTS: 2,
+  DOCUMENTS: 3,
+  TASKS: 4,
+  FEEDBACK: 5,
+  QUOTES: 6,
+  INVOICES: 7,
+  CHECKIN: 8,
+  NOTES: 9,
+} as const;
+
+export type EventTabIndex = typeof EVENT_TAB_INDICES[keyof typeof EVENT_TAB_INDICES];
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -89,9 +115,22 @@ const EventDetail: React.FC = () => {
   const theme = useTheme();
   const { formatAmount } = useCurrencySettings();
   const location = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
 
-  // State management - initialize activeTab from navigation state if present
+  // State management - initialize activeTab from:
+  // 1. URL query param (?tab=N) - enables deep linking from emails
+  // 2. Navigation state ({ activeTab: N }) - for internal navigation
+  // 3. Default to 0 (Timeline)
   const [activeTab, setActiveTab] = useState(() => {
+    // First check URL query param for deep linking support
+    const tabParam = searchParams.get('tab');
+    if (tabParam !== null) {
+      const tabIndex = parseInt(tabParam, 10);
+      if (!isNaN(tabIndex) && tabIndex >= 0 && tabIndex <= EVENT_TAB_INDICES.NOTES) {
+        return tabIndex;
+      }
+    }
+    // Fall back to navigation state for internal navigation
     return (location.state as { activeTab?: number })?.activeTab ?? 0;
   });
   const [preferencesDialogOpen, setPreferencesDialogOpen] = useState(false);
@@ -101,24 +140,18 @@ const EventDetail: React.FC = () => {
 
   // Data fetching with contract integration
   const eventId = parseInt(id || '0');
-  const { useEventWithContracts, useEventNotes, useUpdatePreferences, useEventContracts } = useEventsWithContracts();
-  
-  const { 
-    data: event, 
-    isLoading: isLoadingEvent, 
-    error: eventError 
+  const { useEventWithContracts, useUpdatePreferences, useEventContracts } = useEventsWithContracts();
+
+  const {
+    data: event,
+    isLoading: isLoadingEvent,
+    error: eventError
   } = useEventWithContracts(eventId);
-  
-  const { 
-    data: notes = [], 
-    isLoading: isLoadingNotes 
-  } = useEventNotes(eventId);
   
   // Get contracts for this event
   const {
     contracts: eventContracts,
     isLoading: isLoadingContracts,
-    hasContracts,
     needsSignature
   } = useEventContracts(eventId);
 
@@ -128,12 +161,20 @@ const EventDetail: React.FC = () => {
   } = useEventQuotes(eventId);
   const quotesCount = quotesData?.results?.length || 0;
 
+  // Get invoices for this event
+  const {
+    data: invoicesData
+  } = useInvoices({ event: eventId });
+  const invoicesCount = invoicesData?.results?.length || 0;
+
   // Mutations
   const updatePreferencesMutation = useUpdatePreferences();
 
   // Event handlers
   const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
+    // Update URL query param for shareable deep links
+    setSearchParams({ tab: newValue.toString() }, { replace: true });
   };
 
   const handleBack = () => {
@@ -174,7 +215,7 @@ const EventDetail: React.FC = () => {
       setSelectedContract(fullContract);
       setSigningDialogOpen(true);
     } catch (error) {
-      console.error('Error fetching contract details for signing:', error);
+      if (import.meta.env.DEV) console.error('Error fetching contract details for signing:', error);
       // Fallback to showing contract without content
       setSelectedContract(contract);
       setSigningDialogOpen(true);
@@ -190,7 +231,7 @@ const EventDetail: React.FC = () => {
   };
 
   const handleSignError = (error: string) => {
-    console.error('Contract signing error:', error);
+    if (import.meta.env.DEV) console.error('Contract signing error:', error);
     // Error is already shown in the dialog
   };
 
@@ -221,8 +262,6 @@ const EventDetail: React.FC = () => {
       </Box>
     );
   }
-
-  const PHILIPPINE_TIMEZONE = 'Asia/Manila';
 
   return (
     <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
@@ -309,9 +348,9 @@ const EventDetail: React.FC = () => {
                   <Stack direction="row" spacing={1} alignItems="center">
                     <CalendarIcon fontSize="small" color="action" />
                     <Typography variant="body1">
-                      {formatInTimeZone(event.start_date, PHILIPPINE_TIMEZONE, 'EEEE, MMMM dd, yyyy')}
-                      {event.end_date && formatInTimeZone(event.start_date, PHILIPPINE_TIMEZONE, 'yyyy-MM-dd') !== formatInTimeZone(event.end_date, PHILIPPINE_TIMEZONE, 'yyyy-MM-dd') &&
-                        ` - ${formatInTimeZone(event.end_date, PHILIPPINE_TIMEZONE, 'MMMM dd, yyyy')}`
+                      {formatPhilippinesTime(event.start_date, false, 'EEEE, MMMM dd, yyyy')}
+                      {event.end_date && formatPhilippinesTime(event.start_date, false, 'yyyy-MM-dd') !== formatPhilippinesTime(event.end_date, false, 'yyyy-MM-dd') &&
+                        ` - ${formatPhilippinesTime(event.end_date, false, 'MMMM dd, yyyy')}`
                       }
                     </Typography>
                   </Stack>
@@ -367,56 +406,25 @@ const EventDetail: React.FC = () => {
         </Stack>
       </Paper>
 
+      {/* Event Milestones Progress */}
+      <EventMilestones event={event} />
+
       {/* Quick Stats */}
-      {(event.upcoming_tasks.length > 0 || event.accessible_documents_count > 0 || event.has_notes) && (
+      {event.upcoming_tasks.length > 0 && (
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mb: 3 }}>
-          {event.upcoming_tasks.length > 0 && (
-            <Box sx={(theme) => ({
-              flexGrow: 0,
-              flexBasis: { xs: '100%', sm: `calc(33.333% - ${theme.spacing(4/3)})` },
-            })}>
-              <Paper sx={{ p: 2, textAlign: 'center' }}>
-                <Typography variant="h4" color="warning.main">
-                  {event.upcoming_tasks.length}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Upcoming Tasks
-                </Typography>
-              </Paper>
-            </Box>
-          )}
-          
-          {event.accessible_documents_count > 0 && (
-            <Box sx={(theme) => ({
-              flexGrow: 0,
-              flexBasis: { xs: '100%', sm: `calc(33.333% - ${theme.spacing(4/3)})` },
-            })}>
-              <Paper sx={{ p: 2, textAlign: 'center' }}>
-                <Typography variant="h4" color="info.main">
-                  {event.accessible_documents_count}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Documents
-                </Typography>
-              </Paper>
-            </Box>
-          )}
-          
-          {event.has_notes && (
-            <Box sx={(theme) => ({
-              flexGrow: 0,
-              flexBasis: { xs: '100%', sm: `calc(33.333% - ${theme.spacing(4/3)})` },
-            })}>
-              <Paper sx={{ p: 2, textAlign: 'center' }}>
-                <Typography variant="h4" color="primary.main">
-                  {notes.length}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Notes
-                </Typography>
-              </Paper>
-            </Box>
-          )}
+          <Box sx={(theme) => ({
+            flexGrow: 0,
+            flexBasis: { xs: '100%', sm: `calc(50% - ${theme.spacing(1)})` },
+          })}>
+            <Paper sx={{ p: 2, textAlign: 'center' }}>
+              <Typography variant="h4" color="warning.main">
+                {event.upcoming_tasks.length}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Upcoming Tasks
+              </Typography>
+            </Paper>
+          </Box>
         </Box>
       )}
 
@@ -445,49 +453,61 @@ const EventDetail: React.FC = () => {
             aria-controls="event-tabpanel-1"
           />
           <Tab
-            label={`Documents (${event.accessible_documents_count})`}
-            icon={<DocumentsIcon />}
+            label={`Contracts${eventContracts.length > 0 ? ` (${eventContracts.length})` : ''}`}
+            icon={<ContractIcon />}
             iconPosition="start"
             id="event-tab-2"
             aria-controls="event-tabpanel-2"
           />
           <Tab
-            label="Tasks"
-            icon={<TasksIcon />}
+            label={`Documents (${event.accessible_documents_count})`}
+            icon={<DocumentsIcon />}
             iconPosition="start"
             id="event-tab-3"
             aria-controls="event-tabpanel-3"
           />
           <Tab
-            label="Feedback"
-            icon={<FeedbackIcon />}
+            label="Tasks"
+            icon={<TasksIcon />}
             iconPosition="start"
             id="event-tab-4"
             aria-controls="event-tabpanel-4"
           />
           <Tab
-            label={`Quotes${quotesCount > 0 ? ` (${quotesCount})` : ''}`}
-            icon={<RequestQuoteIcon />}
+            label="Feedback"
+            icon={<FeedbackIcon />}
             iconPosition="start"
             id="event-tab-5"
             aria-controls="event-tabpanel-5"
           />
-          {hasContracts && (
-            <Tab
-              label={`Contracts (${eventContracts.length})`}
-              icon={<ContractIcon />}
-              iconPosition="start"
-              id="event-tab-6"
-              aria-controls="event-tabpanel-6"
-            />
-          )}
+          <Tab
+            label={`Quotes${quotesCount > 0 ? ` (${quotesCount})` : ''}`}
+            icon={<RequestQuoteIcon />}
+            iconPosition="start"
+            id="event-tab-6"
+            aria-controls="event-tabpanel-6"
+          />
+          <Tab
+            label={`Invoices${invoicesCount > 0 ? ` (${invoicesCount})` : ''}`}
+            icon={<InvoiceIcon />}
+            iconPosition="start"
+            id="event-tab-7"
+            aria-controls="event-tabpanel-7"
+          />
+          <Tab
+            label="Check-in"
+            icon={<CheckInIcon />}
+            iconPosition="start"
+            id="event-tab-8"
+            aria-controls="event-tabpanel-8"
+          />
           {event.has_notes && (
             <Tab
-              label={`Notes (${notes.length})`}
+              label="Notes"
               icon={<NotesIcon />}
               iconPosition="start"
-              id={hasContracts ? "event-tab-7" : "event-tab-6"}
-              aria-controls={hasContracts ? "event-tabpanel-7" : "event-tabpanel-6"}
+              id="event-tab-9"
+              aria-controls="event-tabpanel-9"
             />
           )}
         </Tabs>
@@ -501,133 +521,129 @@ const EventDetail: React.FC = () => {
         </TabPanel>
 
         <TabPanel value={activeTab} index={2}>
-          <EventDocuments eventId={eventId} />
+          {isLoadingContracts ? (
+            <Box>
+              {[1, 2].map((item) => (
+                <Skeleton key={item} variant="rectangular" height={120} sx={{ mb: 2 }} />
+              ))}
+            </Box>
+          ) : eventContracts.length === 0 ? (
+            <Box sx={{ textAlign: 'center', py: 4 }}>
+              <ContractIcon sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }} />
+              <Typography variant="h6" color="text.secondary">
+                No contracts yet
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Contracts for this event will appear here once they are created.
+              </Typography>
+            </Box>
+          ) : (
+            <Stack spacing={3}>
+              {needsSignature && (
+                <Alert severity="warning" sx={{ mb: 2 }}>
+                  <Typography variant="body1" sx={{ fontWeight: 600 }}>
+                    Action Required: Contract Signature Needed
+                  </Typography>
+                  <Typography variant="body2" sx={{ mt: 1 }}>
+                    You have contracts that require your signature to proceed with your event.
+                  </Typography>
+                </Alert>
+              )}
+
+              {eventContracts.map((contract) => (
+                <Paper key={contract.id} sx={{ p: 3 }}>
+                  <Stack spacing={2}>
+                    <Box display="flex" justifyContent="space-between" alignItems="flex-start">
+                      <Box>
+                        <Typography variant="h6" gutterBottom>
+                          {contract.template.name}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          Event: {contract.event.title}
+                        </Typography>
+                      </Box>
+                      <Stack direction="row" spacing={1}>
+                        <ContractStatusChip
+                          status={contract.status}
+                          hasContracts={true}
+                          contractsCount={1}
+                          pendingSignatureRequired={contract.can_client_sign}
+                          size="small"
+                        />
+                      </Stack>
+                    </Box>
+
+                    {contract.signature_progress && (
+                      <Box>
+                        <Typography variant="body2" color="text.secondary" gutterBottom>
+                          Signature Progress: {contract.signature_progress.signed_count} of {contract.signature_progress.total_required} signatures
+                        </Typography>
+                        <Box sx={{ width: '100%', bgcolor: 'grey.200', borderRadius: 1, overflow: 'hidden' }}>
+                          <Box
+                            sx={{
+                              width: `${contract.signature_progress.percentage}%`,
+                              bgcolor: contract.signature_progress.percentage === 100 ? 'success.main' : 'warning.main',
+                              height: 8,
+                              transition: 'width 0.3s ease',
+                            }}
+                          />
+                        </Box>
+                      </Box>
+                    )}
+
+                    <Stack direction="row" spacing={2} sx={{ mt: 2 }}>
+                      <Button
+                        variant="outlined"
+                        size="small"
+                        onClick={() => navigate(`/contracts/${contract.id}`)}
+                      >
+                        View Details
+                      </Button>
+                      {contract.can_client_sign && (
+                        <Button
+                          variant="contained"
+                          size="small"
+                          color="warning"
+                          onClick={() => handleSignContract(contract)}
+                        >
+                          Sign Now
+                        </Button>
+                      )}
+                    </Stack>
+                  </Stack>
+                </Paper>
+              ))}
+            </Stack>
+          )}
         </TabPanel>
 
         <TabPanel value={activeTab} index={3}>
-          <EventTasks eventId={eventId} />
+          <EventDocuments eventId={eventId} />
         </TabPanel>
 
         <TabPanel value={activeTab} index={4}>
-          <EventFeedback eventId={eventId} eventStatus={event.status} />
+          <EventTasks eventId={eventId} />
         </TabPanel>
 
         <TabPanel value={activeTab} index={5}>
+          <EventFeedback eventId={eventId} eventStatus={event.status} />
+        </TabPanel>
+
+        <TabPanel value={activeTab} index={6}>
           <EventQuotes eventId={eventId} />
         </TabPanel>
 
-        {hasContracts && (
-          <TabPanel value={activeTab} index={6}>
-            {isLoadingContracts ? (
-              <Box>
-                {[1, 2].map((item) => (
-                  <Skeleton key={item} variant="rectangular" height={120} sx={{ mb: 2 }} />
-                ))}
-              </Box>
-            ) : (
-              <Stack spacing={3}>
-                {needsSignature && (
-                  <Alert severity="warning" sx={{ mb: 2 }}>
-                    <Typography variant="body1" sx={{ fontWeight: 600 }}>
-                      Action Required: Contract Signature Needed
-                    </Typography>
-                    <Typography variant="body2" sx={{ mt: 1 }}>
-                      You have contracts that require your signature to proceed with your event.
-                    </Typography>
-                  </Alert>
-                )}
-                
-                {eventContracts.map((contract) => (
-                  <Paper key={contract.id} sx={{ p: 3 }}>
-                    <Stack spacing={2}>
-                      <Box display="flex" justifyContent="space-between" alignItems="flex-start">
-                        <Box>
-                          <Typography variant="h6" gutterBottom>
-                            {contract.template.name}
-                          </Typography>
-                          <Typography variant="body2" color="text.secondary">
-                            Event: {contract.event.title}
-                          </Typography>
-                        </Box>
-                        <Stack direction="row" spacing={1}>
-                          <ContractStatusChip
-                            status={contract.status}
-                            hasContracts={true}
-                            contractsCount={1}
-                            pendingSignatureRequired={contract.can_client_sign}
-                            size="small"
-                          />
-                        </Stack>
-                      </Box>
-                      
-                      {contract.signature_progress && (
-                        <Box>
-                          <Typography variant="body2" color="text.secondary" gutterBottom>
-                            Signature Progress: {contract.signature_progress.signed_count} of {contract.signature_progress.total_required} signatures
-                          </Typography>
-                          <Box sx={{ width: '100%', bgcolor: 'grey.200', borderRadius: 1, overflow: 'hidden' }}>
-                            <Box
-                              sx={{
-                                width: `${contract.signature_progress.percentage}%`,
-                                bgcolor: contract.signature_progress.percentage === 100 ? 'success.main' : 'warning.main',
-                                height: 8,
-                                transition: 'width 0.3s ease',
-                              }}
-                            />
-                          </Box>
-                        </Box>
-                      )}
-                      
-                      <Stack direction="row" spacing={2} sx={{ mt: 2 }}>
-                        <Button
-                          variant="outlined"
-                          size="small"
-                          onClick={() => navigate(`/contracts/${contract.id}`)}
-                        >
-                          View Details
-                        </Button>
-                        {contract.can_client_sign && (
-                          <Button
-                            variant="contained"
-                            size="small"
-                            color="warning"
-                            onClick={() => handleSignContract(contract)}
-                          >
-                            Sign Now
-                          </Button>
-                        )}
-                      </Stack>
-                    </Stack>
-                  </Paper>
-                ))}
-              </Stack>
-            )}
-          </TabPanel>
-        )}
+        <TabPanel value={activeTab} index={7}>
+          <EventInvoices eventId={eventId} />
+        </TabPanel>
+
+        <TabPanel value={activeTab} index={8}>
+          <EventCheckIn eventId={eventId} event={event} />
+        </TabPanel>
 
         {event.has_notes && (
-          <TabPanel value={activeTab} index={hasContracts ? 7 : 6}>
-            {isLoadingNotes ? (
-              <Box>
-                {[1, 2, 3].map((item) => (
-                  <Skeleton key={item} variant="rectangular" height={100} sx={{ mb: 2 }} />
-                ))}
-              </Box>
-            ) : (
-              <Stack spacing={2}>
-                {notes.map((note) => (
-                  <Paper key={note.id} sx={{ p: 2 }}>
-                    <Typography variant="body1" paragraph>
-                      {note.content}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      {format(new Date(note.created_at), 'MMM dd, yyyy at h:mm a')}
-                      {note.created_by && ` • ${note.created_by}`}
-                    </Typography>
-                  </Paper>
-                ))}
-              </Stack>
-            )}
+          <TabPanel value={activeTab} index={9}>
+            <EventNotes eventId={eventId} />
           </TabPanel>
         )}
       </Paper>

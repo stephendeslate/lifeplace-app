@@ -36,10 +36,6 @@ import {
   Email as EmailIcon,
   Sms as SmsIcon,
   Visibility as ViewIcon,
-  CheckCircle as DeliveredIcon,
-  Schedule as PendingIcon,
-  Error as FailedIcon,
-  Send as SentIcon,
   Refresh as RefreshIcon,
   FilterList as FilterIcon,
   MarkEmailRead as OpenedIcon,
@@ -113,31 +109,14 @@ export const CommunicationHistory: React.FC = () => {
     return channel === 'EMAIL' ? <EmailIcon fontSize="small" /> : <SmsIcon fontSize="small" />;
   };
 
-  const getStatusIcon = (status: string, isOpened: boolean) => {
-    switch (status) {
-      case 'DELIVERED':
-        return isOpened ? <OpenedIcon color="success" /> : <DeliveredIcon color="success" />;
-      case 'SENT':
-        return <SentIcon color="info" />;
-      case 'PENDING':
-        return <PendingIcon color="warning" />;
-      case 'FAILED':
-      case 'BOUNCED':
-        return <FailedIcon color="error" />;
-      default:
-        return <PendingIcon color="action" />;
-    }
+  const getStatusIcon = (isOpened: boolean) => {
+    return isOpened
+      ? <OpenedIcon color="success" />
+      : <UnreadIcon color="info" />;
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'DELIVERED': return 'success';
-      case 'SENT': return 'info';
-      case 'PENDING': return 'warning';
-      case 'FAILED':
-      case 'BOUNCED': return 'error';
-      default: return 'default';
-    }
+  const getStatusColor = (isOpened: boolean): 'success' | 'info' => {
+    return isOpened ? 'success' : 'info';
   };
 
   const getCategoryColor = (category: string) => {
@@ -237,15 +216,13 @@ export const CommunicationHistory: React.FC = () => {
             <FormControl size="small" sx={{ minWidth: 120 }}>
               <InputLabel>Status</InputLabel>
               <Select
-                value={filters.delivery_status || 'all'}
+                value={filters.is_opened ?? 'all'}
                 label="Status"
-                onChange={(e) => handleFilterChange('delivery_status', e.target.value)}
+                onChange={(e) => handleFilterChange('is_opened', e.target.value)}
               >
-                <MenuItem value="all">All Status</MenuItem>
-                <MenuItem value="DELIVERED">Delivered</MenuItem>
-                <MenuItem value="SENT">Sent</MenuItem>
-                <MenuItem value="PENDING">Pending</MenuItem>
-                <MenuItem value="FAILED">Failed</MenuItem>
+                <MenuItem value="all">All</MenuItem>
+                <MenuItem value="true">Read</MenuItem>
+                <MenuItem value="false">Unread</MenuItem>
               </Select>
             </FormControl>
             
@@ -331,8 +308,23 @@ export const CommunicationHistory: React.FC = () => {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {records.map((record) => (
-                  <TableRow key={record.id} hover>
+                {records
+                  .filter((r) => ['SENT', 'DELIVERED'].includes(r.delivery_status))
+                  .map((record) => (
+                  <TableRow
+                    key={record.id}
+                    hover
+                    onClick={() => handleViewDetail(record)}
+                    sx={{
+                      cursor: 'pointer',
+                      backgroundColor: record.is_opened
+                        ? 'transparent'
+                        : alpha(theme.palette.info.main, 0.04),
+                      '&:hover': {
+                        backgroundColor: alpha(theme.palette.primary.main, 0.08),
+                      },
+                    }}
+                  >
                     <TableCell>
                       <Box display="flex" alignItems="center" gap={1}>
                         {getChannelIcon(record.channel)}
@@ -380,19 +372,15 @@ export const CommunicationHistory: React.FC = () => {
                     </TableCell>
                     <TableCell>
                       <Box display="flex" alignItems="center" gap={1}>
-                        <Tooltip title={
-                          record.is_opened ? 'Opened' : 
-                          record.delivery_status === 'DELIVERED' ? 'Delivered but not opened' :
-                          record.delivery_status
-                        }>
+                        <Tooltip title={record.is_opened ? 'Read' : 'Unread'}>
                           <Box display="flex" alignItems="center">
-                            {getStatusIcon(record.delivery_status, record.is_opened)}
+                            {getStatusIcon(record.is_opened)}
                           </Box>
                         </Tooltip>
                         <Chip
-                          label={record.is_opened ? 'Read' : record.delivery_status}
+                          label={record.is_opened ? 'Read' : 'Unread'}
                           size="small"
-                          color={getStatusColor(record.delivery_status) as 'success' | 'info' | 'warning' | 'error' | 'default'}
+                          color={getStatusColor(record.is_opened)}
                           variant="outlined"
                           sx={{
                             backgroundColor: alpha('#fff', 0.1),
@@ -404,16 +392,19 @@ export const CommunicationHistory: React.FC = () => {
                     </TableCell>
                     <TableCell>
                       <Typography variant="body2" color="text.secondary">
-                        {record.sent_at 
+                        {record.sent_at
                           ? new Date(record.sent_at).toLocaleDateString()
-                          : 'Pending'
+                          : '-'
                         }
                       </Typography>
                     </TableCell>
                     <TableCell>
                       <IconButton
                         size="small"
-                        onClick={() => handleViewDetail(record)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleViewDetail(record);
+                        }}
                         title="View message"
                         sx={{
                           backgroundColor: alpha('#fff', 0.1),
@@ -529,20 +520,20 @@ export const CommunicationHistory: React.FC = () => {
                 </Stack>
               </Box>
 
-              {/* Delivery Status */}
+              {/* Status */}
               <Box>
                 <Typography variant="h6" gutterBottom>
-                  Delivery Status
+                  Status
                 </Typography>
                 <Stack spacing={1}>
                   <Box display="flex" justifyContent="space-between" alignItems="center">
                     <Typography variant="body2" color="text.secondary">Status:</Typography>
                     <Box display="flex" alignItems="center" gap={1}>
-                      {getStatusIcon(selectedRecord.delivery_status, selectedRecord.is_opened)}
-                      <Chip 
-                        label={selectedRecord.is_opened ? 'Read' : selectedRecord.delivery_status}
-                        size="small" 
-                        color={getStatusColor(selectedRecord.delivery_status) as 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning'}
+                      {getStatusIcon(selectedRecord.is_opened)}
+                      <Chip
+                        label={selectedRecord.is_opened ? 'Read' : 'Unread'}
+                        size="small"
+                        color={getStatusColor(selectedRecord.is_opened)}
                         sx={{
                           backgroundColor: alpha('#fff', 0.1),
                           backdropFilter: 'blur(5px)',
@@ -553,17 +544,9 @@ export const CommunicationHistory: React.FC = () => {
                   </Box>
                   {selectedRecord.sent_at && (
                     <Box display="flex" justifyContent="space-between">
-                      <Typography variant="body2" color="text.secondary">Sent:</Typography>
+                      <Typography variant="body2" color="text.secondary">Received:</Typography>
                       <Typography variant="body2">
                         {new Date(selectedRecord.sent_at).toLocaleString()}
-                      </Typography>
-                    </Box>
-                  )}
-                  {selectedRecord.delivered_at && (
-                    <Box display="flex" justifyContent="space-between">
-                      <Typography variant="body2" color="text.secondary">Delivered:</Typography>
-                      <Typography variant="body2">
-                        {new Date(selectedRecord.delivered_at).toLocaleString()}
                       </Typography>
                     </Box>
                   )}

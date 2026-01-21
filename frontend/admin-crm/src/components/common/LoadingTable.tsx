@@ -22,7 +22,7 @@ interface LoadingTableProps {
 
 const LoadingTableSkeleton: React.FC<{ rows: number; columns: number }> = ({ rows, columns }) => (
   <TableContainer>
-    <Table>
+    <Table size="small">
       <TableHead>
         <TableRow>
           {Array.from({ length: columns }, (_, index) => (

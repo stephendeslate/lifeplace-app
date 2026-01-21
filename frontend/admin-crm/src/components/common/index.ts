@@ -4,7 +4,13 @@
 export { default as ModernTable, createStandardActions } from './ModernTable';
 export type { ModernTableColumn, ModernTableAction, ModernTableProps } from './ModernTable';
 
-export { default as ModernDialog, createStandardActions as createDialogActions, createDeleteActions } from './ModernDialog';
+export {
+  default as ModernDialog,
+  createStandardActions as createDialogActions,
+  createDeleteActions,
+  DIALOG_PADDING,
+  DIALOG_SIZES,
+} from './ModernDialog';
 export type { ModernDialogAction, ModernDialogProps } from './ModernDialog';
 
 export { default as ModernForm, createFormSection } from './ModernForm';
@@ -14,29 +20,22 @@ export { default as ModernSearch } from './ModernSearch';
 export type { ModernSearchFilter, ModernSearchProps } from './ModernSearch';
 
 // Modern Page Layout
-export { 
-  ModernPageLayout, 
-  ModernDashboardLayout, 
-  ModernSettingsLayout, 
-  ModernOverviewLayout 
+export {
+  ModernPageLayout,
+  ModernSettingsLayout,
+  ModernOverviewLayout
 } from './ModernPageLayout';
 
 // Modern Card System
 export {
   ModernCard,
   ModernGlassCard,
-  ModernElevatedCard,
-  ModernOutlinedCard,
-  ModernMinimalCard,
-  ModernInteractiveCard,
   ModernMetricCard,
 } from './ModernCard';
 
 // Modern Page Header
 export {
   ModernPageHeader,
-  ModernDashboardHeader,
-  ModernSettingsHeader,
   ModernOverviewHeader,
   createRefreshAction,
   createFilterAction,
@@ -109,3 +108,40 @@ export type {
   SettingsPageProps,
   SettingsPageConfig,
 } from './settings';
+
+// Status Chips - Reusable status display components
+export {
+  PaymentStatusChip,
+  PaymentPlanStatusChip,
+  InstallmentStatusChip,
+} from './StatusChips';
+
+// Image Upload Components
+export { ImageUploadField } from './ImageUploadField';
+export type { ImageUploadFieldProps } from './ImageUploadField';
+export { GalleryUploadField } from './GalleryUploadField';
+export type { GalleryUploadFieldProps } from './GalleryUploadField';
+
+// Icon Badge - Lightweight icon container with optional gradient
+export { IconBadge } from './IconBadge';
+export type { IconBadgeProps } from './IconBadge';
+
+// Quick Action Button - Standardized action button for dashboards
+export { QuickActionButton } from './QuickActionButton';
+export type { QuickActionButtonProps } from './QuickActionButton';
+
+// Config Section - Reusable section container for configurations
+export { ConfigSection, ConfigSectionCompact } from './ConfigSection';
+
+// Loading Overlay - Reusable loading overlay component
+export { LoadingOverlay, FullPageLoadingOverlay } from './LoadingOverlay';
+
+// Section Header - Reusable section header with icon and actions
+export { SectionHeader } from './SectionHeader';
+
+// Tab Panel - Reusable tab panel for tab interfaces
+export { TabPanel, a11yTabProps, a11yTabPanelProps } from './TabPanel';
+
+// Inline Editable Text - Click-to-edit text component
+export { InlineEditableText } from './InlineEditableText';
+export type { InlineEditableTextProps } from './InlineEditableText';

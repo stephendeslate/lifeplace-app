@@ -1,5 +1,9 @@
 // frontend/client-portal/src/utils/validation.ts
 
+/**
+ * Consolidated validation utilities for the client-portal
+ */
+
 export interface ValidationError {
   field: string;
   message: string;
@@ -10,15 +14,143 @@ export interface ValidationResult {
   errors: Record<string, string>;
 }
 
+// ============================================================================
+// Core Validation Patterns
+// ============================================================================
+
 /**
  * Email validation regex
  */
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 /**
- * Phone validation regex (international format)
+ * Phone validation patterns by country
+ */
+export const phonePatterns: Record<string, RegExp> = {
+  PH: /^(\+63|0)?9\d{9}$/,        // Philippines
+  US: /^(\+1)?[2-9]\d{9}$/,        // USA
+  DEFAULT: /^\+?[\d\s-]{10,15}$/,  // Generic international
+};
+
+/**
+ * Legacy phone validation regex (international format)
+ * @deprecated Use phonePatterns instead
  */
 const PHONE_REGEX = /^[+]?[1-9][\d]{0,15}$/;
+
+// ============================================================================
+// Simple Validation Functions (Boolean Returns)
+// ============================================================================
+
+/**
+ * Check if email is valid format
+ */
+export const isValidEmail = (email: string): boolean => {
+  return EMAIL_REGEX.test(email.trim());
+};
+
+/**
+ * Validate phone number with optional country support
+ */
+export const isValidPhone = (phone: string, countryCode: string = 'DEFAULT'): boolean => {
+  const cleaned = phone.replace(/[\s-]/g, '');
+  const pattern = phonePatterns[countryCode] || phonePatterns.DEFAULT;
+  return pattern.test(cleaned);
+};
+
+/**
+ * Validate phone number (Philippines format)
+ * @deprecated Use isValidPhone with countryCode 'PH' instead
+ */
+export const isValidPhilippinePhone = (phone: string): boolean => {
+  return isValidPhone(phone, 'PH');
+};
+
+/**
+ * Check if a required field has a value
+ */
+export const isRequired = (value: string | undefined | null): boolean => {
+  return value !== undefined && value !== null && value.trim().length > 0;
+};
+
+/**
+ * Check if value meets minimum length requirement
+ */
+export const hasMinLength = (value: string, minLength: number): boolean => {
+  return value.trim().length >= minLength;
+};
+
+/**
+ * Check if date is valid
+ */
+export const isValidDate = (date: Date | string | null): boolean => {
+  if (!date) return false;
+  const d = date instanceof Date ? date : new Date(date);
+  return !isNaN(d.getTime());
+};
+
+/**
+ * Check if date is in the future
+ */
+export const isFutureDate = (date: Date | string | null): boolean => {
+  if (!date || !isValidDate(date)) return false;
+  const d = date instanceof Date ? date : new Date(date);
+  return d > new Date();
+};
+
+/**
+ * Check if date is at least minDaysAdvance days in the future
+ */
+export const isFutureDateWithAdvance = (date: Date | string | null, minDaysAdvance: number = 1): boolean => {
+  if (!date || !isValidDate(date)) return false;
+  const selectedDate = date instanceof Date ? date : new Date(date);
+  const minDate = new Date();
+  minDate.setDate(minDate.getDate() + minDaysAdvance);
+  return selectedDate >= minDate;
+};
+
+/**
+ * Validate URL format
+ */
+export const isValidUrl = (url: string): boolean => {
+  try {
+    new URL(url);
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+/**
+ * Validate time format (HH:MM)
+ */
+export const isValidTime = (time: string): boolean => {
+  const timeRegex = /^([01]\d|2[0-3]):([0-5]\d)$/;
+  return timeRegex.test(time);
+};
+
+// ============================================================================
+// Consolidated Validators Object
+// ============================================================================
+
+/**
+ * Consolidated validators object for convenient import
+ */
+export const validators = {
+  email: isValidEmail,
+  phone: isValidPhone,
+  required: isRequired,
+  minLength: hasMinLength,
+  date: isValidDate,
+  futureDate: isFutureDate,
+  futureDateWithAdvance: isFutureDateWithAdvance,
+  url: isValidUrl,
+  time: isValidTime,
+};
+
+// ============================================================================
+// Message-Returning Validation Functions (For Forms)
+// ============================================================================
 
 /**
  * Password validation rules
@@ -283,3 +415,9 @@ export const getPasswordStrengthColor = (strength: number): string => {
       return 'error';
   }
 };
+
+// ============================================================================
+// Default Export
+// ============================================================================
+
+export default validators;

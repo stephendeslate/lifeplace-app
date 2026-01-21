@@ -4,8 +4,6 @@ import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import {
   Box,
   Button,
-  Card,
-  CardContent,
   Chip,
   Dialog,
   DialogContent,
@@ -20,7 +18,6 @@ import {
   Stack,
   TextField,
   Typography,
-  CircularProgress,
   Divider,
   Tooltip,
   useTheme,
@@ -28,7 +25,6 @@ import {
   Switch,
   FormControlLabel,
   Alert,
-  Fade,
   alpha,
   Badge,
 } from '@mui/material';
@@ -48,31 +44,41 @@ import {
   CheckCircle as AvailableIcon,
   Block as BlockedIcon,
   Warning as WarningIcon,
-  Settings as SettingsIcon,
   Close as CloseIcon,
 } from '@mui/icons-material';
-import { 
-  format, 
-  startOfMonth, 
-  endOfMonth, 
-  startOfWeek, 
-  endOfWeek, 
-  addDays, 
-  addMonths, 
-  subMonths, 
-  isSameMonth, 
-  isSameDay, 
-  parseISO, 
-  isToday, 
-  addWeeks, 
+import {
+  format,
+  startOfMonth,
+  endOfMonth,
+  startOfWeek,
+  endOfWeek,
+  addMonths,
+  subMonths,
+  isSameDay,
+  parseISO,
+  addWeeks,
   subWeeks,
   startOfWeek as startOfWeekDate,
   endOfWeek as endOfWeekDate
 } from 'date-fns';
+import {
+  getTodayInManila,
+  isTodayInManila,
+  formatDateForApi,
+  getCalendarGridDates,
+  getWeekDates,
+  isSameMonthInManila,
+  getDayOfWeekInManila,
+  formatInManila,
+} from '../../utils/timezone';
 import { useNavigate } from 'react-router-dom';
 
 import { useLayout } from '../../contexts/LayoutContext';
 import { useEvents, useEventTypes } from '../../hooks/useEvents';
+import { ModernPageLayout } from '../../components/common/ModernPageLayout';
+import { ModernCard } from '../../components/common/ModernCard';
+import { ModernPageHeader, type HeaderAction } from '../../components/common/ModernPageHeader';
+import ModernLoadingStates from '../../components/common/ModernLoadingStates';
 import { useCalendarAvailability, useAvailabilityCache } from '../../hooks/useAvailability';
 import { EventForm } from '../../components/events/EventForm';
 import { AvailabilityIndicator, AvailabilityBadge } from '../../components/availability/AvailabilityIndicator';
@@ -104,8 +110,8 @@ export const EnterpriseEventsCalendar: React.FC = () => {
   const navigate = useNavigate();
   const { setBreadcrumbs } = useLayout();
   
-  // Core calendar state
-  const [currentDate, setCurrentDate] = useState(new Date());
+  // Core calendar state - use Manila timezone for "today"
+  const [currentDate, setCurrentDate] = useState(() => getTodayInManila());
   const [view, setView] = useState<CalendarView>('month');
   const [filters, setFilters] = useState<EventFilters>({});
   const [availabilityFilters, setAvailabilityFilters] = useState<AvailabilityFilters>({});
@@ -142,7 +148,7 @@ export const EnterpriseEventsCalendar: React.FC = () => {
     isCreatingEvent,
   } = useEvents(filters);
   
-  // Calculate calendar date range for availability checking
+  // Calculate calendar date range for availability checking (Manila timezone)
   const calendarDateRange = useMemo(() => {
     if (view === 'month') {
       const monthStart = startOfMonth(currentDate);
@@ -150,22 +156,21 @@ export const EnterpriseEventsCalendar: React.FC = () => {
       const startDate = startOfWeek(monthStart);
       const endDate = endOfWeek(monthEnd);
       return {
-        start: startDate.toISOString().split('T')[0],
-        end: endDate.toISOString().split('T')[0],
+        start: formatDateForApi(startDate),
+        end: formatDateForApi(endDate),
       };
     } else {
       const weekStart = startOfWeekDate(currentDate);
       const weekEnd = endOfWeekDate(currentDate);
       return {
-        start: weekStart.toISOString().split('T')[0],
-        end: weekEnd.toISOString().split('T')[0],
+        start: formatDateForApi(weekStart),
+        end: formatDateForApi(weekEnd),
       };
     }
   }, [currentDate, view]);
   
   // Availability data
   const {
-    stats: availabilityStats,
     isLoading: isLoadingAvailability,
     error: availabilityError,
     refetch: refetchAvailability,
@@ -191,33 +196,12 @@ export const EnterpriseEventsCalendar: React.FC = () => {
     }));
   }, [events]);
 
-  // Get calendar grid dates
+  // Get calendar grid dates (Manila timezone aware)
   const calendarDates = useMemo(() => {
     if (view === 'month') {
-      const monthStart = startOfMonth(currentDate);
-      const monthEnd = endOfMonth(currentDate);
-      const startDate = startOfWeek(monthStart);
-      const endDate = endOfWeek(monthEnd);
-
-      const dates = [];
-      let day = startDate;
-      while (day <= endDate) {
-        dates.push(new Date(day));
-        day = addDays(day, 1);
-      }
-      return dates;
+      return getCalendarGridDates(currentDate);
     } else {
-      // Week view
-      const weekStart = startOfWeekDate(currentDate);
-      const weekEnd = endOfWeekDate(currentDate);
-      
-      const dates = [];
-      let day = weekStart;
-      while (day <= weekEnd) {
-        dates.push(new Date(day));
-        day = addDays(day, 1);
-      }
-      return dates;
+      return getWeekDates(currentDate);
     }
   }, [currentDate, view]);
 
@@ -233,7 +217,7 @@ export const EnterpriseEventsCalendar: React.FC = () => {
   // Enhanced calendar grid with availability data
   const enhancedCalendarDates: CalendarDateInfo[] = useMemo(() => {
     return calendarDates.map(date => {
-      const dateStr = date.toISOString().split('T')[0];
+      const dateStr = formatDateForApi(date);
       const availability = getDateAvailability(dateStr);
       const dayEvents = getEventsForDate(date);
       
@@ -249,18 +233,18 @@ export const EnterpriseEventsCalendar: React.FC = () => {
         conflicts: [],
         reasons: [],
         buffer_conflicts: [],
-        isToday: isToday(date),
-        isCurrentMonth: isSameMonth(date, currentDate),
-        isWeekend: date.getDay() === 0 || date.getDay() === 6,
+        isToday: isTodayInManila(date),
+        isCurrentMonth: isSameMonthInManila(date, currentDate),
+        isWeekend: getDayOfWeekInManila(date) === 0 || getDayOfWeekInManila(date) === 6,
         hasEvents: dayEvents.length > 0,
         eventCount: dayEvents.length,
       };
-      
+
       return availability ? {
         ...availability,
-        isToday: isToday(date),
-        isCurrentMonth: isSameMonth(date, currentDate),
-        isWeekend: date.getDay() === 0 || date.getDay() === 6,
+        isToday: isTodayInManila(date),
+        isCurrentMonth: isSameMonthInManila(date, currentDate),
+        isWeekend: getDayOfWeekInManila(date) === 0 || getDayOfWeekInManila(date) === 6,
         hasEvents: dayEvents.length > 0,
         eventCount: dayEvents.length,
       } : defaultAvailability;
@@ -269,17 +253,14 @@ export const EnterpriseEventsCalendar: React.FC = () => {
 
   // Enhanced date selection with availability info
   const handleDateSelect = useCallback((date: Date) => {
-    const dateStr = date.toISOString().split('T')[0];
-    const availability = getDateAvailability(dateStr);
-    
+    const dateStr = formatDateForApi(date);
+
     setSelectedDate(dateStr);
     setCurrentDate(date);
-    
-    // Show availability details if there are conflicts or restrictions
-    if (availability && (!availability.can_book_event || availability.conflicts.length > 0)) {
-      setAvailabilityDetailOpen(true);
-    }
-  }, [getDateAvailability]);
+
+    // Open create event dialog
+    setCreateDialogOpen(true);
+  }, []);
 
   // Initialize breadcrumbs
   useEffect(() => {
@@ -320,15 +301,15 @@ export const EnterpriseEventsCalendar: React.FC = () => {
     if (view === 'month') {
       const prevMonth = subMonths(currentDate, 1);
       const nextMonth = addMonths(currentDate, 1);
-      
+
       // Prefetch previous month
-      const prevStart = startOfWeek(startOfMonth(prevMonth)).toISOString().split('T')[0];
-      const prevEnd = endOfWeek(endOfMonth(prevMonth)).toISOString().split('T')[0];
+      const prevStart = formatDateForApi(startOfWeek(startOfMonth(prevMonth)));
+      const prevEnd = formatDateForApi(endOfWeek(endOfMonth(prevMonth)));
       prefetchDateRange(prevStart, prevEnd, availabilityFilters);
-      
+
       // Prefetch next month
-      const nextStart = startOfWeek(startOfMonth(nextMonth)).toISOString().split('T')[0];
-      const nextEnd = endOfWeek(endOfMonth(nextMonth)).toISOString().split('T')[0];
+      const nextStart = formatDateForApi(startOfWeek(startOfMonth(nextMonth)));
+      const nextEnd = formatDateForApi(endOfWeek(endOfMonth(nextMonth)));
       prefetchDateRange(nextStart, nextEnd, availabilityFilters);
     }
   }, [currentDate, view, prefetchDateRange, availabilityFilters]);
@@ -347,9 +328,9 @@ export const EnterpriseEventsCalendar: React.FC = () => {
   }, [view, currentDate]);
 
   const handleToday = useCallback(() => {
-    const today = new Date();
+    const today = getTodayInManila();
     setCurrentDate(today);
-    setSelectedDate(today.toISOString().split('T')[0]);
+    setSelectedDate(formatDateForApi(today));
     refetchAvailability();
   }, [refetchAvailability]);
   
@@ -410,7 +391,7 @@ export const EnterpriseEventsCalendar: React.FC = () => {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `events-calendar-${format(currentDate, 'yyyy-MM')}.csv`;
+      a.download = `events-calendar-${formatInManila(currentDate, 'yyyy-MM')}.csv`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
@@ -505,7 +486,7 @@ export const EnterpriseEventsCalendar: React.FC = () => {
     }
 
     return (
-      <Card elevation={2}>
+      <ModernCard variant="flat" size="large">
         <Box sx={{ p: 2 }}>
           {/* Calendar Header */}
           <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 1, mb: 2 }}>
@@ -547,7 +528,7 @@ export const EnterpriseEventsCalendar: React.FC = () => {
                               : 'text.secondary',
                         }}
                       >
-                        {format(date, 'd')}
+                        {formatInManila(date, 'd')}
                       </Typography>
                       
                       {/* Availability Indicator */}
@@ -640,14 +621,14 @@ export const EnterpriseEventsCalendar: React.FC = () => {
             </Box>
           ))}
         </Box>
-      </Card>
+      </ModernCard>
     );
   };
 
   // Enhanced week view renderer
   const renderEnhancedWeekView = () => {
     return (
-      <Card elevation={2}>
+      <ModernCard variant="flat" size="large">
         <Box sx={{ p: 2 }}>
           {/* Week Header */}
           <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 1, mb: 2 }}>
@@ -657,7 +638,7 @@ export const EnterpriseEventsCalendar: React.FC = () => {
                 <Box key={dateInfo.date} sx={{ textAlign: 'center', p: 1 }}>
                   <Stack spacing={0.5} alignItems="center">
                     <Typography variant="caption" color="text.secondary">
-                      {format(date, 'EEE')}
+                      {formatInManila(date, 'EEE')}
                     </Typography>
                     <Typography 
                       variant="h6" 
@@ -666,7 +647,7 @@ export const EnterpriseEventsCalendar: React.FC = () => {
                         color: dateInfo.isToday ? 'primary.main' : 'text.primary',
                       }}
                     >
-                      {format(date, 'd')}
+                      {formatInManila(date, 'd')}
                     </Typography>
                     {settings.showAvailabilityIndicators && (
                       <AvailabilityBadge availability={dateInfo} size="medium" />
@@ -769,129 +750,61 @@ export const EnterpriseEventsCalendar: React.FC = () => {
             })}
           </Box>
         </Box>
-      </Card>
+      </ModernCard>
     );
   };
+
+  // Build header actions
+  const primaryAction: HeaderAction = {
+    icon: <AddIcon />,
+    label: 'Add Event',
+    onClick: () => setCreateDialogOpen(true),
+    variant: 'contained',
+  };
+
+  const secondaryActions: HeaderAction[] = [
+    {
+      icon: <RefreshIcon />,
+      label: isLoadingAvailability ? 'Refreshing...' : 'Refresh',
+      onClick: handleRefresh,
+      variant: 'outlined',
+      disabled: isLoadingAvailability,
+    },
+    {
+      icon: <ExportIcon />,
+      label: 'Export',
+      onClick: handleExport,
+      variant: 'outlined',
+    },
+  ];
 
   // Loading state
   if (isLoadingEvents && !events.length) {
     return (
-      <Box display="flex" justifyContent="center" p={4}>
-        <CircularProgress />
-      </Box>
+      <ModernPageLayout backgroundPattern="default">
+        <ModernLoadingStates.ModernLoadingSpinner
+          size={40}
+          message="Loading calendar..."
+          variant="circular"
+        />
+      </ModernPageLayout>
     );
   }
 
   return (
-    <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
-      {/* Header */}
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3} flexWrap="wrap" gap={2}>
-        <Box>
-          <Typography variant="h4" fontWeight="bold">
-            Calendar
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            {view === 'month' 
-              ? format(currentDate, 'MMMM yyyy')
-              : `Week of ${format(startOfWeekDate(currentDate), 'MMM d')} - ${format(endOfWeekDate(currentDate), 'MMM d, yyyy')}`
-            }
-          </Typography>
-        </Box>
-        
-        <Stack direction="row" spacing={2} flexWrap="wrap">
-          <Button
-            variant="outlined"
-            startIcon={<RefreshIcon />}
-            onClick={handleRefresh}
-            disabled={isLoadingAvailability}
-          >
-            {isLoadingAvailability ? 'Refreshing...' : 'Refresh'}
-          </Button>
-          <Button
-            variant="outlined"
-            startIcon={<ExportIcon />}
-            onClick={handleExport}
-          >
-            Export
-          </Button>
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={() => setCreateDialogOpen(true)}
-          >
-            Add Event
-          </Button>
-        </Stack>
-      </Box>
-
-      {/* Availability Stats */}
-      {settings.showAvailabilityStats && availabilityStats && (
-        <Fade in={!!availabilityStats}>
-          <Card sx={{ mb: 3 }}>
-            <CardContent>
-              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={3} alignItems="center">
-                <Box>
-                  <Typography variant="h6" color="primary">
-                    Availability Overview
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    {availabilityStats.totalDaysChecked} days analyzed
-                  </Typography>
-                </Box>
-                
-                <Stack direction="row" spacing={3} divider={<Divider orientation="vertical" flexItem />}>
-                  <Stack alignItems="center" spacing={0.5}>
-                    <Typography variant="h5" color="success.main">
-                      {Math.round(availabilityStats.availabilityRate)}%
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      Available
-                    </Typography>
-                  </Stack>
-                  
-                  <Stack alignItems="center" spacing={0.5}>
-                    <Typography variant="h5" color="warning.main">
-                      {availabilityStats.partiallyBookedDays}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      Partial
-                    </Typography>
-                  </Stack>
-                  
-                  <Stack alignItems="center" spacing={0.5}>
-                    <Typography variant="h5" color="error.main">
-                      {availabilityStats.fullyBookedDays}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      Booked
-                    </Typography>
-                  </Stack>
-                  
-                  {availabilityStats.blockedDays > 0 && (
-                    <Stack alignItems="center" spacing={0.5}>
-                      <Typography variant="h5" color="grey.600">
-                        {availabilityStats.blockedDays}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        Blocked
-                      </Typography>
-                    </Stack>
-                  )}
-                </Stack>
-                
-                <Button
-                  variant="outlined"
-                  size="small"
-                  startIcon={<SettingsIcon />}
-                  onClick={() => setSettingsOpen(true)}
-                >
-                  Settings
-                </Button>
-              </Stack>
-            </CardContent>
-          </Card>
-        </Fade>
-      )}
+    <ModernPageLayout backgroundPattern="default">
+      {/* Modern Header */}
+      <ModernPageHeader
+        title="Calendar"
+        subtitle={view === 'month'
+          ? formatInManila(currentDate, 'MMMM yyyy')
+          : `Week of ${format(startOfWeekDate(currentDate), 'MMM d')} - ${format(endOfWeekDate(currentDate), 'MMM d, yyyy')}`
+        }
+        icon={<EventIcon />}
+        primaryAction={primaryAction}
+        secondaryActions={secondaryActions}
+        size="medium"
+      />
 
       {/* Availability Error Alert */}
       {availabilityError && (
@@ -904,8 +817,7 @@ export const EnterpriseEventsCalendar: React.FC = () => {
       )}
 
       {/* Calendar Controls */}
-      <Card sx={{ mb: 3 }}>
-        <CardContent>
+      <ModernCard variant="flat" size="medium" sx={{ mb: 3 }}>
           <Stack 
             direction={{ xs: 'column', sm: 'row' }} 
             spacing={2} 
@@ -924,7 +836,7 @@ export const EnterpriseEventsCalendar: React.FC = () => {
                 startIcon={<TodayIcon />}
                 sx={{ 
                   minWidth: 100,
-                  backgroundColor: isToday(currentDate) ? 'primary.light' : 'transparent',
+                  backgroundColor: isTodayInManila(currentDate) ? 'primary.light' : 'transparent',
                 }}
               >
                 Today
@@ -936,7 +848,7 @@ export const EnterpriseEventsCalendar: React.FC = () => {
               
               <Typography variant="h6" sx={{ ml: 2, minWidth: 200 }}>
                 {view === 'month' 
-                  ? format(currentDate, 'MMMM yyyy')
+                  ? formatInManila(currentDate, 'MMMM yyyy')
                   : `${format(startOfWeekDate(currentDate), 'MMM d')} - ${format(endOfWeekDate(currentDate), 'MMM d, yyyy')}`
                 }
               </Typography>
@@ -1052,15 +964,13 @@ export const EnterpriseEventsCalendar: React.FC = () => {
               </Stack>
             </>
           )}
-        </CardContent>
-      </Card>
+      </ModernCard>
 
       {/* Calendar View */}
       {view === 'month' ? renderEnhancedMonthView() : renderEnhancedWeekView()}
 
       {/* Legend */}
-      <Card sx={{ mt: 3 }}>
-        <CardContent>
+      <ModernCard variant="flat" size="medium" sx={{ mt: 3 }}>
           <Stack direction={{ xs: 'column', md: 'row' }} spacing={3}>
             <Box>
               <Typography variant="subtitle2" gutterBottom>
@@ -1101,8 +1011,7 @@ export const EnterpriseEventsCalendar: React.FC = () => {
               </Box>
             )}
           </Stack>
-        </CardContent>
-      </Card>
+      </ModernCard>
 
       {/* Action Menu */}
       <Menu
@@ -1245,7 +1154,7 @@ export const EnterpriseEventsCalendar: React.FC = () => {
           </Stack>
         </DialogContent>
       </Dialog>
-    </Box>
+    </ModernPageLayout>
   );
 };
 

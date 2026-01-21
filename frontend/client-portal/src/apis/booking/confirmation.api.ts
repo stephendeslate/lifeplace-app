@@ -1,7 +1,6 @@
 // frontend/client-portal/src/apis/booking/confirmation.api.ts
 
 import api from '../../utils/api';
-import { ErrorHandler } from '../../utils/errorHandler';
 
 /**
  * Confirmation step API functions
@@ -32,7 +31,7 @@ export class ConfirmationApi {
       await api.post(`/bookingflow/public/flows/session/${sessionId}/send-confirmation/`);
     } catch (error) {
       // Email sending is optional, log but don't throw
-      console.warn('Failed to send confirmation email:', error);
+      if (import.meta.env.DEV) console.warn('Failed to send confirmation email:', error);
     }
   }
 
@@ -240,22 +239,6 @@ export class ConfirmationApi {
       email: 'info@lifeplacealfonso.com',
       message: "We're here to help make your event unforgettable!"
     };
-  }
-
-  /**
-   * Handle API errors
-   * @deprecated Use ErrorHandler.extractMessage() instead
-   */
-  static handleApiError(error: unknown): string {
-    return ErrorHandler.extractMessage(error);
-  }
-
-  /**
-   * Extract validation errors from API response
-   * @deprecated Use ErrorHandler.extractValidationErrorsAsRecord() instead
-   */
-  static extractValidationErrors(error: unknown): Record<string, string[]> {
-    return ErrorHandler.extractValidationErrorsAsRecord(error);
   }
 }
 

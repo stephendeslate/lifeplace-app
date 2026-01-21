@@ -1,0 +1,57 @@
+[
+  {
+    "model": "events.eventtype",
+    "pk": 5,
+    "fields": {
+      "created_at": "2025-07-10T07:47:12.316",
+      "updated_at": "2025-09-06T04:13:38.662",
+      "name": "Wedding",
+      "description": "Celebrate your happily ever after at Alfonso and Tagaytay's beautiful wedding reception venue",
+      "is_active": true
+    }
+  },
+  {
+    "model": "events.eventtype",
+    "pk": 7,
+    "fields": {
+      "created_at": "2025-07-10T09:45:51.431",
+      "updated_at": "2025-12-20T02:47:29.768",
+      "name": "Camps & Retreats",
+      "description": "A great way to get back in touch with God and Nature.",
+      "is_active": true
+    }
+  },
+  {
+    "model": "events.eventtype",
+    "pk": 18,
+    "fields": {
+      "created_at": "2026-01-08T04:32:08.079",
+      "updated_at": "2026-01-08T04:32:08.079",
+      "name": "Team Building",
+      "description": "Corporate team activities and facilitation",
+      "is_active": true
+    }
+  },
+  {
+    "model": "events.eventtype",
+    "pk": 19,
+    "fields": {
+      "created_at": "2026-01-08T04:32:08.081",
+      "updated_at": "2026-01-08T04:32:08.081",
+      "name": "Workshops",
+      "description": "Educational and training events",
+      "is_active": true
+    }
+  },
+  {
+    "model": "events.eventtype",
+    "pk": 20,
+    "fields": {
+      "created_at": "2026-01-08T08:54:54.520",
+      "updated_at": "2026-01-08T08:54:54.520",
+      "name": "Life Events",
+      "description": "Birthdays, anniversaries, corporate events, and other celebrations",
+      "is_active": true
+    }
+  }
+]

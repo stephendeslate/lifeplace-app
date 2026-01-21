@@ -266,3 +266,130 @@ export function getTimezoneOffset(timezone: string): string {
     return '';
   }
 }
+
+/**
+ * Get the current date in Manila timezone
+ * This should be used instead of new Date() when determining "today" for calendar display
+ */
+export function getTodayInManila(): Date {
+  const now = new Date();
+  return toZonedTime(now, BUSINESS_TIMEZONE);
+}
+
+/**
+ * Get a date string (YYYY-MM-DD) for the current date in Manila timezone
+ */
+export function getTodayStringInManila(): string {
+  return formatInTimeZone(new Date(), BUSINESS_TIMEZONE, 'yyyy-MM-dd');
+}
+
+/**
+ * Check if a given date is "today" in Manila timezone
+ */
+export function isTodayInManila(date: Date | string): boolean {
+  const dateObj = typeof date === 'string' ? parseISO(date) : date;
+  const todayStr = getTodayStringInManila();
+  const dateStr = formatInTimeZone(dateObj, BUSINESS_TIMEZONE, 'yyyy-MM-dd');
+  return todayStr === dateStr;
+}
+
+/**
+ * Format a date for API requests (always in Manila timezone context)
+ * Returns YYYY-MM-DD format
+ */
+export function formatDateForApi(date: Date): string {
+  return formatInTimeZone(date, BUSINESS_TIMEZONE, 'yyyy-MM-dd');
+}
+
+/**
+ * Get the day of month in Manila timezone
+ */
+export function getDayOfMonthInManila(date: Date): number {
+  return parseInt(formatInTimeZone(date, BUSINESS_TIMEZONE, 'd'), 10);
+}
+
+/**
+ * Get the day of week in Manila timezone (0 = Sunday, 6 = Saturday)
+ */
+export function getDayOfWeekInManila(date: Date): number {
+  // 'i' returns 1-7 (Mon-Sun), we want 0-6 (Sun-Sat)
+  const isoDay = parseInt(formatInTimeZone(date, BUSINESS_TIMEZONE, 'i'), 10);
+  return isoDay === 7 ? 0 : isoDay; // Convert: 7 (Sunday) -> 0, 1-6 stay as is
+}
+
+/**
+ * Check if two dates are the same month in Manila timezone
+ */
+export function isSameMonthInManila(date1: Date, date2: Date): boolean {
+  const month1 = formatInTimeZone(date1, BUSINESS_TIMEZONE, 'yyyy-MM');
+  const month2 = formatInTimeZone(date2, BUSINESS_TIMEZONE, 'yyyy-MM');
+  return month1 === month2;
+}
+
+/**
+ * Generate calendar grid dates for a month in Manila timezone
+ * Returns dates that correctly represent the Manila calendar view
+ */
+export function getCalendarGridDates(currentDate: Date): Date[] {
+  // Get the first day of the month in Manila
+  const yearMonth = formatInTimeZone(currentDate, BUSINESS_TIMEZONE, 'yyyy-MM');
+  const firstOfMonth = new Date(`${yearMonth}-01T00:00:00+08:00`);
+
+  // Get the day of week for the first of the month (0 = Sunday)
+  const firstDayOfWeek = getDayOfWeekInManila(firstOfMonth);
+
+  // Calculate the start of the calendar grid (may be in previous month)
+  const startDate = new Date(firstOfMonth);
+  startDate.setDate(startDate.getDate() - firstDayOfWeek);
+
+  // Get the last day of the month
+  const year = parseInt(formatInTimeZone(currentDate, BUSINESS_TIMEZONE, 'yyyy'), 10);
+  const month = parseInt(formatInTimeZone(currentDate, BUSINESS_TIMEZONE, 'M'), 10);
+  const lastOfMonth = new Date(year, month, 0); // Day 0 of next month = last day of current month
+  lastOfMonth.setHours(12, 0, 0, 0); // Noon to avoid DST issues
+
+  // Get the day of week for the last of the month
+  const lastDayOfWeek = getDayOfWeekInManila(lastOfMonth);
+
+  // Calculate the end of the calendar grid (may be in next month)
+  const endDate = new Date(lastOfMonth);
+  endDate.setDate(endDate.getDate() + (6 - lastDayOfWeek));
+
+  // Generate all dates in the grid
+  const dates: Date[] = [];
+  const current = new Date(startDate);
+  current.setHours(12, 0, 0, 0); // Noon to avoid DST issues
+
+  while (current <= endDate) {
+    dates.push(new Date(current));
+    current.setDate(current.getDate() + 1);
+  }
+
+  return dates;
+}
+
+/**
+ * Format a date in Manila timezone with a given format string
+ */
+export function formatInManila(date: Date, formatStr: string): string {
+  return formatInTimeZone(date, BUSINESS_TIMEZONE, formatStr);
+}
+
+/**
+ * Generate week dates in Manila timezone
+ */
+export function getWeekDates(currentDate: Date): Date[] {
+  const dayOfWeek = getDayOfWeekInManila(currentDate);
+  const startOfWeek = new Date(currentDate);
+  startOfWeek.setDate(startOfWeek.getDate() - dayOfWeek);
+  startOfWeek.setHours(12, 0, 0, 0);
+
+  const dates: Date[] = [];
+  for (let i = 0; i < 7; i++) {
+    const date = new Date(startOfWeek);
+    date.setDate(startOfWeek.getDate() + i);
+    dates.push(date);
+  }
+
+  return dates;
+}

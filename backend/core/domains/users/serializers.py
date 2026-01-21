@@ -7,21 +7,68 @@ from .models import AdminInvitation, User, UserProfile
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
+    avatar_url = serializers.SerializerMethodField()
+
     class Meta:
         model = UserProfile
-        fields = ['phone', 'company']
+        fields = ['phone', 'company', 'avatar', 'avatar_url']
+        extra_kwargs = {
+            'avatar': {'write_only': True}
+        }
+
+    def get_avatar_url(self, obj):
+        """Return the full URL for the avatar if it exists."""
+        if obj.avatar and hasattr(obj.avatar, 'url'):
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.avatar.url)
+            return obj.avatar.url
+        return None
+
+
+class AvatarUploadSerializer(serializers.Serializer):
+    """Serializer for avatar upload endpoint."""
+    avatar = serializers.ImageField(required=True)
+
+    def validate_avatar(self, value):
+        """Validate avatar file size and type."""
+        # Max 5MB
+        max_size = 5 * 1024 * 1024
+        if value.size > max_size:
+            raise serializers.ValidationError("Avatar image must be less than 5MB.")
+
+        # Validate content type
+        allowed_types = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
+        if value.content_type not in allowed_types:
+            raise serializers.ValidationError(
+                f"Invalid image type. Allowed types: {', '.join(allowed_types)}"
+            )
+
+        return value
 
 
 class UserSerializer(serializers.ModelSerializer):
     profile = UserProfileSerializer(required=False)
-    
+    admin_permissions = serializers.SerializerMethodField()
+    is_full_admin = serializers.SerializerMethodField()
+
     class Meta:
         model = User
-        fields = ['id', 'email', 'first_name', 'last_name', 'is_active', 'role', 'profile', 'date_joined']
-        read_only_fields = ['id', 'is_active', 'date_joined']
+        fields = ['id', 'email', 'first_name', 'last_name', 'is_active', 'role',
+                  'profile', 'date_joined', 'admin_permissions', 'is_full_admin']
+        # SECURITY FIX (P0-B7): Added 'email' and 'role' to prevent privilege escalation
+        read_only_fields = ['id', 'email', 'role', 'is_active', 'date_joined', 'admin_permissions', 'is_full_admin']
         extra_kwargs = {
             'password': {'write_only': True}
         }
+
+    def get_admin_permissions(self, obj):
+        """Return all admin permissions with current values."""
+        return obj.get_all_permissions_dict()
+
+    def get_is_full_admin(self, obj):
+        """Return whether user is a full admin."""
+        return obj.is_full_admin()
 
     def create(self, validated_data):
         profile_data = validated_data.pop('profile', None)
@@ -95,15 +142,29 @@ class UserCreateSerializer(UserSerializer):
         return super().create(validated_data)
 
 
+class AdminPermissionsSerializer(serializers.Serializer):
+    """Serializer for admin permissions - used for creating/updating permissions."""
+    can_manage_company_settings = serializers.BooleanField(required=False, default=False)
+    can_manage_admins = serializers.BooleanField(required=False, default=False)
+    can_manage_financial_settings = serializers.BooleanField(required=False, default=False)
+    can_manage_payment_gateways = serializers.BooleanField(required=False, default=False)
+    can_manage_workflows = serializers.BooleanField(required=False, default=False)
+    can_manage_booking_flows = serializers.BooleanField(required=False, default=False)
+    can_manage_templates = serializers.BooleanField(required=False, default=False)
+    can_export_data = serializers.BooleanField(required=False, default=False)
+    can_delete_records = serializers.BooleanField(required=False, default=False)
+
+
 class AdminInvitationSerializer(serializers.ModelSerializer):
     invited_by = serializers.StringRelatedField(read_only=True)
-    
+    permissions = serializers.JSONField(required=False, default=dict)
+
     class Meta:
         model = AdminInvitation
-        fields = ['id', 'email', 'first_name', 'last_name', 'invited_by', 
-                  'is_accepted', 'expires_at', 'created_at']
+        fields = ['id', 'email', 'first_name', 'last_name', 'invited_by',
+                  'is_accepted', 'expires_at', 'created_at', 'permissions']
         read_only_fields = ['id', 'invited_by', 'is_accepted', 'expires_at', 'created_at']
-        
+
     def validate_email(self, value):
         """
         Validate email for admin invitation

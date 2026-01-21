@@ -61,27 +61,30 @@ export interface SettingsPageConfig<T = Record<string, unknown>> {
 export interface SettingsPageProps<T = Record<string, unknown>> {
   // Configuration
   config: SettingsPageConfig<T>;
-  
+
   // Data
   data: T[];
   isLoading?: boolean;
   error?: string;
-  
+
   // Default values for forms
   defaultValues: T;
-  
+
   // Actions
   onRefresh?: () => void;
   onCreate?: (data: T) => Promise<void>;
   onUpdate?: (id: string | number, data: T) => Promise<void>;
   onDelete?: (id: string | number) => Promise<void>;
   onDuplicate?: (item: T) => Promise<void>;
-  
+
+  // Optional: Fetch fresh item data before editing (ensures form shows latest data)
+  onFetchItem?: (id: string | number) => Promise<T>;
+
   // Loading states
   isCreating?: boolean;
   isUpdating?: boolean;
   isDeleting?: boolean;
-  
+
   // Custom actions
   customHeaderActions?: HeaderAction[];
   customTableActions?: Array<{
@@ -91,9 +94,20 @@ export interface SettingsPageProps<T = Record<string, unknown>> {
     color?: 'default' | 'primary' | 'secondary' | 'error';
     show?: (row: T) => boolean;
   }>;
-  
+
   // Event handlers
   onRowClick?: (row: T, index: number) => void;
+
+  // UI customization
+  hidePageHeader?: boolean;
+
+  // Custom form rendering - when provided, replaces the default SettingsFormDialog
+  customFormRenderer?: (props: {
+    open: boolean;
+    onClose: () => void;
+    item: T | null;
+    onSave: () => void;
+  }) => React.ReactNode;
 }
 
 export const SettingsPage = <T extends { id: string | number }>({
@@ -106,15 +120,18 @@ export const SettingsPage = <T extends { id: string | number }>({
   onCreate,
   onUpdate,
   onDelete,
+  onFetchItem,
   isCreating = false,
   isUpdating = false,
   isDeleting = false,
   customHeaderActions = [],
   customTableActions = [],
   onRowClick,
+  customFormRenderer,
 }: SettingsPageProps<T>) => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<T | null>(null);
+  const [_isFetchingItem, setIsFetchingItem] = useState(false);
   const [sortBy, setSortBy] = useState<string>(config.table.defaultSort?.key || '');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>(config.table.defaultSort?.order || 'asc');
 
@@ -147,11 +164,14 @@ export const SettingsPage = <T extends { id: string | number }>({
     },
   ], [data]);
 
+  // Check if form editing is available (either via handlers or custom renderer)
+  const hasFormCapability = Boolean(onCreate || onUpdate || customFormRenderer);
+
   // Header actions
   const headerActions: HeaderAction[] = [
     ...customHeaderActions,
     ...(features.refresh && onRefresh ? [createRefreshAction(onRefresh)] : []),
-    ...(features.create && onCreate ? [createAddAction(
+    ...(features.create && hasFormCapability ? [createAddAction(
       `Add ${config.form.title}`,
       () => {
         setEditingItem(null);
@@ -160,17 +180,40 @@ export const SettingsPage = <T extends { id: string | number }>({
     )] : []),
   ];
 
+  // Handle edit click - fetch fresh data if onFetchItem is provided
+  const handleEditClick = async (item: T) => {
+    const itemId = (item as unknown as { id: string | number }).id;
+
+    if (onFetchItem) {
+      // Fetch fresh data before opening the form
+      setIsFetchingItem(true);
+      try {
+        const freshItem = await onFetchItem(itemId);
+        setEditingItem(freshItem);
+        setDialogOpen(true);
+      } catch (err) {
+        console.error('Failed to fetch item for editing:', err);
+        // Fallback to using list data if fetch fails
+        setEditingItem(item);
+        setDialogOpen(true);
+      } finally {
+        setIsFetchingItem(false);
+      }
+    } else {
+      // Use list data directly (legacy behavior)
+      setEditingItem(item);
+      setDialogOpen(true);
+    }
+  };
+
   // Table actions
   const tableActions = [
     ...customTableActions.map(action => ({
       ...action,
       onClick: action.onClick,
     })),
-    ...(features.edit && onUpdate ? createStandardActions(
-      (item: T) => {
-        setEditingItem(item);
-        setDialogOpen(true);
-      },
+    ...(features.edit && hasFormCapability ? createStandardActions(
+      handleEditClick,
       (item: T) => onDelete && onDelete((item as unknown as { id: string | number }).id)
     ) : []),
   ];
@@ -210,8 +253,6 @@ export const SettingsPage = <T extends { id: string | number }>({
         secondaryActions={headerActions.length > 1 ? headerActions.slice(0, -1) : []}
         stats={stats}
         size="medium"
-        gradient
-        glass
       />
 
       <Box sx={{ mt: 3 }}>
@@ -226,7 +267,7 @@ export const SettingsPage = <T extends { id: string | number }>({
           error={error}
           emptyState={{
             ...config.table.emptyState,
-            primaryAction: features.create && onCreate ? {
+            primaryAction: features.create && hasFormCapability ? {
               label: `Create ${config.form.title}`,
               onClick: () => {
                 setEditingItem(null);
@@ -242,24 +283,36 @@ export const SettingsPage = <T extends { id: string | number }>({
         />
       </Box>
 
-      {/* Form Dialog */}
+      {/* Form Dialog - use custom renderer if provided, otherwise use default */}
       {(features.create || features.edit) && (
-        <SettingsFormDialog
-          open={dialogOpen}
-          onClose={() => setDialogOpen(false)}
-          title={config.form.title}
-          subtitle={config.form.subtitle}
-          sections={config.form.sections}
-          item={editingItem}
-          defaultValues={defaultValues}
-          onSubmit={handleFormSubmit}
-          onDelete={features.delete && editingItem ? handleFormDelete : undefined}
-          validate={config.form.validation}
-          maxWidth={config.form.maxWidth}
-          showDelete={features.delete && Boolean(editingItem)}
-          isSubmitting={editingItem ? isUpdating : isCreating}
-          isDeleting={isDeleting}
-        />
+        customFormRenderer ? (
+          customFormRenderer({
+            open: dialogOpen,
+            onClose: () => setDialogOpen(false),
+            item: editingItem,
+            onSave: () => {
+              setDialogOpen(false);
+              onRefresh?.();
+            },
+          })
+        ) : (
+          <SettingsFormDialog
+            open={dialogOpen}
+            onClose={() => setDialogOpen(false)}
+            title={config.form.title}
+            subtitle={config.form.subtitle}
+            sections={config.form.sections}
+            item={editingItem}
+            defaultValues={defaultValues}
+            onSubmit={handleFormSubmit}
+            onDelete={features.delete && editingItem ? handleFormDelete : undefined}
+            validate={config.form.validation}
+            maxWidth={config.form.maxWidth}
+            showDelete={features.delete && Boolean(editingItem)}
+            isSubmitting={editingItem ? isUpdating : isCreating}
+            isDeleting={isDeleting}
+          />
+        )
       )}
     </ModernSettingsLayout>
   );

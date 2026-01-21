@@ -4,6 +4,7 @@ from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from django.db import transaction
 from django.http import Http404, HttpResponse
 from django.utils import timezone
 
@@ -311,6 +312,139 @@ class EventQuoteViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
+    @action(detail=True, methods=['get'])
+    def preview(self, request, pk=None):
+        """Preview quote as PDF (inline display)"""
+        try:
+            from .pdf_service import QuotePDFService
+
+            quote = self.get_object()
+            pdf_buffer = QuotePDFService.generate_quote_pdf(quote)
+
+            response = HttpResponse(pdf_buffer.read(), content_type='application/pdf')
+            response['Content-Disposition'] = f'inline; filename="quote_{quote.id}_v{quote.version}.pdf"'
+            return response
+        except Exception as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=True, methods=['get'])
+    def pdf(self, request, pk=None):
+        """Download quote as PDF (attachment)"""
+        try:
+            from .pdf_service import QuotePDFService
+
+            quote = self.get_object()
+            pdf_buffer = QuotePDFService.generate_quote_pdf(quote)
+
+            response = HttpResponse(pdf_buffer.read(), content_type='application/pdf')
+            response['Content-Disposition'] = f'attachment; filename="quote_{quote.id}_v{quote.version}.pdf"'
+            return response
+        except Exception as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=True, methods=['post'])
+    def generate_pdf(self, request, pk=None):
+        """Generate and save PDF to quote model"""
+        try:
+            from .pdf_service import QuotePDFService
+
+            quote = self.get_object()
+            pdf_url = QuotePDFService.save_quote_pdf(quote)
+
+            serializer = self.get_serializer(quote)
+            return Response({
+                **serializer.data,
+                'pdf_url': pdf_url
+            })
+        except Exception as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=True, methods=['get'])
+    def activities(self, request, pk=None):
+        """Get activity history for a quote"""
+        try:
+            from .models import QuoteActivity
+            from .serializers import QuoteActivitySerializer
+
+            quote = self.get_object()
+            activities = QuoteActivity.objects.filter(quote=quote).order_by('-created_at')
+            serializer = QuoteActivitySerializer(activities, many=True)
+            return Response(serializer.data)
+        except Exception as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=False, methods=['get'])
+    def booking_session_line_items(self, request):
+        """Get line items from a booking session for an event.
+
+        This allows admin to populate quote line items from the booking session
+        data when editing quotes for events that came from booking flows.
+
+        Query params:
+        - event_id: The event ID to get booking session data for
+
+        Returns list of calculated line items based on booking session data.
+        """
+        from core.domains.bookingflow.models import BookingSession
+        from core.domains.sales.pricing_service import PricingCalculationService
+
+        event_id = request.query_params.get('event_id')
+        if not event_id:
+            return Response(
+                {"detail": "event_id parameter is required"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Find booking session for this event
+        try:
+            session = BookingSession.objects.select_related('booking_flow').get(
+                created_event_id=event_id
+            )
+        except BookingSession.DoesNotExist:
+            return Response(
+                {"detail": "No booking session found for this event", "has_booking_session": False},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        # Get event_type_id for event-type-specific pricing
+        event_type_id = None
+        if session.booking_flow and session.booking_flow.event_type:
+            event_type_id = session.booking_flow.event_type_id
+
+        # Calculate pricing using centralized service
+        pricing_breakdown = PricingCalculationService.calculate_from_booking_data(
+            booking_data=session.booking_data,
+            event_type_id=event_type_id
+        )
+
+        # Convert line items to response format
+        line_items = []
+        for item in pricing_breakdown.line_items:
+            # Handle custom bundles (product_id=-1) by returning None
+            product_id = item.product_id if item.product_id != -1 else None
+
+            line_items.append({
+                'description': item.description,
+                'quantity': item.quantity,
+                'unit_price': str(item.total_unit_price),
+                'total': str(item.line_total),
+                'product_id': product_id,
+                'base_unit_price': str(item.base_unit_price),
+                'excess_hours': item.excess_hours,
+                'excess_hour_price': str(item.excess_hour_price) if item.excess_hour_price else None,
+                'excess_cost': str(item.excess_cost),
+                'item_type': item.item_type,
+            })
+
+        return Response({
+            'has_booking_session': True,
+            'session_id': str(session.session_id),
+            'line_items': line_items,
+            'subtotal': str(pricing_breakdown.subtotal),
+            'tax_amount': str(pricing_breakdown.tax_amount),
+            'total_amount': str(pricing_breakdown.total_amount),
+        })
+
 
 class QuoteLineItemViewSet(viewsets.ModelViewSet):
     """ViewSet for managing quote line items"""
@@ -348,6 +482,285 @@ class QuoteLineItemViewSet(viewsets.ModelViewSet):
         try:
             QuoteService.remove_line_item(kwargs.get('pk'), request.user)
             return Response(status=status.HTTP_204_NO_CONTENT)
+        except Exception as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=False, methods=['get'])
+    def product_venues(self, request):
+        """Get venues associated with a product for venue-based hours selection.
+
+        Query params:
+        - product_id: The product ID to get venues for
+        - event_type_id: Optional event type ID for event-type-specific pricing
+
+        Returns list of venues with their hours configuration.
+        """
+        from core.domains.venues.models import PackageVenue, VenueEventTypeConfiguration
+
+        product_id = request.query_params.get('product_id')
+        if not product_id:
+            return Response(
+                {"detail": "product_id query parameter is required"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        event_type_id = request.query_params.get('event_type_id')
+
+        package_venues = PackageVenue.objects.filter(
+            package_id=product_id
+        ).select_related('venue')
+
+        # Pre-fetch event type configurations if event_type_id is provided
+        event_type_configs = {}
+        if event_type_id:
+            try:
+                event_type_id = int(event_type_id)
+                configs = VenueEventTypeConfiguration.objects.filter(
+                    venue__in=[pv.venue for pv in package_venues],
+                    event_type_id=event_type_id
+                ).select_related('venue')
+                event_type_configs = {config.venue_id: config for config in configs}
+            except (ValueError, TypeError):
+                pass
+
+        venues_data = []
+        for pv in package_venues:
+            venue = pv.venue
+            event_config = event_type_configs.get(venue.id)
+
+            if event_config:
+                # Use event-type-specific pricing
+                included_hours = float(event_config.get_effective_included_hours() or 0)
+                excess_hour_price = float(event_config.get_effective_excess_hour_price() or 0)
+                is_all_day_access = event_config.is_all_day_access
+            else:
+                # Fall back to venue defaults
+                included_hours = float(venue.standalone_included_hours or 0)
+                excess_hour_price = float(venue.standalone_excess_hour_price or 0)
+                is_all_day_access = False
+
+            venues_data.append({
+                'venue_id': venue.id,
+                'venue_name': venue.name,
+                'included_hours': included_hours,
+                'excess_hour_price': excess_hour_price,
+                'is_all_day_access': is_all_day_access,
+                'has_event_type_config': event_config is not None,
+            })
+
+        return Response(venues_data)
+
+    @action(detail=False, methods=['post'])
+    def calculate_pricing(self, request):
+        """Calculate pricing for a line item based on product and venue-based hours.
+
+        Request body:
+        {
+            "product_id": 123,
+            "quantity": 1,
+            "venue_additional_hours": {"1": 2, "2": 1},  // Optional: venue_id -> additional hours
+            "event_type_id": 1  // Optional: for event-type-specific venue pricing
+        }
+
+        Returns pricing breakdown including venue-based excess hours calculation.
+        Note: Excess hours are now managed at the Venue level, not ProductOption level.
+        Event-type-specific pricing is applied when event_type_id is provided.
+        """
+        from core.domains.sales.pricing_service import PricingCalculationService
+        from core.domains.products.models import ProductOption
+        from decimal import Decimal
+
+        try:
+            product_id = request.data.get('product_id')
+            quantity = int(request.data.get('quantity', 1))
+            venue_additional_hours = request.data.get('venue_additional_hours', {})
+            event_type_id = request.data.get('event_type_id')
+
+            if not product_id:
+                return Response(
+                    {"detail": "product_id is required"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            try:
+                product = ProductOption.objects.get(pk=product_id)
+            except ProductOption.DoesNotExist:
+                return Response(
+                    {"detail": f"Product with ID {product_id} not found"},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+
+            # Build package data for pricing calculation
+            package_data = {
+                'product_id': product.id,
+                'name': product.name,
+                'price': float(product.base_price),
+                'quantity': quantity,
+            }
+
+            # Use venue-based hours calculation with event_type_id for event-type-specific pricing
+            pricing_item = PricingCalculationService._create_package_line_item(
+                package_data,
+                venue_additional_hours if venue_additional_hours else None,
+                event_type_id=event_type_id
+            )
+
+            # Get venue breakdown if venue_additional_hours was provided
+            venue_breakdown = None
+            if venue_additional_hours:
+                _, venue_breakdown = PricingCalculationService.get_venue_hours_info(
+                    product.id, venue_additional_hours, event_type_id=event_type_id
+                )
+
+            if pricing_item:
+                item_type = 'ADDON' if getattr(product, 'type', 'PACKAGE') == 'ADDON' else 'PACKAGE'
+
+                # Tax rate: uses product's tax_rate with global fallback
+                from .services import get_tax_rate_for_product
+                is_tax_inclusive = getattr(product, 'is_tax_inclusive', False)
+                tax_rate = get_tax_rate_for_product(product)
+
+                return Response({
+                    'product_id': product.id,
+                    'product_name': product.name,
+                    'description': pricing_item.description,
+                    'quantity': pricing_item.quantity,
+                    'base_unit_price': str(pricing_item.base_unit_price),
+                    'excess_hours': pricing_item.excess_hours,
+                    'excess_hour_price': str(pricing_item.excess_hour_price) if pricing_item.excess_hour_price else None,
+                    'excess_cost': str(pricing_item.excess_cost),
+                    'unit_price': str(pricing_item.total_unit_price),
+                    'total': str(pricing_item.line_total),
+                    'tax_rate': str(tax_rate),
+                    'item_type': item_type,
+                    'is_tax_inclusive': is_tax_inclusive,
+                    'venue_hours_breakdown': venue_breakdown,
+                })
+            else:
+                return Response(
+                    {"detail": "Failed to calculate pricing"},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
+
+        except Exception as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class QuoteOptionViewSet(viewsets.ModelViewSet):
+    """ViewSet for managing quote pricing options"""
+    queryset = QuoteOption.objects.select_related('quote').prefetch_related('items')
+    serializer_class = QuoteOptionSerializer
+    permission_classes = [IsAuthenticated, IsAdmin]
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        quote_id = self.request.query_params.get('quote')
+        if quote_id:
+            queryset = queryset.filter(quote_id=quote_id)
+        return queryset.order_by('-created_at')
+
+    def create(self, request, *args, **kwargs):
+        """Create a new quote option with optional items"""
+        try:
+            quote_id = request.data.get('quote')
+            if not quote_id:
+                return Response(
+                    {"detail": "Quote ID is required"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            # Create the option
+            option = QuoteOption.objects.create(
+                quote_id=quote_id,
+                name=request.data.get('name', ''),
+                description=request.data.get('description', ''),
+                total_price=0,
+                is_selected=request.data.get('is_selected', False)
+            )
+
+            # Create items if provided
+            items_data = request.data.get('items', [])
+            for item_data in items_data:
+                QuoteOptionItem.objects.create(
+                    option=option,
+                    description=item_data.get('description', ''),
+                    quantity=item_data.get('quantity', 1),
+                    unit_price=item_data.get('unit_price', 0),
+                    total=item_data.get('total', 0),
+                    product_id=item_data.get('product')
+                )
+
+            # Recalculate total
+            option.calculate_total()
+
+            serializer = self.get_serializer(option)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        except Exception as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    def update(self, request, *args, **kwargs):
+        """Update a quote option"""
+        try:
+            option = self.get_object()
+            option.name = request.data.get('name', option.name)
+            option.description = request.data.get('description', option.description)
+            option.is_selected = request.data.get('is_selected', option.is_selected)
+            option.save()
+
+            # Update items if provided
+            items_data = request.data.get('items')
+            if items_data is not None:
+                # Clear existing items and recreate
+                option.items.all().delete()
+                for item_data in items_data:
+                    QuoteOptionItem.objects.create(
+                        option=option,
+                        description=item_data.get('description', ''),
+                        quantity=item_data.get('quantity', 1),
+                        unit_price=item_data.get('unit_price', 0),
+                        total=item_data.get('total', 0),
+                        product_id=item_data.get('product')
+                    )
+                option.calculate_total()
+
+            serializer = self.get_serializer(option)
+            return Response(serializer.data)
+        except Exception as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    def destroy(self, request, *args, **kwargs):
+        """Delete a quote option"""
+        try:
+            option = self.get_object()
+            option.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except Exception as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=True, methods=['post'])
+    def select(self, request, pk=None):
+        """Select this option (deselects others).
+
+        Uses atomic transaction to prevent race conditions where
+        multiple options could end up selected simultaneously.
+        """
+        try:
+            option = self.get_object()
+
+            with transaction.atomic():
+                # Lock the quote to prevent concurrent option selections
+                quote = EventQuote.objects.select_for_update().get(pk=option.quote_id)
+
+                # Deselect all options for this quote
+                QuoteOption.objects.filter(quote=quote).update(is_selected=False)
+
+                # Re-fetch the option within the transaction and select it
+                option = QuoteOption.objects.select_for_update().get(pk=option.pk)
+                option.is_selected = True
+                option.save()
+
+            serializer = self.get_serializer(option)
+            return Response(serializer.data)
         except Exception as e:
             return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -481,14 +894,9 @@ class ClientEventQuoteViewSet(viewsets.ReadOnlyModelViewSet):
     def download_pdf(self, request, pk=None):
         """Download quote as PDF"""
         try:
-            quote = self.get_object()
+            from .pdf_service import QuotePDFService
 
-            # Check if PDF file exists
-            if not quote.pdf_file:
-                return Response(
-                    {"detail": "PDF not available for this quote"},
-                    status=status.HTTP_404_NOT_FOUND
-                )
+            quote = self.get_object()
 
             # Log PDF download
             from .models import QuoteActivity
@@ -499,9 +907,12 @@ class ClientEventQuoteViewSet(viewsets.ReadOnlyModelViewSet):
                 notes=f"PDF downloaded by client {request.user.get_full_name()}"
             )
 
+            # Generate PDF dynamically
+            pdf_buffer = QuotePDFService.generate_quote_pdf(quote)
+
             # Return file response
             response = HttpResponse(
-                quote.pdf_file.read(),
+                pdf_buffer.read(),
                 content_type='application/pdf'
             )
             response['Content-Disposition'] = f'attachment; filename="quote_{quote.id}_v{quote.version}.pdf"'

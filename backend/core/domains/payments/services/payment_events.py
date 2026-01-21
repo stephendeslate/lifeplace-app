@@ -291,11 +291,6 @@ class PaymentEventHandlers:
             # Send notification
             payment.send_receipt_notification()
 
-            # Update installment if applicable
-            if payment.installment:
-                payment.installment.status = 'PAID'
-                payment.installment.save()
-
             # Auto-create payment plan for deposit payments
             payment._create_payment_plan_for_deposit()
 
@@ -316,10 +311,6 @@ class PaymentEventHandlers:
 
             # Send failure notification (if configured)
             cls._send_failure_notification(payment, transition)
-
-            # Update related records
-            if payment.installment:
-                payment.installment.check_status()
 
         except Exception as e:
             logger.error(

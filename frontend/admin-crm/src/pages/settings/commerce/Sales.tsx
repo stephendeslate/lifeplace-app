@@ -13,25 +13,22 @@ import {
   Assignment as TemplateIcon,
 } from '@mui/icons-material';
 import { useLayout } from '../../../contexts/LayoutContext';
-import { 
+import {
   useQuoteTemplates,
   useCreateQuoteTemplate,
   useUpdateQuoteTemplate,
   useDeleteQuoteTemplate,
 } from '../../../hooks/useSales';
-import { 
-  ModernCard,
+import {
   ModernPageHeader,
   ModernDialog,
   createDeleteActions,
   ModernSettingsLayout
 } from '../../../components/common';
 import { createAddAction, createRefreshAction } from '../../../components/common/ModernPageHeader';
-import { tokens } from '../../../design-system';
-import { glassPresets } from '../../../design-system/utils/glassmorphism';
 import { QuoteTemplatesTable } from '../../../components/sales/QuoteTemplatesTable';
 import { QuoteTemplateFormDialog } from '../../../components/sales/QuoteTemplateFormDialog';
-import type { 
+import type {
   QuoteTemplate,
   CreateQuoteTemplateData,
   UpdateQuoteTemplateData,
@@ -40,12 +37,12 @@ import type {
 
 export const Sales: React.FC = () => {
   const { setBreadcrumbs } = useLayout();
-  
+
   // Quote Templates state
   const [templateSearch, setTemplateSearch] = useState('');
   const [templateActiveFilter, _setTemplateActiveFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [showSearchField, setShowSearchField] = useState(false);
-  
+
   // Dialog states
   const [templateDialogOpen, setTemplateDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -125,7 +122,7 @@ export const Sales: React.FC = () => {
   // Delete handlers
   const handleDeleteConfirm = () => {
     if (!itemToDelete) return;
-    
+
     deleteTemplate(itemToDelete.id);
     setDeleteDialogOpen(false);
     setItemToDelete(null);
@@ -152,7 +149,7 @@ export const Sales: React.FC = () => {
 
   return (
     <ModernSettingsLayout>
-      {/* Modern Header */}
+      {/* Header */}
       <ModernPageHeader
         title="Quote Templates"
         subtitle="Create and manage standardized quote templates for your events"
@@ -170,102 +167,54 @@ export const Sales: React.FC = () => {
           { label: 'Inactive Templates', value: templates.filter(t => !t.is_active).length },
         ]}
         size="medium"
-        gradient
-        glass
       />
 
       {/* Search Field - Conditionally Shown */}
       {showSearchField && (
-        <Box sx={{ mb: 4 }}>
-          <ModernCard
-            variant="glass"
-            size="large"
-            color="primary"
-            animation="fade"
-            sx={{
-              '&::before': {
-                background: `linear-gradient(135deg, ${tokens.color.primary[500]}04 0%, ${tokens.color.primary[600]}03 100%)`,
-              },
+        <Box sx={{ mb: 4, borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
+          <Box display="flex" alignItems="center" gap={1.5} mb={1}>
+            <SearchIcon color="primary" />
+            <Typography variant="h6" fontWeight="600">
+              Search Quote Templates
+            </Typography>
+          </Box>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+            Find templates by name, description, or content
+          </Typography>
+          <TextField
+            fullWidth
+            placeholder="Search by name, description, or content..."
+            value={templateSearch}
+            onChange={(e) => handleSearch(e.target.value)}
+            autoFocus
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon color="action" />
+                </InputAdornment>
+              ),
             }}
-          >
-            <Box sx={{ position: 'relative' }}>
-              <Typography 
-                variant="h6" 
-                sx={{ 
-                  color: tokens.color.neutral[800],
-                  fontWeight: 600,
-                  mb: 1,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 1.5,
-                }}
-              >
-                <SearchIcon sx={{ color: tokens.color.primary[600] }} />
-                Search Quote Templates
-              </Typography>
-              <Typography 
-                variant="body2" 
-                sx={{ 
-                  color: tokens.color.neutral[600],
-                  mb: 3,
-                }}
-              >
-                Find templates by name, description, or content
-              </Typography>
-
-              <TextField
-                fullWidth
-                placeholder="Search by name, description, or content..."
-                value={templateSearch}
-                onChange={(e) => handleSearch(e.target.value)}
-                autoFocus
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    ...glassPresets.light,
-                    borderRadius: tokens.spacing.radius.lg,
-                    border: `1px solid ${tokens.color.borders.glass}`,
-                    '&:hover': {
-                      border: `1px solid ${tokens.color.primary[300]}`,
-                    },
-                    '&.Mui-focused': {
-                      border: `1px solid ${tokens.color.primary[500]}`,
-                      boxShadow: `0 0 0 3px ${tokens.color.primary[500]}15`,
-                    },
-                  },
-                }}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <SearchIcon sx={{ color: tokens.color.primary[600] }} />
-                    </InputAdornment>
-                  ),
-                }}
-              />
-            </Box>
-          </ModernCard>
+          />
         </Box>
       )}
 
       {/* Quote Templates Section */}
-      <ModernCard sx={{ mb: 3 }}>
-        <Box p={3}>
+      <Box sx={{ mb: 3, borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
+        {/* Templates Alert */}
+        <Alert severity="info" sx={{ mb: 3 }}>
+          Quote templates allow you to create standardized quotes quickly.
+          Define products, pricing, terms, and workflows that can be applied to events.
+        </Alert>
 
-          {/* Templates Alert */}
-          <Alert severity="info" sx={{ mb: 3 }}>
-            Quote templates allow you to create standardized quotes quickly. 
-            Define products, pricing, terms, and workflows that can be applied to events.
-          </Alert>
-
-          {/* Templates Table */}
-          <QuoteTemplatesTable
-            templates={templates}
-            isLoading={isLoadingTemplates}
-            onEdit={handleEditTemplate}
-            onDelete={handleDeleteTemplate}
-            isDeleting={isDeletingTemplate}
-          />
-        </Box>
-      </ModernCard>
+        {/* Templates Table */}
+        <QuoteTemplatesTable
+          templates={templates}
+          isLoading={isLoadingTemplates}
+          onEdit={handleEditTemplate}
+          onDelete={handleDeleteTemplate}
+          isDeleting={isDeletingTemplate}
+        />
+      </Box>
 
       {/* Dialogs */}
       <QuoteTemplateFormDialog

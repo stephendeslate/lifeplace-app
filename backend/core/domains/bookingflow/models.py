@@ -165,12 +165,7 @@ class BookingFlow(BaseModel):
             return None
         except BookingFlowStep.DoesNotExist:
             return None
-    
-    @property
-    def enabled_steps(self):
-        """Get all enabled steps in order"""
-        return self.steps.filter(is_enabled=True).order_by('order')
-    
+
     def calculate_total_steps(self):
         """Calculate total number of enabled steps"""
         return self.enabled_steps.count()
@@ -200,6 +195,7 @@ class BookingFlowStep(BaseModel):
     """
     STEP_TYPES = [
         ('introduction', 'Introduction'),
+        ('venue_selection', 'Venue Selection'),
         ('date_time', 'Date & Time Selection'),
         ('questionnaire', 'Questionnaire'),
         ('package_selection', 'Package Selection'),
@@ -216,7 +212,6 @@ class BookingFlowStep(BaseModel):
         related_name='steps'
     )
     step_type = models.CharField(max_length=50, choices=STEP_TYPES)
-    name = models.CharField(max_length=255)
     description = models.TextField(blank=True)
     order = models.PositiveIntegerField()
     
@@ -251,7 +246,7 @@ class BookingFlowStep(BaseModel):
         unique_together = [['booking_flow', 'order'], ['booking_flow', 'step_type']]
 
     def __str__(self):
-        return f"{self.booking_flow.name} - {self.name}"
+        return f"{self.booking_flow.name} - {self.get_step_type_display()}"
     
     def is_visible_for_data(self, booking_data):
         """Check if this step should be visible based on booking data"""
@@ -285,19 +280,119 @@ class IntroductionStepConfiguration(BaseModel):
         return f"Intro config for {self.step}"
 
 
+class VenueSelectionStepConfiguration(BaseModel):
+    """Configuration for venue selection step (custom package curation)"""
+    step = models.OneToOneField(
+        BookingFlowStep,
+        on_delete=models.CASCADE,
+        related_name='venue_selection_config'
+    )
+
+    # Available venues for selection
+    available_venues = models.ManyToManyField(
+        'venues.Venue',
+        blank=True,
+        limit_choices_to={'is_rentable_standalone': True, 'is_active': True},
+        help_text="Specific venues to show (empty = all rentable venues)"
+    )
+
+    # Selection constraints
+    min_venues = models.PositiveIntegerField(
+        default=1,
+        help_text="Minimum number of venues to select"
+    )
+    max_venues = models.PositiveIntegerField(
+        default=5,
+        help_text="Maximum number of venues to select"
+    )
+
+    # Display options
+    show_pricing = models.BooleanField(
+        default=True,
+        help_text="Show standalone pricing for each venue"
+    )
+    show_included_hours = models.BooleanField(
+        default=True,
+        help_text="Show included hours for each venue"
+    )
+    show_bundle_discount = models.BooleanField(
+        default=True,
+        help_text="Show bundle discount for multi-venue selections"
+    )
+    bundle_discount_percent = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        default=Decimal('10.00'),
+        help_text="Discount percentage for selecting multiple venues"
+    )
+
+    # UI customization
+    title = models.CharField(
+        max_length=255,
+        default="Select Your Spaces",
+        blank=True
+    )
+    description = models.TextField(
+        blank=True,
+        default="Choose which spaces to include in your booking.",
+        help_text="Description text shown at the top of the step"
+    )
+
+    # Package recommendation settings
+    show_package_recommendations = models.BooleanField(
+        default=True,
+        help_text="Show matching pre-made packages when venues are selected"
+    )
+    show_view_packages_option = models.BooleanField(
+        default=True,
+        help_text="Show 'View our packages' link for users who want to browse packages"
+    )
+    view_packages_button_text = models.CharField(
+        max_length=255,
+        default="Not sure? View our packages instead",
+        blank=True,
+        help_text="Text for the 'view packages' button"
+    )
+
+    def __str__(self):
+        return f"Venue Selection config for {self.step}"
+
+    def get_available_venues_queryset(self):
+        """Get the available venues for this step"""
+        from core.domains.venues.models import Venue
+
+        if self.available_venues.exists():
+            return self.available_venues.filter(
+                is_active=True,
+                is_rentable_standalone=True,
+                standalone_base_price__isnull=False
+            )
+        else:
+            return Venue.objects.filter(
+                is_active=True,
+                is_bookable=True,
+                is_rentable_standalone=True,
+                standalone_base_price__isnull=False
+            )
+
+
 class DateTimeStepConfiguration(BaseModel):
-    """Enhanced configuration for date and time selection step with availability checking"""
+    """Enhanced configuration for date and time selection step with availability checking."""
     step = models.OneToOneField(
         BookingFlowStep,
         on_delete=models.CASCADE,
         related_name='datetime_config'
     )
-    allow_time_selection = models.BooleanField(default=True)
     allow_multi_day = models.BooleanField(default=False)
+    min_event_days = models.PositiveIntegerField(
+        default=1,
+        help_text="Minimum days allowed for event selection (1 enables single-day selection in range mode)"
+    )
+    max_event_days = models.PositiveIntegerField(
+        default=7,
+        help_text="Maximum consecutive days allowed for multi-day events"
+    )
     show_calendar_view = models.BooleanField(default=True)
-    min_duration_hours = models.PositiveIntegerField(default=1)
-    max_duration_hours = models.PositiveIntegerField(default=24)
-    default_duration_hours = models.PositiveIntegerField(default=4)
     
     # Availability settings - Enhanced from availability_check step
     enable_real_time_availability = models.BooleanField(default=True)
@@ -456,7 +551,14 @@ class PackageSelectionStepConfiguration(BaseModel):
     show_descriptions = models.BooleanField(default=True)
     show_images = models.BooleanField(default=True)
     enable_comparison = models.BooleanField(default=False)
-    
+
+    # Event type filtering
+    filter_by_event_type = models.BooleanField(
+        default=False,
+        help_text="When enabled, only show packages associated with the booking flow's event type. "
+                  "Packages with no event types are hidden when this is enabled."
+    )
+
     # Dynamic pricing
     enable_dynamic_pricing = models.BooleanField(default=False)
     pricing_factors = models.JSONField(
@@ -519,7 +621,14 @@ class AddonSelectionStepConfiguration(BaseModel):
     # Selection behavior
     min_selection = models.PositiveIntegerField(default=0)
     max_selection = models.PositiveIntegerField(default=0, help_text="0 means unlimited")
-    
+
+    # Event type filtering
+    filter_by_event_type = models.BooleanField(
+        default=True,
+        help_text="When enabled, show all active add-ons associated with the booking flow's event type. "
+                  "When disabled, only show add-ons explicitly configured in available_addons."
+    )
+
     # Display options
     group_by_category = models.BooleanField(default=True)
     show_recommendations = models.BooleanField(default=True)
@@ -565,25 +674,55 @@ class PricingSummaryStepConfiguration(BaseModel):
         on_delete=models.CASCADE,
         related_name='pricing_config'
     )
-    
+
     # Display options
     show_package_breakdown = models.BooleanField(default=True)
     show_addon_breakdown = models.BooleanField(default=True)
     show_tax_breakdown = models.BooleanField(default=True)
     show_discount_field = models.BooleanField(default=True)
     show_subtotal = models.BooleanField(default=True)
-    
+
     # Behavior options
     allow_discount_codes = models.BooleanField(default=True)
     calculate_tax = models.BooleanField(default=True)
-    
+
     # Custom messaging
     header_text = models.CharField(max_length=255, blank=True, default="Review your order")
     footer_text = models.TextField(blank=True)
     discount_help_text = models.CharField(
-        max_length=255, 
+        max_length=255,
         blank=True,
         default="Enter discount code"
+    )
+
+    # Terms and Legal Configuration
+    show_terms_checkbox = models.BooleanField(
+        default=True,
+        help_text="Show terms acceptance checkbox"
+    )
+    show_marketing_consent = models.BooleanField(
+        default=True,
+        help_text="Show marketing consent checkbox"
+    )
+    require_terms_acceptance = models.BooleanField(
+        default=True,
+        help_text="Require terms acceptance before proceeding"
+    )
+    terms_text = models.CharField(
+        max_length=500,
+        blank=True,
+        default="",
+        help_text="Custom terms label text (empty = use default)"
+    )
+    terms_url = models.URLField(
+        blank=True,
+        default="",
+        help_text="Custom Terms of Service URL (empty = use global)"
+    )
+    privacy_url = models.URLField(
+        blank=True,
+        default="",
+        help_text="Custom Privacy Policy URL (empty = use global)"
     )
 
     class Meta:
@@ -647,10 +786,6 @@ class PaymentInfoStepConfiguration(BaseModel):
         default=True,
         help_text="Show option to pay deposit (amount from PaymentSettings.default_deposit_percentage)"
     )
-    allow_payment_plans = models.BooleanField(
-        default=False,
-        help_text="Show payment plan option in UI"
-    )
     allow_quote_request = models.BooleanField(
         default=True,
         help_text="Allow users to request a quote instead of paying immediately"
@@ -686,6 +821,282 @@ class PaymentInfoStepConfiguration(BaseModel):
             return PaymentGateway.objects.filter(is_active=True)
         except ImportError:
             return []
+
+
+# Choice constants for PaymentTermsConfiguration
+DEPOSIT_TYPE_CHOICES = [
+    ('PERCENTAGE', 'Percentage of Total'),
+    ('FIXED', 'Fixed Amount')
+]
+
+LATE_FEE_TYPE_CHOICES = [
+    ('FIXED', 'Fixed Amount'),
+    ('PERCENTAGE', 'Percentage of Invoice')
+]
+
+BALANCE_DUE_TYPE_CHOICES = [
+    ('DAYS_BEFORE', 'Specific Days Before Event'),
+    ('DAY_BEFORE', 'Day Before Event')
+]
+
+
+class PaymentTermsConfiguration(BaseModel):
+    """
+    Flow-specific payment terms configuration that overrides global PaymentSettings.
+
+    Fields are nullable - null values mean "use global default from PaymentSettings".
+    This allows per-booking-flow customization while maintaining global defaults.
+    """
+    step = models.OneToOneField(
+        BookingFlowStep,
+        on_delete=models.CASCADE,
+        related_name='payment_terms_config'
+    )
+
+    # DEPOSIT CONFIGURATION OVERRIDES
+    deposit_type = models.CharField(
+        max_length=20,
+        choices=DEPOSIT_TYPE_CHOICES,
+        null=True,
+        blank=True,
+        help_text="Override: Type of deposit calculation (null = use global)"
+    )
+
+    deposit_percentage = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text="Override: Deposit as percentage of total (null = use global)"
+    )
+
+    deposit_fixed_amount = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text="Override: Fixed deposit amount (null = use global)"
+    )
+
+    deposit_is_refundable = models.BooleanField(
+        null=True,
+        blank=True,
+        help_text="Override: Whether deposit is refundable (null = use global)"
+    )
+
+    deposit_is_deductible = models.BooleanField(
+        null=True,
+        blank=True,
+        help_text="Override: Whether deposit is deducted from total (null = use global)"
+    )
+
+    deposit_waived_on_full_payment = models.BooleanField(
+        null=True,
+        blank=True,
+        help_text="Override: Whether deposit is waived on full payment (null = use global)"
+    )
+
+    # LATE FEE CONFIGURATION OVERRIDES
+    late_fee_type = models.CharField(
+        max_length=20,
+        choices=LATE_FEE_TYPE_CHOICES,
+        null=True,
+        blank=True,
+        help_text="Override: Type of late fee calculation (null = use global)"
+    )
+
+    late_fee_amount = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text="Override: Fixed late fee amount (null = use global)"
+    )
+
+    late_fee_percentage = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text="Override: Late fee as percentage (null = use global)"
+    )
+
+    # SECURITY DEPOSIT CONFIGURATION OVERRIDES
+    security_deposit_enabled = models.BooleanField(
+        null=True,
+        blank=True,
+        help_text="Override: Whether security deposit is enabled (null = use global)"
+    )
+
+    security_deposit_amount = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text="Override: Security deposit amount (null = use global)"
+    )
+
+    security_deposit_is_refundable = models.BooleanField(
+        null=True,
+        blank=True,
+        help_text="Override: Whether security deposit is refundable (null = use global)"
+    )
+
+    security_deposit_description = models.CharField(
+        max_length=255,
+        blank=True,
+        help_text="Override: Security deposit description (empty = use global)"
+    )
+
+    # CANCELLATION CONFIGURATION OVERRIDES
+    cancellation_admin_fee_percentage = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text="Override: Admin fee percentage on cancellation (null = use global)"
+    )
+
+    # PAYMENT SCHEDULE CONFIGURATION OVERRIDES
+    downpayment_percentage = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text="Override: Downpayment percentage of TCP (null = use global)"
+    )
+
+    downpayment_due_days = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        help_text="Override: Days after booking for downpayment (null = use global)"
+    )
+
+    balance_due_days = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        help_text="Override: Days before event for balance due (null = use global)"
+    )
+
+    balance_due_type = models.CharField(
+        max_length=20,
+        choices=BALANCE_DUE_TYPE_CHOICES,
+        null=True,
+        blank=True,
+        help_text="Override: When balance is due (null = use global)"
+    )
+
+    # DATE BLOCKING POLICY OVERRIDES
+    DATE_BLOCKING_POLICY_CHOICES = [
+        ('IMMEDIATE', 'Block Immediately on Booking'),
+        ('ON_DOWNPAYMENT', 'Block When Downpayment Received'),
+    ]
+
+    DOWNPAYMENT_DUE_REFERENCE_CHOICES = [
+        ('DAYS_AFTER_BOOKING', 'Days After Booking'),
+        ('DAYS_BEFORE_EVENT', 'Days Before Event'),
+    ]
+
+    date_blocking_policy = models.CharField(
+        max_length=20,
+        choices=DATE_BLOCKING_POLICY_CHOICES,
+        null=True,
+        blank=True,
+        help_text="Override: When to block dates (null = use global)"
+    )
+
+    downpayment_due_reference = models.CharField(
+        max_length=20,
+        choices=DOWNPAYMENT_DUE_REFERENCE_CHOICES,
+        null=True,
+        blank=True,
+        help_text="Override: Reference point for downpayment due date (null = use global)"
+    )
+
+    downpayment_deadline_days = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        help_text="Override: Days before auto-cancellation if downpayment not received (null = use global)"
+    )
+
+    # CHILD/YOUTH PRICING OVERRIDES
+    child_pricing_enabled = models.BooleanField(
+        null=True,
+        blank=True,
+        help_text="Override: Enable age-based pricing (null = use global)"
+    )
+
+    child_pricing_tiers = models.JSONField(
+        null=True,
+        blank=True,
+        help_text="Override: Age-based pricing tiers (null = use global)"
+    )
+
+    class Meta:
+        verbose_name = "Payment Terms Configuration"
+        verbose_name_plural = "Payment Terms Configurations"
+
+    def __str__(self):
+        return f"Payment Terms config for {self.step}"
+
+    def get_effective_settings(self):
+        """
+        Merge flow-specific settings with global defaults from PaymentSettings.
+        Returns a dict with all payment terms, using flow values when set,
+        falling back to global settings when null.
+        """
+        from core.domains.payments.models import PaymentSettings
+        from core.domains.settings.models import CurrencySettings
+        global_settings = PaymentSettings.get_default_settings()
+        # Get currency from CurrencySettings (single source of truth)
+        currency_settings = CurrencySettings.get_system_settings()
+        currency = currency_settings.default_currency if currency_settings else 'PHP'
+
+        def get_value(local_field, global_field):
+            """Get local value if set, otherwise global default"""
+            local_value = getattr(self, local_field, None)
+            if local_value is not None:
+                return local_value
+            return getattr(global_settings, global_field, None)
+
+        return {
+            # Deposit settings
+            'deposit_type': get_value('deposit_type', 'deposit_type'),
+            'deposit_percentage': get_value('deposit_percentage', 'default_deposit_percentage'),
+            'deposit_fixed_amount': get_value('deposit_fixed_amount', 'deposit_fixed_amount'),
+            'deposit_is_refundable': get_value('deposit_is_refundable', 'deposit_is_refundable'),
+            'deposit_is_deductible': get_value('deposit_is_deductible', 'deposit_is_deductible'),
+            'deposit_waived_on_full_payment': get_value('deposit_waived_on_full_payment', 'deposit_waived_on_full_payment'),
+            # Late fee settings
+            'late_fee_type': get_value('late_fee_type', 'late_fee_type'),
+            'late_fee_amount': get_value('late_fee_amount', 'default_late_fee_amount'),
+            'late_fee_percentage': get_value('late_fee_percentage', 'late_fee_percentage'),
+            'late_fee_enabled': global_settings.late_fee_enabled,  # Always from global
+            # Security deposit settings
+            'security_deposit_enabled': get_value('security_deposit_enabled', 'security_deposit_enabled'),
+            'security_deposit_amount': get_value('security_deposit_amount', 'security_deposit_amount'),
+            'security_deposit_is_refundable': get_value('security_deposit_is_refundable', 'security_deposit_is_refundable'),
+            'security_deposit_description': self.security_deposit_description or global_settings.security_deposit_description,
+            # Cancellation settings
+            'cancellation_admin_fee_percentage': get_value('cancellation_admin_fee_percentage', 'cancellation_admin_fee_percentage'),
+            'refund_percentage': global_settings.refund_percentage,  # Always from global
+            'allow_refunds': global_settings.allow_refunds,  # Always from global
+            'refund_deadline_hours': global_settings.refund_deadline_hours,  # Always from global
+            # Payment schedule settings
+            'downpayment_percentage': get_value('downpayment_percentage', 'downpayment_percentage'),
+            'downpayment_due_days': get_value('downpayment_due_days', 'downpayment_due_days'),
+            'balance_due_days': get_value('balance_due_days', 'balance_due_days'),
+            'balance_due_type': get_value('balance_due_type', 'balance_due_type'),
+            # Date blocking policy settings
+            'date_blocking_policy': get_value('date_blocking_policy', 'date_blocking_policy'),
+            'downpayment_due_reference': get_value('downpayment_due_reference', 'downpayment_due_reference'),
+            'downpayment_deadline_days': get_value('downpayment_deadline_days', 'downpayment_deadline_days'),
+            # Child pricing settings
+            'child_pricing_enabled': get_value('child_pricing_enabled', 'child_pricing_enabled'),
+            'child_pricing_tiers': self.child_pricing_tiers if self.child_pricing_tiers is not None else global_settings.child_pricing_tiers,
+            # Currency (from CurrencySettings - single source of truth)
+            'currency': currency,
+        }
 
 
 class ConfirmationStepConfiguration(BaseModel):
@@ -806,16 +1217,21 @@ class BookingSession(BaseModel):
         
         try:
             from core.domains.sales.pricing_service import PricingCalculationService
-            
+
             # Get event duration
             event_duration = self._get_event_duration()
-            
+
+            # Get event_type_id from booking flow for event-type-specific pricing
+            event_type_id = None
+            if self.booking_flow and self.booking_flow.event_type:
+                event_type_id = self.booking_flow.event_type_id
+
             # Use centralized pricing service
             pricing_breakdown = PricingCalculationService.calculate_from_booking_data(
-                self.booking_data, 
-                event_duration
+                booking_data=self.booking_data,
+                event_type_id=event_type_id
             )
-            
+
             logger.info(f"Centralized pricing service result: ₱{pricing_breakdown.total_amount}")
             return pricing_breakdown.total_amount
             

@@ -122,6 +122,36 @@ jobs:
         cd frontend/${{ matrix.app }}
         npm run build
 
+    - name: Report bundle size
+      run: |
+        cd frontend/${{ matrix.app }}
+        echo "📦 Bundle Size Report for ${{ matrix.app }}"
+        echo "=========================================="
+
+        # Report total dist size
+        TOTAL_SIZE=$(du -sh dist/ | cut -f1)
+        echo "Total build size: $TOTAL_SIZE"
+
+        # Report individual JS chunks
+        echo ""
+        echo "JavaScript bundles:"
+        find dist/assets -name "*.js" -type f -exec ls -lh {} \; | awk '{print $5 "\t" $9}' | sort -hr
+
+        # Check for bundles over 1MB
+        echo ""
+        LARGE_BUNDLES=$(find dist/assets -name "*.js" -type f -size +1M)
+        if [ -n "$LARGE_BUNDLES" ]; then
+          echo "⚠️  WARNING: Found JavaScript bundles larger than 1MB:"
+          echo "$LARGE_BUNDLES" | while read file; do
+            SIZE=$(ls -lh "$file" | awk '{print $5}')
+            echo "  - $(basename $file): $SIZE"
+          done
+          echo ""
+          echo "Consider code splitting or lazy loading for these large bundles."
+        else
+          echo "✅ All JavaScript bundles are under 1MB"
+        fi
+
   # Job 3: Deploy Admin CRM (only on main branch)
   deploy-admin-crm:
     needs: [test-backend, test-frontend]
@@ -150,16 +180,14 @@ jobs:
         cd frontend/admin-crm
         npm run build
 
-    - name: Deploy to Netlify
-      uses: nwtgck/actions-netlify@v3.0
+    - name: Deploy to Cloudflare Pages
+      uses: cloudflare/pages-action@v1
       with:
-        publish-dir: './frontend/admin-crm/dist'
-        production-branch: main
-        production-deploy: true
-        netlify-config-path: './frontend/admin-crm/netlify.toml'
-      env:
-        NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-        NETLIFY_SITE_ID: ${{ secrets.NETLIFY_ADMIN_SITE_ID }}
+        apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        projectName: lifeplace-admin
+        directory: frontend/admin-crm/dist
+        gitHubToken: ${{ secrets.GITHUB_TOKEN }}
 
   # Job 4: Deploy Client Portal (only on main branch)
   deploy-client-portal:
@@ -189,16 +217,14 @@ jobs:
         cd frontend/client-portal
         npm run build
 
-    - name: Deploy to Netlify
-      uses: nwtgck/actions-netlify@v3.0
+    - name: Deploy to Cloudflare Pages
+      uses: cloudflare/pages-action@v1
       with:
-        publish-dir: './frontend/client-portal/dist'
-        production-branch: main
-        production-deploy: true
-        netlify-config-path: './frontend/client-portal/netlify.toml'
-      env:
-        NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-        NETLIFY_SITE_ID: ${{ secrets.NETLIFY_CLIENT_SITE_ID }}
+        apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        projectName: lifeplace-client
+        directory: frontend/client-portal/dist
+        gitHubToken: ${{ secrets.GITHUB_TOKEN }}
 
   # Job 5: Notify on Success/Failure
   notify:
@@ -210,7 +236,7 @@ jobs:
     - name: Deployment Status
       run: |
         if [[ "${{ needs.deploy-admin-crm.result }}" == "success" && "${{ needs.deploy-client-portal.result }}" == "success" ]]; then
-          echo "✅ Frontend deployments successful! Backend deployed automatically by Railway."
+          echo "✅ Frontend deployments to Cloudflare Pages successful! Backend is deployed via Fly.io."
         else
           echo "❌ Some deployments failed"
           exit 1

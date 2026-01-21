@@ -14,7 +14,7 @@ from django.utils import timezone
 from core.domains.payments.models import (
     Payment, PaymentGateway, PaymentTransaction, PaymentMethod
 )
-from core.domains.payments.services.payment_gateway_service import PaymentGatewayService
+from core.domains.payments.services.gateway_service import PaymentGatewayService
 from core.domains.events.models import Event, EventType
 
 User = get_user_model()
@@ -55,20 +55,24 @@ class StripePaymentIntegrationTestCase(TestCase):
         )
         
         # Create Stripe gateway
-        self.gateway = PaymentGateway.objects.create(
-            name='Stripe Test Gateway',
+        self.gateway, _ = PaymentGateway.objects.get_or_create(
             code='stripe',
-            is_active=True,
-            config=STRIPE_TEST_CONFIG
+            defaults={
+                'name': 'Stripe Test Gateway',
+                'is_active': True,
+            }
         )
+        # Always update config to ensure test settings are applied
+        self.gateway.config = STRIPE_TEST_CONFIG
+        self.gateway.is_active = True
+        self.gateway.save()
         
         # Create test payment method with Stripe test card
         self.payment_method = PaymentMethod.objects.create(
             gateway=self.gateway,
-            client=self.user,
-            token='pm_card_visa',  # Stripe test payment method
-            card_last_four='4242',
-            card_brand='visa',
+            user=self.user,
+            token_reference='pm_card_visa',  # Stripe test payment method
+            last_four='4242',
             is_default=True
         )
     
@@ -472,7 +476,8 @@ class StripePaymentIntegrationTestCase(TestCase):
             event=self.event,
             payment_method=PaymentMethod.objects.create(
                 gateway=invalid_gateway,
-                token='pm_test_invalid'
+                user=self.user,
+                token_reference='pm_test_invalid'
             ),
             amount=Decimal('1000.00'),
             currency='PHP'

@@ -39,7 +39,7 @@ export const useCurrencySettings = () => {
         setSettings({ ...DEFAULT_CURRENCY_SETTINGS, ...parsed });
       }
     } catch (error) {
-      console.warn('Failed to load currency settings from localStorage:', error);
+      if (import.meta.env.DEV) console.warn('Failed to load currency settings from localStorage:', error);
     } finally {
       setIsLoading(false);
     }
@@ -53,7 +53,7 @@ export const useCurrencySettings = () => {
     try {
       localStorage.setItem(CURRENCY_SETTINGS_KEY, JSON.stringify(updatedSettings));
     } catch (error) {
-      console.error('Failed to save currency settings to localStorage:', error);
+      if (import.meta.env.DEV) console.error('Failed to save currency settings to localStorage:', error);
     }
   }, [settings]);
 

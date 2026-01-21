@@ -1,0 +1,87 @@
+[
+  {
+    "model": "bookingflow.contactinfostepconfiguration",
+    "pk": 3,
+    "fields": {
+      "created_at": "2026-01-08T08:54:54.551",
+      "updated_at": "2026-01-08T08:54:54.551",
+      "step": 48,
+      "require_full_name": true,
+      "require_email": true,
+      "require_phone": true,
+      "require_address": true,
+      "require_company": false,
+      "custom_fields": [],
+      "offer_account_creation": true,
+      "require_account_creation": false
+    }
+  },
+  {
+    "model": "bookingflow.contactinfostepconfiguration",
+    "pk": 4,
+    "fields": {
+      "created_at": "2026-01-08T08:54:54.562",
+      "updated_at": "2026-01-08T08:54:54.562",
+      "step": 56,
+      "require_full_name": true,
+      "require_email": true,
+      "require_phone": true,
+      "require_address": true,
+      "require_company": true,
+      "custom_fields": [],
+      "offer_account_creation": true,
+      "require_account_creation": false
+    }
+  },
+  {
+    "model": "bookingflow.contactinfostepconfiguration",
+    "pk": 5,
+    "fields": {
+      "created_at": "2026-01-08T08:54:54.569",
+      "updated_at": "2026-01-08T08:54:54.569",
+      "step": 64,
+      "require_full_name": true,
+      "require_email": true,
+      "require_phone": true,
+      "require_address": true,
+      "require_company": true,
+      "custom_fields": [],
+      "offer_account_creation": true,
+      "require_account_creation": false
+    }
+  },
+  {
+    "model": "bookingflow.contactinfostepconfiguration",
+    "pk": 6,
+    "fields": {
+      "created_at": "2026-01-08T08:54:54.574",
+      "updated_at": "2026-01-08T08:54:54.574",
+      "step": 70,
+      "require_full_name": true,
+      "require_email": true,
+      "require_phone": true,
+      "require_address": true,
+      "require_company": true,
+      "custom_fields": [],
+      "offer_account_creation": true,
+      "require_account_creation": false
+    }
+  },
+  {
+    "model": "bookingflow.contactinfostepconfiguration",
+    "pk": 7,
+    "fields": {
+      "created_at": "2026-01-08T08:54:54.580",
+      "updated_at": "2026-01-08T08:54:54.580",
+      "step": 77,
+      "require_full_name": true,
+      "require_email": true,
+      "require_phone": true,
+      "require_address": true,
+      "require_company": false,
+      "custom_fields": [],
+      "offer_account_creation": true,
+      "require_account_creation": false
+    }
+  }
+]

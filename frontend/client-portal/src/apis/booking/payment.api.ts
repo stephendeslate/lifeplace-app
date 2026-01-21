@@ -1,7 +1,6 @@
 // frontend/client-portal/src/apis/booking/payment.api.ts
 
 import api from '../../utils/api';
-import { ErrorHandler } from '../../utils/errorHandler';
 import type {
   PaymentGateway,
   PaymentGatewayResponse,
@@ -324,24 +323,6 @@ export class PaymentApi {
       return 'Test Mode';
     }
     return 'Live';
-  }
-
-  // Error handling
-
-  /**
-   * Handle payment API errors
-   * @deprecated Use ErrorHandler.extractMessage() instead
-   */
-  static handlePaymentError(error: unknown): string {
-    return ErrorHandler.extractMessage(error);
-  }
-
-  /**
-   * Extract payment validation errors
-   * @deprecated Use ErrorHandler.extractValidationErrorsAsRecord() instead
-   */
-  static extractPaymentErrors(error: unknown): Record<string, string[]> {
-    return ErrorHandler.extractValidationErrorsAsRecord(error);
   }
 
   // Gateway feature detection

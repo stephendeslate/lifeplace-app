@@ -110,12 +110,6 @@ class PaymentEventProcessor:
             if notification_sent:
                 logger.debug(f"Receipt notification sent for payment {payment.payment_number}")
 
-            # Update installment if applicable
-            if payment.installment:
-                payment.installment.status = 'PAID'
-                payment.installment.save()
-                logger.debug(f"Updated installment status for payment {payment.payment_number}")
-
             # Auto-create payment plan for deposit payments
             try:
                 payment._create_payment_plan_for_deposit()
@@ -141,7 +135,6 @@ class PaymentEventProcessor:
 
         Handles side effects of payment failure:
         - Failure notifications
-        - Installment status updates
         - Analytics updates
         - Retry scheduling
         """
@@ -156,11 +149,6 @@ class PaymentEventProcessor:
 
             # Send failure notification
             cls._send_failure_notification(payment)
-
-            # Update installment status
-            if payment.installment:
-                payment.installment.check_status()
-                logger.debug(f"Updated installment status for failed payment {payment.payment_number}")
 
             # Update analytics
             cls._update_payment_analytics(payment, 'FAILED')

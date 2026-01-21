@@ -1,0 +1,82 @@
+[
+  {
+    "model": "bookingflow.paymentinfostepconfiguration",
+    "pk": 3,
+    "fields": {
+      "created_at": "2026-01-08T08:54:54.552",
+      "updated_at": "2026-01-08T08:54:54.552",
+      "step": 49,
+      "accept_full_payment": true,
+      "accept_deposit": true,
+      "allow_quote_request": true,
+      "require_immediate_payment": false,
+      "payment_terms": "Payment Terms:\n- Reservation fee: Non-refundable and non-deductible\n- 30% downpayment within 7 days to confirm date\n- 70% balance due 1 day before the event\n- Security deposit: PHP 2,500 (refundable upon checkout)",
+      "quote_request_button_text": "Request Custom Quote",
+      "quote_request_description": "Get a personalized quote for your wedding. Our team will prepare a detailed proposal based on your requirements."
+    }
+  },
+  {
+    "model": "bookingflow.paymentinfostepconfiguration",
+    "pk": 4,
+    "fields": {
+      "created_at": "2026-01-08T08:54:54.562",
+      "updated_at": "2026-01-08T08:54:54.562",
+      "step": 57,
+      "accept_full_payment": true,
+      "accept_deposit": true,
+      "allow_quote_request": true,
+      "require_immediate_payment": false,
+      "payment_terms": "Payment Terms (per Camps & Retreats T&C):\n- Reservation fee: PHP 5,000 (Non-refundable, Non-deductible)\n  - Waived if full payment is made upon signing\n- 30% of Total Contract Price due 14 days before event\n- 70% of Total Contract Price due 1 day before event\n- Security deposit: PHP 2,000 upon check-in (Refundable)\n\nChild Pricing:\n- Ages 0-2: FREE\n- Ages 3-7: 50% discount\n- Ages 8+: Full price\n\nCancellation: Less than 30 days prior = 20% liquidated damage\nRescheduling: 10% fee, must be 3+ months before event",
+      "quote_request_button_text": "Get Detailed Quote",
+      "quote_request_description": "Request a customized quote for your camp or retreat. Our team will prepare a proposal tailored to your group size and requirements."
+    }
+  },
+  {
+    "model": "bookingflow.paymentinfostepconfiguration",
+    "pk": 5,
+    "fields": {
+      "created_at": "2026-01-08T08:54:54.570",
+      "updated_at": "2026-01-08T08:54:54.570",
+      "step": 65,
+      "accept_full_payment": true,
+      "accept_deposit": true,
+      "allow_quote_request": true,
+      "require_immediate_payment": false,
+      "payment_terms": "Payment Terms:\n- Reservation fee: PHP 5,000 (Non-refundable)\n- 30% downpayment due 14 days before event\n- 70% balance due 1 day before event\n- Security deposit: PHP 2,000 upon check-in (Refundable)\n\nCancellation: Less than 30 days prior = 20% liquidated damage\nRescheduling: 10% fee, must be 3+ months before event",
+      "quote_request_button_text": "Request Corporate Quote",
+      "quote_request_description": "Get a customized quote for your team building event. We can tailor activities and packages to your company goals."
+    }
+  },
+  {
+    "model": "bookingflow.paymentinfostepconfiguration",
+    "pk": 6,
+    "fields": {
+      "created_at": "2026-01-08T08:54:54.575",
+      "updated_at": "2026-01-08T08:54:54.575",
+      "step": 71,
+      "accept_full_payment": true,
+      "accept_deposit": true,
+      "allow_quote_request": true,
+      "require_immediate_payment": false,
+      "payment_terms": "Payment Terms:\n- Quotation will be provided based on requirements\n- Standard deposit and payment terms apply\n- Security deposit may be required",
+      "quote_request_button_text": "Request Workshop Quote",
+      "quote_request_description": "Get a customized quote for your workshop. Tell us about your requirements and we will prepare a tailored proposal."
+    }
+  },
+  {
+    "model": "bookingflow.paymentinfostepconfiguration",
+    "pk": 7,
+    "fields": {
+      "created_at": "2026-01-08T08:54:54.581",
+      "updated_at": "2026-01-08T08:54:54.581",
+      "step": 78,
+      "accept_full_payment": true,
+      "accept_deposit": true,
+      "allow_quote_request": true,
+      "require_immediate_payment": false,
+      "payment_terms": "Payment Terms (per Life Events T&C):\n- Reservation fee upon signing: Non-refundable, Non-deductible\n- 30% downpayment within 7 days to officially block date\n- Failure to pay 30% = contract termination\n- 70% balance due 1 day before event\n- Late payments: 5% penalty charge\n- Security deposit: PHP 2,500 for keys (Refundable upon checkout)\n\nCancellation within 30 days: 50% admin fee (excl. reservation)\nCancellation less than 30 days prior: 20% liquidated damage\nRescheduling: 10% fee, must be 3+ months before event\n\nAlcohol: Requires prior approval, PHP 2,000 corkage fee",
+      "quote_request_button_text": "Request Event Quote",
+      "quote_request_description": "Get a customized quote for your celebration. Our team will prepare a proposal based on your requirements."
+    }
+  }
+]

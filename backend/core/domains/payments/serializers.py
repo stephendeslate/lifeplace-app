@@ -10,10 +10,8 @@ from .models import (
     InvoiceTax,
     Payment,
     PaymentGateway,
-    PaymentInstallment,
     PaymentMethod,
     PaymentNotification,
-    PaymentPlan,
     PaymentSettings,
     PaymentTransaction,
     Refund,
@@ -31,13 +29,30 @@ class PaymentSettingsSerializer(serializers.ModelSerializer):
             # Payment plan settings
             'balance_due_days',
             'grace_period_days',
-            'default_installments',
-            'default_installment_frequency',
             'late_fee_enabled',
             'default_late_fee_amount',
             'default_deposit_percentage',
-            # Currency settings
-            'default_currency',
+            # Enhanced deposit settings
+            'deposit_type',
+            'deposit_fixed_amount',
+            'deposit_is_refundable',
+            'deposit_is_deductible',
+            'deposit_waived_on_full_payment',
+            # Enhanced late fee settings
+            'late_fee_type',
+            'late_fee_percentage',
+            # Security deposit settings
+            'security_deposit_enabled',
+            'security_deposit_amount',
+            'security_deposit_is_refundable',
+            'security_deposit_description',
+            # Cancellation settings
+            'cancellation_admin_fee_percentage',
+            # Payment schedule settings
+            'downpayment_percentage',
+            'downpayment_due_days',
+            'balance_due_type',
+            # NOTE: default_currency removed - currency is now managed by CurrencySettings
             # Auto retry settings
             'auto_payment_retry_attempts',
             'auto_payment_retry_delay_days',
@@ -46,6 +61,34 @@ class PaymentSettingsSerializer(serializers.ModelSerializer):
             'refund_deadline_hours',
             'refund_percentage',
             'refund_policy_text',
+            # Date blocking policy settings
+            'date_blocking_policy',
+            'downpayment_due_reference',
+            'downpayment_deadline_days',
+            # Child/youth pricing settings
+            'child_pricing_enabled',
+            'child_pricing_tiers',
+            # Service charge settings
+            'service_charge_enabled',
+            'service_charge_percentage',
+            # Rescheduling fee settings
+            'rescheduling_fee_enabled',
+            'rescheduling_fee_type',
+            'rescheduling_fee_percentage',
+            'rescheduling_fee_fixed_amount',
+            'rescheduling_grace_period_hours',
+            # Late checkout fee settings
+            'late_checkout_fee_enabled',
+            'late_checkout_fee_type',
+            'late_checkout_fee_amount',
+            'late_checkout_fee_percentage',
+            'late_checkout_grace_minutes',
+            'late_checkout_max_hours',
+            # Date holding settings
+            'date_hold_enabled',
+            'date_hold_duration_days',
+            'date_hold_max_extensions',
+            'date_hold_extension_days',
             # Timestamps
             'created_at',
             'updated_at',
@@ -84,14 +127,6 @@ class PaymentSettingsSerializer(serializers.ModelSerializer):
             )
         return value
 
-    def validate_default_installments(self, value):
-        """Validate default installments is positive"""
-        if value <= 0:
-            raise serializers.ValidationError(
-                "Default installments must be a positive number."
-            )
-        return value
-
     def validate_auto_payment_retry_attempts(self, value):
         """Validate retry attempts is non-negative"""
         if value < 0:
@@ -115,6 +150,60 @@ class PaymentSettingsSerializer(serializers.ModelSerializer):
                 "Default late fee amount must be non-negative."
             )
         return value
+
+    def validate_downpayment_percentage(self, value):
+        """Validate downpayment percentage is between 0 and 100"""
+        if not (0 <= value <= 100):
+            raise serializers.ValidationError(
+                "Downpayment percentage must be between 0 and 100."
+            )
+        return value
+
+    def validate_late_fee_percentage(self, value):
+        """Validate late fee percentage is between 0 and 100"""
+        if not (0 <= value <= 100):
+            raise serializers.ValidationError(
+                "Late fee percentage must be between 0 and 100."
+            )
+        return value
+
+    def validate_cancellation_admin_fee_percentage(self, value):
+        """Validate cancellation admin fee percentage is between 0 and 100"""
+        if not (0 <= value <= 100):
+            raise serializers.ValidationError(
+                "Cancellation admin fee percentage must be between 0 and 100."
+            )
+        return value
+
+    def validate_security_deposit_amount(self, value):
+        """Validate security deposit amount is non-negative"""
+        if value < 0:
+            raise serializers.ValidationError(
+                "Security deposit amount must be non-negative."
+            )
+        return value
+
+    def validate(self, data):
+        """Cross-field validation"""
+        # If deposit type is FIXED, fixed amount is required
+        deposit_type = data.get('deposit_type', self.instance.deposit_type if self.instance else 'PERCENTAGE')
+        deposit_fixed_amount = data.get('deposit_fixed_amount', self.instance.deposit_fixed_amount if self.instance else None)
+
+        if deposit_type == 'FIXED' and deposit_fixed_amount is None:
+            raise serializers.ValidationError({
+                'deposit_fixed_amount': 'Fixed deposit amount is required when deposit type is FIXED.'
+            })
+
+        # If security deposit is enabled, amount must be positive
+        security_enabled = data.get('security_deposit_enabled', self.instance.security_deposit_enabled if self.instance else False)
+        security_amount = data.get('security_deposit_amount', self.instance.security_deposit_amount if self.instance else 0)
+
+        if security_enabled and (security_amount is None or security_amount <= 0):
+            raise serializers.ValidationError({
+                'security_deposit_amount': 'Security deposit amount must be greater than 0 when enabled.'
+            })
+
+        return data
 
 
 class TaxRateSerializer(serializers.ModelSerializer):
@@ -262,6 +351,8 @@ class PublicPaymentSettingsSerializer(serializers.ModelSerializer):
     Used for client-facing booking flows and guest checkout.
     Excludes internal/admin-only fields like grace periods, late fees, and retry settings.
     """
+    # Currency is fetched from CurrencySettings (single source of truth)
+    default_currency = serializers.SerializerMethodField()
 
     class Meta:
         model = PaymentSettings
@@ -287,6 +378,12 @@ class PublicPaymentSettingsSerializer(serializers.ModelSerializer):
             'refund_percentage',
             'refund_policy_text',
         ]
+
+    def get_default_currency(self, obj):
+        """Get default currency from CurrencySettings (single source of truth)"""
+        from core.domains.settings.models import CurrencySettings
+        currency_settings = CurrencySettings.get_system_settings()
+        return currency_settings.default_currency if currency_settings else 'PHP'
 
 
 class PaymentMethodSerializer(serializers.ModelSerializer):
@@ -391,6 +488,19 @@ class InvoiceSerializer(serializers.ModelSerializer):
     is_fully_paid = serializers.BooleanField(read_only=True)
     is_partially_paid = serializers.BooleanField(read_only=True)
 
+    # Effective payment terms (booking flow override or global defaults)
+    effective_payment_terms = serializers.SerializerMethodField(read_only=True)
+
+    # Mobile app compatibility fields (aliases for expected field names)
+    event_name = serializers.CharField(source='event.name', read_only=True)
+    invoice_number = serializers.CharField(source='invoice_id', read_only=True)
+    issued_date = serializers.DateField(source='issue_date', read_only=True)
+    payments = serializers.SerializerMethodField(read_only=True)
+    amount_paid = serializers.DecimalField(source='paid_amount', max_digits=10, decimal_places=2, read_only=True)
+    discount_amount = serializers.SerializerMethodField(read_only=True)
+    can_pay_online = serializers.SerializerMethodField(read_only=True)
+    paid_date = serializers.SerializerMethodField(read_only=True)
+
     class Meta:
         model = Invoice
         fields = [
@@ -399,98 +509,82 @@ class InvoiceSerializer(serializers.ModelSerializer):
             'status', 'status_display', 'notes', 'payment_terms', 'quote',
             'quote_details', 'invoice_pdf', 'line_items', 'taxes',
             'related_payments', 'paid_amount', 'remaining_amount',
-            'is_fully_paid', 'is_partially_paid',
+            'is_fully_paid', 'is_partially_paid', 'effective_payment_terms',
             'created_at', 'updated_at',
+            # Mobile app compatibility fields
+            'event_name', 'invoice_number', 'issued_date', 'payments',
+            'amount_paid', 'discount_amount', 'can_pay_online', 'paid_date',
         ]
         read_only_fields = [
             'id', 'invoice_id', 'paid_amount', 'remaining_amount',
-            'is_fully_paid', 'is_partially_paid', 'created_at', 'updated_at'
+            'is_fully_paid', 'is_partially_paid', 'created_at', 'updated_at',
+            'status', 'subtotal', 'tax_amount', 'total_amount',  # Prevent mass assignment of financial/status fields
         ]
 
     def get_related_payments(self, obj):
         payments = obj.related_payments.all()
         return BasicPaymentSerializer(payments, many=True).data
 
+    def get_payments(self, obj):
+        """Alias for related_payments for mobile app compatibility"""
+        payments = obj.related_payments.all()
+        return BasicPaymentSerializer(payments, many=True).data
 
-class PaymentInstallmentSerializer(serializers.ModelSerializer):
-    payment_plan_details = serializers.SerializerMethodField(read_only=True)
-    status_display = serializers.CharField(source='get_status_display', read_only=True)
-    payment_details = serializers.SerializerMethodField(read_only=True)
+    def get_can_pay_online(self, obj):
+        """Check if online payment is available for this invoice"""
+        from .models import PaymentGateway
+        # Invoice can be paid online if there's an active payment gateway and invoice is not fully paid
+        return (
+            obj.status in ['ISSUED', 'PARTIALLY_PAID'] and
+            PaymentGateway.objects.filter(is_active=True).exists()
+        )
 
-    # Calculated fields
-    paid_amount = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
-    remaining_amount = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
-    is_fully_paid = serializers.BooleanField(read_only=True)
-    days_overdue_count = serializers.IntegerField(read_only=True)
-
-    class Meta:
-        model = PaymentInstallment
-        fields = [
-            'id', 'payment_plan', 'payment_plan_details', 'amount', 'due_date',
-            'status', 'status_display', 'installment_number', 'description',
-            'payment_details', 'created_at', 'updated_at',
-            # New enhanced fields
-            'last_reminder_sent', 'reminder_count', 'late_fee_amount', 'late_fee_applied_date',
-            # Calculated fields
-            'paid_amount', 'remaining_amount', 'is_fully_paid', 'days_overdue_count',
-        ]
-        read_only_fields = [
-            'id', 'created_at', 'updated_at', 'paid_amount', 'remaining_amount',
-            'is_fully_paid', 'days_overdue_count'
-        ]
-    
-    def get_payment_plan_details(self, obj):
-        if obj.payment_plan:
-            return {
-                'id': obj.payment_plan.id,
-                'event_id': obj.payment_plan.event.id,
-                'total_amount': obj.payment_plan.total_amount
-            }
+    def get_paid_date(self, obj):
+        """Get the date when invoice was fully paid"""
+        if obj.status == 'PAID':
+            # Get the latest completed payment date
+            last_payment = obj.related_payments.filter(status='COMPLETED').order_by('-paid_on').first()
+            if last_payment and last_payment.paid_on:
+                return last_payment.paid_on.isoformat() if hasattr(last_payment.paid_on, 'isoformat') else str(last_payment.paid_on)
         return None
-    
-    def get_payment_details(self, obj):
+
+    def get_discount_amount(self, obj):
+        """Get discount amount (calculated from subtotal + tax - total if any discount was applied)"""
+        # If the model has a discount_amount field, use it
+        if hasattr(obj, 'discount_amount') and obj.discount_amount:
+            return str(obj.discount_amount)
+        # Otherwise calculate from subtotal + tax - total (if there's a discount)
+        expected_total = obj.subtotal + obj.tax_amount
+        if expected_total > obj.total_amount:
+            return str(expected_total - obj.total_amount)
+        return '0.00'
+
+    def get_effective_payment_terms(self, obj):
+        """
+        Get effective payment terms for this invoice.
+        Uses PaymentTermsResolver to check for booking flow specific overrides,
+        falling back to global settings if no override exists.
+        """
+        from .services.payment_terms_resolver import PaymentTermsResolver
+
         try:
-            payment = obj.payment.first()
-            if payment:
-                return BasicPaymentSerializer(payment).data
+            terms = PaymentTermsResolver.get_terms_for_event(obj.event_id)
+            # Convert Decimal values to float for JSON serialization
+            return {
+                'deposit_type': terms.get('deposit_type'),
+                'deposit_percentage': float(terms.get('deposit_percentage', 0)),
+                'deposit_fixed_amount': float(terms.get('deposit_fixed_amount', 0)) if terms.get('deposit_fixed_amount') else None,
+                'deposit_is_refundable': terms.get('deposit_is_refundable'),
+                'deposit_is_deductible': terms.get('deposit_is_deductible'),
+                'deposit_waived_on_full_payment': terms.get('deposit_waived_on_full_payment'),
+                'balance_due_days': terms.get('balance_due_days'),
+                'balance_due_type': terms.get('balance_due_type'),
+                'grace_period_days': terms.get('grace_period_days'),
+                'currency': terms.get('currency'),
+            }
         except Exception:
+            # Fall back to global settings on any error
             return None
-        return None
-
-
-class PaymentPlanSerializer(serializers.ModelSerializer):
-    event_details = EventSerializer(source='event', read_only=True)
-    quote_details = EventQuoteSerializer(source='quote', read_only=True)
-    installments = PaymentInstallmentSerializer(many=True, read_only=True)
-    auto_payment_method_details = PaymentMethodSerializer(source='auto_payment_method', read_only=True)
-
-    # Calculated fields
-    paid_amount = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
-    remaining_balance = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
-    is_overdue = serializers.BooleanField(read_only=True)
-    completion_percentage = serializers.DecimalField(max_digits=5, decimal_places=2, read_only=True)
-
-    # Display fields
-    status_display = serializers.CharField(source='get_status_display', read_only=True)
-
-    class Meta:
-        model = PaymentPlan
-        fields = [
-            'id', 'event', 'event_details', 'total_amount', 'down_payment_amount',
-            'currency', 'down_payment_due_date', 'number_of_installments', 'frequency',
-            'notes', 'quote', 'quote_details', 'installments', 'created_at', 'updated_at',
-            # New enhanced fields
-            'status', 'status_display', 'next_payment_date', 'final_payment_date',
-            'grace_period_days', 'terms_accepted', 'terms_accepted_at', 'terms_accepted_ip',
-            'auto_payment_enabled', 'auto_payment_method', 'auto_payment_method_details',
-            'created_from_booking_session',
-            # Calculated fields
-            'paid_amount', 'remaining_balance', 'is_overdue', 'completion_percentage',
-        ]
-        read_only_fields = [
-            'id', 'created_at', 'updated_at', 'paid_amount', 'remaining_balance',
-            'is_overdue', 'completion_percentage', 'status_display'
-        ]
 
 
 class RefundSerializer(serializers.ModelSerializer):
@@ -543,7 +637,6 @@ class PaymentSerializer(serializers.ModelSerializer):
     status_display = serializers.CharField(source='get_status_display', read_only=True)
     quote_details = EventQuoteSerializer(source='quote', read_only=True)
     invoice_details = InvoiceSerializer(source='invoice', read_only=True)
-    installment_details = PaymentInstallmentSerializer(source='installment', read_only=True)
     transactions = PaymentTransactionSerializer(many=True, read_only=True)
     refunds = RefundSerializer(many=True, read_only=True)
     processed_by_details = UserSerializer(source='processed_by', read_only=True)
@@ -557,11 +650,14 @@ class PaymentSerializer(serializers.ModelSerializer):
             'notes', 'reference_number', 'is_manual', 'processed_by',
             'processed_by_details', 'receipt_number', 'receipt_generated_on',
             'receipt_sent', 'receipt_sent_on', 'receipt_pdf', 'quote',
-            'quote_details', 'invoice', 'invoice_details', 'installment',
-            'installment_details', 'transactions', 'refunds',
+            'quote_details', 'invoice', 'invoice_details',
+            'transactions', 'refunds',
             'created_at', 'updated_at'
         ]
-        read_only_fields = ['id', 'payment_number', 'receipt_number', 'created_at', 'updated_at']
+        read_only_fields = [
+            'id', 'payment_number', 'receipt_number', 'created_at', 'updated_at',
+            'status', 'amount',  # Prevent mass assignment of financial/status fields
+        ]
     
     def get_inferred_payment_method(self, obj):
         """Infer payment method information from transaction data when direct payment method is not available"""
@@ -646,7 +742,14 @@ class InvoicePaymentRequestSerializer(serializers.Serializer):
         import logging
         logger = logging.getLogger(__name__)
 
-        logger.info(f"🔍 PAYMENT VALIDATION - Received data: {data}")
+        # SECURITY: Log only non-sensitive fields for debugging
+        safe_fields = {k: v for k, v in data.items()
+                       if k not in ('payment_method_token', 'payment_method_id', 'card_number', 'cvv', 'cvc')}
+        # Mask payment_method_id if present (show last 4 chars only)
+        if data.get('payment_method_id'):
+            pm_id = data.get('payment_method_id')
+            safe_fields['payment_method_id'] = f"***{pm_id[-4:]}" if len(str(pm_id)) > 4 else "***"
+        logger.debug(f"Payment validation - fields: {list(safe_fields.keys())}, payment_type: {data.get('payment_type')}")
 
         # Validate custom amount if payment_type is CUSTOM
         if data.get('payment_type') == 'CUSTOM':
@@ -666,10 +769,11 @@ class InvoicePaymentRequestSerializer(serializers.Serializer):
             payment_method_id = data.get('payment_method_id')
             payment_method_token = data.get('payment_method_token')
 
-            logger.info(f"🔍 PAYMENT VALIDATION - Checking fields: payment_method={payment_method}, payment_method_id={payment_method_id}, payment_method_token={payment_method_token}")
+            # SECURITY: Only log presence of payment method identifiers, not values
+            logger.debug(f"Payment validation - has_method={bool(payment_method)}, has_method_id={bool(payment_method_id)}, has_token={bool(payment_method_token)}")
 
             if not payment_method_id and not payment_method_token and not payment_method:
-                logger.error(f"❌ PAYMENT VALIDATION ERROR - No payment method provided. Received data: {data}")
+                logger.warning("Payment validation error - no payment method identifier provided")
                 raise serializers.ValidationError(
                     "No payment method provided. Either payment_method, payment_method_id, or payment_method_token is required for non-manual payments"
                 )
@@ -693,65 +797,6 @@ class PaymentIntentResponseSerializer(serializers.Serializer):
     next_action = serializers.DictField(required=False, help_text="Next action data for 3D Secure etc.")
     payment_id = serializers.IntegerField(help_text="Internal payment record ID")
     transaction_id = serializers.IntegerField(help_text="Internal transaction record ID")
-
-
-class PaymentPlanRequestSerializer(serializers.Serializer):
-    """Serializer for payment plan setup request"""
-    down_payment_amount = serializers.DecimalField(
-        max_digits=10,
-        decimal_places=2,
-        help_text="Down payment amount (optional, defaults to 0)"
-    )
-    down_payment_due_date = serializers.DateField(
-        required=False,
-        help_text="Due date for down payment (defaults to today)"
-    )
-    number_of_installments = serializers.IntegerField(
-        min_value=1,
-        max_value=12,
-        help_text="Number of installments (1-12)"
-    )
-    frequency = serializers.ChoiceField(
-        choices=[
-            ('WEEKLY', 'Weekly'),
-            ('BIWEEKLY', 'Bi-weekly'),
-            ('MONTHLY', 'Monthly'),
-            ('QUARTERLY', 'Quarterly')
-        ],
-        default='MONTHLY',
-        help_text="Installment frequency"
-    )
-    auto_payment_enabled = serializers.BooleanField(
-        default=False,
-        help_text="Enable automatic payments"
-    )
-    auto_payment_method_id = serializers.IntegerField(
-        required=False,
-        help_text="Payment method ID for auto payments"
-    )
-    notes = serializers.CharField(
-        required=False,
-        allow_blank=True,
-        max_length=1000,
-        help_text="Additional notes for payment plan"
-    )
-
-    def validate_down_payment_amount(self, value):
-        """Validate down payment amount"""
-        if value < 0:
-            raise serializers.ValidationError("Down payment amount cannot be negative")
-        return value
-
-    def validate(self, data):
-        """Validate payment plan request"""
-        # If auto payment is enabled, require payment method
-        if data.get('auto_payment_enabled', False):
-            if not data.get('auto_payment_method_id'):
-                raise serializers.ValidationError(
-                    "auto_payment_method_id is required when auto_payment_enabled is True"
-                )
-
-        return data
 
 
 class SetupIntentResponseSerializer(serializers.Serializer):

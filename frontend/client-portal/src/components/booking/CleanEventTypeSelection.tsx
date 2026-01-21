@@ -60,7 +60,7 @@ export const CleanEventTypeSelection: React.FC<CleanEventTypeSelectionProps> = (
         const data = await BookingCoreApi.getEventTypes();
         setEventTypes(data);
       } catch (err) {
-        console.error('Failed to load event types:', err);
+        if (import.meta.env.DEV) console.error('Failed to load event types:', err);
         setError(BookingCoreApi.handleApiError(err));
       } finally {
         setLoading(false);
@@ -80,7 +80,7 @@ export const CleanEventTypeSelection: React.FC<CleanEventTypeSelectionProps> = (
     try {
       await onSelectEventType(eventType);
     } catch (error) {
-      console.error('Failed to select event type:', error);
+      if (import.meta.env.DEV) console.error('Failed to select event type:', error);
     } finally {
       setIsSelecting(false);
       setIsDetailDialogOpen(false);
@@ -173,28 +173,48 @@ export const CleanEventTypeSelection: React.FC<CleanEventTypeSelectionProps> = (
       </AnimatedElement>
 
       {/* Event Type Grid */}
-      <Box sx={{ 
-        display: 'grid',
-        gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)' },
+      <Box sx={{
+        display: 'flex',
+        flexWrap: 'wrap',
+        justifyContent: 'center',
         gap: 3,
-        mb: 4 
+        mb: 4
       }}>
         {eventTypes.map((eventType, index) => (
-          <AnimatedElement key={eventType.id} animation="slideUp" delay={200 + index * 100}>
+          <AnimatedElement
+            key={eventType.id}
+            animation="slideUp"
+            delay={200 + index * 100}
+            sx={{ width: { xs: '100%', sm: 'calc(50% - 12px)', md: '340px' }, maxWidth: '100%' }}
+          >
               <GlassCard
                 variant="light"
                 intensity="medium"
+                role="button"
+                tabIndex={0}
+                aria-label={`Select ${eventType.name} event type. ${eventType.description || ''}`}
+                onKeyDown={(e: React.KeyboardEvent) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    handleCardClick(eventType);
+                  }
+                }}
                 sx={{
                   height: '100%',
                   cursor: 'pointer',
                   backgroundColor: alpha('#fff', 0.08),
                   border: `1px solid ${alpha('#fff', 0.1)}`,
                   transition: 'all 0.3s ease',
-                  '&:hover': {
+                  '&:hover, &:focus': {
                     transform: 'translateY(-8px)',
                     backgroundColor: alpha(getEventTypeColor(eventType), 0.05),
                     border: `2px solid ${alpha(getEventTypeColor(eventType), 0.3)}`,
                     boxShadow: `0 12px 40px ${alpha(getEventTypeColor(eventType), 0.2)}`,
+                    outline: 'none',
+                  },
+                  '&:focus-visible': {
+                    outline: `2px solid ${getEventTypeColor(eventType)}`,
+                    outlineOffset: '2px',
                   },
                 }}
                 onClick={() => handleCardClick(eventType)}

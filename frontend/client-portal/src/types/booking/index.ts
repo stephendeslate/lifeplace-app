@@ -66,6 +66,7 @@ export type {
   ContactInfoStepData,
   PaymentStepData,
   ConfirmationStepData,
+  VenueSelectionStepData,
   StepData,
   Discount,
   PricingCalculation,
@@ -94,3 +95,22 @@ export type {
   SessionUpdatePayload,
   BookingSession,
 } from './bookingData.types';
+
+// Venue types
+export type {
+  VenueOperatingRulesPublic,
+  VenuePublic,
+  PackageVenuePublic,
+  CalculatedEventTimes,
+  DurationBreakdown,
+  EarlyCheckinInfo,
+  LateCheckoutInfo,
+  VenueTimeCalculation,
+  CalculateTimesRequest,
+  VenueAvailabilityResponse,
+  DateTimeWithVenueData,
+  RentableVenue,
+  VenueSelectionStepConfiguration,
+  CreateFromVenuesRequest,
+  CreateFromVenuesResponse,
+} from './venues.types';

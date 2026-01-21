@@ -136,13 +136,62 @@ export const productsApi = {
     return response.data;
   },
 
-  createProduct: async (data: CreateProductData): Promise<ProductOption> => {
-    const response = await api.post<ProductOption>('/products/products/', data);
+  createProduct: async (data: CreateProductData, formData?: FormData): Promise<ProductOption> => {
+    // Transform event_type_ids to input_event_type_ids for backend
+    const transformedData = {
+      ...data,
+      input_event_type_ids: data.event_type_ids,
+    };
+    delete (transformedData as Record<string, unknown>).event_type_ids;
+
+    // Use FormData if provided (for image uploads), otherwise use JSON
+    if (formData) {
+      // FormData already has the fields appended, but we need to rename event_type_ids
+      // The form dialog already handles this by sending as JSON string
+      if (formData.has('event_type_ids')) {
+        const eventTypeIds = formData.get('event_type_ids');
+        formData.delete('event_type_ids');
+        if (eventTypeIds) {
+          formData.append('input_event_type_ids', eventTypeIds as string);
+        }
+      }
+      const response = await api.post<ProductOption>('/products/products/', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return response.data;
+    }
+    const response = await api.post<ProductOption>('/products/products/', transformedData);
     return response.data;
   },
 
-  updateProduct: async (id: number, data: UpdateProductData): Promise<ProductOption> => {
-    const response = await api.patch<ProductOption>(`/products/products/${id}/`, data);
+  updateProduct: async (id: number, data: UpdateProductData, formData?: FormData): Promise<ProductOption> => {
+    // Transform event_type_ids to input_event_type_ids for backend
+    const transformedData = {
+      ...data,
+      input_event_type_ids: data.event_type_ids,
+    };
+    delete (transformedData as Record<string, unknown>).event_type_ids;
+
+    // Use FormData if provided (for image uploads), otherwise use JSON
+    if (formData) {
+      // FormData already has the fields appended, but we need to rename event_type_ids
+      if (formData.has('event_type_ids')) {
+        const eventTypeIds = formData.get('event_type_ids');
+        formData.delete('event_type_ids');
+        if (eventTypeIds) {
+          formData.append('input_event_type_ids', eventTypeIds as string);
+        }
+      }
+      const response = await api.patch<ProductOption>(`/products/products/${id}/`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return response.data;
+    }
+    const response = await api.patch<ProductOption>(`/products/products/${id}/`, transformedData);
     return response.data;
   },
 

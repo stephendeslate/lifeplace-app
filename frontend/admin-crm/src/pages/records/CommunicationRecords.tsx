@@ -4,15 +4,12 @@ import React, { useEffect, useState } from 'react';
 import {
   Box,
   Typography,
-  Card,
-  CardContent,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
   TableRow,
-  Paper,
   Chip,
   IconButton,
   TextField,
@@ -25,8 +22,8 @@ import {
   Tooltip,
   Button,
   Stack,
-  CircularProgress,
   Divider,
+  CircularProgress,
 } from '@mui/material';
 import {
   Search as SearchIcon,
@@ -43,6 +40,7 @@ import { useNavigate } from 'react-router-dom';
 import { useLayout } from '../../contexts/LayoutContext';
 import { useCommunications } from '../../hooks/useCommunications';
 import type { CommunicationFilters } from '../../types/communications.types';
+import { tokens } from '../../design-system';
 
 export const CommunicationRecords: React.FC = () => {
   const { setBreadcrumbs } = useLayout();
@@ -122,21 +120,21 @@ export const CommunicationRecords: React.FC = () => {
     const sentDate = record.sent_at ? new Date(record.sent_at).toDateString() : null;
     return sentDate === today && (record.delivery_status === 'SENT' || record.delivery_status === 'DELIVERED');
   }).length || 0;
-  
+
   const emailRecords = records?.filter(record => record.channel === 'EMAIL') || [];
   const openedEmails = emailRecords.filter(record => record.is_opened).length;
   const readRate = emailRecords.length > 0 ? Math.round((openedEmails / emailRecords.length) * 100) : 0;
 
   // Empty state when no records exist at all
   const renderNoRecordsState = () => (
-    <Paper 
-      elevation={0} 
-      sx={{ 
-        p: 6, 
+    <Box
+      sx={{
+        p: 6,
         textAlign: 'center',
-        bgcolor: 'grey.50',
         border: '2px dashed',
-        borderColor: 'grey.300'
+        borderColor: 'grey.300',
+        borderRadius: tokens.spacing.radius.md,
+        bgcolor: 'background.paper',
       }}
     >
       <HistoryIcon sx={{ fontSize: 64, color: 'grey.400', mb: 2 }} />
@@ -144,32 +142,32 @@ export const CommunicationRecords: React.FC = () => {
         No Communication Records Yet
       </Typography>
       <Typography variant="body1" color="text.secondary" sx={{ mb: 3, maxWidth: 500, mx: 'auto' }}>
-        Communication records will appear here once you start sending emails or SMS messages. 
+        Communication records will appear here once you start sending emails or SMS messages.
         This includes both manual communications and automated messages triggered by your workflows.
       </Typography>
-      
+
       <Box sx={{ mb: 3 }}>
         <Typography variant="body2" color="text.secondary" gutterBottom>
           Records will track:
         </Typography>
         <Box display="flex" justifyContent="center" gap={1} flexWrap="wrap" mt={1}>
-          <Chip 
-            icon={<SendIcon />} 
-            label="Delivery Status" 
-            variant="outlined" 
-            size="small" 
+          <Chip
+            icon={<SendIcon />}
+            label="Delivery Status"
+            variant="outlined"
+            size="small"
           />
-          <Chip 
-            icon={<AnalyticsIcon />} 
-            label="Open Tracking" 
-            variant="outlined" 
-            size="small" 
+          <Chip
+            icon={<AnalyticsIcon />}
+            label="Open Tracking"
+            variant="outlined"
+            size="small"
           />
-          <Chip 
-            icon={<HistoryIcon />} 
-            label="Send History" 
-            variant="outlined" 
-            size="small" 
+          <Chip
+            icon={<HistoryIcon />}
+            label="Send History"
+            variant="outlined"
+            size="small"
           />
         </Box>
       </Box>
@@ -185,16 +183,25 @@ export const CommunicationRecords: React.FC = () => {
       </Button>
 
       <Divider sx={{ my: 3 }} />
-      
+
       <Typography variant="body2" color="text.secondary">
-        💡 <strong>Tip:</strong> Admin invitations and other system emails will automatically appear here once sent
+        <strong>Tip:</strong> Admin invitations and other system emails will automatically appear here once sent
       </Typography>
-    </Paper>
+    </Box>
   );
 
   // Empty state when filters return no results
   const renderNoResultsState = () => (
-    <Paper elevation={0} sx={{ p: 4, textAlign: 'center', bgcolor: 'grey.50' }}>
+    <Box
+      sx={{
+        p: 4,
+        textAlign: 'center',
+        borderRadius: tokens.spacing.radius.md,
+        bgcolor: 'background.paper',
+        border: '1px solid',
+        borderColor: 'divider',
+      }}
+    >
       <SearchOffIcon sx={{ fontSize: 48, color: 'grey.400', mb: 2 }} />
       <Typography variant="h6" fontWeight="bold" gutterBottom>
         No Records Match Your Filters
@@ -205,13 +212,18 @@ export const CommunicationRecords: React.FC = () => {
       <Button variant="outlined" onClick={handleClearFilters}>
         Clear All Filters
       </Button>
-    </Paper>
+    </Box>
   );
 
   if (isLoading) {
     return (
-      <Box display="flex" justifyContent="center" p={4}>
-        <CircularProgress />
+      <Box sx={{ p: 3 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', py: 8 }}>
+          <CircularProgress size={40} />
+          <Typography variant="body1" color="text.secondary" sx={{ ml: 2 }}>
+            Loading records...
+          </Typography>
+        </Box>
       </Box>
     );
   }
@@ -219,13 +231,16 @@ export const CommunicationRecords: React.FC = () => {
   // Show appropriate empty state
   if (!records || records.length === 0) {
     return (
-      <Box>
+      <Box sx={{ p: 3 }}>
         {/* Header */}
         <Box sx={{ mb: 4 }}>
-          <Typography variant="h4" component="h1" fontWeight="bold" gutterBottom>
-            Communication Records
-          </Typography>
-          <Typography variant="subtitle1" color="text.secondary">
+          <Box display="flex" alignItems="center" gap={2} mb={1}>
+            <HistoryIcon color="primary" />
+            <Typography variant="h4" component="h1" fontWeight="bold">
+              Communication Records
+            </Typography>
+          </Box>
+          <Typography variant="body1" color="text.secondary">
             View and manage all communication history and analytics
           </Typography>
         </Box>
@@ -242,127 +257,168 @@ export const CommunicationRecords: React.FC = () => {
   );
 
   return (
-    <Box>
+    <Box sx={{ p: 3 }}>
       {/* Header */}
       <Box sx={{ mb: 4 }}>
-        <Typography variant="h4" component="h1" fontWeight="bold" gutterBottom>
-          Communication Records
-        </Typography>
-        <Typography variant="subtitle1" color="text.secondary">
+        <Box display="flex" alignItems="center" gap={2} mb={1}>
+          <HistoryIcon color="primary" />
+          <Typography variant="h4" component="h1" fontWeight="bold">
+            Communication Records
+          </Typography>
+        </Box>
+        <Typography variant="body1" color="text.secondary">
           View and manage all communication history and analytics
         </Typography>
       </Box>
 
       {/* Statistics Cards */}
       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mb: 4 }}>
-        <Card sx={{ minWidth: 200, flex: 1 }}>
-          <CardContent>
-            <Typography color="text.secondary" gutterBottom variant="body2">
-              Total Communications
-            </Typography>
-            <Typography variant="h4" component="div" color="primary">
-              {totalCommunications}
-            </Typography>
-          </CardContent>
-        </Card>
-        <Card sx={{ minWidth: 200, flex: 1 }}>
-          <CardContent>
-            <Typography color="text.secondary" gutterBottom variant="body2">
-              Delivered Today
-            </Typography>
-            <Typography variant="h4" component="div" color="success.main">
-              {deliveredToday}
-            </Typography>
-          </CardContent>
-        </Card>
-        <Card sx={{ minWidth: 200, flex: 1 }}>
-          <CardContent>
-            <Typography color="text.secondary" gutterBottom variant="body2">
-              Email Open Rate
-            </Typography>
-            <Typography variant="h4" component="div" color="info.main">
-              {readRate}%
-            </Typography>
-          </CardContent>
-        </Card>
+        <Box
+          sx={{
+            minWidth: 200,
+            flex: 1,
+            p: 2,
+            borderRadius: tokens.spacing.radius.md,
+            bgcolor: 'background.paper',
+            border: '1px solid',
+            borderColor: 'divider',
+          }}
+        >
+          <Typography color="text.secondary" gutterBottom variant="body2">
+            Total Communications
+          </Typography>
+          <Typography variant="h4" component="div" color="primary">
+            {totalCommunications}
+          </Typography>
+        </Box>
+        <Box
+          sx={{
+            minWidth: 200,
+            flex: 1,
+            p: 2,
+            borderRadius: tokens.spacing.radius.md,
+            bgcolor: 'background.paper',
+            border: '1px solid',
+            borderColor: 'divider',
+          }}
+        >
+          <Typography color="text.secondary" gutterBottom variant="body2">
+            Delivered Today
+          </Typography>
+          <Typography variant="h4" component="div" color="success.main">
+            {deliveredToday}
+          </Typography>
+        </Box>
+        <Box
+          sx={{
+            minWidth: 200,
+            flex: 1,
+            p: 2,
+            borderRadius: tokens.spacing.radius.md,
+            bgcolor: 'background.paper',
+            border: '1px solid',
+            borderColor: 'divider',
+          }}
+        >
+          <Typography color="text.secondary" gutterBottom variant="body2">
+            Email Open Rate
+          </Typography>
+          <Typography variant="h4" component="div" color="info.main">
+            {readRate}%
+          </Typography>
+        </Box>
       </Box>
 
       {/* Filters */}
-      <Card sx={{ mb: 3 }}>
-        <CardContent>
-          <Stack
-            direction={{ xs: 'column', md: 'row' }}
-            spacing={2}
-            alignItems={{ xs: 'stretch', md: 'center' }}
-            justifyContent="space-between"
-          >
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, flex: 1 }}>
-              <TextField
-                placeholder="Search by template name..."
-                value={filters.template_name || ''}
-                onChange={(e) => handleFilterChange('template_name', e.target.value)}
-                size="small"
-                sx={{ minWidth: 250 }}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <SearchIcon />
-                    </InputAdornment>
-                  ),
-                }}
-              />
-
-              <FormControl size="small" sx={{ minWidth: 150 }}>
-                <InputLabel>Channel</InputLabel>
-                <Select
-                  value={filters.channel || ''}
-                  label="Channel"
-                  onChange={(e) => handleFilterChange('channel', e.target.value)}
-                >
-                  <MenuItem value="">All Channels</MenuItem>
-                  <MenuItem value="EMAIL">Email</MenuItem>
-                  <MenuItem value="SMS">SMS</MenuItem>
-                </Select>
-              </FormControl>
-
-              <FormControl size="small" sx={{ minWidth: 150 }}>
-                <InputLabel>Status</InputLabel>
-                <Select
-                  value={filters.status || ''}
-                  label="Status"
-                  onChange={(e) => handleFilterChange('status', e.target.value)}
-                >
-                  <MenuItem value="">All Status</MenuItem>
-                  <MenuItem value="PENDING">Pending</MenuItem>
-                  <MenuItem value="SENT">Sent</MenuItem>
-                  <MenuItem value="DELIVERED">Delivered</MenuItem>
-                  <MenuItem value="FAILED">Failed</MenuItem>
-                  <MenuItem value="BOUNCED">Bounced</MenuItem>
-                </Select>
-              </FormControl>
-
-              {hasActiveFilters && (
-                <Button variant="outlined" size="small" onClick={handleClearFilters}>
-                  Clear Filters
-                </Button>
-              )}
-            </Box>
-
-            <Button
-              variant="outlined"
-              startIcon={<DownloadIcon />}
+      <Box
+        sx={{
+          mb: 3,
+          p: 2,
+          borderRadius: tokens.spacing.radius.md,
+          bgcolor: 'background.paper',
+          border: '1px solid',
+          borderColor: 'divider',
+        }}
+      >
+        <Stack
+          direction={{ xs: 'column', md: 'row' }}
+          spacing={2}
+          alignItems={{ xs: 'stretch', md: 'center' }}
+          justifyContent="space-between"
+        >
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, flex: 1 }}>
+            <TextField
+              placeholder="Search by template name..."
+              value={filters.template_name || ''}
+              onChange={(e) => handleFilterChange('template_name', e.target.value)}
               size="small"
-            >
-              Export
-            </Button>
-          </Stack>
-        </CardContent>
-      </Card>
+              sx={{ minWidth: 250 }}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon />
+                  </InputAdornment>
+                ),
+              }}
+            />
+
+            <FormControl size="small" sx={{ minWidth: 150 }}>
+              <InputLabel>Channel</InputLabel>
+              <Select
+                value={filters.channel || ''}
+                label="Channel"
+                onChange={(e) => handleFilterChange('channel', e.target.value)}
+              >
+                <MenuItem value="">All Channels</MenuItem>
+                <MenuItem value="EMAIL">Email</MenuItem>
+                <MenuItem value="SMS">SMS</MenuItem>
+              </Select>
+            </FormControl>
+
+            <FormControl size="small" sx={{ minWidth: 150 }}>
+              <InputLabel>Status</InputLabel>
+              <Select
+                value={filters.status || ''}
+                label="Status"
+                onChange={(e) => handleFilterChange('status', e.target.value)}
+              >
+                <MenuItem value="">All Status</MenuItem>
+                <MenuItem value="PENDING">Pending</MenuItem>
+                <MenuItem value="SENT">Sent</MenuItem>
+                <MenuItem value="DELIVERED">Delivered</MenuItem>
+                <MenuItem value="FAILED">Failed</MenuItem>
+                <MenuItem value="BOUNCED">Bounced</MenuItem>
+              </Select>
+            </FormControl>
+
+            {hasActiveFilters && (
+              <Button variant="outlined" size="small" onClick={handleClearFilters}>
+                Clear Filters
+              </Button>
+            )}
+          </Box>
+
+          <Button
+            variant="outlined"
+            startIcon={<DownloadIcon />}
+            size="small"
+          >
+            Export
+          </Button>
+        </Stack>
+      </Box>
 
       {/* Records Table */}
-      <Card>
-        <TableContainer component={Paper}>
-          <Table>
+      <Box
+        sx={{
+          borderRadius: tokens.spacing.radius.md,
+          bgcolor: 'background.paper',
+          border: '1px solid',
+          borderColor: 'divider',
+        }}
+      >
+        <TableContainer>
+          <Table size="small">
             <TableHead>
               <TableRow>
                 <TableCell>Template</TableCell>
@@ -422,7 +478,7 @@ export const CommunicationRecords: React.FC = () => {
                   </TableCell>
                   <TableCell>
                     <Typography variant="body2" color="text.secondary">
-                      {record.sent_at 
+                      {record.sent_at
                         ? new Date(record.sent_at).toLocaleString()
                         : '-'
                       }
@@ -468,7 +524,7 @@ export const CommunicationRecords: React.FC = () => {
           onPageChange={handleChangePage}
           onRowsPerPageChange={handleChangeRowsPerPage}
         />
-      </Card>
+      </Box>
     </Box>
   );
 };

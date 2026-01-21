@@ -158,12 +158,12 @@ class EventService:
     @staticmethod
     def create_event(validated_data, user, booking_flow_id=None):
         """Create a new event with optional workflow template from booking flow"""
-        print("EventService.create_event validated data:", validated_data)  # Debug
-        
+        logger.debug(f"EventService.create_event validated data: {validated_data}")
+
         with transaction.atomic():
             tasks_data = validated_data.pop('tasks', [])
             event_products_data = validated_data.pop('event_products', [])
-            print("EventService event products data:", event_products_data)  # Debug
+            logger.debug(f"EventService event products data: {event_products_data}")
             
             # Check if booking flow has a workflow template
             workflow_template = None
@@ -188,17 +188,17 @@ class EventService:
             # Add workflow template to event data if found
             if workflow_template:
                 validated_data['workflow_template'] = workflow_template
-            
+
             event = Event.objects.create(**validated_data)
-            print("EventService event created with ID:", event.id)  # Debug
-            
+            logger.debug(f"EventService event created with ID: {event.id}")
+
             for task_data in tasks_data:
                 task_data['event'] = event
                 EventTask.objects.create(**task_data)
-            
+
             # FIX: Handle event products creation properly
             for product_data in event_products_data:
-                print("EventService creating EventProductOption with data:", product_data)  # Debug
+                logger.debug(f"EventService creating EventProductOption with data: {product_data}")
                 
                 # FIX: Get product option by ID - handle both 'product_option_id' and 'product_option' keys
                 product_option = product_data.get('product_option_id') or product_data.get('product_option')

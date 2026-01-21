@@ -157,7 +157,7 @@ const Register: React.FC<RegisterProps> = ({
       );
       onRegisterSuccess?.();
     } catch (error: unknown) {
-      console.error('Registration error:', error);
+      if (import.meta.env.DEV) console.error('Registration error:', error);
       
       // Handle different types of errors
       const validationErrors = ErrorHandler.extractValidationErrors(error);

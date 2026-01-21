@@ -72,7 +72,6 @@ export interface BookingFlowStep {
   booking_flow: number;
   step_type: StepType;
   step_type_display: string;
-  name: string;
   description: string;
   order: number;
   
@@ -95,9 +94,10 @@ export interface BookingFlowStep {
   updated_at: string;
 }
 
-// FIXED: Removed non-existent and deprecated step types
-export type StepType = 
+// Step types matching backend STEP_TYPES exactly
+export type StepType =
   | 'introduction'
+  | 'venue_selection'
   | 'date_time'
   | 'questionnaire'
   | 'package_selection'
@@ -105,12 +105,12 @@ export type StepType =
   | 'pricing_summary'
   | 'contact_info'
   | 'payment_info'
-  | 'review_booking'
   | 'confirmation';
 
-// FIXED: Updated to match backend STEP_TYPES exactly
+// Step types matching backend STEP_TYPES exactly
 export const STEP_TYPES = [
   { value: 'introduction', label: 'Introduction' },
+  { value: 'venue_selection', label: 'Venue Selection' },
   { value: 'date_time', label: 'Date & Time Selection' },
   { value: 'questionnaire', label: 'Questionnaire' },
   { value: 'package_selection', label: 'Package Selection' },
@@ -135,53 +135,58 @@ export interface IntroductionStepConfiguration {
   updated_at: string;
 }
 
-// FIXED: Enhanced DateTimeStepConfiguration to match evolved backend
+export interface VenueSelectionStepConfiguration {
+  id: number;
+  step: number;
+  min_venues: number;
+  max_venues: number;
+  show_pricing: boolean;
+  show_included_hours: boolean;
+  show_bundle_discount: boolean;
+  bundle_discount_percent: string;
+  title: string;
+  description: string;
+  // Package recommendation settings
+  show_package_recommendations: boolean;
+  show_view_packages_option: boolean;
+  view_packages_button_text: string;
+  available_venues_details?: Array<{
+    id: number;
+    name: string;
+    code: string;
+    description: string;
+    standalone_base_price: string;
+    standalone_included_hours: string;
+    standalone_excess_hour_price: string;
+  }>;
+  created_at: string;
+  updated_at: string;
+}
+
+// DateTimeStepConfiguration - date-only selection
 export interface DateTimeStepConfiguration {
   id: number;
   step: number;
-  allow_time_selection: boolean;
   allow_multi_day: boolean;
+  min_event_days: number;
+  max_event_days: number;
   show_calendar_view: boolean;
-  min_duration_hours: number;
-  max_duration_hours: number;
-  default_duration_hours: number;
-  
-  // Enhanced availability settings from evolved backend
   enable_real_time_availability: boolean;
   show_availability_status: boolean;
   auto_check_conflicts: boolean;
-  show_next_available_date: boolean;
-  show_conflict_details: boolean;
-  
   blocked_dates: string[];
   available_days_of_week: number[];
-  available_time_slots: Array<{
-    start_time: string;
-    end_time: string;
-    day_of_week?: number;
-    is_available: boolean;
-  }>;
-  
-  // Buffer settings
+  available_time_slots: unknown[];
   buffer_before_hours: number;
   buffer_after_hours: number;
-  
-  // Availability checking configuration
   check_venue_availability: boolean;
   check_resource_availability: boolean;
   check_staff_availability: boolean;
-  
-  // Availability display settings
   availability_display_mode: 'FULL' | 'LIMITED' | 'SIMPLE';
-  
-  // Conflict resolution
   allow_overbooking: boolean;
   overbooking_threshold: number;
-  
-  // Integration settings
   sync_with_calendar: boolean;
   calendar_source: 'GOOGLE' | 'OUTLOOK' | 'EXTERNAL' | '';
-  
   created_at: string;
   updated_at: string;
 }
@@ -240,11 +245,14 @@ export interface PackageSelectionStepConfiguration {
   show_descriptions: boolean;
   show_images: boolean;
   enable_comparison: boolean;
-  
+
+  // Event type filtering
+  filter_by_event_type: boolean;
+
   // Dynamic pricing
   enable_dynamic_pricing: boolean;
   pricing_factors: Record<string, unknown>;
-  
+
   created_at: string;
   updated_at: string;
 }
@@ -269,12 +277,16 @@ export interface AddonSelectionStepConfiguration {
   // Selection behavior
   min_selection: number;
   max_selection: number;
-  
+
+  // Event type filtering
+  /** When true, show all active add-ons for the booking flow's event type. Default: true */
+  filter_by_event_type: boolean;
+
   // Display options
   group_by_category: boolean;
   show_recommendations: boolean;
   recommendation_logic: Record<string, unknown>;
-  
+
   created_at: string;
   updated_at: string;
 }
@@ -282,23 +294,33 @@ export interface AddonSelectionStepConfiguration {
 export interface PricingSummaryStepConfiguration {
   id: number;
   step: number;
-  
+
   // Display options
   show_package_breakdown: boolean;
   show_addon_breakdown: boolean;
   show_tax_breakdown: boolean;
   show_discount_field: boolean;
   show_subtotal: boolean;
-  
+
   // Behavior options
   allow_discount_codes: boolean;
   calculate_tax: boolean;
-  
+
   // Custom messaging
   header_text: string;
   footer_text: string;
   discount_help_text: string;
-  
+
+  // Terms and Legal
+  show_terms_checkbox: boolean;
+  show_marketing_consent: boolean;
+  require_terms_acceptance: boolean;
+  terms_text: string;
+  terms_url: string;
+  privacy_url: string;
+  effective_terms_url?: string;
+  effective_privacy_url?: string;
+
   created_at: string;
   updated_at: string;
 }
@@ -363,20 +385,83 @@ export interface ConfirmationStepConfiguration {
   show_booking_summary: boolean;
   show_next_steps: boolean;
   next_steps_content: string;
-  
+
   // Auto-actions
   send_confirmation_email: boolean;
   send_calendar_invite: boolean;
   create_event_immediately: boolean;
-  
+
   created_at: string;
   updated_at: string;
 }
 
+/**
+ * PaymentTermsConfiguration - Flow-specific payment terms that override global PaymentSettings.
+ * All fields are nullable - null means "use global default".
+ */
+export interface PaymentTermsConfiguration {
+  id: number;
+  step: number;
+
+  // Deposit configuration overrides (null = use global)
+  deposit_type: 'PERCENTAGE' | 'FIXED' | null;
+  deposit_percentage: number | null;  // Decimal as number
+  deposit_fixed_amount: number | null;  // Decimal as number
+  deposit_is_refundable: boolean | null;
+  deposit_is_deductible: boolean | null;
+  deposit_waived_on_full_payment: boolean | null;
+
+  // Late fee configuration overrides (null = use global)
+  late_fee_type: 'FIXED' | 'PERCENTAGE' | null;
+  late_fee_amount: number | null;  // Decimal as number
+  late_fee_percentage: number | null;  // Decimal as number
+
+  // Security deposit configuration overrides (null = use global)
+  security_deposit_enabled: boolean | null;
+  security_deposit_amount: number | null;  // Decimal as number
+  security_deposit_is_refundable: boolean | null;
+  security_deposit_description: string;  // Empty string = use global
+
+  // Cancellation configuration overrides (null = use global)
+  cancellation_admin_fee_percentage: number | null;  // Decimal as number
+
+  // Payment schedule configuration overrides (null = use global)
+  downpayment_percentage: number | null;  // Decimal as number
+  downpayment_due_days: number | null;
+  balance_due_days: number | null;
+  balance_due_type: 'DAYS_BEFORE' | 'DAY_BEFORE' | null;
+
+  // Date blocking policy overrides (null = use global)
+  date_blocking_policy: 'IMMEDIATE' | 'ON_DOWNPAYMENT' | null;
+  downpayment_due_reference: 'DAYS_AFTER_BOOKING' | 'DAYS_BEFORE_EVENT' | null;
+  downpayment_deadline_days: number | null;
+
+  // Child/youth pricing overrides (null = use global)
+  child_pricing_enabled: boolean | null;
+  child_pricing_tiers: ChildPricingTier[] | null;
+
+  // Computed field - merged settings (flow-specific + global defaults)
+  effective_settings?: Record<string, unknown>;
+
+  created_at: string;
+  updated_at: string;
+}
+
+/**
+ * Child pricing tier for age-based pricing
+ */
+export interface ChildPricingTier {
+  min_age: number;
+  max_age: number;
+  discount_percentage: number;
+  label: string;
+}
+
 // REMOVED: EventDetailsStepConfiguration (doesn't exist in backend)
 
-export type StepConfiguration = 
+export type StepConfiguration =
   | IntroductionStepConfiguration
+  | VenueSelectionStepConfiguration
   | DateTimeStepConfiguration
   | QuestionnaireStepConfiguration
   | PackageSelectionStepConfiguration
@@ -464,7 +549,6 @@ export type UpdateBookingFlowData = Partial<CreateBookingFlowData>;
 export interface CreateBookingFlowStepData {
   booking_flow?: number;
   step_type: StepType;
-  name: string;
   description?: string;
   order?: number;
   is_enabled?: boolean;
@@ -642,7 +726,6 @@ export interface BookingFlowFormData {
 
 export interface BookingFlowStepFormData {
   step_type: StepType;
-  name: string;
   description: string;
   is_enabled: boolean;
   is_required: boolean;

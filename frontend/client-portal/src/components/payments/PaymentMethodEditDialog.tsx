@@ -112,7 +112,7 @@ const PaymentMethodEditDialog: React.FC<PaymentMethodEditDialogProps> = ({
       onClose();
     } catch (error) {
       // Error is handled by the hook's onError callback
-      console.error('Error updating payment method:', error);
+      if (import.meta.env.DEV) console.error('Error updating payment method:', error);
     }
   };
 

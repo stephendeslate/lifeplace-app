@@ -10,6 +10,21 @@ import type {
   PreviewCommunicationData,
 } from '../types/communications.types';
 
+// Standalone hook for unread records count - used by sidebar
+export const useUnreadRecordsCount = (): { count: number; isLoading: boolean } => {
+  const { data, isLoading } = useQuery({
+    queryKey: ['communication-unread-count'],
+    queryFn: () => communicationsApi.getUnreadCount(),
+    staleTime: 30 * 1000, // 30 seconds
+    refetchInterval: 60 * 1000, // Refetch every minute
+  });
+
+  return {
+    count: data?.unread_count ?? 0,
+    isLoading,
+  };
+};
+
 export const useCommunications = () => {
   const queryClient = useQueryClient();
   const { showSuccess, showError } = useToastActions();
@@ -135,6 +150,7 @@ export const useCommunications = () => {
 
         // Invalidate to ensure fresh data
         queryClient.invalidateQueries({ queryKey: ['communication-records'] });
+        queryClient.invalidateQueries({ queryKey: ['communication-unread-count'] });
       },
       onError: (error: unknown) => {
         const message = ErrorHandler.extractMessage(error);
@@ -153,12 +169,12 @@ export const useCommunications = () => {
         queryClient.setQueryData(['communication-records'], (oldData: unknown) => {
           if (!oldData) return oldData;
 
-          return (oldData as Array<Record<string, unknown>>).map((record: Record<string, unknown>) => 
-            record.id === recordId 
-              ? { 
-                  ...record, 
-                  is_opened: false, 
-                  opened_at: null 
+          return (oldData as Array<Record<string, unknown>>).map((record: Record<string, unknown>) =>
+            record.id === recordId
+              ? {
+                  ...record,
+                  is_opened: false,
+                  opened_at: null
                 }
               : record
           );
@@ -176,6 +192,25 @@ export const useCommunications = () => {
 
         // Invalidate to ensure fresh data
         queryClient.invalidateQueries({ queryKey: ['communication-records'] });
+        queryClient.invalidateQueries({ queryKey: ['communication-unread-count'] });
+      },
+      onError: (error: unknown) => {
+        const message = ErrorHandler.extractMessage(error);
+        showError('Update Failed', message);
+      },
+    });
+  };
+
+  // Mark all as read mutation
+  const useMarkAllAsRead = () => {
+    return useMutation({
+      mutationFn: (filters?: { channel?: string; category?: string }) =>
+        communicationsApi.markAllAsRead(filters),
+      onSuccess: (result) => {
+        // Invalidate all communication-related queries
+        queryClient.invalidateQueries({ queryKey: ['communication-records'] });
+        queryClient.invalidateQueries({ queryKey: ['communication-unread-count'] });
+        showSuccess('Marked as Read', `${result.updated_count} messages marked as read`);
       },
       onError: (error: unknown) => {
         const message = ErrorHandler.extractMessage(error);
@@ -188,15 +223,15 @@ export const useCommunications = () => {
     // Template operations
     useTemplates,
     useTemplate,
-    
+
     // Record operations
     useRecords,
     useRecord,
-    
+
     // Preview and send operations
     usePreviewTemplate,
     useSendManual,
-    
+
     // Analytics
     useAnalytics,
     useVariableSchemas,
@@ -204,6 +239,7 @@ export const useCommunications = () => {
     // Read status operations
     useMarkAsRead,
     useMarkAsUnread,
+    useMarkAllAsRead,
   };
 };
 

@@ -1,14 +1,37 @@
 // Communication Templates Settings Page - Standardized Version
-// Migrated to use the unified settings system
+// Migrated to use the unified settings system with custom form for variable insertion
 
 import React, { useState } from 'react';
 import { Email as CommunicationIcon, Preview as PreviewIcon } from '@mui/icons-material';
-import { SettingsPage, type SettingsPageConfig, type SettingsTableColumn } from '../../../components/common/settings';
-import { TemplatePreviewDialog } from '../../../components/common';
+import { PermissionAwareSettingsPage, type SettingsPageConfig, type SettingsTableColumn } from '../../../components/common/settings';
+import { TemplatePreviewDialog, ModernDialog } from '../../../components/common';
+import { TemplateForm } from '../../../components/communications';
 import { useCommunications } from '../../../hooks/useCommunications';
 import { communicationsApi } from '../../../apis/communications.api';
-import type { CommunicationTemplate, CreateTemplateData, UpdateTemplateData } from '../../../types/communications.types';
+import type { CommunicationTemplate } from '../../../types/communications.types';
 import type { ModernFormSection } from '../../../components/common/ModernForm';
+
+// Helper function to extract variables from template content
+const extractVariablesFromTemplate = (template: CommunicationTemplate): string[] => {
+  const variablePattern = /\{\{\s*(\w+)\s*\}\}/g;
+  const variables = new Set<string>();
+
+  // Extract from body_template
+  let match;
+  while ((match = variablePattern.exec(template.body_template)) !== null) {
+    variables.add(match[1]);
+  }
+
+  // Extract from subject_template if it exists
+  if (template.subject_template) {
+    variablePattern.lastIndex = 0; // Reset regex
+    while ((match = variablePattern.exec(template.subject_template)) !== null) {
+      variables.add(match[1]);
+    }
+  }
+
+  return Array.from(variables);
+};
 
 // Table columns configuration
 const columns: SettingsTableColumn<CommunicationTemplate>[] = [
@@ -109,10 +132,14 @@ const defaultCommunicationTemplate: CommunicationTemplate = {
   name: '',
   channel: 'EMAIL',
   category: 'MANUAL',
+  context_type: 'MANUAL',
+  context_type_display: 'Manual',
+  include_client_context: false,
+  include_event_context: false,
   subject_template: '',
   body_template: '',
   is_system: false,
-  variables_schema: {},
+  layout: null,
   created_at: '',
   updated_at: '',
 };
@@ -167,57 +194,17 @@ export const CommunicationTemplates = () => {
   const communications = useCommunications();
   const {
     useTemplates,
-    useCreateTemplate,
-    useUpdateTemplate,
     useDeleteTemplate,
   } = communications;
 
   // Data hooks
   const { data: communicationTemplates = [], isLoading, error, refetch } = useTemplates();
 
-  // Mutation hooks
-  const createMutation = useCreateTemplate();
-  const updateMutation = useUpdateTemplate();
+  // Mutation hooks (only need delete - create/update handled by TemplateForm)
   const deleteMutation = useDeleteTemplate();
 
   // Action handlers
   const handleRefresh = () => refetch();
-
-  const handleCreate = async (data: CommunicationTemplate) => {
-    const createData: CreateTemplateData = {
-      name: data.name,
-      channel: data.channel,
-      category: data.category,
-      subject_template: data.subject_template,
-      body_template: data.body_template,
-      variables_schema: data.variables_schema,
-    };
-
-    return new Promise<void>((resolve, reject) => {
-      createMutation.mutate(createData, {
-        onSuccess: () => { refetch(); resolve(); },
-        onError: reject,
-      });
-    });
-  };
-
-  const handleUpdate = async (id: string | number, data: CommunicationTemplate) => {
-    const updateData: UpdateTemplateData = {
-      name: data.name,
-      channel: data.channel,
-      category: data.category,
-      subject_template: data.subject_template,
-      body_template: data.body_template,
-      variables_schema: data.variables_schema,
-    };
-
-    return new Promise<void>((resolve, reject) => {
-      updateMutation.mutate({ id: Number(id), data: updateData }, {
-        onSuccess: () => { refetch(); resolve(); },
-        onError: reject,
-      });
-    });
-  };
 
   const handleDelete = async (id: string | number) => {
     return new Promise<void>((resolve, reject) => {
@@ -227,6 +214,28 @@ export const CommunicationTemplates = () => {
       });
     });
   };
+
+  // Custom form renderer that uses TemplateForm with variable insertion
+  const renderCustomForm = ({ open, onClose, item, onSave }: {
+    open: boolean;
+    onClose: () => void;
+    item: CommunicationTemplate | null;
+    onSave: () => void;
+  }) => (
+    <ModernDialog
+      open={open}
+      onClose={onClose}
+      title={item ? 'Edit Communication Template' : 'Create Communication Template'}
+      maxWidth="lg"
+      fullWidth
+    >
+      <TemplateForm
+        template={item || undefined}
+        onSave={onSave}
+        onCancel={onClose}
+      />
+    </ModernDialog>
+  );
 
   // Preview handlers
   const handlePreview = (template: CommunicationTemplate) => {
@@ -263,20 +272,18 @@ export const CommunicationTemplates = () => {
 
   return (
     <>
-      <SettingsPage
+      <PermissionAwareSettingsPage
         config={config}
+        requiredPermissions={['can_manage_templates']}
         data={communicationTemplates}
         defaultValues={defaultCommunicationTemplate}
         isLoading={isLoading}
         error={error?.message}
         onRefresh={handleRefresh}
-        onCreate={handleCreate}
-        onUpdate={handleUpdate}
         onDelete={handleDelete}
-        isCreating={createMutation.isPending}
-        isUpdating={updateMutation.isPending}
         isDeleting={deleteMutation.isPending}
         customTableActions={customTableActions}
+        customFormRenderer={renderCustomForm}
       />
 
       {/* Preview Dialog */}
@@ -286,7 +293,7 @@ export const CommunicationTemplates = () => {
           onClose={() => setPreviewDialogOpen(false)}
           templateName={selectedTemplate.name}
           templateType="communication"
-          variables={selectedTemplate.variables_schema ? Object.keys(selectedTemplate.variables_schema) : []}
+          variables={extractVariablesFromTemplate(selectedTemplate)}
           onPreview={handlePreviewTemplate}
         />
       )}

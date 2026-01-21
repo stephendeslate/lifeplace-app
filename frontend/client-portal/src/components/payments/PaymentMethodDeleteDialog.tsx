@@ -96,7 +96,7 @@ const PaymentMethodDeleteDialog: React.FC<PaymentMethodDeleteDialogProps> = ({
       onClose();
     } catch (error) {
       // Error is handled by the hook's onError callback
-      console.error('Error deleting payment method:', error);
+      if (import.meta.env.DEV) console.error('Error deleting payment method:', error);
     }
   };
 

@@ -22,12 +22,15 @@ import {
   Task as TaskIcon,
   RequestQuote as QuoteIcon,
   Description as ContractIcon,
+  Quiz as QuestionnaireIcon,
   Schedule as ScheduleIcon,
   Notifications as NotificationIcon,
   Handyman as ManualIcon,
   EventNote as EventIcon,
+  FlashOn as TriggerIcon,
 } from '@mui/icons-material';
-import type { WorkflowVisualizationProps } from '../../types/workflows.types';
+import type { WorkflowVisualizationProps, WorkflowStage } from '../../types/workflows.types';
+import { tokens } from '../../design-system';
 
 export const WorkflowVisualization: React.FC<WorkflowVisualizationProps> = ({
   template,
@@ -38,6 +41,7 @@ export const WorkflowVisualization: React.FC<WorkflowVisualizationProps> = ({
       TASK: <TaskIcon />,
       QUOTE: <QuoteIcon />,
       CONTRACT: <ContractIcon />,
+      QUESTIONNAIRE: <QuestionnaireIcon />,
       REMINDER: <ScheduleIcon />,
       NOTIFICATION: <NotificationIcon />,
     };
@@ -47,12 +51,12 @@ export const WorkflowVisualization: React.FC<WorkflowVisualizationProps> = ({
 
   const getStageColor = (stage: string) => {
     const colors = {
-      LEAD: '#1976d2',
-      PRODUCTION: '#ed6c02',
-      POST_PRODUCTION: '#2e7d32',
+      LEAD: tokens.color.primary[600],
+      PRODUCTION: tokens.color.warning[600],
+      POST_PRODUCTION: tokens.color.success[700],
     };
 
-    return colors[stage as keyof typeof colors] || '#757575';
+    return colors[stage as keyof typeof colors] || tokens.color.neutral[500];
   };
 
   const getTriggerTimeDisplay = (triggerTime: string) => {
@@ -67,7 +71,22 @@ export const WorkflowVisualization: React.FC<WorkflowVisualizationProps> = ({
       'AFTER_3_DAYS': 'After 3 Days',
       'AFTER_1_WEEK': 'After 1 Week',
       'AFTER_2_WEEKS': 'After 2 Weeks',
+      // Before event triggers
+      '30_DAYS_BEFORE_EVENT': '30 Days Before Event',
+      '14_DAYS_BEFORE_EVENT': '14 Days Before Event',
+      '7_DAYS_BEFORE_EVENT': '7 Days Before Event',
+      '3_DAYS_BEFORE_EVENT': '3 Days Before Event',
+      '1_DAY_BEFORE_EVENT': '1 Day Before Event',
     };
+
+    // Handle dynamic BEFORE_EVENT patterns (e.g., "45_DAYS_BEFORE_EVENT")
+    if (!triggerMap[triggerTime] && triggerTime.includes('BEFORE_EVENT')) {
+      const match = triggerTime.match(/^(\d+)_DAYS?_BEFORE_EVENT$/i);
+      if (match) {
+        const days = parseInt(match[1], 10);
+        return `${days} Day${days !== 1 ? 's' : ''} Before Event`;
+      }
+    }
 
     return triggerMap[triggerTime] || triggerTime;
   };
@@ -89,13 +108,13 @@ export const WorkflowVisualization: React.FC<WorkflowVisualizationProps> = ({
   }
 
   // Group stages by type and sort by order
-  const stagesByType = template.stages.reduce((acc, stage) => {
+  const stagesByType = template.stages.reduce<Record<string, WorkflowStage[]>>((acc, stage) => {
     if (!acc[stage.stage]) {
       acc[stage.stage] = [];
     }
     acc[stage.stage].push(stage);
     return acc;
-  }, {} as Record<string, typeof template.stages>);
+  }, {});
 
   // Sort stages within each type by order
   Object.keys(stagesByType).forEach(type => {
@@ -220,18 +239,78 @@ export const WorkflowVisualization: React.FC<WorkflowVisualizationProps> = ({
                                 <Typography variant="subtitle2" gutterBottom>
                                   Automation Details:
                                 </Typography>
-                                <Stack direction="row" spacing={1} flexWrap="wrap">
-                                  <Chip
-                                    label={`Trigger: ${getTriggerTimeDisplay(stage.trigger_time)}`}
-                                    size="small"
-                                    variant="outlined"
-                                  />
-                                  {stage.email_template_name && (
+                                <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                                  {stage.trigger_time && (
                                     <Chip
-                                      label={`Template: ${stage.email_template_name}`}
+                                      label={`Timing: ${getTriggerTimeDisplay(stage.trigger_time)}`}
                                       size="small"
                                       variant="outlined"
                                     />
+                                  )}
+                                  {stage.email_template_name && (
+                                    <Chip
+                                      label={`Email: ${stage.email_template_name}`}
+                                      size="small"
+                                      variant="outlined"
+                                    />
+                                  )}
+                                  {stage.contract_template_name && (
+                                    <Chip
+                                      label={`Contract: ${stage.contract_template_name}`}
+                                      size="small"
+                                      variant="outlined"
+                                    />
+                                  )}
+                                  {stage.questionnaire_template_name && (
+                                    <Chip
+                                      label={`Questionnaire: ${stage.questionnaire_template_name}`}
+                                      size="small"
+                                      variant="outlined"
+                                    />
+                                  )}
+                                  {stage.automation_type === 'TASK' && stage.metadata?.task_priority != null && (
+                                    <Chip
+                                      label={`Priority: ${String(stage.metadata.task_priority)}`}
+                                      size="small"
+                                      variant="outlined"
+                                    />
+                                  )}
+                                  {stage.automation_type === 'CONTRACT' && stage.metadata?.signature_deadline_hours != null && (
+                                    <Chip
+                                      label={`Deadline: ${String(stage.metadata.signature_deadline_hours)}h`}
+                                      size="small"
+                                      variant="outlined"
+                                    />
+                                  )}
+                                </Stack>
+                              </Box>
+                            )}
+
+                            {/* Event Triggers - show which business events trigger this automation */}
+                            {(stage.trigger_on_event_created ||
+                              stage.trigger_on_quote_sent ||
+                              stage.trigger_on_quote_accepted ||
+                              stage.trigger_on_contract_signed ||
+                              stage.trigger_on_payment_received) && (
+                              <Box>
+                                <Typography variant="subtitle2" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                  <TriggerIcon fontSize="small" /> Event Triggers:
+                                </Typography>
+                                <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                                  {stage.trigger_on_event_created && (
+                                    <Chip label="Event Created" size="small" color="info" variant="outlined" />
+                                  )}
+                                  {stage.trigger_on_quote_sent && (
+                                    <Chip label="Quote Sent" size="small" color="info" variant="outlined" />
+                                  )}
+                                  {stage.trigger_on_quote_accepted && (
+                                    <Chip label="Quote Accepted" size="small" color="info" variant="outlined" />
+                                  )}
+                                  {stage.trigger_on_contract_signed && (
+                                    <Chip label="Contract Signed" size="small" color="info" variant="outlined" />
+                                  )}
+                                  {stage.trigger_on_payment_received && (
+                                    <Chip label="Payment Received" size="small" color="success" variant="outlined" />
                                   )}
                                 </Stack>
                               </Box>

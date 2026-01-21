@@ -1,7 +1,6 @@
 // frontend/client-portal/src/apis/booking/contact_info.api.ts
 
 import api from '../../utils/api';
-import { ErrorHandler } from '../../utils/errorHandler';
 import type {
   ContactInfoStepData,
   StepValidationResult,
@@ -176,22 +175,6 @@ export class ContactInfoApi {
       password: '',
       custom_fields: {},
     };
-  }
-
-  /**
-   * Handle API errors
-   * @deprecated Use ErrorHandler.extractMessage() instead
-   */
-  static handleApiError(error: unknown): string {
-    return ErrorHandler.extractMessage(error);
-  }
-
-  /**
-   * Extract validation errors from API response
-   * @deprecated Use ErrorHandler.extractValidationErrorsAsRecord() instead
-   */
-  static extractValidationErrors(error: unknown): Record<string, string[]> {
-    return ErrorHandler.extractValidationErrorsAsRecord(error);
   }
 }
 

@@ -279,7 +279,6 @@ export const SettingsTable = <T extends Record<string, unknown>>({
           description={emptyState?.description || "There are no items to display."}
           primaryAction={emptyState?.primaryAction}
           size="medium"
-          illustration="gradient"
         />
       ) : (
         <Box sx={{ ...(maxHeight && { maxHeight: `calc(${maxHeight} - 120px)`, overflowY: 'auto' }) }}>

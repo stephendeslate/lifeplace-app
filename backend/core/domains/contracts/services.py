@@ -5,7 +5,7 @@ import re
 from decimal import Decimal
 
 from django.db import models, transaction
-from django.db.models import Q
+from django.db.models import Max, Q
 from django.utils import timezone
 
 from .exceptions import (
@@ -39,20 +39,30 @@ class ContractTemplateService:
     """Service for managing contract templates"""
     
     @staticmethod
-    def get_all_templates(search_query=None, event_type_id=None, is_active=None):
-        """Get all contract templates with optional filtering"""
+    def get_all_templates(search_query=None, event_type_id=None, is_active=True):
+        """Get all contract templates with optional filtering
+
+        Args:
+            search_query: Search term for name/description
+            event_type_id: Filter by event type
+            is_active: Filter by active status (defaults to True to hide deactivated templates)
+        """
         queryset = ContractTemplate.objects.all()
-        
+
+        # Filter by active status (default: only active templates)
+        if is_active is not None:
+            queryset = queryset.filter(is_active=is_active)
+
         # Apply filters if provided
         if search_query:
             queryset = queryset.filter(
                 Q(name__icontains=search_query) |
                 Q(description__icontains=search_query)
             )
-        
+
         if event_type_id:
             queryset = queryset.filter(event_type_id=event_type_id)
-            
+
         return queryset.order_by('name')
     
     @staticmethod
@@ -87,20 +97,18 @@ class ContractTemplateService:
     
     @staticmethod
     def delete_template(template_id):
-        """Delete a contract template"""
+        """Soft delete a contract template by setting is_active=False.
+
+        This preserves the template for historical records while hiding it
+        from selection in the admin interface. Templates can be reactivated
+        through Django admin if needed.
+        """
         template = ContractTemplateService.get_template_by_id(template_id)
-        
-        # Check if template is used by any contracts
-        contract_count = EventContract.objects.filter(template=template).count()
-        if contract_count > 0:
-            raise InvalidContractTemplate(
-                detail=f"Cannot delete template as it is used by {contract_count} contracts"
-            )
-        
+
         with transaction.atomic():
-            template_name = template.name
-            template.delete()
-            logger.info(f"Deleted contract template: {template_name}")
+            template.is_active = False
+            template.save(update_fields=['is_active', 'updated_at'])
+            logger.info(f"Deactivated contract template: {template.name}")
             return True
             
     @staticmethod
@@ -353,7 +361,16 @@ class EventContractService:
         # Use contract value from context if not provided
         if contract_value is None:
             contract_value = event.total_price
-        
+
+        # Calculate next amendment number for this event
+        max_amendment = EventContract.objects.filter(
+            event_id=event_id
+        ).aggregate(
+            max_num=Max('amendment_number')
+        )['max_num']
+        # Use explicit None check since 0 is a valid amendment_number
+        next_amendment_number = 0 if max_amendment is None else max_amendment + 1
+
         with transaction.atomic():
             contract = EventContract.objects.create(
                 event_id=event_id,
@@ -362,7 +379,7 @@ class EventContractService:
                 content=rendered_content,
                 valid_until=valid_until,
                 contract_value=contract_value,
-                amendment_number=0
+                amendment_number=next_amendment_number
             )
             
             logger.info(f"Created new contract for event {event_id} using template {template.name}")
@@ -433,44 +450,51 @@ class ContractSignatureService:
     def add_signature(contract_id, user_id, signature_data, role='CLIENT', **signature_details):
         """
         Add a signature to a contract
-        
+
         Args:
             contract_id: ID of the contract to sign
             user_id: ID of the user signing
             signature_data: Signature image data
             role: Role of the signer
-            **signature_details: Additional signature details
-            
+            **signature_details: Additional signature details including:
+                - signer_name, signer_title, signer_email
+                - verification_method, ip_address, user_agent
+                - device_fingerprint: Device identification for security tracking
+                - legal_disclosure_accepted: Whether signer accepted e-signature disclosure
+                - electronic_consent_timestamp: When consent was given
+                - signature_intent_confirmed: Whether signer confirmed intent
+                - signature_metadata: Additional metadata (dict)
+
         Returns:
             The created ContractSignature instance
         """
         contract = EventContractService.get_contract_by_id(contract_id)
-        
+
         # Validate contract can be signed
         if contract.status not in ['SENT', 'PARTIALLY_SIGNED']:
             raise InvalidContractStatus(
                 detail=f"Contract is in {contract.status} status and cannot be signed"
             )
-        
+
         if contract.valid_until and contract.valid_until < datetime.date.today():
             raise ContractExpired()
-        
+
         if not signature_data:
             raise SignatureRequired()
-        
+
         # Check if signature for this role already exists
         if ContractSignature.objects.filter(contract=contract, role=role).exists():
             raise SignatureAlreadyExists(
                 detail=f"A signature for role '{role}' already exists"
             )
-        
+
         # Check if role is required for this contract
         required_roles = contract.template.get_signature_requirements()
         if role not in required_roles:
             raise InvalidSignatureRole(
                 detail=f"Role '{role}' is not required for this contract"
             )
-        
+
         with transaction.atomic():
             signature = ContractSignature.objects.create(
                 contract=contract,
@@ -482,11 +506,17 @@ class ContractSignatureService:
                 signer_email=signature_details.get('signer_email', ''),
                 verification_method=signature_details.get('verification_method', ''),
                 ip_address=signature_details.get('ip_address'),
-                user_agent=signature_details.get('user_agent', '')
+                user_agent=signature_details.get('user_agent', ''),
+                # Security/compliance fields
+                device_fingerprint=signature_details.get('device_fingerprint', ''),
+                legal_disclosure_accepted=signature_details.get('legal_disclosure_accepted', False),
+                electronic_consent_timestamp=signature_details.get('electronic_consent_timestamp'),
+                signature_intent_confirmed=signature_details.get('signature_intent_confirmed', False),
+                signature_metadata=signature_details.get('signature_metadata', {}),
             )
-            
+
             logger.info(f"Added {role} signature to contract {contract_id} by user {user_id}")
-            
+
             # Contract status will be updated automatically via the model's save method
             return signature
     
@@ -904,56 +934,6 @@ class ContractNoteService:
         
         logger.info(f"Deleted note '{note_content}...' by user {deleted_by.id}")
         return True
-
-
-# Legacy service methods for backward compatibility
-class LegacyContractService:
-    """Legacy service methods for backward compatibility"""
-    
-    @staticmethod
-    def sign_contract(contract_id, user_id, signature_data, witness_name=None, witness_signature=None):
-        """
-        Legacy sign contract method - creates CLIENT signature
-        
-        DEPRECATED: Use ContractSignatureService.add_signature instead
-        """
-        logger.warning("Using deprecated sign_contract method. Use ContractSignatureService.add_signature instead.")
-        
-        signature_details = {
-            'signer_name': f"User {user_id}",  # Should be passed from frontend
-            'signer_email': ''  # Should be passed from frontend
-        }
-        
-        # Add client signature
-        client_signature = ContractSignatureService.add_signature(
-            contract_id=contract_id,
-            user_id=user_id,
-            signature_data=signature_data,
-            role='CLIENT',
-            **signature_details
-        )
-        
-        # Add witness signature if provided
-        if witness_name and witness_signature:
-            witness_signature_obj = ContractSignatureService.add_signature(
-                contract_id=contract_id,
-                user_id=user_id,  # Witness could be same user or different
-                signature_data=witness_signature,
-                role='WITNESS',
-                signer_name=witness_name,
-                signer_email=''
-            )
-        
-        # Update legacy fields for backward compatibility
-        contract = EventContractService.get_contract_by_id(contract_id)
-        contract.signed_at = client_signature.signed_at
-        contract.signed_by_id = user_id
-        contract.signature_data = signature_data
-        contract.witness_name = witness_name or ''
-        contract.witness_signature = witness_signature or ''
-        contract.save()
-        
-        return contract
 
 
 class ContractReportingService:

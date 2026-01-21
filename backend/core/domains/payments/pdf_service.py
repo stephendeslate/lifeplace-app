@@ -12,6 +12,8 @@ from reportlab.lib.units import inch
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
 from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT, TA_JUSTIFY
 
+from core.utils.pdf_branding import PDFBrandingService
+
 logger = logging.getLogger(__name__)
 
 
@@ -22,15 +24,19 @@ class PaymentReceiptPDFService:
     def generate_receipt_pdf(payment):
         """
         Generate a PDF receipt for a payment
-        
+
         Args:
             payment: Payment instance
-            
+
         Returns:
             BytesIO buffer containing the PDF
         """
         buffer = io.BytesIO()
-        
+
+        # Get branding context for dynamic colors and company info
+        branding = PDFBrandingService.get_branding_context()
+        primary_color = branding.primary_color_rgb
+
         # Create the PDF document
         doc = SimpleDocTemplate(
             buffer,
@@ -40,29 +46,29 @@ class PaymentReceiptPDFService:
             topMargin=72,
             bottomMargin=72,
         )
-        
+
         # Build the story (content)
         story = []
         styles = getSampleStyleSheet()
-        
-        # Custom styles
+
+        # Custom styles with dynamic branding colors
         title_style = ParagraphStyle(
             'CustomTitle',
             parent=styles['Heading1'],
             fontSize=20,
             spaceAfter=30,
             alignment=TA_CENTER,
-            textColor=colors.HexColor('#2c5aa0')
+            textColor=primary_color
         )
-        
+
         subtitle_style = ParagraphStyle(
             'CustomSubtitle',
             parent=styles['Heading2'],
             fontSize=14,
             spaceAfter=20,
-            textColor=colors.HexColor('#2c5aa0')
+            textColor=primary_color
         )
-        
+
         body_style = ParagraphStyle(
             'CustomBody',
             parent=styles['Normal'],
@@ -70,7 +76,7 @@ class PaymentReceiptPDFService:
             spaceAfter=12,
             alignment=TA_JUSTIFY,
         )
-        
+
         small_style = ParagraphStyle(
             'SmallText',
             parent=styles['Normal'],
@@ -78,12 +84,12 @@ class PaymentReceiptPDFService:
             textColor=colors.grey,
             alignment=TA_LEFT
         )
-        
+
         header_style = ParagraphStyle(
             'HeaderText',
             parent=styles['Normal'],
             fontSize=12,
-            textColor=colors.HexColor('#2c5aa0'),
+            textColor=primary_color,
             alignment=TA_RIGHT
         )
         
@@ -105,7 +111,7 @@ class PaymentReceiptPDFService:
             ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
             ('FONTSIZE', (0, 0), (-1, -1), 10),
             ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
-            ('TEXTCOLOR', (0, 0), (0, -1), colors.HexColor('#2c5aa0')),
+            ('TEXTCOLOR', (0, 0), (0, -1), primary_color),
             ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
             ('VALIGN', (0, 0), (-1, -1), 'TOP'),
             ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
@@ -149,7 +155,7 @@ class PaymentReceiptPDFService:
             ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
             ('FONTSIZE', (0, 0), (-1, -1), 10),
             ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
-            ('TEXTCOLOR', (0, 0), (0, -1), colors.HexColor('#2c5aa0')),
+            ('TEXTCOLOR', (0, 0), (0, -1), primary_color),
             ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
             ('VALIGN', (0, 0), (-1, -1), 'TOP'),
             ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
@@ -175,26 +181,22 @@ class PaymentReceiptPDFService:
             ['Description', 'Amount'],
             [payment.description or 'Event Payment', formatted_amount],
         ]
-        
-        # Add installment info if applicable
-        if payment.installment:
-            payment_data[1][0] = f"{payment.installment.description} (Installment {payment.installment.installment_number})"
-        
+
         payment_table = Table(payment_data, colWidths=[4*inch, 2*inch])
         payment_table.setStyle(TableStyle([
             # Header row
-            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#2c5aa0')),
+            ('BACKGROUND', (0, 0), (-1, 0), primary_color),
             ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
             ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
             ('FONTSIZE', (0, 0), (-1, 0), 12),
             ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
-            
+
             # Data rows
             ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
             ('FONTSIZE', (0, 1), (-1, -1), 10),
             ('ALIGN', (0, 1), (0, -1), 'LEFT'),
             ('ALIGN', (1, 1), (1, -1), 'RIGHT'),
-            
+
             # All cells
             ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
             ('GRID', (0, 0), (-1, -1), 1, colors.black),
@@ -222,13 +224,13 @@ class PaymentReceiptPDFService:
         total_table.setStyle(TableStyle([
             ('FONTNAME', (0, 0), (-1, -1), 'Helvetica-Bold'),
             ('FONTSIZE', (0, 0), (-1, -1), 14),
-            ('TEXTCOLOR', (0, 0), (-1, -1), colors.HexColor('#2c5aa0')),
+            ('TEXTCOLOR', (0, 0), (-1, -1), primary_color),
             ('ALIGN', (0, 0), (0, 0), 'RIGHT'),
             ('ALIGN', (1, 0), (1, 0), 'RIGHT'),
             ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
             ('BOTTOMPADDING', (0, 0), (-1, -1), 10),
             ('TOPPADDING', (0, 0), (-1, -1), 10),
-            ('LINEBELOW', (0, 0), (-1, -1), 2, colors.HexColor('#2c5aa0')),
+            ('LINEBELOW', (0, 0), (-1, -1), 2, primary_color),
         ]))
         
         story.append(total_table)
@@ -264,15 +266,21 @@ class PaymentReceiptPDFService:
             story.append(Paragraph(payment.notes, body_style))
             story.append(Spacer(1, 20))
         
-        # Footer
+        # Footer with dynamic branding
         story.append(Spacer(1, 40))
-        story.append(Paragraph("Thank you for your payment!", header_style))
-        
+        footer_msg = branding.receipt_terms or "Thank you for your payment!"
+        story.append(Paragraph(footer_msg, header_style))
+
         footer_text = f"This receipt was generated on {timezone.now().strftime('%B %d, %Y at %I:%M %p')}"
         story.append(Paragraph(footer_text, small_style))
-        
+
         if payment.status == 'COMPLETED':
             story.append(Paragraph("This payment has been successfully processed.", small_style))
+
+        # Company footer
+        if branding.pdf_footer_text:
+            story.append(Spacer(1, 20))
+            story.append(Paragraph(branding.pdf_footer_text, small_style))
         
         # Build the PDF
         try:
@@ -287,15 +295,19 @@ class PaymentReceiptPDFService:
     def generate_invoice_receipt_pdf(invoice):
         """
         Generate a PDF receipt for an invoice (when paid)
-        
+
         Args:
             invoice: Invoice instance
-            
+
         Returns:
             BytesIO buffer containing the PDF
         """
         buffer = io.BytesIO()
-        
+
+        # Get branding context for dynamic colors and company info
+        branding = PDFBrandingService.get_branding_context()
+        primary_color = branding.primary_color_rgb
+
         # Create the PDF document
         doc = SimpleDocTemplate(
             buffer,
@@ -305,29 +317,29 @@ class PaymentReceiptPDFService:
             topMargin=72,
             bottomMargin=72,
         )
-        
+
         # Build the story (content)
         story = []
         styles = getSampleStyleSheet()
-        
-        # Custom styles (same as above)
+
+        # Custom styles with dynamic branding colors
         title_style = ParagraphStyle(
             'CustomTitle',
             parent=styles['Heading1'],
             fontSize=20,
             spaceAfter=30,
             alignment=TA_CENTER,
-            textColor=colors.HexColor('#2c5aa0')
+            textColor=primary_color
         )
-        
+
         subtitle_style = ParagraphStyle(
             'CustomSubtitle',
             parent=styles['Heading2'],
             fontSize=14,
             spaceAfter=20,
-            textColor=colors.HexColor('#2c5aa0')
+            textColor=primary_color
         )
-        
+
         body_style = ParagraphStyle(
             'CustomBody',
             parent=styles['Normal'],
@@ -335,7 +347,7 @@ class PaymentReceiptPDFService:
             spaceAfter=12,
             alignment=TA_JUSTIFY,
         )
-        
+
         small_style = ParagraphStyle(
             'SmallText',
             parent=styles['Normal'],
@@ -343,12 +355,12 @@ class PaymentReceiptPDFService:
             textColor=colors.grey,
             alignment=TA_LEFT
         )
-        
+
         header_style = ParagraphStyle(
             'HeaderText',
             parent=styles['Normal'],
             fontSize=12,
-            textColor=colors.HexColor('#2c5aa0'),
+            textColor=primary_color,
             alignment=TA_RIGHT
         )
         
@@ -369,7 +381,7 @@ class PaymentReceiptPDFService:
             ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
             ('FONTSIZE', (0, 0), (-1, -1), 10),
             ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
-            ('TEXTCOLOR', (0, 0), (0, -1), colors.HexColor('#2c5aa0')),
+            ('TEXTCOLOR', (0, 0), (0, -1), primary_color),
             ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
             ('VALIGN', (0, 0), (-1, -1), 'TOP'),
             ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
@@ -414,18 +426,18 @@ class PaymentReceiptPDFService:
         items_table = Table(items_data, colWidths=[3*inch, 0.8*inch, 1.2*inch, 1.2*inch])
         items_table.setStyle(TableStyle([
             # Header row
-            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#2c5aa0')),
+            ('BACKGROUND', (0, 0), (-1, 0), primary_color),
             ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
             ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
             ('FONTSIZE', (0, 0), (-1, 0), 10),
             ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
-            
+
             # Data rows
             ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
             ('FONTSIZE', (0, 1), (-1, -1), 9),
             ('ALIGN', (0, 1), (0, -1), 'LEFT'),  # Description left
             ('ALIGN', (1, 1), (-1, -1), 'RIGHT'),  # Numbers right
-            
+
             # All cells
             ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
             ('GRID', (0, 0), (-1, -1), 1, colors.black),
@@ -451,14 +463,14 @@ class PaymentReceiptPDFService:
             ('FONTNAME', (0, 0), (-1, 1), 'Helvetica'),
             ('FONTSIZE', (0, 0), (-1, 1), 10),
             ('ALIGN', (0, 0), (-1, 1), 'RIGHT'),
-            
+
             # Total row
             ('FONTNAME', (0, 2), (-1, 2), 'Helvetica-Bold'),
             ('FONTSIZE', (0, 2), (-1, 2), 12),
-            ('TEXTCOLOR', (0, 2), (-1, 2), colors.HexColor('#2c5aa0')),
+            ('TEXTCOLOR', (0, 2), (-1, 2), primary_color),
             ('ALIGN', (0, 2), (-1, 2), 'RIGHT'),
-            ('LINEABOVE', (0, 2), (-1, 2), 2, colors.HexColor('#2c5aa0')),
-            
+            ('LINEABOVE', (0, 2), (-1, 2), 2, primary_color),
+
             # All rows
             ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
             ('BOTTOMPADDING', (0, 0), (-1, -1), 8),

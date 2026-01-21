@@ -48,6 +48,15 @@ export interface BookingState {
   
   // Pricing
   totalPrice: string;
+  taxRate: number; // Tax rate as decimal (e.g., 0.12 for 12%)
+  pricingBreakdown: {
+    subtotal: string;
+    tax: string;
+    discount: string;
+    formattedSubtotal: string;
+    formattedTax: string;
+    formattedDiscount: string;
+  };
   breakdown: {
     item_name: string;
     quantity: number;
@@ -55,6 +64,14 @@ export interface BookingState {
     total_price: string;
     type: 'PACKAGE' | 'ADDON' | 'TAX' | 'DISCOUNT' | 'FEE';
   }[];
+
+  // Session recovery
+  recoverableSession: {
+    sessionId: string;
+    lastUpdated: string;
+    stepName: string;
+    progressPercentage: number;
+  } | null;
 }
 
 // Action types
@@ -87,9 +104,15 @@ export interface BookingActions {
   
   // Pricing
   updateTotalPrice: (newTotalPrice: string) => Promise<void>;
-  
+  setOptimisticPrice: (price: string) => void; // Immediate local update without backend sync
+  setTaxRate: (rate: number) => void; // Store tax rate from backend for local calculations
+  setPricingBreakdown: (breakdown: { subtotal: string; tax: string; discount: string; formattedSubtotal: string; formattedTax: string; formattedDiscount: string }) => void;
+
   // Utilities
   calculatePricing: () => Promise<void>;
   resetBooking: () => void;
   clearErrors: () => void;
+
+  // Session recovery
+  clearRecoverableSession: (sessionId?: string) => void;
 }

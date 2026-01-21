@@ -22,7 +22,7 @@ export const ContactSection: React.FC<ContactSectionProps> = ({
   };
 
   return (
-    <Box sx={{ py: { xs: 8, md: 12 }, px: { xs: 2, sm: 3, md: 4 }, backgroundColor: 'background.default', width: '100vw' }}>
+    <Box sx={{ py: { xs: 8, md: 12 }, px: { xs: 2, sm: 3, md: 4 }, backgroundColor: 'background.default', width: '100%' }}>
       <Box sx={{ maxWidth: 800, mx: 'auto', textAlign: 'center' }}>
         <AnimatedElement animation="fadeIn" delay={100}>
           <Stack spacing={4}>

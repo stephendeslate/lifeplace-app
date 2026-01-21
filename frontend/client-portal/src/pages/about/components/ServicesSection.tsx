@@ -12,7 +12,7 @@ export const ServicesSection: React.FC = () => {
         py: { xs: 8, md: 12 },
         px: { xs: 3, sm: 4, md: 6 },
         backgroundColor: 'background.default',
-        width: '100vw',
+        width: '100%',
       }}
     >
       <Box sx={{ maxWidth: 1200, mx: 'auto' }}>

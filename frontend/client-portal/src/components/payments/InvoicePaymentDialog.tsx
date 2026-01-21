@@ -71,15 +71,27 @@ export const InvoicePaymentDialog: React.FC<InvoicePaymentDialogProps> = ({
   const [customAmountError, setCustomAmountError] = useState<string | null>(null);
 
   // Hooks for payment settings and currency
-  const { data: paymentSettings, isLoading: isLoadingPaymentSettings } = usePaymentPlanSettings();
+  // Global settings used as fallback if invoice doesn't have effective_payment_terms
+  const { data: globalPaymentSettings, isLoading: isLoadingPaymentSettings } = usePaymentPlanSettings();
   const { formatAmount } = useCurrencySettings();
 
   // Calculate payment amounts based on payment type
+  // Priority: invoice.effective_payment_terms (booking flow override) > globalPaymentSettings (global defaults)
   const paymentAmounts = useMemo(() => {
     const paymentStatus = FinancialApi.calculateInvoicePaymentStatus(invoice);
     const remainingAmount = paymentStatus.amountRemaining;
 
-    if (!paymentSettings) {
+    // Use invoice's effective payment terms (resolved from booking flow or global)
+    // Fall back to global settings if not available
+    const effectiveTerms = invoice.effective_payment_terms;
+    const depositPercentage = effectiveTerms?.deposit_percentage
+      ?? globalPaymentSettings?.default_deposit_percentage
+      ?? 0;
+    const balanceDueDays = effectiveTerms?.balance_due_days
+      ?? globalPaymentSettings?.balance_due_days
+      ?? 0;
+
+    if (depositPercentage === 0 && !effectiveTerms && !globalPaymentSettings) {
       return {
         full: remainingAmount,
         deposit: 0,
@@ -89,7 +101,6 @@ export const InvoicePaymentDialog: React.FC<InvoicePaymentDialogProps> = ({
       };
     }
 
-    const depositPercentage = paymentSettings.default_deposit_percentage;
     const depositAmount = (parseFloat(invoice.total_amount) * depositPercentage) / 100;
     const balanceAmount = parseFloat(invoice.total_amount) - depositAmount;
 
@@ -98,9 +109,9 @@ export const InvoicePaymentDialog: React.FC<InvoicePaymentDialogProps> = ({
       deposit: depositAmount,
       depositPercentage,
       remaining: balanceAmount,
-      balanceDueDays: paymentSettings.balance_due_days,
+      balanceDueDays,
     };
-  }, [invoice, paymentSettings]);
+  }, [invoice, globalPaymentSettings]);
 
   // Detect if deposit has already been paid
   const isDepositAlreadyPaid = useMemo(() => {
@@ -159,20 +170,22 @@ export const InvoicePaymentDialog: React.FC<InvoicePaymentDialogProps> = ({
   }, [isDepositAlreadyPaid, paymentType]);
 
   const handlePaymentMethodSelect = (method: PaymentMethod | null) => {
-    console.log('🔍 PAYMENT METHOD SELECT - Method changed:', {
-      previousMethod: selectedPaymentMethod ? {
-        id: selectedPaymentMethod.id,
-        type: selectedPaymentMethod.type,
-        nickname: selectedPaymentMethod.nickname
-      } : null,
-      newMethod: method ? {
-        id: method.id,
-        type: method.type,
-        nickname: method.nickname,
-        gateway_details: !!method.gateway_details
-      } : null,
-      wasAddingNew: isAddingNewMethod
-    });
+    if (import.meta.env.DEV) {
+      console.log('🔍 PAYMENT METHOD SELECT - Method changed:', {
+        previousMethod: selectedPaymentMethod ? {
+          id: selectedPaymentMethod.id,
+          type: selectedPaymentMethod.type,
+          nickname: selectedPaymentMethod.nickname
+        } : null,
+        newMethod: method ? {
+          id: method.id,
+          type: method.type,
+          nickname: method.nickname,
+          gateway_details: !!method.gateway_details
+        } : null,
+        wasAddingNew: isAddingNewMethod
+      });
+    }
 
     setSelectedPaymentMethod(method);
 
@@ -181,11 +194,11 @@ export const InvoicePaymentDialog: React.FC<InvoicePaymentDialogProps> = ({
       setIsAddingNewMethod(false);
       // For saved methods, clear gateway state to prevent interference
       setSelectedGateway(null);
-      console.log('✅ PAYMENT METHOD SELECT - Selected saved method, clearing gateway state');
+      if (import.meta.env.DEV) console.log('✅ PAYMENT METHOD SELECT - Selected saved method, clearing gateway state');
     } else {
       // When clearing method selection, reset states
       setSelectedGateway(null);
-      console.log('🔄 PAYMENT METHOD SELECT - Cleared method selection');
+      if (import.meta.env.DEV) console.log('🔄 PAYMENT METHOD SELECT - Cleared method selection');
     }
 
     setPaymentError(null);
@@ -197,28 +210,30 @@ export const InvoicePaymentDialog: React.FC<InvoicePaymentDialogProps> = ({
   };
 
   const handleFullPayment = async () => {
-    console.log('🔍 PAYMENT DEBUG - handleFullPayment called with state:', {
-      selectedPaymentMethod: selectedPaymentMethod ? {
-        id: selectedPaymentMethod.id,
-        type: selectedPaymentMethod.type,
-        nickname: selectedPaymentMethod.nickname,
-        gateway_details: selectedPaymentMethod.gateway_details,
-        last_four: selectedPaymentMethod.last_four
-      } : null,
-      selectedGateway: selectedGateway ? {
-        id: selectedGateway.id,
-        code: selectedGateway.code,
-        name: selectedGateway.name
-      } : null,
-      isAddingNewMethod,
-      paymentType,
-      customAmount: paymentType === 'CUSTOM' ? customAmount : null,
-      invoice: {
-        id: invoice.id,
-        invoice_id: invoice.invoice_id,
-        total_amount: invoice.total_amount
-      }
-    });
+    if (import.meta.env.DEV) {
+      console.log('🔍 PAYMENT DEBUG - handleFullPayment called with state:', {
+        selectedPaymentMethod: selectedPaymentMethod ? {
+          id: selectedPaymentMethod.id,
+          type: selectedPaymentMethod.type,
+          nickname: selectedPaymentMethod.nickname,
+          gateway_details: selectedPaymentMethod.gateway_details,
+          last_four: selectedPaymentMethod.last_four
+        } : null,
+        selectedGateway: selectedGateway ? {
+          id: selectedGateway.id,
+          code: selectedGateway.code,
+          name: selectedGateway.name
+        } : null,
+        isAddingNewMethod,
+        paymentType,
+        customAmount: paymentType === 'CUSTOM' ? customAmount : null,
+        invoice: {
+          id: invoice.id,
+          invoice_id: invoice.invoice_id,
+          total_amount: invoice.total_amount
+        }
+      });
+    }
 
     // Validate custom amount if selected
     if (paymentType === 'CUSTOM') {
@@ -230,7 +245,7 @@ export const InvoicePaymentDialog: React.FC<InvoicePaymentDialogProps> = ({
     }
 
     if (!selectedPaymentMethod) {
-      console.error('❌ PAYMENT ERROR - No payment method selected');
+      if (import.meta.env.DEV) console.error('❌ PAYMENT ERROR - No payment method selected');
       setPaymentError('Please select a payment method');
       return;
     }
@@ -238,14 +253,16 @@ export const InvoicePaymentDialog: React.FC<InvoicePaymentDialogProps> = ({
     // Only validate gateway requirements when explicitly adding new methods
     if (isAddingNewMethod) {
       const requiresGateway = ['CREDIT_CARD', 'DIGITAL_WALLET'].includes(selectedPaymentMethod.type);
-      console.log('🔍 PAYMENT DEBUG - New method validation:', {
-        requiresGateway,
-        selectedGateway: !!selectedGateway,
-        paymentMethodType: selectedPaymentMethod.type
-      });
+      if (import.meta.env.DEV) {
+        console.log('🔍 PAYMENT DEBUG - New method validation:', {
+          requiresGateway,
+          selectedGateway: !!selectedGateway,
+          paymentMethodType: selectedPaymentMethod.type
+        });
+      }
 
       if (requiresGateway && !selectedGateway) {
-        console.error('❌ PAYMENT ERROR - Gateway required but not selected');
+        if (import.meta.env.DEV) console.error('❌ PAYMENT ERROR - Gateway required but not selected');
         setPaymentError('Please select a payment gateway');
         return;
       }
@@ -269,7 +286,7 @@ export const InvoicePaymentDialog: React.FC<InvoicePaymentDialogProps> = ({
         if (paymentType === 'CUSTOM') {
           paymentData.amount = customAmount;
         }
-        console.log('🔍 PAYMENT DEBUG - New method payment data:', paymentData);
+        if (import.meta.env.DEV) console.log('🔍 PAYMENT DEBUG - New method payment data:', paymentData);
       } else {
         // For saved payment methods - send the saved payment method ID using 'payment_method' field
         paymentData = {
@@ -281,15 +298,17 @@ export const InvoicePaymentDialog: React.FC<InvoicePaymentDialogProps> = ({
         if (paymentType === 'CUSTOM') {
           paymentData.amount = customAmount;
         }
-        console.log('🔍 PAYMENT DEBUG - Saved method payment data:', paymentData);
+        if (import.meta.env.DEV) console.log('🔍 PAYMENT DEBUG - Saved method payment data:', paymentData);
       }
 
-      console.log('🚀 PAYMENT DEBUG - About to call FinancialApi.payInvoice:', {
-        invoiceId: invoice.id,
-        paymentData,
-        selectedPaymentMethodValid: !!selectedPaymentMethod?.id,
-        isAddingNewMethod
-      });
+      if (import.meta.env.DEV) {
+        console.log('🚀 PAYMENT DEBUG - About to call FinancialApi.payInvoice:', {
+          invoiceId: invoice.id,
+          paymentData,
+          selectedPaymentMethodValid: !!selectedPaymentMethod?.id,
+          isAddingNewMethod
+        });
+      }
 
       const response = await FinancialApi.payInvoice(invoice.id, paymentData);
 
@@ -395,6 +414,7 @@ export const InvoicePaymentDialog: React.FC<InvoicePaymentDialogProps> = ({
               onClick={onClose}
               sx={{ minWidth: 'auto', p: 1 }}
               disabled={paymentLoading}
+              aria-label="Close"
             >
               <CloseIcon />
             </Button>
@@ -454,7 +474,7 @@ export const InvoicePaymentDialog: React.FC<InvoicePaymentDialogProps> = ({
             <>
               <Stack spacing={3}>
                   {/* Payment Type Selector */}
-                  {!isLoadingPaymentSettings && paymentSettings && (
+                  {!isLoadingPaymentSettings && (invoice.effective_payment_terms || globalPaymentSettings) && (
                     <Box>
                       <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
                         Payment Type
@@ -503,7 +523,7 @@ export const InvoicePaymentDialog: React.FC<InvoicePaymentDialogProps> = ({
                                   {formatAmount(paymentAmounts.deposit, invoice.currency)} ({paymentAmounts.depositPercentage}%)
                                 </Typography>
                                 <Typography variant="caption" color="text.secondary" display="block">
-                                  Remaining balance of {formatAmount(paymentAmounts.remaining, invoice.currency)} will be due {paymentAmounts.balanceDueDays} days before your event
+                                  Remaining balance of {formatAmount(paymentAmounts.remaining, invoice.currency)} due by {new Date(invoice.due_date).toLocaleDateString()}
                                 </Typography>
                               </Box>
                             }

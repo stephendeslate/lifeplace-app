@@ -1,0 +1,79 @@
+[
+  {
+    "model": "products.discount",
+    "pk": 1,
+    "fields": {
+      "created_at": "2025-06-15T10:03:04.546",
+      "updated_at": "2025-06-15T10:03:04.546",
+      "name": "Early Bird Special",
+      "code": "EARLY2024",
+      "description": "Book your event 3 months in advance and save 15%",
+      "currency": "PHP",
+      "discount_type": "PERCENTAGE",
+      "application_type": "CODE_REQUIRED",
+      "value": "15.00",
+      "is_active": true,
+      "valid_from": "2025-06-15",
+      "valid_until": "2026-06-15",
+      "max_uses": 50,
+      "max_uses_per_client": null,
+      "current_uses": 0,
+      "minimum_order_amount": "50000.00",
+      "minimum_hours": null,
+      "applicable_products": [],
+      "applicable_categories": [
+        1
+      ]
+    }
+  },
+  {
+    "model": "products.discount",
+    "pk": 2,
+    "fields": {
+      "created_at": "2025-06-15T10:03:04.548",
+      "updated_at": "2025-06-15T10:03:04.548",
+      "name": "New Client Welcome",
+      "code": "WELCOME",
+      "description": "Welcome discount for first-time clients",
+      "currency": "PHP",
+      "discount_type": "FIXED",
+      "application_type": "CODE_REQUIRED",
+      "value": "5000.00",
+      "is_active": true,
+      "valid_from": "2025-06-15",
+      "valid_until": null,
+      "max_uses": 100,
+      "max_uses_per_client": 1,
+      "current_uses": 0,
+      "minimum_order_amount": null,
+      "minimum_hours": null,
+      "applicable_products": [],
+      "applicable_categories": []
+    }
+  },
+  {
+    "model": "products.discount",
+    "pk": 3,
+    "fields": {
+      "created_at": "2025-06-15T10:03:04.548",
+      "updated_at": "2025-06-15T10:03:04.548",
+      "name": "Referral Bonus",
+      "code": null,
+      "description": "Automatic discount for client referrals",
+      "currency": "PHP",
+      "discount_type": "PERCENTAGE",
+      "application_type": "ADMIN_ONLY",
+      "value": "10.00",
+      "is_active": true,
+      "valid_from": "2025-06-15",
+      "valid_until": null,
+      "max_uses": null,
+      "max_uses_per_client": 1,
+      "current_uses": 0,
+      "minimum_order_amount": null,
+      "minimum_hours": null,
+      "applicable_products": [],
+      "applicable_categories": []
+    }
+  }
+]

@@ -1,7 +1,7 @@
 # backend/core/domains/settings/serializers.py
 
 from rest_framework import serializers
-from .models import AppSettings, CurrencySettings
+from .models import AppSettings, CurrencySettings, LegalDocument, MobileAppVersion, CompanySettings
 
 
 class AppSettingsSerializer(serializers.ModelSerializer):
@@ -208,3 +208,170 @@ class SupportedCurrenciesSerializer(serializers.Serializer):
             },
         ]
         return currencies
+
+
+class LegalDocumentSerializer(serializers.ModelSerializer):
+    """
+    Full serializer for legal documents (admin use)
+    Includes document_type_display for readable document type
+    """
+    document_type_display = serializers.CharField(source='get_document_type_display', read_only=True)
+    last_updated_by_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = LegalDocument
+        fields = [
+            'id', 'document_type', 'document_type_display', 'title', 'content',
+            'version', 'effective_date', 'is_published', 'last_updated_by',
+            'last_updated_by_name', 'created_at', 'updated_at',
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at', 'document_type_display']
+
+    def get_last_updated_by_name(self, obj):
+        """Get the name of the user who last updated the document"""
+        if obj.last_updated_by:
+            return f"{obj.last_updated_by.first_name} {obj.last_updated_by.last_name}".strip() or obj.last_updated_by.email
+        return None
+
+
+class LegalDocumentUpdateSerializer(serializers.ModelSerializer):
+    """
+    Serializer for updating legal documents
+    Only allows updating specific fields
+    """
+
+    class Meta:
+        model = LegalDocument
+        fields = ['title', 'content', 'version', 'effective_date', 'is_published']
+
+    def validate_version(self, value):
+        """Validate version format"""
+        if not value:
+            raise serializers.ValidationError("Version cannot be empty")
+        return value
+
+
+class PublicLegalDocumentSerializer(serializers.ModelSerializer):
+    """
+    Public read-only serializer for legal documents
+    Only exposes necessary fields for public viewing
+    """
+    document_type_display = serializers.CharField(source='get_document_type_display', read_only=True)
+
+    class Meta:
+        model = LegalDocument
+        fields = ['document_type', 'document_type_display', 'title', 'content', 'version', 'effective_date']
+        read_only_fields = fields
+
+
+class MobileVersionResponseSerializer(serializers.Serializer):
+    """Response serializer for mobile version check"""
+    status = serializers.CharField()
+    platform = serializers.CharField(required=False)
+    version_info = serializers.DictField(required=False)
+    update_required = serializers.BooleanField()
+    update_recommended = serializers.BooleanField()
+    force_update = serializers.BooleanField()
+    update_urls = serializers.DictField(required=False)
+    messages = serializers.DictField(required=False)
+    deprecation = serializers.DictField(required=False)
+    feature_flags = serializers.DictField()
+    maintenance = serializers.DictField(required=False)
+
+
+class MobileAppVersionSerializer(serializers.ModelSerializer):
+    """Admin serializer for managing mobile app versions"""
+    platform_display = serializers.CharField(source='get_platform_display', read_only=True)
+
+    class Meta:
+        model = MobileAppVersion
+        fields = '__all__'
+        read_only_fields = ['id', 'created_at', 'updated_at']
+
+
+class CompanySettingsSerializer(serializers.ModelSerializer):
+    """
+    Full serializer for company settings (admin use).
+    Includes all fields for managing company branding and information.
+    """
+    full_address = serializers.CharField(source='get_full_address', read_only=True)
+    logo_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = CompanySettings
+        fields = [
+            'id',
+            'company_name',
+            'company_tagline',
+            'logo',
+            'logo_url',
+            'logo_dark',
+            'favicon',
+            'primary_color',
+            'secondary_color',
+            'accent_color',
+            'email',
+            'support_email',
+            'phone',
+            'phone_secondary',
+            'address_line1',
+            'address_line2',
+            'city',
+            'province',
+            'postal_code',
+            'country',
+            'full_address',
+            'business_registration_number',
+            'vat_number',
+            'website',
+            'facebook_url',
+            'instagram_url',
+            'pdf_footer_text',
+            'invoice_terms',
+            'receipt_terms',
+            'bank_name',
+            'bank_account_name',
+            'bank_account_number',
+            'bank_branch',
+            'bank_swift_code',
+            'created_at',
+            'updated_at',
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at', 'full_address', 'logo_url']
+
+    def get_logo_url(self, obj):
+        """Get the logo URL or None."""
+        return obj.get_logo_url()
+
+
+class PublicCompanySettingsSerializer(serializers.ModelSerializer):
+    """
+    Public-facing company settings (excludes sensitive info like bank details).
+    Used by client-facing applications.
+    """
+    full_address = serializers.CharField(source='get_full_address', read_only=True)
+    logo_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = CompanySettings
+        fields = [
+            'company_name',
+            'company_tagline',
+            'logo_url',
+            'primary_color',
+            'secondary_color',
+            'accent_color',
+            'email',
+            'phone',
+            'support_email',
+            'support_phone',
+            'support_hours',
+            'full_address',
+            'website',
+            'facebook_url',
+            'instagram_url',
+        ]
+
+    def get_logo_url(self, obj):
+        """Get the logo URL or None."""
+        return obj.get_logo_url()

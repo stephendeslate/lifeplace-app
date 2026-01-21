@@ -28,20 +28,20 @@ import {
   ListItemText as MuiListItemText,
 } from '@mui/material';
 
-// Modern Design System imports
-import { ModernCard } from '../../common/ModernCard';
 import {
   Add as AddIcon,
   Delete as DeleteIcon,
   DragIndicator as DragIcon,
   QuestionAnswer as QuestionnaireIcon,
 } from '@mui/icons-material';
-import type { 
-  BookingFlowStep, 
+import type {
+  BookingFlowStep,
   QuestionnaireStepConfiguration,
   QuestionnaireStepItem,
 } from '../../../types/bookingflows.types';
 import { useBookingFlowStepConfiguration } from '../../../hooks/useBookingFlows';
+import { useFormHandlers } from '../../../hooks/useFormHandlers';
+import { ConfigSection } from '../../common';
 
 interface QuestionnaireStepConfigProps {
   step: BookingFlowStep;
@@ -85,6 +85,13 @@ export const QuestionnaireStepConfig: React.FC<QuestionnaireStepConfigProps> = (
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [selectedQuestionnaires, setSelectedQuestionnaires] = useState<number[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Use centralized form handlers
+  const { handleSwitchChange } = useFormHandlers(
+    setFormData,
+    errors,
+    setErrors
+  );
 
   const {
     useAvailableQuestionnaires,
@@ -142,15 +149,6 @@ export const QuestionnaireStepConfig: React.FC<QuestionnaireStepConfigProps> = (
         [field]: '',
       }));
     }
-  };
-
-  const handleSwitchChange = (field: keyof QuestionnaireConfigFormData) => (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: event.target.checked,
-    }));
   };
 
   const handleFileTypesChange = (value: string[]) => {
@@ -271,25 +269,20 @@ export const QuestionnaireStepConfig: React.FC<QuestionnaireStepConfigProps> = (
 
       <Stack spacing={3}>
         {/* Assigned Questionnaires */}
-        <ModernCard variant="glass" size="medium" animation="none">
-          <Box sx={{ p: 3 }}>
-            <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-              <Typography variant="subtitle1">
-                Assigned Questionnaires ({questionnaireItems.length})
-              </Typography>
-              
-              <Button
-                variant="outlined"
-                startIcon={<AddIcon />}
-                onClick={() => setAddDialogOpen(true)}
-                size="small"
-                disabled={isLoadingQuestionnaires || getQuestionnaireNotAssigned().length === 0}
-              >
-                Add Questionnaire
-              </Button>
-            </Box>
+        <ConfigSection title={`Assigned Questionnaires (${questionnaireItems.length})`}>
+          <Box display="flex" justifyContent="flex-end" mb={2}>
+            <Button
+              variant="outlined"
+              startIcon={<AddIcon />}
+              onClick={() => setAddDialogOpen(true)}
+              size="small"
+              disabled={isLoadingQuestionnaires || getQuestionnaireNotAssigned().length === 0}
+            >
+              Add Questionnaire
+            </Button>
+          </Box>
 
-            {isLoadingQuestionnaires ? (
+          {isLoadingQuestionnaires ? (
               <Alert severity="info">Loading available questionnaires...</Alert>
             ) : questionnaireItems.length === 0 ? (
               <Alert severity="warning">
@@ -360,17 +353,11 @@ export const QuestionnaireStepConfig: React.FC<QuestionnaireStepConfigProps> = (
                 ))}
               </List>
             )}
-          </Box>
-        </ModernCard>
+        </ConfigSection>
 
         {/* File Upload Settings */}
-        <ModernCard variant="glass" size="medium" animation="none">
-          <Box sx={{ p: 3 }}>
-            <Typography variant="subtitle1" gutterBottom>
-              File Upload Settings
-            </Typography>
-            
-            <Stack spacing={2}>
+        <ConfigSection title="File Upload Settings">
+          <Stack spacing={2}>
               <FormControlLabel
                 control={
                   <Switch
@@ -434,17 +421,11 @@ export const QuestionnaireStepConfig: React.FC<QuestionnaireStepConfigProps> = (
                 </>
               )}
             </Stack>
-          </Box>
-        </ModernCard>
+        </ConfigSection>
 
         {/* Summary */}
-        <ModernCard variant="glass" size="medium" animation="none">
-          <Box sx={{ p: 3 }}>
-            <Typography variant="subtitle1" gutterBottom>
-              Configuration Summary
-            </Typography>
-            
-            <Stack spacing={1}>
+        <ConfigSection title="Configuration Summary">
+          <Stack spacing={1}>
               <Typography variant="body2">
                 <strong>Questionnaires:</strong> {questionnaireItems.length} assigned
               </Typography>
@@ -465,8 +446,7 @@ export const QuestionnaireStepConfig: React.FC<QuestionnaireStepConfigProps> = (
                 </>
               )}
             </Stack>
-          </Box>
-        </ModernCard>
+        </ConfigSection>
 
         {/* Actions */}
         <Box display="flex" gap={2}>

@@ -281,7 +281,7 @@ export const useBookingSession = (sessionId?: string) => {
         });
       }
     } catch (err) {
-      console.warn('Failed to abandon session:', err);
+      if (import.meta.env.DEV) console.warn('Failed to abandon session:', err);
     }
   }, [sessionId, session]);
 

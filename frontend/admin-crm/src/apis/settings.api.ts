@@ -2,16 +2,20 @@
 
 import api from '../utils/api';
 import type { User } from '../types/auth.types';
-import type { 
-  AccountSettingsFormData, 
-  PasswordChangeFormData, 
+import type {
+  AccountSettingsFormData,
+  PasswordChangeFormData,
   AdminUser,
   AdminInvitation,
   InviteAdminFormData,
   AcceptInvitationFormData,
   AcceptInvitationResponse,
   CreateAdminUserData,
-  UpdateAdminUserData
+  UpdateAdminUserData,
+  LegalDocument,
+  LegalDocumentUpdateData,
+  CompanySettings,
+  CompanySettingsUpdateData,
 } from '../types/settings.types';
 
 // Define paginated response types
@@ -42,11 +46,9 @@ export const settingsApi = {
   getAdminUsers: async (): Promise<AdminUser[]> => {
     try {
       const response = await api.get<PaginatedResponse<AdminUser>>('/users/');
-      console.log('getAdminUsers response.data:', response.data);
       const users = Array.isArray(response.data.results) ? response.data.results : [];
       return users.filter((user: AdminUser) => user.role === 'ADMIN');
-    } catch (error) {
-      console.error('getAdminUsers error:', error);
+    } catch {
       return [];
     }
   },
@@ -71,10 +73,8 @@ export const settingsApi = {
   getInvitations: async (): Promise<AdminInvitation[]> => {
     try {
       const response = await api.get<PaginatedResponse<AdminInvitation>>('/users/invitations/');
-      console.log('getInvitations response.data:', response.data);
       return Array.isArray(response.data.results) ? response.data.results : [];
-    } catch (error) {
-      console.error('getInvitations error:', error);
+    } catch {
       return [];
     }
   },
@@ -94,13 +94,76 @@ export const settingsApi = {
   },
 
   acceptInvitation: async (
-    invitationId: string, 
+    invitationId: string,
     data: AcceptInvitationFormData
   ): Promise<AcceptInvitationResponse> => {
     const response = await api.post<AcceptInvitationResponse>(
-      `/users/invitations/${invitationId}/accept/`, 
+      `/users/invitations/${invitationId}/accept/`,
       data
     );
     return response.data;
+  },
+
+  /**
+   * Legal Documents Management
+   */
+  getLegalDocuments: async (): Promise<LegalDocument[]> => {
+    const response = await api.get<{ success: boolean; data: LegalDocument[] }>('/settings/legal/');
+    return response.data.data;
+  },
+
+  getLegalDocument: async (documentType: string): Promise<LegalDocument> => {
+    const response = await api.get<{ success: boolean; data: LegalDocument }>(`/settings/legal/${documentType}/`);
+    return response.data.data;
+  },
+
+  updateLegalDocument: async (
+    documentType: string,
+    data: LegalDocumentUpdateData
+  ): Promise<LegalDocument> => {
+    const response = await api.put<{ success: boolean; data: LegalDocument }>(
+      `/settings/legal/${documentType}/`,
+      data
+    );
+    return response.data.data;
+  },
+
+  /**
+   * Company Settings Management
+   */
+  getCompanySettings: async (): Promise<CompanySettings> => {
+    const response = await api.get<{ success: boolean; data: CompanySettings }>('/settings/company/');
+    return response.data.data;
+  },
+
+  updateCompanySettings: async (data: CompanySettingsUpdateData): Promise<CompanySettings> => {
+    // Check if there are file uploads
+    const hasFiles = data.logo || data.logo_dark || data.favicon;
+
+    if (hasFiles) {
+      // Use FormData for file uploads
+      const formData = new FormData();
+
+      Object.entries(data).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          if (value instanceof File) {
+            formData.append(key, value);
+          } else {
+            formData.append(key, String(value));
+          }
+        }
+      });
+
+      const response = await api.put<{ success: boolean; data: CompanySettings }>('/settings/company/', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return response.data.data;
+    } else {
+      // Use JSON for non-file updates
+      const response = await api.put<{ success: boolean; data: CompanySettings }>('/settings/company/', data);
+      return response.data.data;
+    }
   },
 };

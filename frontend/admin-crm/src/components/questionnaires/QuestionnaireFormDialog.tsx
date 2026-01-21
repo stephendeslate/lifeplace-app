@@ -36,8 +36,6 @@ import {
   QUESTIONNAIRE_FIELD_TYPES,
 } from '../../types/questionnaires.types';
 import { useEventTypes } from '../../hooks/useEvents';
-import { tokens } from '../../design-system';
-import { glassPresets } from '../../design-system/utils/glassmorphism';
 
 const defaultFormData: QuestionnaireFormData = {
   name: '',
@@ -54,6 +52,13 @@ const defaultFieldData: QuestionnaireFieldFormData = {
   required: false,
   order: 1,
   options: [],
+  description: '',
+  placeholder: '',
+  is_guest_count: false,
+  show_conditions: {},
+  max_file_size_mb: 10,
+  allowed_file_types: [],
+  max_files: 1,
 };
 
 export const QuestionnaireFormDialog: React.FC<QuestionnaireFormDialogProps> = ({
@@ -90,6 +95,13 @@ export const QuestionnaireFormDialog: React.FC<QuestionnaireFormDialogProps> = (
             required: field.required,
             order: field.order || index + 1,
             options: field.options || [],
+            description: field.description || '',
+            placeholder: field.placeholder || '',
+            is_guest_count: field.is_guest_count || false,
+            show_conditions: field.show_conditions || {},
+            max_file_size_mb: field.max_file_size_mb || 10,
+            allowed_file_types: field.allowed_file_types || [],
+            max_files: field.max_files || 1,
           })) || [],
         });
       } else {
@@ -385,30 +397,23 @@ export const QuestionnaireFormDialog: React.FC<QuestionnaireFormDialogProps> = (
   };
 
   return (
-    <Dialog 
-      open={open} 
+    <Dialog
+      open={open}
       onClose={handleClose}
       maxWidth="md"
       fullWidth
       PaperProps={{
-        sx: { 
+        sx: {
           minHeight: '80vh',
-          ...glassPresets.light,
-          borderRadius: tokens.spacing.radius.xxl,
-          border: `1px solid ${tokens.color.borders.glass}`,
-          background: `linear-gradient(135deg, ${tokens.color.neutral[50]} 0%, ${tokens.color.neutral[100]} 100%)`,
-          boxShadow: `0 25px 80px ${tokens.color.neutral[900]}20`,
+          borderRadius: 1,
         }
       }}
     >
       {open && (
         <>
-          <DialogTitle 
+          <DialogTitle
             sx={{
-              background: `linear-gradient(135deg, ${tokens.color.primary[600]} 0%, ${tokens.color.primary[500]} 100%)`,
-              backgroundClip: 'text',
-              WebkitBackgroundClip: 'text',
-              color: 'transparent',
+              color: 'primary.main',
               fontWeight: 700,
               fontSize: '1.5rem',
               textAlign: 'center',
@@ -417,62 +422,34 @@ export const QuestionnaireFormDialog: React.FC<QuestionnaireFormDialogProps> = (
           >
             {editingQuestionnaire ? 'Edit Questionnaire' : 'Create New Questionnaire'}
           </DialogTitle>
-      
+
           <DialogContent>
             <Box sx={{ mt: 1 }}>
               {/* Tab Navigation */}
-              <Box 
-                display="flex" 
-                gap={2} 
+              <Box
+                display="flex"
+                gap={2}
                 mb={4}
                 sx={{
-                  ...glassPresets.light,
-                  borderRadius: tokens.spacing.radius.full,
+                  borderRadius: 1,
                   p: 1,
-                  border: `1px solid ${tokens.color.borders.glass}`,
+                  border: 1,
+                  borderColor: 'divider',
                 }}
               >
                 <Button
-                  variant={activeTab === 'basic' ? 'contained' : 'outlined'}
+                  variant={activeTab === 'basic' ? 'contained' : 'text'}
                   onClick={() => setActiveTab('basic')}
                   size="small"
-                  sx={{
-                    flex: 1,
-                    borderRadius: tokens.spacing.radius.full,
-                    fontWeight: 600,
-                    ...(activeTab === 'basic' ? {
-                      background: `linear-gradient(135deg, ${tokens.color.primary[500]} 0%, ${tokens.color.primary[600]} 100%)`,
-                      boxShadow: `0 4px 20px ${tokens.color.primary[500]}25`,
-                    } : {
-                      ...glassPresets.light,
-                      border: 'none',
-                      '&:hover': {
-                        background: `linear-gradient(135deg, ${tokens.color.primary[50]} 0%, ${tokens.color.primary[100]} 100%)`,
-                      },
-                    }),
-                  }}
+                  sx={{ flex: 1, borderRadius: 1, fontWeight: 600 }}
                 >
                   Basic Information
                 </Button>
                 <Button
-                  variant={activeTab === 'fields' ? 'contained' : 'outlined'}
+                  variant={activeTab === 'fields' ? 'contained' : 'text'}
                   onClick={() => setActiveTab('fields')}
                   size="small"
-                  sx={{
-                    flex: 1,
-                    borderRadius: tokens.spacing.radius.full,
-                    fontWeight: 600,
-                    ...(activeTab === 'fields' ? {
-                      background: `linear-gradient(135deg, ${tokens.color.primary[500]} 0%, ${tokens.color.primary[600]} 100%)`,
-                      boxShadow: `0 4px 20px ${tokens.color.primary[500]}25`,
-                    } : {
-                      ...glassPresets.light,
-                      border: 'none',
-                      '&:hover': {
-                        background: `linear-gradient(135deg, ${tokens.color.primary[50]} 0%, ${tokens.color.primary[100]} 100%)`,
-                      },
-                    }),
-                  }}
+                  sx={{ flex: 1, borderRadius: 1, fontWeight: 600 }}
                 >
                   Fields ({formData.fields.length})
                 </Button>
@@ -592,53 +569,28 @@ export const QuestionnaireFormDialog: React.FC<QuestionnaireFormDialogProps> = (
             </Box>
           </DialogContent>
           
-          <DialogActions 
-            sx={{ 
+          <DialogActions
+            sx={{
               p: 3,
-              background: `linear-gradient(135deg, ${tokens.color.neutral[50]} 0%, ${tokens.color.neutral[100]} 100%)`,
-              borderTop: `1px solid ${tokens.color.borders.glass}`,
+              borderTop: 1,
+              borderColor: 'divider',
               gap: 2,
             }}
           >
-            <Button 
+            <Button
               onClick={handleClose}
               disabled={isLoading}
-              sx={{
-                ...glassPresets.light,
-                border: `1px solid ${tokens.color.neutral[300]}`,
-                borderRadius: tokens.spacing.radius.full,
-                px: 3,
-                py: 1,
-                fontWeight: 600,
-                '&:hover': {
-                  ...glassPresets.medium,
-                  border: `1px solid ${tokens.color.neutral[400]}`,
-                },
-              }}
+              variant="outlined"
+              sx={{ borderRadius: 1, px: 3, py: 1, fontWeight: 600 }}
             >
               Cancel
             </Button>
-            <Button 
+            <Button
               onClick={handleSubmit}
               variant="contained"
               disabled={isLoading}
               startIcon={isLoading ? <CircularProgress size={20} color="inherit" /> : undefined}
-              sx={{
-                background: `linear-gradient(135deg, ${tokens.color.primary[500]} 0%, ${tokens.color.primary[600]} 100%)`,
-                borderRadius: tokens.spacing.radius.full,
-                px: 4,
-                py: 1,
-                fontWeight: 600,
-                boxShadow: `0 8px 32px ${tokens.color.primary[500]}25`,
-                '&:hover': {
-                  background: `linear-gradient(135deg, ${tokens.color.primary[600]} 0%, ${tokens.color.primary[700]} 100%)`,
-                  boxShadow: `0 12px 40px ${tokens.color.primary[500]}35`,
-                },
-                '&:disabled': {
-                  background: tokens.color.neutral[300],
-                  boxShadow: 'none',
-                },
-              }}
+              sx={{ borderRadius: 1, px: 4, py: 1, fontWeight: 600 }}
             >
               {isLoading ? 'Saving...' : editingQuestionnaire ? 'Update' : 'Create'}
             </Button>

@@ -230,7 +230,7 @@ export const CommunicationRecords: React.FC<CommunicationRecordsProps> = ({ clie
       ) : (
         <Card>
           <TableContainer>
-            <Table>
+            <Table size="small">
               <TableHead>
                 <TableRow>
                   <TableCell>Template</TableCell>

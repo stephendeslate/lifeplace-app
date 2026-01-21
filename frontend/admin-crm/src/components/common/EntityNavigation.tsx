@@ -70,8 +70,8 @@ const getEntityPath = (entity: EntityReference): string => {
     case 'event': return `/events/${entity.id}`;
     case 'payment': return `/payments/${entity.id}`;
     case 'contract': return `/contracts/${entity.id}`;
-    case 'invoice': return `/invoices/${entity.id}`;
-    case 'quote': return `/quotes/${entity.id}`;
+    case 'invoice': return `/payments/${entity.id}`; // Invoices are managed through payments
+    case 'quote': return `/tasks`; // Quotes redirect to tasks page
     default: return '#';
   }
 };

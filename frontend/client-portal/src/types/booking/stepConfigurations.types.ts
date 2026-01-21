@@ -3,15 +3,6 @@
 import type { StepConfiguration } from './core.types';
 import type { QuestionnaireStepItem } from './questionnaire.types';
 
-// Additional interfaces for step configurations
-export interface TimeSlot {
-  start_time: string;
-  end_time: string;
-  is_available: boolean;
-  capacity?: number;
-  price_modifier?: number;
-}
-
 export interface CustomField {
   id: string;
   name: string;
@@ -33,18 +24,15 @@ export interface IntroductionStepConfiguration extends StepConfiguration {
 }
 
 export interface DateTimeStepConfiguration extends StepConfiguration {
-  allow_time_selection: boolean;
   allow_multi_day: boolean;
+  min_event_days: number;
+  max_event_days: number;
   show_calendar_view: boolean;
-  min_duration_hours: number;
-  max_duration_hours: number;
-  default_duration_hours: number;
   enable_real_time_availability: boolean;
   show_availability_status: boolean;
   auto_check_conflicts: boolean;
   blocked_dates: string[];
   available_days_of_week: number[];
-  available_time_slots: TimeSlot[];
   buffer_before_hours: number;
   buffer_after_hours: number;
   check_resource_availability: boolean;
@@ -77,6 +65,8 @@ export interface PackageSelectionStepConfiguration extends StepConfiguration {
   enable_comparison: boolean;
   enable_dynamic_pricing: boolean;
   pricing_factors: Record<string, string | number | boolean>;
+  /** When true, filter packages by the booking flow's event type. Default: true */
+  filter_by_event_type?: boolean;
 }
 
 export interface AddonSelectionStepConfiguration extends StepConfiguration {
@@ -86,6 +76,8 @@ export interface AddonSelectionStepConfiguration extends StepConfiguration {
   available_addons_details: ProductOption[];
   min_selection: number;
   max_selection: number;
+  /** When true, show all active add-ons for the booking flow's event type. Default: true */
+  filter_by_event_type?: boolean;
   group_by_category: boolean;
   show_recommendations: boolean;
   recommendation_logic: Record<string, string | number | boolean>;
@@ -102,6 +94,41 @@ export interface ContactInfoStepConfiguration extends StepConfiguration {
   require_account_creation: boolean;
 }
 
+// Effective payment terms - merged flow-specific overrides with global defaults
+// Returned by backend PaymentTermsResolver.get_terms_for_step()
+export interface EffectivePaymentTerms {
+  // Deposit settings
+  deposit_type: 'PERCENTAGE' | 'FIXED';
+  deposit_percentage: number;
+  deposit_fixed_amount: number | null;
+  deposit_is_refundable: boolean;
+  deposit_is_deductible: boolean;
+  deposit_waived_on_full_payment: boolean;
+  // Late fee settings
+  late_fee_enabled: boolean;
+  late_fee_type: 'FIXED' | 'PERCENTAGE';
+  late_fee_amount: number;
+  late_fee_percentage: number;
+  // Security deposit settings
+  security_deposit_enabled: boolean;
+  security_deposit_amount: number;
+  security_deposit_is_refundable: boolean;
+  security_deposit_description: string;
+  // Cancellation/refund settings
+  cancellation_admin_fee_percentage: number;
+  allow_refunds: boolean;
+  refund_percentage: number;
+  refund_deadline_hours: number;
+  // Payment schedule settings
+  downpayment_percentage: number;
+  downpayment_due_days: number;
+  balance_due_days: number;
+  balance_due_type: 'DAYS_BEFORE' | 'DAY_BEFORE';
+  // Other settings
+  currency: string;
+  grace_period_days?: number;
+}
+
 // FULLY CONSOLIDATED: ALL payment business logic now in PaymentPlanSettings (payments domain)
 // This configuration contains ONLY UI/UX flags and custom text
 //
@@ -109,6 +136,8 @@ export interface ContactInfoStepConfiguration extends StepConfiguration {
 // - deposit_type, deposit_amount, balance_due_days (payment plan calculation)
 // - allow_refunds, refund_deadline_hours, refund_percentage, refund_policy_text (refund policy)
 // - allowed_gateways, default_gateway, available_payment_methods (payment gateway defaults)
+//
+// ADDED: effective_payment_terms - merged flow-specific overrides with global defaults
 export interface PaymentInfoStepConfiguration extends StepConfiguration {
   // UI/UX FLAGS ONLY - what payment options to show
   accept_full_payment: boolean;
@@ -121,6 +150,10 @@ export interface PaymentInfoStepConfiguration extends StepConfiguration {
   payment_terms: string;
   quote_request_button_text: string;
   quote_request_description: string;
+
+  // Effective payment terms (merged flow + global settings)
+  // Optional for backwards compatibility - falls back to global PaymentPlanSettings if missing
+  effective_payment_terms?: EffectivePaymentTerms;
 }
 
 export interface ConfirmationStepConfiguration extends StepConfiguration {
@@ -154,9 +187,12 @@ export interface PricingSummaryStepConfiguration extends StepConfiguration {
   show_terms_checkbox?: boolean;
   show_marketing_consent?: boolean;
   show_special_requests?: boolean;
+  require_terms_acceptance?: boolean;
   terms_text?: string;
   terms_url?: string;
   privacy_url?: string;
+  effective_terms_url?: string;
+  effective_privacy_url?: string;
 }
 
 // Product types from products domain (needed for package/addon steps)
@@ -186,16 +222,13 @@ export interface ProductOption {
   pricing_model_display: string;
   base_price: string;
   currency: string;
-  tax_rate: string;
+  is_tax_inclusive: boolean;
   type: 'PRODUCT' | 'PACKAGE';
   type_display: string;
   is_active: boolean;
   is_featured: boolean;
   allow_multiple: boolean;
   requires_approval: boolean;
-  has_excess_hours: boolean;
-  included_hours: number | null;
-  excess_hour_price: string | null;
   minimum_hours: number | null;
   maximum_hours: number | null;
   advance_booking_days: number;
@@ -207,4 +240,10 @@ export interface ProductOption {
   price_with_tax: string;
   created_at: string;
   updated_at: string;
+  // Event duration for multi-day packages (from backend)
+  event_days?: number | null;
+  // Custom bundle properties (used for virtual packages created from venue selection)
+  included_hours?: number | string | null;
+  excess_hour_price?: string;
+  has_excess_hours?: boolean;
 }

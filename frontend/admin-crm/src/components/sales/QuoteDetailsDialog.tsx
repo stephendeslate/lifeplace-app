@@ -34,6 +34,7 @@ import { format, isPast } from 'date-fns';
 import type { EventQuote } from '../../types/sales.types';
 import { formatCurrency } from '../../utils/currency';
 import { useCurrencySettings } from '../../hooks/useCurrency';
+import { QuoteActivityTimeline } from './QuoteActivityTimeline';
 
 interface QuoteDetailsDialogProps {
   open: boolean;
@@ -225,6 +226,12 @@ export const QuoteDetailsDialog: React.FC<QuoteDetailsDialogProps> = ({
                   </Typography>
                 </Box>
               )}
+              {quote.service_charge_amount && parseFloat(quote.service_charge_amount) > 0 && (
+                <Box display="flex" justifyContent="space-between">
+                  <Typography variant="body2" color="text.secondary">Service Charge:</Typography>
+                  <Typography variant="body2">{formatQuoteAmount(quote.service_charge_amount)}</Typography>
+                </Box>
+              )}
               {quote.tax_amount && parseFloat(quote.tax_amount) > 0 && (
                 <Box display="flex" justifyContent="space-between">
                   <Typography variant="body2" color="text.secondary">Tax:</Typography>
@@ -341,6 +348,15 @@ export const QuoteDetailsDialog: React.FC<QuoteDetailsDialogProps> = ({
               </Box>
             </>
           )}
+
+          {/* Activity History */}
+          <Divider />
+          <Box>
+            <Typography variant="h6" gutterBottom>
+              Activity History
+            </Typography>
+            <QuoteActivityTimeline quoteId={quote.id} />
+          </Box>
         </Stack>
       </DialogContent>
       <DialogActions>

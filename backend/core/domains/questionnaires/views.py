@@ -24,11 +24,29 @@ from .services import (
 class QuestionnaireViewSet(viewsets.ModelViewSet):
     """
     ViewSet for managing questionnaires
+
+    Permissions:
+    - List/Retrieve/Active: Admin and Client (clients can view questionnaires)
+    - Create/Update/Delete: Admin only
+    - for_event: Admin and Client (with ownership check for clients)
+    - Analytics endpoints: Admin only
     """
-    permission_classes = [IsAdminOrClient]
     filter_backends = [filters.SearchFilter]
     search_fields = ['name']
-    
+
+    def get_permissions(self):
+        """
+        SECURITY FIX (P0-B15): Granular permissions for different actions.
+        """
+        # Read-only actions for admin and client
+        if self.action in ['list', 'retrieve', 'active', 'fields', 'validation_rules', 'for_event']:
+            return [IsAdminOrClient()]
+        # Analytics are admin-only
+        if self.action in ['analytics', 'analytics_summary', 'response_trends']:
+            return [IsAdmin()]
+        # Write operations are admin-only
+        return [IsAdmin()]
+
     def get_queryset(self):
         event_type_id = self.request.query_params.get('event_type')
         is_active = self.request.query_params.get('is_active')
@@ -119,20 +137,154 @@ class QuestionnaireViewSet(viewsets.ModelViewSet):
     def active(self, request):
         """Get only active questionnaires"""
         active_questionnaires = QuestionnaireService.get_all_questionnaires(is_active=True)
-        
+
         # Add prefetch_related for better performance
         active_questionnaires = active_questionnaires.prefetch_related('fields')
-        
+
         page = self.paginate_queryset(active_questionnaires)
-        
+
         if page is not None:
             # Use QuestionnaireDetailSerializer instead of self.get_serializer
             serializer = QuestionnaireDetailSerializer(page, many=True)
             return self.get_paginated_response(serializer.data)
-        
-        # Use QuestionnaireDetailSerializer instead of self.get_serializer  
+
+        # Use QuestionnaireDetailSerializer instead of self.get_serializer
         serializer = QuestionnaireDetailSerializer(active_questionnaires, many=True)
         return Response(serializer.data)
+
+    @action(detail=False, methods=['get'])
+    def validation_rules(self, request):
+        """
+        Get all validation rules for frontend consumption.
+        Returns validation patterns, messages, and examples for each field type.
+        """
+        from .validation import FieldValidator
+        return Response({
+            'rules': FieldValidator.get_all_validation_rules(),
+            'field_types': [choice[0] for choice in QuestionnaireField.FIELD_TYPES]
+        })
+
+    @action(detail=True, methods=['post'])
+    def duplicate(self, request, pk=None):
+        """
+        Duplicate a questionnaire with all its fields.
+        The new questionnaire will be inactive by default.
+        """
+        new_name = request.data.get('name')
+
+        with transaction.atomic():
+            new_questionnaire = QuestionnaireService.duplicate_questionnaire(pk, new_name)
+
+        return Response(
+            QuestionnaireDetailSerializer(new_questionnaire).data,
+            status=status.HTTP_201_CREATED
+        )
+
+    @action(detail=False, methods=['get'], url_path='for_event/(?P<event_id>[^/.]+)')
+    def for_event(self, request, event_id=None):
+        """Get questionnaires configured for a specific event's booking flow"""
+        from core.domains.events.models import Event
+        from core.domains.bookingflow.models import BookingSession, QuestionnaireStepConfiguration
+
+        try:
+            event = Event.objects.get(id=event_id)
+        except Event.DoesNotExist:
+            return Response(
+                {"detail": "Event not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        # SECURITY FIX (P0-B15): Verify ownership for CLIENT users
+        user = request.user
+        if user.role == 'CLIENT' and event.client_id != user.id:
+            return Response(
+                {"detail": "You do not have permission to view this event's questionnaires."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        # Try to get the booking session for this event
+        booking_session = BookingSession.objects.filter(created_event=event).first()
+
+        if booking_session and booking_session.booking_flow:
+            # Get the questionnaire step configuration for this booking flow
+            questionnaire_step = booking_session.booking_flow.steps.filter(
+                step_type='questionnaire',
+                is_enabled=True
+            ).first()
+
+            if questionnaire_step:
+                try:
+                    questionnaire_config = QuestionnaireStepConfiguration.objects.get(step=questionnaire_step)
+                    # Get questionnaires from the configuration, ordered by their step items
+                    questionnaire_ids = list(questionnaire_config.questionnaire_items.filter(
+                        questionnaire__is_active=True
+                    ).order_by('order').values_list('questionnaire_id', flat=True))
+
+                    if questionnaire_ids:
+                        questionnaires = Questionnaire.objects.filter(
+                            id__in=questionnaire_ids,
+                            is_active=True
+                        ).prefetch_related('fields')
+
+                        # Maintain order from step items
+                        questionnaires = sorted(
+                            list(questionnaires),
+                            key=lambda q: questionnaire_ids.index(q.id)
+                        )
+
+                        serializer = QuestionnaireDetailSerializer(questionnaires, many=True)
+                        return Response(serializer.data)
+                except QuestionnaireStepConfiguration.DoesNotExist:
+                    pass
+
+        # Fallback: return questionnaires that have responses for this event
+        # This handles events that may have been created before booking flow tracking
+        questionnaire_ids = QuestionnaireResponse.objects.filter(
+            event_id=event_id
+        ).values_list('field__questionnaire_id', flat=True).distinct()
+
+        if questionnaire_ids:
+            questionnaires = Questionnaire.objects.filter(
+                id__in=questionnaire_ids,
+                is_active=True
+            ).prefetch_related('fields')
+            serializer = QuestionnaireDetailSerializer(questionnaires, many=True)
+            return Response(serializer.data)
+
+        # If no booking flow and no responses, return empty list
+        return Response([])
+
+    @action(detail=True, methods=['get'])
+    def analytics(self, request, pk=None):
+        """
+        Get analytics for a specific questionnaire.
+        Returns completion rates, response counts, and field-level stats.
+        """
+        from .analytics import QuestionnaireAnalytics
+        stats = QuestionnaireAnalytics.get_questionnaire_stats(int(pk))
+        return Response(stats)
+
+    @action(detail=False, methods=['get'])
+    def analytics_summary(self, request):
+        """
+        Get summary analytics for all questionnaires.
+        Returns basic stats for each questionnaire in a list.
+        """
+        from .analytics import QuestionnaireAnalytics
+        summaries = QuestionnaireAnalytics.get_all_questionnaires_summary()
+        return Response(summaries)
+
+    @action(detail=True, methods=['get'])
+    def response_trends(self, request, pk=None):
+        """
+        Get daily response trends for a questionnaire.
+        Query params:
+            days: Number of days to look back (default: 30)
+        """
+        from .analytics import QuestionnaireAnalytics
+        days = int(request.query_params.get('days', 30))
+        trends = QuestionnaireAnalytics.get_response_trends(int(pk), days)
+        return Response(trends)
 
 
 class QuestionnaireFieldViewSet(viewsets.ModelViewSet):
@@ -216,20 +368,64 @@ class QuestionnaireFieldViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(reordered_fields, many=True)
         return Response(serializer.data)
 
+    @action(detail=True, methods=['get'])
+    def value_distribution(self, request, pk=None):
+        """
+        Get value distribution for a specific field.
+        Useful for analyzing select/multi-select field responses.
+        Query params:
+            limit: Maximum number of values to return (default: 10)
+        """
+        from .analytics import QuestionnaireAnalytics
+        limit = int(request.query_params.get('limit', 10))
+        distribution = QuestionnaireAnalytics.get_field_value_distribution(int(pk), limit)
+        return Response(distribution)
+
 
 class QuestionnaireResponseViewSet(viewsets.ModelViewSet):
     """
     ViewSet for managing questionnaire responses
+
+    SECURITY FIX (P0-B15): Uses IsAdminOrClient with proper queryset filtering.
+    - Admin users can access all responses
+    - Client users can only access responses for their own events
     """
     serializer_class = QuestionnaireResponseSerializer
-    permission_classes = [IsOwnerOrAdmin]
-    
+    permission_classes = [IsAdminOrClient]
+
     def get_queryset(self):
-        return QuestionnaireResponse.objects.select_related('event', 'field', 'field__questionnaire')
+        """
+        SECURITY FIX (P0-B15): Filter queryset based on user role.
+        Client users can only see responses for their own events.
+        """
+        queryset = QuestionnaireResponse.objects.select_related('event', 'event__client', 'field', 'field__questionnaire')
+
+        user = self.request.user
+        if user.role == 'CLIENT':
+            # Filter to only responses for events owned by this client
+            queryset = queryset.filter(event__client=user)
+
+        return queryset
     
     def list(self, request, *args, **kwargs):
         event_id = request.query_params.get('event')
         if event_id:
+            # SECURITY FIX (P0-B15): Verify client has access to this event
+            user = request.user
+            if user.role == 'CLIENT':
+                from core.domains.events.models import Event
+                try:
+                    event = Event.objects.get(id=event_id)
+                    if event.client_id != user.id:
+                        return Response(
+                            {"detail": "You do not have permission to view this event's responses."},
+                            status=status.HTTP_403_FORBIDDEN
+                        )
+                except Event.DoesNotExist:
+                    return Response(
+                        {"detail": "Event not found"},
+                        status=status.HTTP_404_NOT_FOUND
+                    )
             responses = QuestionnaireResponseService.get_responses_for_event(event_id)
             serializer = self.get_serializer(responses, many=True)
             return Response(serializer.data)
@@ -276,10 +472,27 @@ class QuestionnaireResponseViewSet(viewsets.ModelViewSet):
         """Save multiple responses for an event at once"""
         serializer = EventQuestionnaireResponsesSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        
+
         event_id = serializer.validated_data['event']
         responses_data = serializer.validated_data['responses']
-        
+
+        # SECURITY FIX (P0-B15): Verify client has access to this event
+        user = request.user
+        if user.role == 'CLIENT':
+            from core.domains.events.models import Event
+            try:
+                event = Event.objects.get(id=event_id)
+                if event.client_id != user.id:
+                    return Response(
+                        {"detail": "You do not have permission to modify this event's responses."},
+                        status=status.HTTP_403_FORBIDDEN
+                    )
+            except Event.DoesNotExist:
+                return Response(
+                    {"detail": "Event not found"},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+
         with transaction.atomic():
             responses = QuestionnaireResponseService.save_event_responses(
                 event_id,

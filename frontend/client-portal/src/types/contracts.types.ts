@@ -115,6 +115,11 @@ export interface Contract {
   amendment_number: number;
   signatures: ContractSignature[];
   is_fully_signed?: boolean;
+  is_expired?: boolean;
+  is_expiring_soon?: boolean;
+  days_until_expiry?: number | null;
+  expiry_urgency?: 'CRITICAL' | 'HIGH' | 'NORMAL' | null;
+  sign_disabled_reason?: string | null;
   missing_signatures?: SignatureRole[];
   signature_progress?: SignatureProgress;
   can_client_sign?: boolean;
@@ -148,6 +153,7 @@ export interface DetailedContractStatus {
     is_current_user: boolean;
   }>;
   can_client_sign: boolean;
+  sign_disabled_reason?: string | null;
   expires_at: string | null;
 }
 
@@ -299,6 +305,23 @@ export interface ContractAmendment {
   review_notes?: string;
   requires_new_signatures: boolean;
   signature_deadline?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export type DocumentType = 'ATTACHMENT' | 'ADDENDUM' | 'SCHEDULE' | 'TERMS' | 'WAIVER' | 'OTHER';
+
+export interface ContractDocument {
+  id: string;
+  contract: string;
+  name: string;
+  description: string;
+  document_type: DocumentType;
+  document_type_display: string;
+  file: string;
+  version: number;
+  is_active: boolean;
+  uploaded_by?: User;
   created_at: string;
   updated_at: string;
 }

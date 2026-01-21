@@ -118,6 +118,14 @@ export const useAcceptQuote = () => {
       queryClient.invalidateQueries({ queryKey: ['quotes'] });
       queryClient.invalidateQueries({ queryKey: ['quotes', { status: 'SENT' }] });
       queryClient.invalidateQueries({ queryKey: ['quotes', { status: 'ACCEPTED' }] });
+
+      // Quote acceptance triggers backend workflow automation that creates:
+      // 1. Invoice (from quote total)
+      // 2. Contract (from quote template's contract template)
+      // Invalidate these queries directly to ensure immediate UI update
+      queryClient.invalidateQueries({ queryKey: ['financial'] });
+      queryClient.invalidateQueries({ queryKey: ['contracts'] });
+      queryClient.invalidateQueries({ queryKey: ['events'] });
     },
     onError: (error) => {
       showError('Accept Failed', QuotesApi.handleError(error));

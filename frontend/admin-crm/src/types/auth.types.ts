@@ -1,5 +1,7 @@
 // frontend/admin-crm/src/types/auth.types.ts
 
+import type { AdminPermissions } from './permissions.types';
+
 export interface User {
   id: number;
   email: string;
@@ -10,6 +12,8 @@ export interface User {
   date_joined: string;
   profile: UserProfile;
   token?: string; // Authentication token for WebSocket connections
+  admin_permissions?: AdminPermissions; // Granular admin permissions
+  is_full_admin?: boolean; // Whether user has all admin permissions
 }
 
 export interface UserProfile {

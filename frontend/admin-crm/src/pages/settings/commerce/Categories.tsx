@@ -3,7 +3,7 @@
 
 import React from 'react';
 import { Category as CategoryIcon } from '@mui/icons-material';
-import { SettingsPage, type SettingsPageConfig, type SettingsTableColumn } from '../../../components/common/settings';
+import { PermissionAwareSettingsPage, type SettingsPageConfig, type SettingsTableColumn } from '../../../components/common/settings';
 import { useProductCategories } from '../../../hooks/useProducts';
 import type { ProductCategory, CreateCategoryData, UpdateCategoryData } from '../../../types/products.types';
 import type { ModernFormSection } from '../../../components/common/ModernForm';
@@ -258,9 +258,16 @@ export const Categories = () => {
     });
   };
 
+  // Fetch fresh category data before editing to ensure we have the latest values
+  const handleFetchItem = async (id: string | number): Promise<ProductCategory> => {
+    const { productsApi } = await import('../../../apis/products.api');
+    return productsApi.getCategory(Number(id));
+  };
+
   return (
-    <SettingsPage
+    <PermissionAwareSettingsPage
       config={config}
+      requiredPermissions={['can_manage_financial_settings']}
       data={categories}
       defaultValues={defaultCategory}
       isLoading={isLoadingCategories}
@@ -269,6 +276,7 @@ export const Categories = () => {
       onCreate={handleCreate}
       onUpdate={handleUpdate}
       onDelete={handleDelete}
+      onFetchItem={handleFetchItem}
       isCreating={isCreatingCategory}
       isUpdating={isUpdatingCategory}
       isDeleting={isDeletingCategory}

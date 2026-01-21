@@ -3,3 +3,4 @@
 export { EventsOverview } from './EventsOverview';
 export { EventProfile } from './EventProfile';
 export { EventsCalendar } from './EventsCalendar';
+export { NewEvent } from './NewEvent';

@@ -24,8 +24,8 @@ class ProductCategoryAdmin(admin.ModelAdmin):
 
 @admin.register(ProductOption)
 class ProductOptionAdmin(admin.ModelAdmin):
-    list_display = ('name', 'category', 'type', 'pricing_model', 'formatted_price', 'is_active', 'is_featured')
-    list_filter = ('type', 'pricing_model', 'is_active', 'is_featured', 'category', 'requires_approval')
+    list_display = ('name', 'category', 'type', 'pricing_model', 'formatted_price', 'is_tax_inclusive', 'is_active', 'is_featured')
+    list_filter = ('type', 'pricing_model', 'is_active', 'is_featured', 'is_tax_inclusive', 'category', 'requires_approval')
     search_fields = ('name', 'description', 'sku')
     list_editable = ('is_active', 'is_featured')
     ordering = ('category__sort_order', 'sort_order', 'name')
@@ -35,24 +35,35 @@ class ProductOptionAdmin(admin.ModelAdmin):
             'fields': ('name', 'description', 'category', 'type')
         }),
         ('Pricing', {
-            'fields': ('pricing_model', 'base_price', 'currency', 'tax_rate')
+            'fields': ('pricing_model', 'base_price', 'currency', 'is_tax_inclusive'),
+            'description': 'If "Tax Inclusive" is checked, the base price already includes tax and no additional tax will be applied. Tax rate is configured globally in Currency & Taxes settings.'
         }),
         ('Configuration', {
             'fields': ('is_active', 'is_featured', 'allow_multiple', 'requires_approval')
         }),
         ('Time Constraints', {
-            'fields': ('has_excess_hours', 'included_hours', 'excess_hour_price', 
-                      'minimum_hours', 'maximum_hours')
+            'fields': ('minimum_hours', 'maximum_hours'),
+            'description': 'Note: Excess hours pricing is now managed at the Venue level.'
+        }),
+        ('Event Duration', {
+            'fields': ('event_days',),
+            'description': 'For multi-day event packages (camps, retreats). Leave blank for hourly packages.',
+            'classes': ('collapse',),
         }),
         ('Booking Rules', {
             'fields': ('advance_booking_days', 'maximum_booking_days')
         }),
         ('Metadata', {
-            'fields': ('sku', 'sort_order', 'event_type')
+            'fields': ('sku', 'sort_order')
+        }),
+        ('Event Types', {
+            'fields': ('event_types',),
+            'description': 'Select which event types this package is available for. Leave empty to hide when filtering by event type.'
         }),
     )
-    
+
     readonly_fields = ('formatted_price',)
+    filter_horizontal = ('event_types',)  # Better UI for ManyToMany selection
 
 @admin.register(Discount)
 class DiscountAdmin(admin.ModelAdmin):

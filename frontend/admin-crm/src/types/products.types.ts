@@ -45,23 +45,26 @@ export interface ProductOption {
   pricing_model_display: string;
   base_price: string;
   currency: string;
-  tax_rate: string;
+  is_tax_inclusive: boolean;
   type: ProductType;
   type_display: string;
   is_active: boolean;
   is_featured: boolean;
   allow_multiple: boolean;
   requires_approval: boolean;
-  has_excess_hours: boolean;
-  included_hours: number | null;
-  excess_hour_price: string | null;
   minimum_hours: number | null;
   maximum_hours: number | null;
   advance_booking_days: number;
   maximum_booking_days: number | null;
+  event_days: number | null;
   sku: string | null;
   sort_order: number;
-  event_type: number | null;
+  // Event types - which booking flows this package is available for
+  event_type_ids: number[];
+  event_type_names: string[];
+  // Images
+  featured_image: string | null;
+  gallery_images: string[];
   formatted_price: string;
   price_with_tax: string | null;
   created_at: string;
@@ -75,25 +78,54 @@ export interface CreateProductData {
   pricing_model?: PricingModel;
   base_price: string;
   currency?: string;
-  tax_rate?: string;
+  is_tax_inclusive?: boolean;
   type: ProductType;
   is_active?: boolean;
   is_featured?: boolean;
   allow_multiple?: boolean;
   requires_approval?: boolean;
-  has_excess_hours?: boolean;
-  included_hours?: number | null;
-  excess_hour_price?: string | null;
   minimum_hours?: number | null;
   maximum_hours?: number | null;
   advance_booking_days?: number;
   maximum_booking_days?: number | null;
+  event_days?: number | null;
   sku?: string | null;
   sort_order?: number;
-  event_type?: number | null;
+  // Event types - which booking flows this package is available for
+  event_type_ids?: number[];
+  // Images
+  featured_image?: string | null;
+  gallery_images?: string[];
 }
 
 export type UpdateProductData = Partial<CreateProductData>;
+
+export interface ProductFormData {
+  name: string;
+  description: string;
+  category: string;
+  pricing_model: PricingModel;
+  base_price: string;
+  currency: string;
+  is_tax_inclusive: boolean;
+  type: ProductType;
+  is_active: boolean;
+  is_featured: boolean;
+  allow_multiple: boolean;
+  requires_approval: boolean;
+  minimum_hours: string;
+  maximum_hours: string;
+  advance_booking_days: string;
+  maximum_booking_days: string;
+  event_days: string;
+  sku: string;
+  sort_order: string;
+  // Event types - which booking flows this package is available for
+  event_type_ids: number[];
+  // Images
+  featured_image: File | string | null;
+  gallery_images: (File | string)[];
+}
 
 export type DiscountType = 'PERCENTAGE' | 'FIXED' | 'FREE_HOURS';
 export type ApplicationType = 'AUTOMATIC' | 'CODE_REQUIRED' | 'ADMIN_ONLY';
@@ -188,30 +220,6 @@ export interface ValidateDiscountData {
 }
 
 // Form data interfaces for components
-export interface ProductFormData {
-  name: string;
-  description: string;
-  category: string;
-  pricing_model: PricingModel;
-  base_price: string;
-  currency: string;
-  tax_rate: string;
-  type: ProductType;
-  is_active: boolean;
-  is_featured: boolean;
-  allow_multiple: boolean;
-  requires_approval: boolean;
-  has_excess_hours: boolean;
-  included_hours: string;
-  excess_hour_price: string;
-  minimum_hours: string;
-  maximum_hours: string;
-  advance_booking_days: string;
-  maximum_booking_days: string;
-  sku: string;
-  sort_order: string;
-}
-
 export interface CategoryFormData {
   name: string;
   description: string;

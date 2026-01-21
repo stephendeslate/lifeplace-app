@@ -85,18 +85,12 @@ export const TemplateList: React.FC<TemplateListProps> = ({
 
   const handleDeleteConfirm = () => {
     if (templateToDelete) {
-      console.log('Deleting template:', templateToDelete.id, templateToDelete.name);
       deleteTemplate(templateToDelete.id, {
         onSuccess: () => {
-          console.log('Template deleted successfully');
           setDeleteDialogOpen(false);
           setTemplateToDelete(null);
           setSelectedTemplate(null);
         },
-        onError: (error) => {
-          console.error('Failed to delete template:', error);
-          // Dialog will remain open so user can try again
-        }
       });
     }
   };
@@ -292,7 +286,6 @@ export const TemplateList: React.FC<TemplateListProps> = ({
       }}
       size="large"
       color="primary"
-      illustration="gradient"
     />
   );
 

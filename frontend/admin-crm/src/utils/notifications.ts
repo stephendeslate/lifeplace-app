@@ -1,6 +1,7 @@
 // frontend/admin-crm/src/utils/notifications.ts
 
 import type { NotificationCategory, NotificationPriority } from '../types/notifications.types';
+import { tokens } from '../design-system';
 
 /**
  * Utility functions for notification handling
@@ -39,32 +40,34 @@ export const getCategoryIcon = (category: NotificationCategory): string => {
     CONTRACT: 'Description',
     WORKFLOW: 'AccountTree',
     COMMUNICATION: 'Message',
+    MARKETING: 'Campaign',
   };
   return iconMap[category] || 'Notifications';
 };
 
 export const getCategoryColor = (category: NotificationCategory): string => {
   const colorMap: Record<NotificationCategory, string> = {
-    SYSTEM: '#757575',
-    EVENT: '#1976d2',
-    TASK: '#388e3c',
-    PAYMENT: '#f57c00',
-    CLIENT: '#7b1fa2',
-    CONTRACT: '#d32f2f',
-    WORKFLOW: '#0288d1',
-    COMMUNICATION: '#5d4037',
+    SYSTEM: tokens.color.notification.system,
+    EVENT: tokens.color.notification.event,
+    TASK: tokens.color.notification.task,
+    PAYMENT: tokens.color.notification.payment,
+    CLIENT: tokens.color.notification.client,
+    CONTRACT: tokens.color.notification.contract,
+    WORKFLOW: tokens.color.notification.workflow,
+    COMMUNICATION: tokens.color.notification.communication,
+    MARKETING: tokens.color.notification.marketing,
   };
-  return colorMap[category] || '#757575';
+  return colorMap[category] || tokens.color.notification.system;
 };
 
 export const getPriorityColor = (priority: NotificationPriority): string => {
   const colorMap: Record<NotificationPriority, string> = {
-    LOW: '#757575',
-    NORMAL: '#1976d2',
-    HIGH: '#f57c00',
-    URGENT: '#d32f2f',
+    LOW: tokens.color.neutral[500],
+    NORMAL: tokens.color.primary[500],
+    HIGH: tokens.color.warning[600],
+    URGENT: tokens.color.error[600],
   };
-  return colorMap[priority] || '#1976d2';
+  return colorMap[priority] || tokens.color.primary[500];
 };
 
 export const getPriorityWeight = (priority: NotificationPriority): number => {

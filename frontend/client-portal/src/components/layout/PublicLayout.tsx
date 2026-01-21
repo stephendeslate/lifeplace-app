@@ -12,26 +12,30 @@ interface PublicLayoutProps {
   onNavigateToRegister?: () => void;
 }
 
-export const PublicLayout: React.FC<PublicLayoutProps> = ({ 
-  children, 
+export const PublicLayout: React.FC<PublicLayoutProps> = ({
+  children,
   fullHeight = false,
   onNavigateToLogin,
   onNavigateToRegister,
 }) => {
 
   return (
-    <Box 
-      sx={{ 
-        display: 'flex', 
-        flexDirection: 'column', 
-        minHeight: '100vh', 
-        width: '100vw',
+    <Box
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        minHeight: '100vh',
+        width: '100%',
         overflow: 'hidden',
         position: 'relative',
         background: 'linear-gradient(135deg, #2d5016 0%, #5a7c47 100%)',
         backgroundSize: '200% 200%',
-        animation: 'gradientShift 15s ease infinite',
-        '@keyframes gradientShift': {
+        animation: 'gradient 15s ease infinite',
+        '@media (prefers-reduced-motion: reduce)': {
+          animation: 'none',
+          backgroundPosition: '0% 50%',
+        },
+        '@keyframes gradient': {
           '0%': { backgroundPosition: '0% 50%' },
           '50%': { backgroundPosition: '100% 50%' },
           '100%': { backgroundPosition: '0% 50%' },
@@ -53,8 +57,12 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({
       }}
     >
       {/* Header */}
-      <Box sx={{ position: 'relative', zIndex: 2 }}>
-        <PublicHeader 
+      <Box
+        component="header"
+        role="banner"
+        sx={{ position: 'relative', zIndex: 2 }}
+      >
+        <PublicHeader
           onNavigateToLogin={onNavigateToLogin}
           onNavigateToRegister={onNavigateToRegister}
         />
@@ -65,7 +73,7 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({
         component="main"
         sx={{
           flex: 1,
-          width: '100vw',
+          width: '100%',
           display: 'flex',
           flexDirection: 'column',
           pt: { xs: '120px', md: '140px' }, // Account for fixed header height + generous breathing room

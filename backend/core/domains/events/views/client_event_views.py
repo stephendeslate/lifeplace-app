@@ -142,11 +142,14 @@ class ClientEventViewSet(viewsets.ReadOnlyModelViewSet):
             status=status.HTTP_200_OK
         )
     
-    @action(detail=True, methods=['get'])
+    @action(detail=True, methods=['get', 'post'])
     def notes(self, request, pk=None):
-        """Get notes for the event - integrates with notes domain"""
+        """Get or create notes for the event - integrates with notes domain"""
         from core.domains.notes.services import NoteService
-        
+        from core.domains.notes.models import Note
+        from django.contrib.contenttypes.models import ContentType
+        from rest_framework import serializers
+
         # Verify event ownership first
         try:
             event = Event.objects.get(id=pk, client_id=request.user.id)
@@ -155,17 +158,66 @@ class ClientEventViewSet(viewsets.ReadOnlyModelViewSet):
                 {"detail": "Event not found"},
                 status=status.HTTP_404_NOT_FOUND
             )
-        
-        # Get notes for this event
-        notes = NoteService.get_notes_for_object(
-            content_type_model='event',
-            object_id=pk,
-            user=request.user
-        )
-        
-        from core.domains.notes.serializers import NoteSerializer
-        serializer = NoteSerializer(notes, many=True)
-        return Response(serializer.data)
+
+        if request.method == 'GET':
+            # Get only client-visible notes for this event
+            notes = NoteService.get_notes_for_object(
+                content_type_model='event',
+                object_id=pk,
+                user=request.user,
+                client_visible_only=True  # Only show visible notes to clients
+            )
+
+            # Use anonymous serializer (no author info for clients)
+            class ClientNoteSerializer(serializers.ModelSerializer):
+                class Meta:
+                    model = Note
+                    fields = ['id', 'title', 'content', 'created_at', 'updated_at']
+
+            serializer = ClientNoteSerializer(notes, many=True)
+            return Response(serializer.data)
+
+        else:  # POST - Create a new note
+            content = request.data.get('content', '').strip()
+            title = request.data.get('title', '').strip()
+
+            if not content:
+                return Response(
+                    {"detail": "Note content is required"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            # Create note - client notes are always visible to both parties
+            note = Note.objects.create(
+                content_type=ContentType.objects.get_for_model(Event),
+                object_id=event.id,
+                title=title,
+                content=content,
+                created_by=request.user,
+                is_client_visible=True  # Client notes are always shared
+            )
+
+            # Add timeline entry
+            from ..models import EventTimeline
+            EventTimeline.objects.create(
+                event=event,
+                action_type='NOTE_ADDED',
+                description="Client added a note",
+                actor=request.user,
+                is_public=True
+            )
+
+            logger.info(f"Client {request.user.id} created note {note.id} for event {pk}")
+
+            class ClientNoteSerializer(serializers.ModelSerializer):
+                class Meta:
+                    model = Note
+                    fields = ['id', 'title', 'content', 'created_at', 'updated_at']
+
+            return Response(
+                ClientNoteSerializer(note).data,
+                status=status.HTTP_201_CREATED
+            )
     
     @action(detail=True, methods=['get'])
     def tasks(self, request, pk=None):
@@ -260,7 +312,7 @@ class ClientEventViewSet(viewsets.ReadOnlyModelViewSet):
         file_obj = serializer.save(
             event=event,
             uploaded_by=request.user,
-            is_public=False  # Client uploads are private by default
+            is_public=True  # Client uploads are visible to the client
         )
         
         # Add timeline entry
@@ -386,8 +438,262 @@ class ClientEventViewSet(viewsets.ReadOnlyModelViewSet):
         feedback = serializer.save()
         
         logger.info(f"Client {request.user.id} updated feedback {feedback_id} for event {pk}")
-        
+
         return Response(
             ClientEventFeedbackSerializer(feedback).data,
             status=status.HTTP_200_OK
         )
+
+    @action(detail=False, methods=['get'])
+    def rebookable(self, request):
+        """
+        List cancelled events that can be rebooked.
+
+        Returns events that:
+        - Were cancelled for DATE_TAKEN or PAYMENT_TIMEOUT reasons
+        - Have can_rebook=True
+        - Haven't been rebooked already
+        """
+        from ..services.rebook_service import EventRebookService
+
+        try:
+            events = EventRebookService.get_rebookable_events(request.user)
+            serializer = ClientEventSerializer(events, many=True, context={'request': request})
+
+            logger.info(f"Client {request.user.id} retrieved {events.count()} rebookable events")
+
+            return Response({
+                'count': events.count(),
+                'results': serializer.data,
+            })
+        except Exception as e:
+            logger.error(f"Error getting rebookable events for client {request.user.id}: {e}")
+            return Response(
+                {"detail": "An error occurred while retrieving rebookable events."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+    @action(detail=True, methods=['post'])
+    def rebook(self, request, pk=None):
+        """
+        Create a new booking session from a cancelled event.
+
+        Pre-populates the booking session with data from the original event,
+        allowing the client to select a new date without re-entering all information.
+
+        Request body (optional):
+        {
+            "new_date": "2025-02-15T14:00:00"  // Optional: New date/time for the event
+        }
+
+        Returns:
+        {
+            "session_id": "uuid",
+            "booking_flow_id": 123,
+            "message": "Rebook session created"
+        }
+        """
+        from ..services.rebook_service import EventRebookService
+        from datetime import datetime
+
+        try:
+            # Get the event
+            event = Event.objects.get(id=pk, client=request.user)
+        except Event.DoesNotExist:
+            return Response(
+                {"detail": "Event not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        # Check if event can be rebooked
+        can_rebook, reason = EventRebookService.can_rebook(event)
+        if not can_rebook:
+            return Response(
+                {"detail": reason},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Parse optional new date
+        new_date = None
+        if 'new_date' in request.data:
+            try:
+                new_date_str = request.data['new_date']
+                new_date = datetime.fromisoformat(new_date_str.replace('Z', '+00:00'))
+                # Remove timezone info since we use naive datetimes (PHT)
+                if new_date.tzinfo is not None:
+                    new_date = new_date.replace(tzinfo=None)
+            except (ValueError, TypeError) as e:
+                return Response(
+                    {"detail": f"Invalid date format: {e}"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+        try:
+            # Create rebook session
+            session = EventRebookService.create_rebook_session(event, new_date)
+
+            logger.info(
+                f"Client {request.user.id} created rebook session {session.session_id} "
+                f"for cancelled event {pk}"
+            )
+
+            return Response({
+                'session_id': str(session.session_id),
+                'booking_flow_id': session.booking_flow_id,
+                'original_event_id': event.id,
+                'message': 'Rebook session created successfully',
+            }, status=status.HTTP_201_CREATED)
+
+        except ValueError as e:
+            return Response(
+                {"detail": str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        except Exception as e:
+            logger.error(f"Error creating rebook session for event {pk}: {e}")
+            return Response(
+                {"detail": "An error occurred while creating the rebook session."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+    @action(detail=True, methods=['get'])
+    def rebook_info(self, request, pk=None):
+        """
+        Get rebooking information for a cancelled event.
+
+        Returns details about whether the event can be rebooked and why.
+        """
+        from ..services.rebook_service import EventRebookService
+
+        try:
+            event = Event.objects.get(id=pk, client=request.user)
+        except Event.DoesNotExist:
+            return Response(
+                {"detail": "Event not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        can_rebook, reason = EventRebookService.can_rebook(event)
+
+        # Get rebook history
+        history = EventRebookService.get_rebook_history(event)
+
+        return Response({
+            'event_id': event.id,
+            'status': event.status,
+            'cancelled_reason': event.cancelled_reason,
+            'cancelled_at': event.cancelled_at.isoformat() if event.cancelled_at else None,
+            'can_rebook': can_rebook,
+            'rebook_reason': reason,
+            'has_been_rebooked': event.rebooked_events.exists(),
+            'rebook_history': history,
+        })
+
+    @action(detail=True, methods=['get'], url_path='documents/(?P<file_id>[^/.]+)/download')
+    def download_document(self, request, pk=None, file_id=None):
+        """Download a client-accessible document"""
+        from django.http import FileResponse
+
+        try:
+            event = Event.objects.get(id=pk, client_id=request.user.id)
+        except Event.DoesNotExist:
+            return Response(
+                {"detail": "Event not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        try:
+            # Get the file, ensuring it's public (visible to client)
+            event_file = EventFile.objects.get(
+                id=file_id,
+                event=event,
+                is_public=True
+            )
+        except EventFile.DoesNotExist:
+            return Response(
+                {"detail": "Document not found or not accessible"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        if not event_file.file:
+            return Response(
+                {"detail": "File not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        response = FileResponse(
+            event_file.file.open('rb'),
+            content_type=event_file.mime_type or 'application/octet-stream'
+        )
+        response['Content-Disposition'] = f'inline; filename="{event_file.name}"'
+        return response
+
+    @action(detail=True, methods=['post'])
+    def self_check_in(self, request, pk=None):
+        """
+        Allow client to check themselves in on event day.
+
+        POST /client/events/{id}/self_check_in/
+
+        Validates:
+        - Event must be CONFIRMED
+        - Check-in status must be PENDING
+        - Today must be the event day (based on scheduled_check_in_time or start_date)
+
+        Returns the updated event detail with check-in status.
+        """
+        from django.utils import timezone
+        from ..services import CheckInService
+        from ..models import EventTimeline
+
+        # Get event (ownership verified via queryset)
+        try:
+            event = Event.objects.get(id=pk, client_id=request.user.id)
+        except Event.DoesNotExist:
+            return Response(
+                {"detail": "Event not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        # Validate event is confirmed
+        if event.status != 'CONFIRMED':
+            return Response(
+                {"detail": "Event must be confirmed to check in."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Validate pending check-in status
+        if event.check_in_status != 'PENDING':
+            return Response(
+                {"detail": "Event has already been checked in or marked as no-show."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Validate event day restriction
+        now = timezone.now()
+        event_date = event.scheduled_check_in_time or event.start_date
+        if not event_date or now.date() != event_date.date():
+            return Response(
+                {"detail": "Check-in is only available on the event day."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Perform check-in using existing service
+        result = CheckInService.check_in(
+            event=event,
+            staff_user=request.user,  # Client user for tracking
+            notes="Self check-in by client"
+        )
+
+        if not result['success']:
+            return Response(
+                {"detail": result['error']},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        event.refresh_from_db()
+
+        logger.info(f"Client {request.user.id} self-checked-in for event {pk}")
+
+        serializer = ClientEventDetailSerializer(event, context={'request': request})
+        return Response(serializer.data)

@@ -3,7 +3,7 @@
 
 import React from 'react';
 import { Inventory as ProductIcon } from '@mui/icons-material';
-import { SettingsPage, type SettingsPageConfig, type SettingsTableColumn } from '../../../components/common/settings';
+import { PermissionAwareSettingsPage, type SettingsPageConfig, type SettingsTableColumn } from '../../../components/common/settings';
 import { useProducts, useProductCategories } from '../../../hooks/useProducts';
 import type { ProductOption, CreateProductData, UpdateProductData } from '../../../types/products.types';
 import type { ModernFormSection } from '../../../components/common/ModernForm';
@@ -124,10 +124,10 @@ const createFormSections = (categories: Array<{ id: number; name: string }>): Mo
         helperText: 'Base price in your default currency',
       },
       {
-        name: 'tax_rate',
-        label: 'Tax Rate (%)',
-        type: 'number',
-        helperText: 'Tax percentage applied to this product',
+        name: 'is_tax_inclusive',
+        label: 'Tax Inclusive',
+        type: 'switch',
+        helperText: 'If enabled, the base price already includes tax',
       },
     ],
   },
@@ -174,25 +174,26 @@ const defaultProduct: ProductOption = {
   pricing_model_display: 'Fixed Price',
   base_price: '0.00',
   currency: 'USD',
-  tax_rate: '0.00',
+  is_tax_inclusive: false,
   type: 'PRODUCT',
   type_display: 'Product',
   is_active: true,
   is_featured: false,
   allow_multiple: false,
   requires_approval: false,
-  has_excess_hours: false,
-  included_hours: null,
-  excess_hour_price: null,
   minimum_hours: null,
   maximum_hours: null,
   advance_booking_days: 30,
   maximum_booking_days: null,
+  event_days: null,
   sku: null,
   sort_order: 1,
-  event_type: null,
+  event_type_ids: [],
+  event_type_names: [],
   formatted_price: '$0.00',
   price_with_tax: null,
+  featured_image: null,
+  gallery_images: [],
   created_at: '',
   updated_at: '',
 };
@@ -266,16 +267,17 @@ export const Products = () => {
       category: data.category,
       pricing_model: data.pricing_model,
       base_price: data.base_price,
-      tax_rate: data.tax_rate,
+      is_tax_inclusive: data.is_tax_inclusive,
       type: data.type,
       is_active: data.is_active,
       is_featured: data.is_featured,
       allow_multiple: data.allow_multiple,
       requires_approval: data.requires_approval,
+      event_type_ids: data.event_type_ids,
     };
 
     return new Promise<void>((resolve, reject) => {
-      createProduct(createData, {
+      createProduct({ data: createData }, {
         onSuccess: () => resolve(),
         onError: reject,
       });
@@ -289,12 +291,13 @@ export const Products = () => {
       category: data.category,
       pricing_model: data.pricing_model,
       base_price: data.base_price,
-      tax_rate: data.tax_rate,
+      is_tax_inclusive: data.is_tax_inclusive,
       type: data.type,
       is_active: data.is_active,
       is_featured: data.is_featured,
       allow_multiple: data.allow_multiple,
       requires_approval: data.requires_approval,
+      event_type_ids: data.event_type_ids,
     };
 
     return new Promise<void>((resolve, reject) => {
@@ -317,9 +320,16 @@ export const Products = () => {
     });
   };
 
+  // Fetch fresh product data before editing to ensure we have the latest values
+  const handleFetchItem = async (id: string | number): Promise<ProductOption> => {
+    const { productsApi } = await import('../../../apis/products.api');
+    return productsApi.getProduct(Number(id));
+  };
+
   return (
-    <SettingsPage
+    <PermissionAwareSettingsPage
       config={config}
+      requiredPermissions={['can_manage_financial_settings']}
       data={products}
       defaultValues={defaultProduct}
       isLoading={isLoadingProducts}
@@ -328,6 +338,7 @@ export const Products = () => {
       onCreate={handleCreate}
       onUpdate={handleUpdate}
       onDelete={handleDelete}
+      onFetchItem={handleFetchItem}
       isCreating={isCreatingProduct}
       isUpdating={isUpdatingProduct}
       isDeleting={isDeletingProduct}

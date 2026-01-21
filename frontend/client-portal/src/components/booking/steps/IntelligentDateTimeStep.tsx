@@ -4,34 +4,36 @@ import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react'
 import {
   Box,
   Typography,
-  Slider,
   Alert,
   Stack,
   Avatar,
   useTheme,
   alpha,
-  Divider,
+  Paper,
 } from '@mui/material';
 import {
   CalendarToday as CalendarIcon,
   CheckCircle as CheckCircleIcon,
+  NightsStay as OvernightIcon,
+  Schedule as ScheduleIcon,
 } from '@mui/icons-material';
-import { TimePicker } from '@mui/x-date-pickers/TimePicker';
-import { addHours, format, parseISO } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { GlassCard } from '../../../design-system/components/GlassCard';
 import { AnimatedElement } from '../../../design-system/components/AnimatedElement';
 import { EventAvailabilityCalendar } from '../../../design-system/visualizations/EventAvailabilityCalendar';
 import { useEventAvailability } from '../../../hooks/useEventAvailability';
+import { useAvailabilityWebSocket } from '../../../hooks/useAvailabilityWebSocket';
+import { VenuesApi } from '../../../apis/booking/venues.api';
 import type {
   DateTimeStepData,
   DateTimeStepConfiguration,
   StepValidationResult,
-  BookingFlow
+  BookingFlow,
+  VenuePublic,
+  PackageVenuePublic,
 } from '../../../types/booking';
 import type { AvailabilitySlot, EventData } from '../../../design-system/visualizations/EventAvailabilityCalendar';
-
-// Philippines timezone display
-const PHILIPPINES_DISPLAY = 'PHT';
+import { availabilityConfig } from '../../../config/availability.config';
 
 
 
@@ -43,6 +45,16 @@ interface IntelligentDateTimeStepProps {
   isValidating: boolean;
   onValidate?: (data: DateTimeStepData) => Promise<StepValidationResult>;
   flow?: BookingFlow | null;
+  // Venue props - passed from booking context when a package is selected
+  selectedPackageId?: number | null;
+  venue?: VenuePublic | null;
+  packageVenue?: PackageVenuePublic | null;
+}
+
+// Simplified step data - only date selection
+interface SimplifiedDateTimeStepData extends DateTimeStepData {
+  venue_id?: number;
+  end_date?: string;
 }
 
 export const IntelligentDateTimeStep: React.FC<IntelligentDateTimeStepProps> = ({
@@ -50,9 +62,12 @@ export const IntelligentDateTimeStep: React.FC<IntelligentDateTimeStepProps> = (
   config,
   onDataChange,
   validationErrors,
-  isValidating,
+  isValidating: _isValidating,
   onValidate: _onValidate,
   flow,
+  selectedPackageId,
+  venue: propVenue,
+  packageVenue: propPackageVenue,
 }) => {
   const theme = useTheme();
 
@@ -60,21 +75,51 @@ export const IntelligentDateTimeStep: React.FC<IntelligentDateTimeStepProps> = (
   const onDataChangeRef = useRef(onDataChange);
   onDataChangeRef.current = onDataChange;
 
-  // Core state
+  // Venue state (from props or loaded from package)
+  const [venue, setVenue] = useState<VenuePublic | null>(propVenue || null);
+  // Note: packageVenue and venueLoading are set but not read - kept for potential future use
+  const [_packageVenue, setPackageVenue] = useState<PackageVenuePublic | null>(propPackageVenue || null);
+  const [_venueLoading, setVenueLoading] = useState(false);
+
+  // Core state - SIMPLIFIED: Only date selection
   const [selectedDate, setSelectedDate] = useState<Date | null>(
     stepData?.start_date ? parseISO(stepData.start_date) : null
   );
-  const [selectedTime, setSelectedTime] = useState<Date | null>(
-    stepData?.start_time
-      ? parseISO(`2000-01-01T${stepData.start_time}`)
-      : null
+
+  // End date state for multi-day events
+  const [selectedEndDate, setSelectedEndDate] = useState<Date | null>(
+    stepData?.end_date ? parseISO(stepData.end_date) : null
   );
-  const [duration, setDuration] = useState<number>(
-    stepData?.duration || config?.default_duration_hours || 4
-  );
+
+  // Range mode configuration
+  const isRangeMode = config?.allow_multi_day ?? false;
+  const minRangeDays = config?.min_event_days ?? 1;
+  const maxRangeDays = config?.max_event_days ?? 7;
 
   // Track current month for calendar
   const [currentMonth, setCurrentMonth] = useState<Date>(selectedDate || new Date());
+
+  // Load venue from package if provided
+  useEffect(() => {
+    if (propVenue) {
+      setVenue(propVenue);
+      return;
+    }
+
+    if (selectedPackageId && !venue) {
+      setVenueLoading(true);
+      VenuesApi.getPrimaryVenueForPackage(selectedPackageId)
+        .then((pv) => {
+          if (pv) {
+            setPackageVenue(pv);
+            // Get full venue details
+            VenuesApi.getVenue(pv.venue).then(setVenue).catch(err => { if (import.meta.env.DEV) console.error(err); });
+          }
+        })
+        .catch(err => { if (import.meta.env.DEV) console.error(err); })
+        .finally(() => setVenueLoading(false));
+    }
+  }, [selectedPackageId, propVenue, venue]);
 
   // Extract event type from flow if available
   const eventTypeId = flow?.event_type || undefined;
@@ -86,74 +131,95 @@ export const IntelligentDateTimeStep: React.FC<IntelligentDateTimeStepProps> = (
     enabled: true,
   });
 
+  // Get the selected date string for WebSocket monitoring
+  const selectedDateString = selectedDate ? format(selectedDate, 'yyyy-MM-dd') : undefined;
+
+  // State for showing alert when selected date becomes blocked
+  const [dateBlockedAlert, setDateBlockedAlert] = useState(false);
+
+  // Subscribe to real-time availability updates via WebSocket
+  const {
+    isConnected: wsConnected,
+    selectedDateBlocked: _selectedDateBlocked,
+    clearBlockedDate,
+  } = useAvailabilityWebSocket({
+    enabled: true,
+    selectedDate: selectedDateString,
+    onDateBlocked: useCallback(
+      (blockedDate: string) => {
+        // Check if the blocked date matches our selected date
+        if (selectedDateString && blockedDate === selectedDateString) {
+          if (import.meta.env.DEV) console.log('[DateTimeStep] Selected date was blocked by another user!');
+          setDateBlockedAlert(true);
+          // Clear the selection since the date is no longer available
+          setSelectedDate(null);
+          setSelectedEndDate(null);
+        }
+      },
+      [selectedDateString]
+    ),
+  });
+
+  // Handle clearing the blocked date alert
+  const handleClearBlockedAlert = useCallback(() => {
+    setDateBlockedAlert(false);
+    clearBlockedDate();
+  }, [clearBlockedDate]);
+
+  // Clear alert when user selects a new date
+  useEffect(() => {
+    if (selectedDate && dateBlockedAlert) {
+      handleClearBlockedAlert();
+    }
+  }, [selectedDate, dateBlockedAlert, handleClearBlockedAlert]);
+
   // Convert availability events to EventData format for calendar
+  // Only show events with date_blocked=true as "booked"
   const calendarEvents: EventData[] = useMemo(() => {
-    return availabilityEvents.map(event => ({
-      id: event.id,
-      name: event.name,
-      event_type_name: event.event_type_name || '',
-      status: event.status as 'DRAFT' | 'CONFIRMED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED',
-      start_date: event.start_date,
-      end_date: event.end_date || event.start_date,
-      payment_status: event.payment_status as 'PENDING' | 'PARTIAL' | 'PAID' | 'OVERDUE',
-    }));
+    return availabilityEvents
+      .filter(event => event.date_blocked) // Only show truly blocked events
+      .map(event => ({
+        id: event.id,
+        name: event.name,
+        event_type_name: event.event_type_name || '',
+        status: event.status as 'DRAFT' | 'CONFIRMED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED',
+        start_date: event.start_date,
+        end_date: event.end_date || event.start_date,
+        payment_status: event.payment_status as 'PENDING' | 'PARTIAL' | 'PAID' | 'OVERDUE',
+      }));
   }, [availabilityEvents]);
 
-  // Configuration-based constraints
-  const minDuration = config?.min_duration_hours || 1;
-  const maxDuration = config?.max_duration_hours || 12;
-  const bufferBefore = config?.buffer_before_hours || 0;
-  const bufferAfter = config?.buffer_after_hours || 0;
-  
-  // Update parent data when selections change
+  // Update parent data when date selection changes
   useEffect(() => {
     if (!selectedDate) return;
-    
-    // Treat all times as Philippines time directly - no timezone conversion
+
     const dateString = format(selectedDate, 'yyyy-MM-dd');
-    const timeString = selectedTime ? format(selectedTime, 'HH:mm') : '';
-    
-    let endDate = '';
-    let endTime = '';
-    
-    if (timeString) {
-      const startDateTime = parseISO(`${dateString}T${timeString}:00`);
-      const endDateTime = addHours(startDateTime, duration);
-      endDate = format(endDateTime, 'yyyy-MM-dd');
-      endTime = format(endDateTime, 'HH:mm');
-    }
-    
-    const data: DateTimeStepData = {
+    const endDateString = isRangeMode && selectedEndDate ? format(selectedEndDate, 'yyyy-MM-dd') : undefined;
+
+    const data: SimplifiedDateTimeStepData = {
       start_date: dateString,
-      start_time: timeString,
-      end_date: endDate,
-      end_time: endTime,
-      duration: duration,
+      end_date: endDateString,
       resource_requirements: [],
       staff_requirements: [],
+      venue_id: venue?.id,
     };
-    
+
     onDataChangeRef.current(data);
-  }, [selectedDate, selectedTime, duration]);
+  }, [selectedDate, selectedEndDate, venue, isRangeMode]);
   
-  // Handle date selection from calendar
-  const handleDateSelect = useCallback((date: Date, slot: AvailabilitySlot) => {
+  // Handle date selection from calendar (start date in range mode)
+  const handleDateSelect = useCallback((date: Date, _slot: AvailabilitySlot) => {
     setSelectedDate(date);
-    
-    // Auto-suggest a time if none selected and slot is available
-    if (!selectedTime && slot.isAvailable && config?.available_time_slots?.length) {
-      const firstSlot = config.available_time_slots[0];
-      if (firstSlot.start_time) {
-        setSelectedTime(parseISO(`2000-01-01T${firstSlot.start_time}:00`));
-      }
+    // Clear end date when a new start date is selected
+    if (isRangeMode) {
+      setSelectedEndDate(null);
     }
-  }, [selectedTime, config]);
-  
-  
-  // Handle duration change
-  const handleDurationChange = useCallback((_: Event, newValue: number | number[]) => {
-    const value = Array.isArray(newValue) ? newValue[0] : newValue;
-    setDuration(value);
+  }, [isRangeMode]);
+
+  // Handle range selection from calendar (both start and end dates)
+  const handleRangeSelect = useCallback((startDate: Date, endDate: Date) => {
+    setSelectedDate(startDate);
+    setSelectedEndDate(endDate);
   }, []);
   
   // Validation helpers
@@ -167,24 +233,39 @@ export const IntelligentDateTimeStep: React.FC<IntelligentDateTimeStepProps> = (
   
   // Check if current selection is complete and valid
   const isComplete = useMemo(() => {
-    return !!(selectedDate && selectedTime && duration >= minDuration);
-  }, [selectedDate, selectedTime, duration, minDuration]);
-  
-  // Format selected date/time for display - all times treated as PHT directly
+    if (isRangeMode) {
+      return !!selectedDate && !!selectedEndDate;
+    }
+    return !!selectedDate;
+  }, [selectedDate, selectedEndDate, isRangeMode]);
+
+  // Format selected date for display
   const selectedSummary = useMemo(() => {
-    if (!selectedDate || !selectedTime) return null;
-    
-    const dateStr = format(selectedDate, 'EEEE, MMMM d, yyyy');
-    const timeStr = format(selectedTime, 'h:mm a');
-    const endTime = addHours(selectedTime, duration);
-    const endTimeStr = format(endTime, 'h:mm a');
-    
+    if (!selectedDate) return null;
+
+    const startDateStr = format(selectedDate, 'EEEE, MMMM d, yyyy');
+
+    if (isRangeMode && selectedEndDate) {
+      const endDateStr = format(selectedEndDate, 'EEEE, MMMM d, yyyy');
+      // Calculate nights (the difference in days between dates)
+      const nightCount = Math.ceil((selectedEndDate.getTime() - selectedDate.getTime()) / (1000 * 60 * 60 * 24));
+      // Days is nights + 1 (e.g., 2 nights = 3 days)
+      const dayCount = nightCount + 1;
+      return {
+        date: `${startDateStr} - ${endDateStr}`,
+        nightCount,
+        dayCount,
+        isRange: true,
+      };
+    }
+
     return {
-      date: dateStr,
-      time: `${timeStr} - ${endTimeStr} ${PHILIPPINES_DISPLAY}`,
-      duration: `${duration} hour${duration !== 1 ? 's' : ''}`,
+      date: startDateStr,
+      nightCount: 0,
+      dayCount: 1,
+      isRange: false,
     };
-  }, [selectedDate, selectedTime, duration]);
+  }, [selectedDate, selectedEndDate, isRangeMode]);
   
   return (
     <Box>
@@ -205,27 +286,57 @@ export const IntelligentDateTimeStep: React.FC<IntelligentDateTimeStepProps> = (
           </Avatar>
           
           <Typography variant="h4" sx={{ fontWeight: 700, mb: 2 }}>
-            Schedule Your Event
+            {isRangeMode ? 'Select Your Event Dates' : 'Select Your Event Date'}
           </Typography>
-          
+
           <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-            Select your preferred date and time for your event
+            {isRangeMode
+              ? `Choose the start and end dates for your event (up to ${maxRangeDays} ${maxRangeDays === 1 ? 'day' : 'days'})`
+              : 'Choose the date for your event'}
           </Typography>
-          
+
         </Box>
       </AnimatedElement>
-      
-      {/* Date & Time Selection */}
+
+      {/* Alert when selected date becomes blocked */}
+      {dateBlockedAlert && (
+        <AnimatedElement animation="slideDown" delay={150}>
+          <Alert
+            severity="warning"
+            onClose={handleClearBlockedAlert}
+            sx={{ mb: 3 }}
+          >
+            <Typography variant="body1" fontWeight={500}>
+              Date No Longer Available
+            </Typography>
+            <Typography variant="body2">
+              The date you selected has just been booked by another customer.
+              Please select a different date.
+            </Typography>
+          </Alert>
+        </AnimatedElement>
+      )}
+
+      {/* WebSocket connection indicator (dev mode only) */}
+      {import.meta.env.DEV && (
+        <Box sx={{ mb: 2, textAlign: 'center' }}>
+          <Typography variant="caption" color={wsConnected ? 'success.main' : 'text.secondary'}>
+            {wsConnected ? 'Live updates connected' : 'Connecting to live updates...'}
+          </Typography>
+        </Box>
+      )}
+
+      {/* Date Selection */}
       <AnimatedElement animation="slideUp" delay={200}>
         <GlassCard variant="light" intensity="medium">
           <Box sx={{ p: 3 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
               <CalendarIcon color="primary" />
               <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                Select Date & Time
+                Select Date
               </Typography>
             </Box>
-            
+
             <Stack spacing={3}>
               <EventAvailabilityCalendar
                 events={calendarEvents}
@@ -233,50 +344,61 @@ export const IntelligentDateTimeStep: React.FC<IntelligentDateTimeStepProps> = (
                 onDateSelect={handleDateSelect}
                 onMonthChange={setCurrentMonth}
                 compact={true}
+                isRangeMode={isRangeMode}
+                selectedEndDate={selectedEndDate || undefined}
+                minRangeDays={minRangeDays}
+                maxRangeDays={maxRangeDays}
+                onRangeSelect={handleRangeSelect}
+                minAdvanceBookingDays={flow?.min_advance_booking_days ?? availabilityConfig.minAdvanceBookingDays}
+                maxAdvanceBookingDays={flow?.max_advance_booking_days ?? availabilityConfig.maxAdvanceBookingDays}
               />
-              
+
               {selectedDate && (
                 <Box>
-                  <Typography variant="subtitle2" sx={{ mb: 2, fontWeight: 600 }}>
-                    Time for {format(selectedDate, 'MMM d')}
+                  <Typography variant="body1" sx={{ mb: 2, fontWeight: 600 }}>
+                    {isRangeMode && selectedEndDate
+                      ? `Selected: ${format(selectedDate, 'MMM d')} - ${format(selectedEndDate, 'MMM d, yyyy')} (${selectedSummary?.dayCount} ${selectedSummary?.dayCount === 1 ? 'Day' : 'Days'}${selectedSummary?.nightCount ? ` ${selectedSummary.nightCount} ${selectedSummary.nightCount === 1 ? 'Night' : 'Nights'}` : ''})`
+                      : isRangeMode
+                        ? `Start Date: ${format(selectedDate, 'EEEE, MMMM d, yyyy')} - Select end date`
+                        : `Selected: ${format(selectedDate, 'EEEE, MMMM d, yyyy')}`}
                   </Typography>
-                  
-                  <TimePicker
-                    value={selectedTime}
-                    onChange={(newValue) => setSelectedTime(newValue)}
-                    disabled={isValidating}
-                    slotProps={{
-                      textField: {
-                        fullWidth: true,
-                        error: hasFieldError('start_time'),
-                        helperText: getFieldError('start_time') || `All times in ${PHILIPPINES_DISPLAY}`,
-                      },
-                    }}
-                  />
-                  
-                  <Box sx={{ mt: 3 }}>
-                    <Typography variant="subtitle2" sx={{ mb: 2, fontWeight: 600 }}>
-                      Duration: {duration} hours
-                    </Typography>
-                    
-                    <Slider
-                      value={duration}
-                      onChange={handleDurationChange}
-                      min={minDuration}
-                      max={maxDuration}
-                      step={0.5}
-                      marks={[
-                        { value: minDuration, label: `${minDuration}h` },
-                        { value: maxDuration, label: `${maxDuration}h` },
-                      ]}
-                      valueLabelDisplay="auto"
-                      sx={{ mt: 2 }}
-                    />
-                  </Box>
+
+                  {/* Venue Info (Read-only) */}
+                  {venue && venue.operating_rules && (
+                    <Paper
+                      sx={{
+                        p: 2,
+                        backgroundColor: alpha(theme.palette.info.main, 0.05),
+                        border: `1px solid ${alpha(theme.palette.info.main, 0.2)}`,
+                        borderRadius: 2,
+                      }}
+                    >
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                        {venue.is_overnight ? (
+                          <OvernightIcon color="info" fontSize="small" />
+                        ) : (
+                          <ScheduleIcon color="info" fontSize="small" />
+                        )}
+                        <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                          Venue: {venue.name}
+                        </Typography>
+                      </Box>
+                      <Stack spacing={0.5}>
+                        <Typography variant="body2" color="text.secondary">
+                          Check-in: {VenuesApi.formatTime(venue.operating_rules.default_check_in_time || '')}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          Checkout: {VenuesApi.formatTime(venue.operating_rules.default_checkout_time || '')}
+                          {venue.is_overnight && ' (next day)'}
+                        </Typography>
+                      </Stack>
+                    </Paper>
+                  )}
+
                 </Box>
               )}
             </Stack>
-            
+
             {hasFieldError('start_date') && (
               <Alert severity="error" sx={{ mt: 2 }}>
                 {getFieldError('start_date')}
@@ -302,48 +424,24 @@ export const IntelligentDateTimeStep: React.FC<IntelligentDateTimeStepProps> = (
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
                 <CheckCircleIcon color="success" />
                 <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                  Event Schedule Confirmed
+                  {selectedSummary?.isRange ? 'Dates Selected' : 'Date Selected'}
                 </Typography>
               </Box>
-              
-              <Divider sx={{ mb: 2 }} />
-              
-              <Stack direction={{ xs: 'column', md: 'row' }} spacing={3}>
-                <Box>
-                  <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600 }}>
-                    Date
+
+              <Box>
+                <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600 }}>
+                  {selectedSummary?.isRange ? 'Event Dates' : 'Event Date'}
+                </Typography>
+                <Typography variant="body1">
+                  {selectedSummary?.date}
+                </Typography>
+                {selectedSummary?.isRange && selectedSummary.dayCount >= 1 && (
+                  <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                    {selectedSummary.dayCount} {selectedSummary.dayCount === 1 ? 'Day' : 'Days'}
+                    {selectedSummary.nightCount >= 1 && ` ${selectedSummary.nightCount} ${selectedSummary.nightCount === 1 ? 'Night' : 'Nights'}`}
                   </Typography>
-                  <Typography variant="body1">
-                    {selectedSummary?.date}
-                  </Typography>
-                </Box>
-                
-                <Box>
-                  <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600 }}>
-                    Time
-                  </Typography>
-                  <Typography variant="body1">
-                    {selectedSummary?.time}
-                  </Typography>
-                </Box>
-                
-                <Box>
-                  <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600 }}>
-                    Duration
-                  </Typography>
-                  <Typography variant="body1">
-                    {selectedSummary?.duration}
-                  </Typography>
-                </Box>
-              </Stack>
-              
-              {bufferBefore > 0 || bufferAfter > 0 ? (
-                <Alert severity="info" sx={{ mt: 2 }}>
-                  <Typography variant="caption">
-                    Includes {bufferBefore}h setup + {bufferAfter}h cleanup buffer
-                  </Typography>
-                </Alert>
-              ) : null}
+                )}
+              </Box>
             </Box>
           </GlassCard>
         </AnimatedElement>

@@ -1,6 +1,6 @@
 // frontend/client-portal/src/components/events/EventDocuments.tsx
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   Box,
   Typography,
@@ -32,10 +32,13 @@ import {
   Folder as FolderIcon,
   CloudUpload as UploadIcon,
   Add as AddIcon,
+  RemoveRedEye as ViewIcon,
 } from '@mui/icons-material';
 import { formatInTimeZone } from 'date-fns-tz';
 import { useEvents } from '../../hooks/useEvents';
+import { eventsApi } from '../../apis/events.api';
 import FileUpload from './FileUpload';
+import { FileViewerDialog } from '../common/FileViewerDialog';
 import type { EventFile } from '../../types/events.types';
 
 interface EventDocumentsProps {
@@ -55,7 +58,26 @@ const EventDocuments: React.FC<EventDocumentsProps> = ({
   // Upload dialog state
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
 
-  const getFileIcon = (fileType: string) => {
+  // View dialog state
+  const [viewDialogOpen, setViewDialogOpen] = useState(false);
+  const [viewingDocument, setViewingDocument] = useState<EventFile | null>(null);
+
+  const handleViewClick = (document: EventFile) => {
+    setViewingDocument(document);
+    setViewDialogOpen(true);
+  };
+
+  const handleViewDialogClose = () => {
+    setViewDialogOpen(false);
+    setViewingDocument(null);
+  };
+
+  const getFileBlob = useCallback(async (fileId: number | string) => {
+    return eventsApi.getDocumentBlob(eventId, Number(fileId));
+  }, [eventId]);
+
+  const getFileIcon = (fileType?: string) => {
+    if (!fileType) return <FileIcon color="action" />;
     const type = fileType.toLowerCase();
     
     if (type.includes('pdf')) return <PdfIcon color="error" />;
@@ -201,10 +223,10 @@ const EventDocuments: React.FC<EventDocumentsProps> = ({
             
             <ListItemText
               primary={
-                <Typography 
-                  variant="body1" 
+                <Typography
+                  variant="body1"
                   component="h4"
-                  sx={{ 
+                  sx={{
                     fontWeight: 500,
                     wordBreak: 'break-word',
                   }}
@@ -213,41 +235,53 @@ const EventDocuments: React.FC<EventDocumentsProps> = ({
                 </Typography>
               }
               secondary={
-                <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap" gap={1}>
-                  <Typography variant="caption" color="text.secondary">
+                <Stack direction="row" spacing={2} alignItems="center" sx={{ flexWrap: 'wrap', gap: 1, display: 'inline-flex' }}>
+                  <Typography component="span" variant="caption" color="text.secondary">
                     {formatFileSize(document.size)}
                   </Typography>
-                  <Typography variant="caption" color="text.secondary">
+                  <Typography component="span" variant="caption" color="text.secondary">
                     {formatInTimeZone(document.created_at, PHILIPPINE_TIMEZONE, 'MMM dd, yyyy')}
                   </Typography>
                   {document.file_type && (
-                    <Chip 
-                      label={document.file_type.toUpperCase()} 
-                      size="small" 
+                    <Chip
+                      label={document.file_type.toUpperCase()}
+                      size="small"
                       variant="outlined"
                       sx={{ height: 20, fontSize: '0.6875rem' }}
                     />
                   )}
                 </Stack>
               }
+              secondaryTypographyProps={{ component: 'div' }}
             />
             
             <ListItemSecondaryAction>
-              <Tooltip title="Download file">
-                <IconButton
-                  onClick={() => handleDownload(document)}
-                  disabled={downloadMutation.isPending}
-                  aria-label={`Download ${document.name}`}
-                  size="small"
-                >
-                  <DownloadIcon />
-                </IconButton>
-              </Tooltip>
+              <Stack direction="row" spacing={0.5}>
+                <Tooltip title="View file">
+                  <IconButton
+                    onClick={() => handleViewClick(document)}
+                    aria-label={`View ${document.name}`}
+                    size="small"
+                  >
+                    <ViewIcon />
+                  </IconButton>
+                </Tooltip>
+                <Tooltip title="Download file">
+                  <IconButton
+                    onClick={() => handleDownload(document)}
+                    disabled={downloadMutation.isPending}
+                    aria-label={`Download ${document.name}`}
+                    size="small"
+                  >
+                    <DownloadIcon />
+                  </IconButton>
+                </Tooltip>
+              </Stack>
             </ListItemSecondaryAction>
           </ListItem>
         ))}
       </List>
-      
+
       <Box sx={{ mt: 2, px: 2, textAlign: 'center' }}>
         <Typography variant="caption" color="text.secondary">
           {documents.length} document{documents.length !== 1 ? 's' : ''} available
@@ -276,6 +310,21 @@ const EventDocuments: React.FC<EventDocumentsProps> = ({
       >
         <AddIcon />
       </Fab>
+
+      {/* File Viewer Dialog */}
+      <FileViewerDialog
+        open={viewDialogOpen}
+        onClose={handleViewDialogClose}
+        file={viewingDocument ? {
+          id: viewingDocument.id,
+          name: viewingDocument.name,
+          fileType: viewingDocument.file_type,
+          fileSize: viewingDocument.size,
+          downloadUrl: viewingDocument.download_url,
+        } : null}
+        onDownload={viewingDocument ? () => handleDownload(viewingDocument) : undefined}
+        getFileBlob={getFileBlob}
+      />
     </Box>
   );
 };

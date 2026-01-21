@@ -16,11 +16,11 @@ import type {
 // Get base URL based on environment
 const getBaseUrl = () => {
   if (import.meta.env.PROD) {
-    return import.meta.env.VITE_API_BASE_URL + "/api";
+    return import.meta.env.VITE_API_URL + "/api";
   }
-  
+
   // In development, use the environment variable or default to localhost
-  return import.meta.env.VITE_API_BASE_URL || "http://localhost:8000/api";
+  return import.meta.env.VITE_API_URL || "http://localhost:8000/api";
 };
 
 // Function to get CSRF token from cookies

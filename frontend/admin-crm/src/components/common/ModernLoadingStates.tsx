@@ -1,5 +1,5 @@
 // Modern Loading States
-// Skeleton loading components with glassmorphic design that match the modern UI
+// Skeleton loading components with simple flat design
 
 import React from 'react';
 import {
@@ -14,14 +14,12 @@ import {
   Fade,
 } from '@mui/material';
 import { tokens } from '../../design-system';
-import { glassPresets } from '../../design-system/utils/glassmorphism';
 
 interface ModernSkeletonProps {
   variant?: 'text' | 'rectangular' | 'rounded' | 'circular';
   width?: string | number;
   height?: string | number;
   animation?: 'pulse' | 'wave' | false;
-  glass?: boolean;
   className?: string;
   sx?: object;
 }
@@ -31,7 +29,6 @@ export const ModernSkeleton: React.FC<ModernSkeletonProps> = ({
   width,
   height,
   animation = 'wave',
-  glass = true,
   className,
   sx,
 }) => (
@@ -42,22 +39,16 @@ export const ModernSkeleton: React.FC<ModernSkeletonProps> = ({
     animation={animation}
     className={className}
     sx={{
-      ...(glass && {
-        backgroundColor: 'rgba(255, 255, 255, 0.3)',
-        backdropFilter: 'blur(10px)',
-        '&::after': {
-          background: `linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.6), transparent)`,
-        }
-      }),
-      borderRadius: variant === 'rounded' ? tokens.spacing.radius.lg : variant === 'circular' ? '50%' : tokens.spacing.radius.sm,
+      bgcolor: tokens.color.neutral[100],
+      borderRadius: variant === 'rounded' ? tokens.spacing.radius.md : variant === 'circular' ? '50%' : tokens.spacing.radius.sm,
       ...sx,
     }}
   />
 );
 
 // Page Header Skeleton
-export const ModernHeaderSkeleton: React.FC<{ size?: 'small' | 'medium' | 'large' }> = ({ 
-  size = 'medium' 
+export const ModernHeaderSkeleton: React.FC<{ size?: 'small' | 'medium' | 'large' }> = ({
+  size = 'medium'
 }) => {
   const getPadding = () => {
     switch (size) {
@@ -72,9 +63,9 @@ export const ModernHeaderSkeleton: React.FC<{ size?: 'small' | 'medium' | 'large
     <Fade in timeout={300}>
       <Box
         sx={{
-          ...glassPresets.light,
-          borderRadius: tokens.spacing.radius.xxl,
-          border: `1px solid ${tokens.color.borders.glass}`,
+          bgcolor: 'background.paper',
+          borderRadius: tokens.spacing.radius.lg,
+          border: `1px solid ${tokens.color.borders.subtle}`,
           p: getPadding(),
           mb: 4,
         }}
@@ -87,7 +78,7 @@ export const ModernHeaderSkeleton: React.FC<{ size?: 'small' | 'medium' | 'large
               width={size === 'large' ? 64 : size === 'small' ? 48 : 56}
               height={size === 'large' ? 64 : size === 'small' ? 48 : 56}
             />
-            
+
             {/* Title and subtitle */}
             <Box flex={1}>
               <ModernSkeleton
@@ -103,7 +94,7 @@ export const ModernHeaderSkeleton: React.FC<{ size?: 'small' | 'medium' | 'large
               />
             </Box>
           </Box>
-          
+
           {/* Actions skeleton */}
           <Stack direction="row" spacing={2}>
             <ModernSkeleton variant="rounded" width={100} height={36} />
@@ -116,13 +107,11 @@ export const ModernHeaderSkeleton: React.FC<{ size?: 'small' | 'medium' | 'large
 };
 
 // Card Skeleton
-export const ModernCardSkeleton: React.FC<{ 
-  variant?: 'glass' | 'elevated' | 'outlined';
+export const ModernCardSkeleton: React.FC<{
   size?: 'small' | 'medium' | 'large';
   hasHeader?: boolean;
   hasActions?: boolean;
-}> = ({ 
-  variant = 'glass', 
+}> = ({
   size = 'medium',
   hasHeader = false,
   hasActions = false,
@@ -136,36 +125,14 @@ export const ModernCardSkeleton: React.FC<{
     }
   };
 
-  const getVariantStyles = () => {
-    switch (variant) {
-      case 'glass':
-        return {
-          ...glassPresets.light,
-          border: `1px solid ${tokens.color.borders.glass}`,
-        };
-      case 'elevated':
-        return {
-          backgroundColor: tokens.color.neutral[50],
-          boxShadow: tokens.shadow.elevation.sm,
-          border: `1px solid ${tokens.color.borders.subtle}`,
-        };
-      case 'outlined':
-        return {
-          backgroundColor: 'transparent',
-          border: `1px solid ${tokens.color.borders.subtle}`,
-        };
-      default:
-        return {};
-    }
-  };
-
   return (
     <Fade in timeout={300}>
       <Card
         elevation={0}
         sx={{
-          ...getVariantStyles(),
-          borderRadius: tokens.spacing.radius.xxl,
+          bgcolor: 'background.paper',
+          border: `1px solid ${tokens.color.borders.subtle}`,
+          borderRadius: tokens.spacing.radius.lg,
         }}
       >
         {hasHeader && (
@@ -174,17 +141,17 @@ export const ModernCardSkeleton: React.FC<{
             <ModernSkeleton variant="text" width="60%" height={16} />
           </Box>
         )}
-        
+
         <CardContent sx={{ p: getPadding() }}>
           <Stack spacing={2}>
             <ModernSkeleton variant="text" width="100%" height={20} />
             <ModernSkeleton variant="text" width="85%" height={20} />
             <ModernSkeleton variant="text" width="70%" height={20} />
-            
+
             <Box mt={2}>
               <ModernSkeleton variant="rounded" width="100%" height={100} />
             </Box>
-            
+
             <Stack direction="row" spacing={2} mt={2}>
               <ModernSkeleton variant="rounded" width="30%" height={16} />
               <ModernSkeleton variant="rounded" width="25%" height={16} />
@@ -192,7 +159,7 @@ export const ModernCardSkeleton: React.FC<{
             </Stack>
           </Stack>
         </CardContent>
-        
+
         {hasActions && (
           <Box sx={{ p: getPadding(), pt: 0 }}>
             <Stack direction="row" spacing={2} justifyContent="flex-end">
@@ -207,47 +174,47 @@ export const ModernCardSkeleton: React.FC<{
 };
 
 // Metric Card Skeleton
-export const ModernMetricCardSkeleton: React.FC<{ size?: 'small' | 'medium' | 'large' }> = ({ 
-  size = 'medium' 
+export const ModernMetricCardSkeleton: React.FC<{ size?: 'small' | 'medium' | 'large' }> = ({
+  size = 'medium'
 }) => (
   <Fade in timeout={300}>
     <Card
       elevation={0}
       sx={{
-        ...glassPresets.light,
-        border: `1px solid ${tokens.color.borders.glass}`,
-        borderRadius: tokens.spacing.radius.xl,
+        bgcolor: 'background.paper',
+        border: `1px solid ${tokens.color.borders.subtle}`,
+        borderRadius: tokens.spacing.radius.lg,
         p: size === 'large' ? 4 : size === 'small' ? 2 : 3,
         height: '100%',
       }}
     >
       <Box display="flex" justifyContent="space-between" alignItems="flex-start">
         <Box flex={1}>
-          <ModernSkeleton 
-            variant="text" 
-            width="60%" 
-            height={16} 
-            sx={{ mb: 1 }} 
-          />
-          <ModernSkeleton 
-            variant="text" 
-            width="40%" 
-            height={size === 'large' ? 48 : size === 'small' ? 32 : 40} 
+          <ModernSkeleton
+            variant="text"
+            width="60%"
+            height={16}
             sx={{ mb: 1 }}
           />
-          <ModernSkeleton 
-            variant="text" 
-            width="80%" 
-            height={14} 
+          <ModernSkeleton
+            variant="text"
+            width="40%"
+            height={size === 'large' ? 48 : size === 'small' ? 32 : 40}
+            sx={{ mb: 1 }}
+          />
+          <ModernSkeleton
+            variant="text"
+            width="80%"
+            height={14}
             sx={{ mb: 2 }}
           />
-          <ModernSkeleton 
-            variant="rounded" 
-            width="50%" 
-            height={24} 
+          <ModernSkeleton
+            variant="rounded"
+            width="50%"
+            height={24}
           />
         </Box>
-        
+
         <ModernSkeleton
           variant="rounded"
           width={size === 'large' ? 64 : size === 'small' ? 48 : 56}
@@ -260,29 +227,29 @@ export const ModernMetricCardSkeleton: React.FC<{ size?: 'small' | 'medium' | 'l
 );
 
 // Table Skeleton
-export const ModernTableSkeleton: React.FC<{ 
+export const ModernTableSkeleton: React.FC<{
   rows?: number;
   columns?: number;
   hasHeader?: boolean;
-}> = ({ 
-  rows = 5, 
+}> = ({
+  rows = 5,
   columns = 4,
   hasHeader = true,
 }) => (
   <Fade in timeout={300}>
     <Box
       sx={{
-        ...glassPresets.light,
-        border: `1px solid ${tokens.color.borders.glass}`,
-        borderRadius: tokens.spacing.radius.xxl,
+        bgcolor: 'background.paper',
+        border: `1px solid ${tokens.color.borders.subtle}`,
+        borderRadius: tokens.spacing.radius.lg,
         overflow: 'hidden',
       }}
     >
       {hasHeader && (
         <Box
           sx={{
-            ...glassPresets.medium,
-            borderBottom: `1px solid ${tokens.color.borders.glass}`,
+            bgcolor: tokens.color.neutral[50],
+            borderBottom: `1px solid ${tokens.color.borders.subtle}`,
             p: 2,
           }}
         >
@@ -298,7 +265,7 @@ export const ModernTableSkeleton: React.FC<{
           </Stack>
         </Box>
       )}
-      
+
       <Box sx={{ p: 2 }}>
         <Stack spacing={2}>
           {Array.from({ length: rows }).map((_, rowIndex) => (
@@ -320,11 +287,11 @@ export const ModernTableSkeleton: React.FC<{
 );
 
 // List Skeleton
-export const ModernListSkeleton: React.FC<{ 
+export const ModernListSkeleton: React.FC<{
   items?: number;
   showAvatar?: boolean;
   showSecondaryText?: boolean;
-}> = ({ 
+}> = ({
   items = 4,
   showAvatar = true,
   showSecondaryText = true,
@@ -332,9 +299,9 @@ export const ModernListSkeleton: React.FC<{
   <Fade in timeout={300}>
     <Box
       sx={{
-        ...glassPresets.light,
-        border: `1px solid ${tokens.color.borders.glass}`,
-        borderRadius: tokens.spacing.radius.xxl,
+        bgcolor: 'background.paper',
+        border: `1px solid ${tokens.color.borders.subtle}`,
+        borderRadius: tokens.spacing.radius.lg,
         overflow: 'hidden',
       }}
     >
@@ -344,14 +311,14 @@ export const ModernListSkeleton: React.FC<{
             key={index}
             sx={{
               p: 3,
-              borderBottom: index < items - 1 ? `1px solid ${tokens.color.borders.glass}` : 'none',
+              borderBottom: index < items - 1 ? `1px solid ${tokens.color.borders.subtle}` : 'none',
             }}
           >
             <Box display="flex" alignItems="flex-start" gap={2}>
               {showAvatar && (
                 <ModernSkeleton variant="circular" width={48} height={48} />
               )}
-              
+
               <Box flex={1}>
                 <ModernSkeleton variant="text" width="70%" height={20} sx={{ mb: 1 }} />
                 {showSecondaryText && (
@@ -359,7 +326,7 @@ export const ModernListSkeleton: React.FC<{
                 )}
                 <ModernSkeleton variant="text" width="40%" height={14} />
               </Box>
-              
+
               <ModernSkeleton variant="rounded" width={24} height={24} />
             </Box>
           </Box>
@@ -375,13 +342,13 @@ export const ModernLoadingSpinner: React.FC<{
   color?: 'primary' | 'secondary' | 'success' | 'warning' | 'error';
   message?: string;
   variant?: 'circular' | 'linear';
-  glass?: boolean;
-}> = ({ 
-  size = 40, 
+  contained?: boolean;
+}> = ({
+  size = 40,
   color = 'primary',
   message,
   variant = 'circular',
-  glass = true,
+  contained = true,
 }) => (
   <Fade in timeout={300}>
     <Box
@@ -391,13 +358,13 @@ export const ModernLoadingSpinner: React.FC<{
         alignItems: 'center',
         justifyContent: 'center',
         gap: 3,
-        ...(glass && {
-          ...glassPresets.light,
-          borderRadius: tokens.spacing.radius.xxl,
-          border: `1px solid ${tokens.color.borders.glass}`,
+        ...(contained && {
+          bgcolor: 'background.paper',
+          borderRadius: tokens.spacing.radius.lg,
+          border: `1px solid ${tokens.color.borders.subtle}`,
           p: 6,
         }),
-        minHeight: glass ? 300 : 'auto',
+        minHeight: contained ? 300 : 'auto',
       }}
     >
       {variant === 'circular' ? (
@@ -416,16 +383,16 @@ export const ModernLoadingSpinner: React.FC<{
             sx={{
               height: 6,
               borderRadius: 3,
-              backgroundColor: tokens.color.neutral[200],
+              bgcolor: tokens.color.neutral[200],
               '& .MuiLinearProgress-bar': {
                 borderRadius: 3,
-                backgroundColor: tokens.color[color][500],
+                bgcolor: tokens.color[color][500],
               },
             }}
           />
         </Box>
       )}
-      
+
       {message && (
         <Typography
           variant="body1"
@@ -445,7 +412,7 @@ export const ModernLoadingSpinner: React.FC<{
 export const ModernPageLoadingSkeleton: React.FC = () => (
   <Box sx={{ p: 4 }}>
     <ModernHeaderSkeleton size="large" />
-    
+
     <Stack spacing={4}>
       {/* Metrics row */}
       <Stack direction={{ xs: 'column', md: 'row' }} spacing={3}>
@@ -455,7 +422,7 @@ export const ModernPageLoadingSkeleton: React.FC = () => (
           </Box>
         ))}
       </Stack>
-      
+
       {/* Main content area */}
       <Box
         sx={{
@@ -469,7 +436,7 @@ export const ModernPageLoadingSkeleton: React.FC = () => (
           <ModernCardSkeleton hasHeader hasActions />
           <ModernTableSkeleton />
         </Stack>
-        
+
         {/* Right column */}
         <Stack spacing={4}>
           <ModernCardSkeleton hasHeader size="small" />

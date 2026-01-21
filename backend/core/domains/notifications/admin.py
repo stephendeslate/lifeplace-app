@@ -209,10 +209,11 @@ class NotificationPreferenceAdmin(admin.ModelAdmin):
     """Admin interface for notification preferences"""
     list_display = [
         'user_info', 'email_enabled', 'sms_enabled', 'in_app_enabled',
-        'digest_frequency', 'quiet_hours_enabled', 'disabled_types_count'
+        'marketing_status', 'digest_frequency', 'quiet_hours_enabled', 'disabled_types_count'
     ]
     list_filter = [
         'email_enabled', 'sms_enabled', 'in_app_enabled',
+        'marketing_email', 'marketing_sms',
         'digest_frequency', 'quiet_hours_enabled', 'created_at'
     ]
     search_fields = [
@@ -249,6 +250,10 @@ class NotificationPreferenceAdmin(admin.ModelAdmin):
             ),
             'classes': ('collapse',)
         }),
+        ('Marketing Preferences (Explicit Consent)', {
+            'fields': ('marketing_email', 'marketing_sms', 'marketing_in_app'),
+            'description': 'Marketing preferences require explicit user consent (GDPR/CAN-SPAM)'
+        }),
         ('Advanced Settings', {
             'fields': (
                 'digest_frequency', 'quiet_hours_enabled', 
@@ -276,6 +281,23 @@ class NotificationPreferenceAdmin(admin.ModelAdmin):
         return 'N/A'
     user_info.short_description = 'User'
     
+    def marketing_status(self, obj):
+        """Display marketing consent status"""
+        if obj.marketing_email or obj.marketing_sms:
+            channels = []
+            if obj.marketing_email:
+                channels.append('Email')
+            if obj.marketing_sms:
+                channels.append('SMS')
+            return format_html(
+                '<span style="color: #2e7d32;">✓ {}</span>',
+                ', '.join(channels)
+            )
+        return format_html(
+            '<span style="color: #9e9e9e;">Not opted in</span>'
+        )
+    marketing_status.short_description = 'Marketing'
+
     def disabled_types_count(self, obj):
         """Display count of disabled notification types"""
         count = obj.disabled_types.count()

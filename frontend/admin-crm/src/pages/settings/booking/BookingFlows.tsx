@@ -4,7 +4,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { RouteSharp as BookingFlowIcon } from '@mui/icons-material';
-import { SettingsPage, type SettingsPageConfig, type SettingsTableColumn } from '../../../components/common/settings';
+import { PermissionAwareSettingsPage, type SettingsPageConfig, type SettingsTableColumn } from '../../../components/common/settings';
 import { useBookingFlows } from '../../../hooks/useBookingFlows';
 import { useEventTypes } from '../../../hooks/useEvents';
 import type { BookingFlow, CreateBookingFlowData, UpdateBookingFlowData } from '../../../types/bookingflows.types';
@@ -301,9 +301,17 @@ export const BookingFlows = () => {
     },
   ];
 
+  // Fetch fresh booking flow data before editing to ensure we have the latest values
+  const handleFetchItem = async (id: string | number): Promise<BookingFlow> => {
+    const { bookingFlowsApi } = await import('../../../apis/bookingflows.api');
+    // getBookingFlow returns BookingFlowDetail which extends BookingFlow
+    return bookingFlowsApi.getBookingFlow(Number(id));
+  };
+
   return (
-    <SettingsPage
+    <PermissionAwareSettingsPage
       config={config}
+      requiredPermissions={['can_manage_booking_flows']}
       data={bookingFlows}
       defaultValues={defaultBookingFlow}
       isLoading={isLoadingFlows}
@@ -312,6 +320,7 @@ export const BookingFlows = () => {
       onCreate={handleCreate}
       onUpdate={handleUpdate}
       onDelete={handleDelete}
+      onFetchItem={handleFetchItem}
       isCreating={isCreatingFlow}
       isUpdating={isUpdatingFlow}
       isDeleting={isDeletingFlow}

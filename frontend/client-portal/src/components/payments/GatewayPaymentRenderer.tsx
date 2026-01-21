@@ -308,7 +308,7 @@ export const GatewayPaymentRenderer: React.FC<GatewayPaymentRendererProps> = ({
       }));
 
     } catch (error) {
-      console.error('❌ Failed to initialize session:', error);
+      if (import.meta.env.DEV) console.error('❌ Failed to initialize session:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to initialize payment';
       const paymentError = {
         code: 'initialization_failed',
@@ -344,7 +344,7 @@ export const GatewayPaymentRenderer: React.FC<GatewayPaymentRendererProps> = ({
       }
 
     } catch (error) {
-      console.error('❌ Payment processing failed:', error);
+      if (import.meta.env.DEV) console.error('❌ Payment processing failed:', error);
       const errorMessage = error instanceof Error ? error.message : 'Payment processing failed';
       const paymentError = {
         code: 'processing_failed',
@@ -382,7 +382,7 @@ export const GatewayPaymentRenderer: React.FC<GatewayPaymentRendererProps> = ({
       }
 
     } catch (error) {
-      console.error('❌ Payment retry failed:', error);
+      if (import.meta.env.DEV) console.error('❌ Payment retry failed:', error);
       const errorMessage = error instanceof Error ? error.message : 'Payment retry failed';
       const paymentError = {
         code: 'retry_failed',
@@ -563,7 +563,7 @@ export const GatewayPaymentRendererWithContext: React.FC<GatewayPaymentRendererP
           }
         }
       } catch (error) {
-        console.error('Failed to setup Stripe context:', error);
+        if (import.meta.env.DEV) console.error('Failed to setup Stripe context:', error);
       }
     };
 

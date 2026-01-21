@@ -3,6 +3,8 @@
 import logging
 from decimal import Decimal
 from django.db import models
+from django.db.models import OuterRef, Subquery
+from django.db.models.functions import Coalesce
 from django.http import HttpResponse
 from django.utils import timezone
 from rest_framework import status, viewsets, filters
@@ -15,20 +17,15 @@ from core.utils.pagination import StandardResultsSetPagination
 from .models import (
     Invoice,
     Payment,
-    PaymentInstallment,
     PaymentMethod,
-    PaymentPlan,
     Refund,
 )
 from .serializers import (
     InvoicePaymentRequestSerializer,
     InvoiceSerializer,
     PaymentIntentResponseSerializer,
-    PaymentPlanRequestSerializer,
     PaymentSerializer,
-    PaymentInstallmentSerializer,
     PaymentMethodSerializer,
-    PaymentPlanSerializer,
     RefundSerializer,
 )
 from .services import (
@@ -37,7 +34,6 @@ from .services import (
 )
 from .services.invoice_service import InvoiceService
 from .services.gateway_service import PaymentGatewayService
-from .services.payment_plan_service import PaymentPlanService
 from .pdf_service import PaymentReceiptPDFService
 
 logger = logging.getLogger(__name__)
@@ -75,8 +71,6 @@ class ClientPaymentViewSet(viewsets.ReadOnlyModelViewSet):
             'processed_by',
             'quote',
             'invoice',
-            'installment',
-            'installment__payment_plan'
         ).prefetch_related(
             'transactions__gateway',  # Include gateway information for transaction-based inference
             'notifications',
@@ -160,27 +154,74 @@ class ClientPaymentViewSet(viewsets.ReadOnlyModelViewSet):
 
     @action(detail=False, methods=['get'])
     def summary(self, request):
-        """Get payment summary for client"""
+        """Get payment summary for client
+
+        Returns summary based on:
+        - total_paid: Sum of COMPLETED payments (accurate)
+        - total_pending: Sum of remaining balance on unpaid/partially paid invoices (invoice-based)
+        - total_overdue: Sum of remaining balance on overdue invoices (invoice-based)
+
+        This provides an accurate view of outstanding balance based on invoices,
+        not just payment record status.
+        """
         queryset = self.get_queryset()
-        
+
+        # Get completed payments total
+        total_paid = queryset.filter(status='COMPLETED').aggregate(
+            total=models.Sum('amount')
+        )['total'] or Decimal('0.00')
+
+        # Get invoice-based outstanding balance for accurate pending/overdue amounts
+        # This is more accurate than counting PENDING payment records
+        if self.request.user.role == 'ADMIN' or self.request.user.is_superuser:
+            invoice_queryset = Invoice.objects.all()
+        else:
+            invoice_queryset = Invoice.objects.filter(client=self.request.user)
+
+        # Filter to only unpaid/partially paid invoices (exclude PAID and CANCELLED)
+        unpaid_invoices = invoice_queryset.filter(
+            status__in=['ISSUED', 'PARTIALLY_PAID']
+        )
+
+        # Calculate remaining balance for each invoice using annotation
+        # paid_amount and remaining_amount are properties, so we need to compute them
+        # by summing related completed payments and subtracting from total_amount
+
+        # Subquery to calculate paid amount for each invoice
+        paid_subquery = Payment.objects.filter(
+            invoice=OuterRef('pk'),
+            status='COMPLETED'
+        ).values('invoice').annotate(
+            paid_sum=models.Sum('amount')
+        ).values('paid_sum')[:1]
+
+        # Annotate invoices with calculated remaining balance
+        unpaid_invoices_with_balance = unpaid_invoices.annotate(
+            calculated_paid=Coalesce(Subquery(paid_subquery), Decimal('0.00')),
+            calculated_remaining=models.F('total_amount') - Coalesce(Subquery(paid_subquery), Decimal('0.00'))
+        )
+
+        # Calculate total pending (remaining balance on all unpaid invoices)
+        total_pending = unpaid_invoices_with_balance.aggregate(
+            total=models.Sum('calculated_remaining')
+        )['total'] or Decimal('0.00')
+
+        # Calculate total overdue (remaining balance on overdue invoices)
+        total_overdue = unpaid_invoices_with_balance.filter(
+            due_date__lt=timezone.now().date()
+        ).aggregate(
+            total=models.Sum('calculated_remaining')
+        )['total'] or Decimal('0.00')
+
         summary = {
-            'total_paid': queryset.filter(status='COMPLETED').aggregate(
-                total=models.Sum('amount')
-            )['total'] or Decimal('0.00'),
-            'total_pending': queryset.filter(status='PENDING').aggregate(
-                total=models.Sum('amount')
-            )['total'] or Decimal('0.00'),
-            'total_overdue': queryset.filter(
-                status='PENDING',
-                due_date__lt=timezone.now().date()
-            ).aggregate(
-                total=models.Sum('amount')
-            )['total'] or Decimal('0.00'),
+            'total_paid': total_paid,
+            'total_pending': total_pending,
+            'total_overdue': total_overdue,
             'payment_count': queryset.count(),
             'completed_count': queryset.filter(status='COMPLETED').count(),
-            'pending_count': queryset.filter(status='PENDING').count(),
+            'pending_count': unpaid_invoices.count(),  # Count of unpaid invoices
         }
-        
+
         return Response(summary)
 
 
@@ -319,12 +360,35 @@ class ClientInvoiceViewSet(viewsets.ReadOnlyModelViewSet):
 
             # Calculate requested payment amount
             if payment_type == 'DEPOSIT':
-                from core.domains.payments.models import PaymentSettings
-                settings = PaymentSettings.get_default_settings()
-                requested_amount = (invoice.total_amount * settings.default_deposit_percentage) / Decimal('100')
+                # Use PaymentTermsResolver to get effective deposit percentage
+                # (booking flow override or global default)
+                from .services.payment_terms_resolver import PaymentTermsResolver
+                terms = PaymentTermsResolver.get_terms_for_event(invoice.event_id)
+                deposit_percentage = Decimal(str(terms.get('deposit_percentage', 50)))
+                requested_amount = (invoice.total_amount * deposit_percentage) / Decimal('100')
             else:
                 # For FULL payment type, use remaining amount
                 requested_amount = payment_data.get('amount', invoice.remaining_amount)
+
+            # Validate minimum payment amount (prevent zero-amount payments)
+            MINIMUM_PAYMENT_AMOUNT = Decimal('50.00')  # Minimum payment of 50 PHP
+            if requested_amount <= Decimal('0'):
+                return Response({
+                    'success': False,
+                    'error': 'Payment amount must be greater than zero',
+                    'error_code': 'INVALID_AMOUNT',
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+            if requested_amount < MINIMUM_PAYMENT_AMOUNT:
+                return Response({
+                    'success': False,
+                    'error': f'Payment amount must be at least {MINIMUM_PAYMENT_AMOUNT}',
+                    'error_code': 'BELOW_MINIMUM',
+                    'details': {
+                        'minimum_amount': str(MINIMUM_PAYMENT_AMOUNT),
+                        'requested_amount': str(requested_amount)
+                    }
+                }, status=status.HTTP_400_BAD_REQUEST)
 
             # Validate against remaining balance
             if requested_amount > invoice.remaining_amount:
@@ -446,150 +510,6 @@ class ClientInvoiceViewSet(viewsets.ReadOnlyModelViewSet):
                 {"detail": "An unexpected error occurred. Please try again later."},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
-
-    @action(detail=True, methods=['post'])
-    def setup_payment_plan(self, request, pk=None):
-        """Create payment plan for invoice"""
-        try:
-            invoice = self.get_object()
-
-            # Validate invoice can have payment plan
-            if invoice.status not in ['ISSUED']:
-                return Response(
-                    {"detail": f"Cannot create payment plan for invoice with status {invoice.get_status_display()}"},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-
-            # Check if payment plan already exists for this event
-            if hasattr(invoice.event, 'payment_plan'):
-                return Response(
-                    {"detail": "A payment plan already exists for this event"},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-
-            # Validate payment plan data
-            serializer = PaymentPlanRequestSerializer(data=request.data)
-            if not serializer.is_valid():
-                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-            plan_data = serializer.validated_data
-
-            try:
-                # Create payment plan using service
-                payment_plan = InvoiceService.setup_payment_plan_for_invoice(
-                    invoice, plan_data, request.user
-                )
-
-                return Response({
-                    'success': True,
-                    'message': 'Payment plan created successfully',
-                    'payment_plan': PaymentPlanSerializer(payment_plan).data,
-                    'invoice': InvoiceSerializer(invoice).data
-                }, status=status.HTTP_201_CREATED)
-
-            except Exception as e:
-                logger.error(f"Payment plan creation failed for invoice {pk}: {e}", exc_info=True)
-                return Response({
-                    'success': False,
-                    'message': 'Failed to create payment plan',
-                    'error': str(e)
-                }, status=status.HTTP_400_BAD_REQUEST)
-
-        except Invoice.DoesNotExist:
-            return Response(
-                {"detail": "Invoice not found"},
-                status=status.HTTP_404_NOT_FOUND
-            )
-        except Exception as e:
-            logger.error(f"Unexpected error creating payment plan for invoice {pk}: {e}", exc_info=True)
-            return Response(
-                {"detail": "An unexpected error occurred. Please try again later."},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
-
-
-class ClientPaymentPlanViewSet(viewsets.ReadOnlyModelViewSet):
-    """Client access to their payment plans"""
-    serializer_class = PaymentPlanSerializer
-    permission_classes = [IsAuthenticated, IsClientOwnerOrAdmin]
-    pagination_class = StandardResultsSetPagination
-
-    def get_queryset(self):
-        """Return payment plans for user's events"""
-        if not self.request.user.is_authenticated:
-            return PaymentPlan.objects.none()
-
-        # Admins see all payment plans
-        if self.request.user.role == 'ADMIN' or self.request.user.is_superuser:
-            queryset = PaymentPlan.objects.all()
-        else:
-            # Clients see only their payment plans
-            queryset = PaymentPlan.objects.filter(event__client=self.request.user)
-
-        return queryset.select_related(
-            'event',
-            'event__client',
-            'quote'
-        ).prefetch_related(
-            'installments',
-            'installments__payment'
-        )
-
-    @action(detail=True, methods=['post'])
-    def pay_installment(self, request, pk=None):
-        """Make a payment for a specific installment"""
-        try:
-            payment_plan = self.get_object()
-            installment_id = request.data.get('installment_id')
-            
-            if not installment_id:
-                return Response(
-                    {"detail": "installment_id is required"},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-            
-            # Get the installment
-            try:
-                installment = payment_plan.installments.get(id=installment_id)
-            except PaymentInstallment.DoesNotExist:
-                return Response(
-                    {"detail": "Installment not found"},
-                    status=status.HTTP_404_NOT_FOUND
-                )
-            
-            # Check if already paid
-            if installment.status == 'PAID':
-                return Response(
-                    {"detail": "Installment already paid"},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-            
-            # Create payment for installment
-            payment_data = {
-                'event': payment_plan.event.id,
-                'amount': str(installment.amount),
-                'currency': payment_plan.currency,
-                'due_date': installment.due_date,
-                'description': f"Payment for {installment.description}",
-                'installment': installment.id,
-                **request.data  # Include any additional payment data
-            }
-            
-            # Create payment using service
-            payment = PaymentService.create_payment(payment_data, request.user)
-            
-            return Response(
-                PaymentSerializer(payment).data,
-                status=status.HTTP_201_CREATED
-            )
-            
-        except Exception as e:
-            logger.error(f"Failed to create installment payment: {e}")
-            return Response(
-                {"detail": str(e)},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
 
 class ClientPaymentMethodViewSet(viewsets.ModelViewSet):
     """Client management of their payment methods"""
@@ -734,69 +654,3 @@ class ClientRefundViewSet(viewsets.ReadOnlyModelViewSet):
 
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
-
-
-class ClientPaymentInstallmentViewSet(viewsets.ReadOnlyModelViewSet):
-    """Client access to payment installments"""
-    serializer_class = PaymentInstallmentSerializer
-    permission_classes = [IsAuthenticated, IsClientOwnerOrAdmin]
-    pagination_class = StandardResultsSetPagination
-
-    def get_queryset(self):
-        """Return installments for user's payment plans"""
-        if not self.request.user.is_authenticated:
-            return PaymentInstallment.objects.none()
-
-        # Admins see all installments
-        if self.request.user.role == 'ADMIN' or self.request.user.is_superuser:
-            queryset = PaymentInstallment.objects.all()
-        else:
-            # Clients see only their installments
-            queryset = PaymentInstallment.objects.filter(
-                payment_plan__event__client=self.request.user
-            )
-
-        return queryset.select_related(
-            'payment_plan',
-            'payment_plan__event',
-            'payment_plan__event__client'
-        ).prefetch_related('payment')
-
-    @action(detail=True, methods=['post'])
-    def create_payment(self, request, pk=None):
-        """Create a payment for this installment"""
-        try:
-            installment = self.get_object()
-            
-            # Check if already paid
-            if installment.status == 'PAID':
-                return Response(
-                    {"detail": "Installment already paid"},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-            
-            # Create payment for installment
-            payment_data = {
-                'event': installment.payment_plan.event.id,
-                'amount': str(installment.amount),
-                'currency': installment.payment_plan.currency,
-                'due_date': installment.due_date,
-                'description': f"Payment for {installment.description}",
-                'installment': installment.id,
-                **request.data  # Include any additional payment data
-            }
-            
-            # Create payment using service
-            payment = PaymentService.create_payment(payment_data, request.user)
-            
-            return Response(
-                PaymentSerializer(payment).data,
-                status=status.HTTP_201_CREATED
-            )
-            
-        except Exception as e:
-            logger.error(f"Failed to create installment payment: {e}")
-            return Response(
-                {"detail": str(e)},
-                status=status.HTTP_400_BAD_REQUEST
-            )

@@ -117,7 +117,7 @@ class UserService:
 
 class AdminInvitationService:
     @staticmethod
-    def create_invitation(email, first_name, last_name, invited_by):
+    def create_invitation(email, first_name, last_name, invited_by, permissions=None):
         """
         Create a new admin invitation or upgrade invitation for existing CLIENT users
 
@@ -125,8 +125,17 @@ class AdminInvitationService:
         1. New user (doesn't exist) → create regular invitation
         2. Existing CLIENT user → create upgrade invitation
         3. Existing ADMIN user → raise error (already admin)
+
+        Args:
+            email: Email address for the invitation
+            first_name: First name of the invitee
+            last_name: Last name of the invitee
+            invited_by: User who is sending the invitation
+            permissions: Optional dict of admin permissions to assign on acceptance
         """
         import logging
+        from .permissions_constants import validate_permissions
+
         logger = logging.getLogger(__name__)
 
         # Check if user with email already exists
@@ -152,6 +161,9 @@ class AdminInvitationService:
             AdminInvitation.objects.filter(email=email).delete()
             logger.info(f"Deleted existing pending invitation for {email}")
 
+        # Validate and clean permissions
+        validated_permissions = validate_permissions(permissions) if permissions else {}
+
         # Create new invitation
         invitation = AdminInvitation.objects.create(
             email=email,
@@ -160,6 +172,7 @@ class AdminInvitationService:
             invited_by=invited_by,
             user=existing_user if is_upgrade else None,
             is_upgrade=is_upgrade,
+            permissions=validated_permissions,
             expires_at=timezone.now() + timedelta(days=7)
         )
 
@@ -211,6 +224,12 @@ class AdminInvitationService:
             user.role = 'ADMIN'
             user.is_staff = True
             user.set_password(password)
+
+            # Apply permissions from invitation if specified
+            if invitation.permissions:
+                user.admin_permissions = invitation.permissions
+                logger.info(f"Applied custom permissions to user {user.email}")
+
             user.save()
 
             # Log the role upgrade for security audit
@@ -255,6 +274,12 @@ class AdminInvitationService:
                 is_staff=True  # Admin users should have staff access
             )
 
+            # Apply permissions from invitation if specified
+            if invitation.permissions:
+                user.admin_permissions = invitation.permissions
+                user.save()
+                logger.info(f"Applied custom permissions to new user {user.email}")
+
             logger.info(f"Successfully created new ADMIN user {user.email}")
 
         # Mark invitation as accepted
@@ -287,21 +312,18 @@ class AdminInvitationService:
         try:
             # Import here to avoid circular imports
             from core.domains.communications.services import CommunicationService
+            from core.domains.communications.context_service import (
+                CommunicationContextService, ContextType
+            )
 
             communication_service = CommunicationService()
 
-            # Get frontend URL from settings
-            frontend_url = getattr(settings, 'ADMIN_FRONTEND_URL', 'http://localhost:5173')
-            invitation_link = f"{frontend_url}/accept-invitation/{invitation.id}"
-
-            # Prepare context data for template
-            context_data = {
-                'first_name': invitation.first_name,
-                'last_name': invitation.last_name,
-                'invited_by': invitation.invited_by.get_full_name(),
-                'invitation_link': invitation_link,
-                'expiry_date': invitation.expires_at.strftime('%B %d, %Y at %I:%M %p')
-            }
+            # Generate context using the unified context service
+            context_data = CommunicationContextService.generate_context(
+                context_type=ContextType.ADMIN,
+                admin_user=invitation.invited_by,
+                invitation=invitation,
+            )
 
             # Choose template based on invitation type
             if invitation.is_upgrade:

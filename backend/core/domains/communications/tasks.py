@@ -11,14 +11,22 @@ User = get_user_model()
 
 
 @shared_task(bind=True, name='communications.send_communication_async')
-def send_communication_async(self, template_name: str, recipient: str, 
-                            context_data: Dict = None, client_id: int = None, 
-                            sent_by_id: int = None):
+def send_communication_async(
+    self,
+    template_name: str,
+    recipient: str,
+    context_data: Dict = None,
+    client_id: int = None,
+    sent_by_id: int = None,
+    event_id: int = None,
+    skip_preference_check: bool = False
+):
     """
     Async task for sending single communications
     """
     from .services import CommunicationService
-    
+    from core.domains.events.models import Event
+
     try:
         # Get related objects
         client = None
@@ -27,14 +35,21 @@ def send_communication_async(self, template_name: str, recipient: str,
                 client = User.objects.get(id=client_id)
             except User.DoesNotExist:
                 logger.warning(f"Client {client_id} not found for async communication")
-        
+
         sent_by = None
         if sent_by_id:
             try:
                 sent_by = User.objects.get(id=sent_by_id)
             except User.DoesNotExist:
                 logger.warning(f"Sender {sent_by_id} not found for async communication")
-        
+
+        event = None
+        if event_id:
+            try:
+                event = Event.objects.get(id=event_id)
+            except Event.DoesNotExist:
+                logger.warning(f"Event {event_id} not found for async communication")
+
         # Send communication
         service = CommunicationService()
         record = service.send_communication(
@@ -42,9 +57,11 @@ def send_communication_async(self, template_name: str, recipient: str,
             recipient=recipient,
             context_data=context_data or {},
             client=client,
-            sent_by=sent_by
+            sent_by=sent_by,
+            event=event,
+            skip_preference_check=skip_preference_check
         )
-        
+
         if record:
             logger.info(f"Async communication sent successfully: {record.id}")
             return {
@@ -54,10 +71,12 @@ def send_communication_async(self, template_name: str, recipient: str,
                 'external_message_id': record.external_message_id
             }
         else:
-            logger.error("Async communication failed - no record returned")
+            # Could be None due to user preference blocking - not necessarily an error
+            logger.info("Async communication completed - no record returned (may be preference-blocked)")
             return {
-                'success': False,
-                'error': 'No communication record returned'
+                'success': True,
+                'record_id': None,
+                'message': 'Communication skipped (user preference) or no record created'
             }
             
     except Exception as e:
@@ -182,14 +201,20 @@ def process_retry_queue_async(self):
 
 
 @shared_task(bind=True, name='communications.cleanup_old_records_async')
-def cleanup_old_records_async(self, days: int = 90):
+def cleanup_old_records_async(self, days: int = None):
     """
-    Periodic task to cleanup old communication records
+    Periodic task to cleanup old communication records.
+    Uses configurable retention period from CommunicationConfig.
     """
     from .models import CommunicationRecord
+    from .config import CommunicationConfig
     from datetime import timedelta
-    
+
     try:
+        # Use configured retention period if not specified
+        if days is None:
+            days = CommunicationConfig.get_retention_days('RECORD_RETENTION_DAYS')
+
         cutoff_date = timezone.now() - timedelta(days=days)
         
         # Delete old records that are delivered and read

@@ -220,7 +220,7 @@ export const useSessionRecoveryDialog = () => {
       await onRestore();
       hideDialog();
     } catch (error) {
-      console.error('Failed to restore session:', error);
+      if (import.meta.env.DEV) console.error('Failed to restore session:', error);
       setIsLoading(false);
     }
   }, [hideDialog]);
@@ -231,7 +231,7 @@ export const useSessionRecoveryDialog = () => {
       await onDiscard();
       hideDialog();
     } catch (error) {
-      console.error('Failed to discard session:', error);
+      if (import.meta.env.DEV) console.error('Failed to discard session:', error);
       setIsLoading(false);
     }
   }, [hideDialog]);

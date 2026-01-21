@@ -81,7 +81,7 @@ export const QuestionnaireStep: React.FC<QuestionnaireStepProps> = ({
     // Auto-validate if onValidate is provided
     if (onValidate) {
       onValidate(updatedData).catch(error => {
-        console.warn('Validation failed:', error);
+        if (import.meta.env.DEV) console.warn('Validation failed:', error);
       });
     }
   }, [responses, onDataChange, onValidate]);
@@ -156,7 +156,7 @@ export const QuestionnaireStep: React.FC<QuestionnaireStepProps> = ({
         setQuestionnairesWithFields(prev => new Map([...prev, [questionnaireId, questionnaire]]));
       }
     } catch (error) {
-      console.error(`Failed to load questionnaire ${questionnaireId}:`, error);
+      if (import.meta.env.DEV) console.error(`Failed to load questionnaire ${questionnaireId}:`, error);
       setLoadErrors(prev => new Map([...prev, [questionnaireId, 'Failed to load questionnaire']]));
     } finally {
       setLoadingQuestionnaires(prev => {
@@ -203,7 +203,7 @@ export const QuestionnaireStep: React.FC<QuestionnaireStepProps> = ({
       const uploadedUrls = await uploadFiles(questionnaireId, fieldId, files);
       updateResponse(fieldId, uploadedUrls);
     } catch (error) {
-      console.error('File upload failed:', error);
+      if (import.meta.env.DEV) console.error('File upload failed:', error);
     }
   };
 
@@ -237,7 +237,7 @@ export const QuestionnaireStep: React.FC<QuestionnaireStepProps> = ({
             onChange={(e) => handleFieldChange(fieldKey, e.target.value)}
             required={field.required}
             error={hasError}
-            helperText={error || field.help_text}
+            helperText={error || field.description || field.description || field.help_text}
             placeholder={field.placeholder}
             multiline={false}
           />
@@ -252,7 +252,7 @@ export const QuestionnaireStep: React.FC<QuestionnaireStepProps> = ({
             onChange={(e) => handleFieldChange(fieldKey, e.target.value)}
             required={field.required}
             error={hasError}
-            helperText={error || field.help_text}
+            helperText={error || field.description || field.help_text}
             placeholder={field.placeholder}
             multiline
             rows={4}
@@ -269,7 +269,7 @@ export const QuestionnaireStep: React.FC<QuestionnaireStepProps> = ({
             onChange={(e) => handleFieldChange(fieldKey, e.target.value)}
             required={field.required}
             error={hasError}
-            helperText={error || field.help_text}
+            helperText={error || field.description || field.help_text}
             placeholder={field.placeholder}
           />
         );
@@ -284,7 +284,7 @@ export const QuestionnaireStep: React.FC<QuestionnaireStepProps> = ({
             onChange={(e) => handleFieldChange(fieldKey, e.target.value)}
             required={field.required}
             error={hasError}
-            helperText={error || field.help_text}
+            helperText={error || field.description || field.help_text}
             placeholder={field.placeholder}
           />
         );
@@ -299,7 +299,7 @@ export const QuestionnaireStep: React.FC<QuestionnaireStepProps> = ({
             onChange={(e) => handleFieldChange(fieldKey, e.target.value)}
             required={field.required}
             error={hasError}
-            helperText={error || field.help_text}
+            helperText={error || field.description || field.help_text}
             placeholder={field.placeholder}
           />
         );
@@ -316,7 +316,7 @@ export const QuestionnaireStep: React.FC<QuestionnaireStepProps> = ({
                   fullWidth: true,
                   required: field.required,
                   error: hasError,
-                  helperText: error || field.help_text,
+                  helperText: error || field.description || field.help_text,
                 },
               }}
             />
@@ -335,7 +335,7 @@ export const QuestionnaireStep: React.FC<QuestionnaireStepProps> = ({
                   fullWidth: true,
                   required: field.required,
                   error: hasError,
-                  helperText: error || field.help_text,
+                  helperText: error || field.description || field.help_text,
                 },
               }}
             />
@@ -354,8 +354,8 @@ export const QuestionnaireStep: React.FC<QuestionnaireStepProps> = ({
               }
               label={field.name}
             />
-            {(error || field.help_text) && (
-              <FormHelperText>{error || field.help_text}</FormHelperText>
+            {(error || field.description || field.help_text) && (
+              <FormHelperText>{error || field.description || field.help_text}</FormHelperText>
             )}
           </FormControl>
         );
@@ -376,8 +376,8 @@ export const QuestionnaireStep: React.FC<QuestionnaireStepProps> = ({
                 </MenuItem>
               ))}
             </Select>
-            {(error || field.help_text) && (
-              <FormHelperText>{error || field.help_text}</FormHelperText>
+            {(error || field.description || field.help_text) && (
+              <FormHelperText>{error || field.description || field.help_text}</FormHelperText>
             )}
           </FormControl>
         );
@@ -406,8 +406,8 @@ export const QuestionnaireStep: React.FC<QuestionnaireStepProps> = ({
                 </MenuItem>
               ))}
             </Select>
-            {(error || field.help_text) && (
-              <FormHelperText>{error || field.help_text}</FormHelperText>
+            {(error || field.description || field.help_text) && (
+              <FormHelperText>{error || field.description || field.help_text}</FormHelperText>
             )}
           </FormControl>
         );
@@ -429,8 +429,8 @@ export const QuestionnaireStep: React.FC<QuestionnaireStepProps> = ({
                 />
               ))}
             </RadioGroup>
-            {(error || field.help_text) && (
-              <FormHelperText>{error || field.help_text}</FormHelperText>
+            {(error || field.description || field.help_text) && (
+              <FormHelperText>{error || field.description || field.help_text}</FormHelperText>
             )}
           </FormControl>
         );
@@ -491,7 +491,7 @@ export const QuestionnaireStep: React.FC<QuestionnaireStepProps> = ({
                 multiple: true,
               }}
               error={hasError}
-              helperText={error || field.help_text || `Max file size: ${config?.max_file_size_mb || 10}MB`}
+              helperText={error || field.description || field.help_text || `Max file size: ${config?.max_file_size_mb || 10}MB`}
               disabled={uploading}
             />
 
@@ -530,11 +530,71 @@ export const QuestionnaireStep: React.FC<QuestionnaireStepProps> = ({
               value={value}
               onChange={(e) => handleFieldChange(fieldKey, parseInt(e.target.value) || 0)}
               inputProps={{ min: 1, max: 5 }}
-              helperText={error || field.help_text || "Rate from 1 to 5"}
+              helperText={error || field.description || field.help_text || "Rate from 1 to 5"}
               error={hasError}
             />
           </FormControl>
         );
+
+      case 'guests': {
+        // Guest count field with optional categories
+        const categories = field.options && field.options.length > 0 ? field.options : null;
+
+        if (categories) {
+          // Multi-category guest count (e.g., Adults, Children, Infants)
+          const guestValues = typeof value === 'string' && value
+            ? JSON.parse(value)
+            : {};
+
+          return (
+            <FormControl fullWidth error={hasError}>
+              <FormLabel component="legend">{field.name} {field.required && '*'}</FormLabel>
+              <Box sx={{ mt: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                {categories.map((category) => (
+                  <Box key={category} sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Typography variant="body2" sx={{ minWidth: 100 }}>
+                      {category}:
+                    </Typography>
+                    <TextField
+                      type="number"
+                      size="small"
+                      value={guestValues[category] || ''}
+                      onChange={(e) => {
+                        const newValues = {
+                          ...guestValues,
+                          [category]: parseInt(e.target.value) || 0,
+                        };
+                        handleFieldChange(fieldKey, JSON.stringify(newValues));
+                      }}
+                      inputProps={{ min: 0 }}
+                      sx={{ width: 100 }}
+                    />
+                  </Box>
+                ))}
+              </Box>
+              {(error || field.description || field.help_text) && (
+                <FormHelperText>{error || field.description || field.help_text}</FormHelperText>
+              )}
+            </FormControl>
+          );
+        }
+
+        // Simple total guest count
+        return (
+          <TextField
+            fullWidth
+            type="number"
+            label={field.name}
+            value={value}
+            onChange={(e) => handleFieldChange(fieldKey, e.target.value)}
+            required={field.required}
+            error={hasError}
+            helperText={error || field.description || field.help_text}
+            placeholder={field.placeholder || 'Enter total number of guests'}
+            inputProps={{ min: 0 }}
+          />
+        );
+      }
 
       default:
         return (

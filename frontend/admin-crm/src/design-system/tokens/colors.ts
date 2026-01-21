@@ -126,19 +126,24 @@ export const colorTokens = {
     // Subtle gradients for main backgrounds
     default: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
     paper: '#ffffff',
-    
+
     // Hero/accent backgrounds
     primaryGradient: 'linear-gradient(135deg, #0087ff 0%, #0066cc 100%)',
     secondaryGradient: 'linear-gradient(135deg, #a855f7 0%, #9333ea 100%)',
-    
+
     // Success/status gradients
     successGradient: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
     warningGradient: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
     errorGradient: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
-    
+
     // Subtle accent backgrounds
     primarySubtle: 'linear-gradient(135deg, rgba(0, 135, 255, 0.05) 0%, rgba(0, 102, 204, 0.05) 100%)',
     successSubtle: 'linear-gradient(135deg, rgba(16, 185, 129, 0.05) 0%, rgba(5, 150, 105, 0.05) 100%)',
+
+    // Brand gradients for logo, avatars, and brand elements
+    brandGradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+    brandSubtle: 'linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(99, 102, 241, 0.05) 100%)',
+    brandHover: 'linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(99, 102, 241, 0.08) 100%)',
   },
 
   // Border colors for glassmorphic elements
@@ -150,6 +155,92 @@ export const colorTokens = {
     warning: 'rgba(245, 158, 11, 0.3)',
     error: 'rgba(239, 68, 68, 0.3)',
     subtle: 'rgba(0, 0, 0, 0.06)',
+  },
+
+  // Notification category colors for consistent styling across notification components
+  notification: {
+    system: '#737373',     // neutral[500] - System notifications
+    event: '#0066cc',      // primary[600] - Event-related notifications
+    task: '#059669',       // success[600] - Task notifications
+    payment: '#d97706',    // warning[600] - Payment notifications
+    client: '#9333ea',     // secondary[600] - Client notifications
+    contract: '#dc2626',   // error[600] - Contract notifications
+    workflow: '#0284c7',   // info[600] - Workflow notifications
+    communication: '#404040', // neutral[700] - Communication notifications
+    marketing: '#ec4899',  // pink[500] - Marketing notifications
+  },
+
+  // Chart colors for analytics visualizations
+  charts: {
+    // Series colors for multi-series charts (ordered by visual distinction)
+    series: [
+      '#0087ff',  // primary[500] - Primary data series
+      '#10b981',  // success[500] - Secondary data series
+      '#f59e0b',  // warning[500] - Tertiary data series
+      '#ef4444',  // error[500] - Fourth data series
+      '#a855f7',  // secondary[500] - Fifth data series
+      '#0ea5e9',  // info[500] - Sixth data series
+    ],
+    // Grid and axis colors
+    grid: '#e5e5e5',        // neutral[200] - Chart grid lines
+    axis: '#737373',        // neutral[500] - Axis labels
+    background: '#fafafa',  // neutral[50] - Chart background
+    tooltip: '#ffffff',     // White - Tooltip background
+    tooltipBorder: '#e5e5e5', // neutral[200] - Tooltip border
+  },
+
+  // Event status colors for quotes, invoices, and status badges
+  eventStatus: {
+    draft: {
+      bg: '#f0f7ff',      // primary[50]
+      text: '#0066cc',    // primary[600]
+      border: '#baddff',  // primary[200]
+    },
+    sent: {
+      bg: '#f0f9ff',      // info[50]
+      text: '#0369a1',    // info[700]
+      border: '#bae6fd',  // info[200]
+    },
+    accepted: {
+      bg: '#f0fdf4',      // success[50]
+      text: '#047857',    // success[700]
+      border: '#bbf7d0',  // success[200]
+    },
+    rejected: {
+      bg: '#fef2f2',      // error[50]
+      text: '#b91c1c',    // error[700]
+      border: '#fecaca',  // error[200]
+    },
+    expired: {
+      bg: '#fffbeb',      // warning[50]
+      text: '#b45309',    // warning[700]
+      border: '#fde68a',  // warning[200]
+    },
+    converted: {
+      bg: '#faf5ff',      // secondary[50]
+      text: '#7c2d12',    // secondary[700]
+      border: '#e9d5ff',  // secondary[200]
+    },
+    pending: {
+      bg: '#fffbeb',      // warning[50]
+      text: '#d97706',    // warning[600]
+      border: '#fde68a',  // warning[200]
+    },
+    paid: {
+      bg: '#f0fdf4',      // success[50]
+      text: '#059669',    // success[600]
+      border: '#bbf7d0',  // success[200]
+    },
+    cancelled: {
+      bg: '#f5f5f5',      // neutral[100]
+      text: '#525252',    // neutral[600]
+      border: '#d4d4d4',  // neutral[300]
+    },
+    overdue: {
+      bg: '#fef2f2',      // error[50]
+      text: '#dc2626',    // error[600]
+      border: '#fecaca',  // error[200]
+    },
   },
 } as const;
 
@@ -232,21 +323,23 @@ export type ColorToken = keyof typeof colorTokens;
 export type PrimaryColorVariant = keyof typeof colorTokens.primary;
 export type GlassVariant = keyof typeof colorTokens.glass;
 export type BackgroundVariant = keyof typeof colorTokens.backgrounds;
+export type NotificationCategory = keyof typeof colorTokens.notification;
+export type EventStatusType = keyof typeof colorTokens.eventStatus;
+export type ChartSeriesIndex = 0 | 1 | 2 | 3 | 4 | 5;
 
 // Helper function to get nested color values
 export const getColor = (path: string): string => {
   const keys = path.split('.');
   let value: unknown = colorTokens;
-  
+
   for (const key of keys) {
     if (value && typeof value === 'object' && key in value) {
       value = (value as Record<string, unknown>)[key];
     } else {
-      console.warn(`Color token "${path}" not found`);
       return colorTokens.neutral[500];
     }
   }
-  
+
   return typeof value === 'string' ? value : colorTokens.neutral[500];
 };
 
@@ -256,17 +349,33 @@ export const createGlassColor = (baseColor: string, opacity: number): string => 
   if (baseColor.startsWith('#')) {
     const hex = baseColor.slice(1);
     const r = parseInt(hex.slice(0, 2), 16);
-    const g = parseInt(hex.slice(2, 4), 16); 
+    const g = parseInt(hex.slice(2, 4), 16);
     const b = parseInt(hex.slice(4, 6), 16);
     return `rgba(${r}, ${g}, ${b}, ${opacity})`;
   }
-  
+
   // If already rgba, modify opacity
   if (baseColor.startsWith('rgba')) {
     return baseColor.replace(/[\d.]+\)$/g, `${opacity})`);
   }
-  
+
   return baseColor;
+};
+
+// Helper function to get notification category color
+export const getNotificationColor = (category: NotificationCategory): string => {
+  return colorTokens.notification[category];
+};
+
+// Helper function to get chart series color by index
+export const getChartColor = (index: number): string => {
+  const safeIndex = index % colorTokens.charts.series.length;
+  return colorTokens.charts.series[safeIndex];
+};
+
+// Helper function to get event status colors
+export const getEventStatusColors = (status: EventStatusType) => {
+  return colorTokens.eventStatus[status];
 };
 
 export default colorTokens;

@@ -25,36 +25,28 @@ export interface PaymentSettings {
   updated_at: string;
 }
 
-// Payment Plan Settings - CONSOLIDATED from bookingflow domain
+/**
+ * Public Payment Plan Settings - matches PublicPaymentSettingsSerializer
+ *
+ * This is the public-facing subset of PaymentSettings exposed to client portal.
+ * Only safe, client-facing fields are included. Internal fields (late fees,
+ * retry settings, grace periods) are intentionally excluded for security.
+ *
+ * For flow-specific overrides, use effective_payment_terms from PaymentInfoStepConfiguration.
+ */
 export interface PaymentPlanSettings {
   id: number;
 
-  // Payment plan settings
+  // Client-facing payment configuration
   balance_due_days: number;
-  grace_period_days: number;
-  default_installments: number;
-  default_installment_frequency: 'WEEKLY' | 'BIWEEKLY' | 'MONTHLY';
-
-  // Deposit settings
   default_deposit_percentage: number;
+  default_currency: string;
 
-  // Late fee settings
-  late_fee_enabled: boolean;
-  default_late_fee_amount: number;
-
-  // Auto retry settings
-  auto_payment_retry_attempts: number;
-  auto_payment_retry_delay_days: number;
-
-  // REFUND POLICY - CONSOLIDATED
+  // Refund policy (public transparency)
   allow_refunds: boolean;
   refund_deadline_hours: number;
   refund_percentage: number;
   refund_policy_text: string;
-
-  // Timestamps
-  created_at?: string;
-  updated_at?: string;
 }
 
 export interface TaxRate {
@@ -124,6 +116,16 @@ export interface PaymentNotification {
   updated_at: string;
 }
 
+// Venue-specific excess hours breakdown (import from booking types)
+export interface VenueExcessHours {
+  venue_id: number;
+  venue_name: string;
+  included_hours: number;
+  additional_hours: number;
+  excess_hour_price: string;
+  excess_cost: string;
+}
+
 export interface InvoiceLineItem {
   id: number;
   invoice: number;
@@ -139,9 +141,10 @@ export interface InvoiceLineItem {
   item_type: 'PACKAGE' | 'ADDON';
   item_type_display: string;
   base_unit_price: string | null; // Base price before excess hours
-  excess_hours: number | null; // Number of excess hours
-  excess_hour_price: string | null; // Price per excess hour
-  excess_cost: string; // Total excess cost (excess_hours * excess_hour_price)
+  excess_hours: number | null; // Deprecated: Use venue_details for per-venue breakdown
+  excess_hour_price: string | null; // Deprecated: Use venue_details for per-venue breakdown
+  excess_cost: string; // Total excess cost (excess_hours * excess_hour_price or sum of venue costs)
+  venue_details?: VenueExcessHours[]; // Per-venue excess hours breakdown (new format)
 }
 
 export interface InvoiceTax {
@@ -309,6 +312,20 @@ export interface Payment {
   updated_at: string;
 }
 
+// Effective payment terms resolved from booking flow override or global defaults
+export interface EffectivePaymentTerms {
+  deposit_type: 'PERCENTAGE' | 'FIXED' | null;
+  deposit_percentage: number;
+  deposit_fixed_amount: number | null;
+  deposit_is_refundable: boolean | null;
+  deposit_is_deductible: boolean | null;
+  deposit_waived_on_full_payment: boolean | null;
+  balance_due_days: number | null;
+  balance_due_type: 'DAYS_BEFORE' | 'DAY_BEFORE' | null;
+  grace_period_days: number | null;
+  currency: string | null;
+}
+
 export interface Invoice {
   id: number;
   invoice_id: string;
@@ -354,6 +371,8 @@ export interface Invoice {
   remaining_amount: string; // Decimal as string - total_amount - paid_amount
   is_fully_paid: boolean; // paid_amount >= total_amount
   is_partially_paid: boolean; // 0 < paid_amount < total_amount
+  // Effective payment terms (booking flow override or global defaults)
+  effective_payment_terms?: EffectivePaymentTerms | null;
   created_at: string;
   updated_at: string;
 }

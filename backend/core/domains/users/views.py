@@ -1,12 +1,21 @@
 # backend/core/domains/users/views.py
-from core.utils.permissions import IsAdmin, IsOwnerOrAdmin
+from core.utils.permissions import IsAdmin, IsOwnerOrAdmin, CanManageAdmins
 from core.utils.security import (
-    LoginRateThrottle, 
+    LoginRateThrottle,
     RegistrationRateThrottle,
+    InvitationAcceptRateThrottle,
     validate_email_format,
     validate_password_strength,
     validate_request_data,
     sanitize_input
+)
+from .throttling import (
+    DataAccessThrottle,
+    DataExportThrottle,
+    AccountDeletionThrottle,
+    DataCorrectionThrottle,
+    ProcessingObjectionThrottle,
+    ConsentManagementThrottle,
 )
 from core.utils.security_logging import security_logger, SecurityEventType
 from django.contrib.auth import authenticate
@@ -26,6 +35,8 @@ from .exceptions import InvalidCredentials, UserNotFound
 from .models import AdminInvitation, User
 from .serializers import (
     AdminInvitationSerializer,
+    AdminPermissionsSerializer,
+    AvatarUploadSerializer,
     UserCreateSerializer,
     UserSerializer,
 )
@@ -290,9 +301,12 @@ class UserListCreateAPIView(generics.ListCreateAPIView):
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        
+
+        # Strip confirm_password as it's only used for validation
+        user_data = {k: v for k, v in serializer.validated_data.items() if k != 'confirm_password'}
+
         with transaction.atomic():
-            user = UserService.create_user(serializer.validated_data)
+            user = UserService.create_user(user_data)
         
         return Response(
             UserSerializer(user).data,
@@ -361,33 +375,80 @@ class CurrentUserView(APIView):
     Get or update current logged in user
     """
     permission_classes = [permissions.IsAuthenticated]
-    
+
     def get(self, request):
         user_id = request.user.id
-        
+
         # Try to get from cache first
         cached_user = users_cache_service.get_cached_user_detail(user_id)
-        
+
         if cached_user is not None:
             logger.debug(f"Current user data served from cache for user {user_id}")
             return Response(cached_user)
-        
+
         # Cache miss - serialize and cache
-        user_data = UserSerializer(request.user).data
+        user_data = UserSerializer(request.user, context={'request': request}).data
         users_cache_service.cache_user_detail(user_id, user_data)
         users_cache_service.cache_user_by_email(request.user.email, user_data)
         logger.info(f"Current user data cached for user {user_id}")
-        
+
         return Response(user_data)
-    
+
     def put(self, request):
-        serializer = UserSerializer(request.user, data=request.data, partial=True)
+        serializer = UserSerializer(request.user, data=request.data, partial=True, context={'request': request})
         serializer.is_valid(raise_exception=True)
-        
+
         with transaction.atomic():
             updated_user = UserService.update_user(request.user, serializer.validated_data)
-        
-        return Response(UserSerializer(updated_user).data)
+
+        return Response(UserSerializer(updated_user, context={'request': request}).data)
+
+
+class AvatarUploadView(APIView):
+    """
+    Upload avatar for current user
+
+    POST /api/users/me/avatar/
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        serializer = AvatarUploadSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        user = request.user
+        avatar_file = serializer.validated_data['avatar']
+
+        # Ensure user has a profile
+        if not hasattr(user, 'profile') or user.profile is None:
+            from .models import UserProfile
+            UserProfile.objects.create(user=user)
+
+        # Delete old avatar if exists
+        if user.profile.avatar:
+            user.profile.avatar.delete(save=False)
+
+        # Save new avatar
+        user.profile.avatar = avatar_file
+        user.profile.save()
+
+        # Invalidate user cache
+        users_cache_service.invalidate_user_caches(user_id=user.id)
+
+        logger.info(f"Avatar uploaded for user {user.id}")
+
+        return Response(UserSerializer(user, context={'request': request}).data)
+
+    def delete(self, request):
+        """Delete current user's avatar"""
+        user = request.user
+
+        if hasattr(user, 'profile') and user.profile and user.profile.avatar:
+            user.profile.avatar.delete(save=True)
+            users_cache_service.invalidate_user_caches(user_id=user.id)
+            logger.info(f"Avatar deleted for user {user.id}")
+
+        return Response(UserSerializer(user, context={'request': request}).data)
 
 
 class AdminInvitationListCreateAPIView(generics.ListCreateAPIView):
@@ -423,15 +484,16 @@ class AdminInvitationListCreateAPIView(generics.ListCreateAPIView):
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        
+
         with transaction.atomic():
             invitation = AdminInvitationService.create_invitation(
                 email=serializer.validated_data['email'],
                 first_name=serializer.validated_data['first_name'],
                 last_name=serializer.validated_data['last_name'],
-                invited_by=request.user
+                invited_by=request.user,
+                permissions=serializer.validated_data.get('permissions', {})
             )
-        
+
         return Response(
             AdminInvitationSerializer(invitation).data,
             status=status.HTTP_201_CREATED
@@ -473,9 +535,13 @@ class AdminInvitationDetailAPIView(generics.RetrieveDestroyAPIView):
 
 @api_view(['POST'])
 @permission_classes([permissions.AllowAny])
+@throttle_classes([InvitationAcceptRateThrottle])
 def accept_invitation(request, invitation_id):
     """
     Accept an admin invitation and create a user account
+
+    Security features:
+    - Rate limiting (5 attempts per hour per IP) - SECURITY FIX
     """
     password = request.data.get('password')
     confirm_password = request.data.get('confirm_password')
@@ -624,20 +690,20 @@ def active_sessions(request):
     """
     try:
         user = request.user
-        
+
         # Get outstanding tokens for the user
         from rest_framework_simplejwt.token_blacklist.models import OutstandingToken
         from django.utils import timezone
-        
+
         outstanding_tokens = OutstandingToken.objects.filter(
             user=user
         ).exclude(
             blacklistedtoken__isnull=False  # Exclude blacklisted tokens
         ).select_related('user')
-        
+
         sessions = []
         current_token_jti = None
-        
+
         # Try to get current token JTI from request
         try:
             from rest_framework_simplejwt.authentication import JWTAuthentication
@@ -646,35 +712,453 @@ def active_sessions(request):
                 jwt_auth.get_raw_token(jwt_auth.get_header(request))
             )
             current_token_jti = validated_token.get('jti')
-        except:
+        except Exception:
             pass
-        
+
         for token in outstanding_tokens:
             try:
                 # Parse token to get details
                 refresh_token = RefreshToken(token.token)
-                
+
                 session_info = {
                     'jti': str(refresh_token.get('jti')),
                     'created_at': token.created_at.isoformat(),
                     'expires_at': refresh_token.get('exp'),
                     'is_current': str(refresh_token.get('jti')) == current_token_jti,
                 }
-                
+
                 sessions.append(session_info)
-                
+
             except (TokenError, ValueError):
                 # Skip invalid tokens
                 continue
-        
+
         return Response({
             'active_sessions': sessions,
             'total_count': len(sessions)
         }, status=status.HTTP_200_OK)
-    
+
     except Exception as e:
         logger.error(f"Failed to get active sessions: {e}")
         return Response(
-            {'error': 'Failed to retrieve active sessions'}, 
+            {'error': 'Failed to retrieve active sessions'},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
+
+
+# ============================================================================
+# DPA Compliance Views - Data Subject Rights
+# ============================================================================
+
+from django.http import HttpResponse
+from django.conf import settings
+from django.utils import timezone
+from .dpa_service import DataSubjectRightsService
+from .models import PrivacyRequest, ConsentRecord
+
+
+class DataAccessView(APIView):
+    """
+    GET /api/users/me/data/
+    Right to Access - View all personal data
+    """
+    permission_classes = [permissions.IsAuthenticated]
+    throttle_classes = [DataAccessThrottle]
+
+    def get(self, request):
+        report = DataSubjectRightsService.generate_data_access_report(request.user)
+
+        # Log the access request
+        PrivacyRequest.objects.create(
+            user=request.user,
+            user_email=request.user.email,
+            request_type='ACCESS',
+            status='COMPLETED',
+            processed_at=timezone.now(),
+            ip_address=self._get_client_ip(request),
+            user_agent=request.META.get('HTTP_USER_AGENT', '')
+        )
+
+        return Response(report)
+
+    def _get_client_ip(self, request):
+        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+        if x_forwarded_for:
+            return x_forwarded_for.split(',')[0].strip()
+        return request.META.get('REMOTE_ADDR')
+
+
+class DataExportView(APIView):
+    """
+    GET /api/users/me/export/?export_format=json
+    Right to Portability - Export personal data
+    """
+    permission_classes = [permissions.IsAuthenticated]
+    throttle_classes = [DataExportThrottle]  # Limit to 1/day
+
+    def get(self, request):
+        # Use 'export_format' instead of 'format' to avoid DRF content negotiation conflict
+        export_format = request.query_params.get('export_format', 'json')
+
+        if export_format not in ['json', 'csv']:
+            return Response(
+                {"error": "Invalid format. Use 'json' or 'csv'"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        content, filename, content_type = DataSubjectRightsService.generate_data_export(
+            request.user, export_format
+        )
+
+        # Log the export request
+        PrivacyRequest.objects.create(
+            user=request.user,
+            user_email=request.user.email,
+            request_type='EXPORT',
+            status='COMPLETED',
+            processed_at=timezone.now(),
+            response_data={"format": export_format, "filename": filename}
+        )
+
+        response = HttpResponse(content, content_type=content_type)
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        return response
+
+
+class AccountDeletionView(APIView):
+    """
+    DELETE /api/users/me/
+    Right to Erasure - Delete account
+    """
+    permission_classes = [permissions.IsAuthenticated]
+    throttle_classes = [AccountDeletionThrottle]
+
+    def delete(self, request):
+        user = request.user
+
+        # Validate request body
+        confirmation = request.data.get('confirmation')
+        password = request.data.get('password')
+
+        if confirmation != 'DELETE MY ACCOUNT':
+            return Response(
+                {"error": "Please type 'DELETE MY ACCOUNT' to confirm"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if not user.check_password(password):
+            return Response(
+                {"error": "Invalid password"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Check for blockers
+        blockers = DataSubjectRightsService.check_deletion_blockers(user)
+
+        if blockers:
+            return Response({
+                "status": "blocked",
+                "message": "Deletion cannot proceed due to active obligations.",
+                "blocking_reasons": blockers
+            }, status=status.HTTP_409_CONFLICT)
+
+        # Create privacy request record
+        privacy_request = PrivacyRequest.objects.create(
+            user=user,
+            user_email=user.email,
+            request_type='DELETION',
+            status='PROCESSING',
+            request_data={"reason": request.data.get('reason', '')}
+        )
+
+        # Process deletion
+        summary = DataSubjectRightsService.process_deletion(user, request)
+
+        # Update privacy request
+        privacy_request.status = 'COMPLETED'
+        privacy_request.processed_at = timezone.now()
+        privacy_request.deletion_summary = summary
+        privacy_request.save()
+
+        return Response({
+            "status": "completed",
+            "request_id": str(privacy_request.id),
+            "message": "Your account has been deleted.",
+            "actions": summary,
+            "appeal_contact": settings.DPO_EMAIL
+        })
+
+
+class DataCorrectionView(APIView):
+    """
+    PATCH /api/users/me/correct/
+    Right to Correction - Correct personal data
+    """
+    permission_classes = [permissions.IsAuthenticated]
+    throttle_classes = [DataCorrectionThrottle]
+
+    def patch(self, request):
+        corrections = request.data.get('corrections', [])
+
+        if not corrections:
+            return Response(
+                {"error": "No corrections provided"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        results = DataSubjectRightsService.process_correction(
+            request.user, corrections
+        )
+
+        # Log the correction request
+        PrivacyRequest.objects.create(
+            user=request.user,
+            user_email=request.user.email,
+            request_type='CORRECTION',
+            status='COMPLETED',
+            processed_at=timezone.now(),
+            request_data={"corrections": corrections},
+            response_data=results
+        )
+
+        return Response({
+            "status": "completed",
+            "corrections_applied": results["applied"],
+            "corrections_pending": results["pending"],
+            "corrections_rejected": results["rejected"],
+            "third_party_notification": "Corrected data will be shared with relevant third parties within 30 days."
+        })
+
+
+class ProcessingObjectionView(APIView):
+    """
+    POST /api/users/me/object/
+    Right to Object - Object to processing
+    """
+    permission_classes = [permissions.IsAuthenticated]
+    throttle_classes = [ProcessingObjectionThrottle]
+
+    def post(self, request):
+        objection_type = request.data.get('objection_type')
+
+        valid_types = ['marketing', 'profiling', 'analytics', 'all_non_essential']
+        if objection_type not in valid_types:
+            return Response(
+                {"error": f"Invalid objection type. Use one of: {valid_types}"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        results = DataSubjectRightsService.process_objection(
+            request.user, objection_type
+        )
+
+        # Log the objection
+        privacy_request = PrivacyRequest.objects.create(
+            user=request.user,
+            user_email=request.user.email,
+            request_type='OBJECTION',
+            status='COMPLETED',
+            processed_at=timezone.now(),
+            request_data={"objection_type": objection_type},
+            response_data=results
+        )
+
+        return Response({
+            "status": "accepted",
+            "objection_id": str(privacy_request.id),
+            "changes_applied": results["changes_applied"],
+            "cannot_object": results["cannot_object"]
+        })
+
+
+class ConsentListView(APIView):
+    """
+    GET /api/users/me/consents/
+    View all active consents
+    """
+    permission_classes = [permissions.IsAuthenticated]
+    throttle_classes = [ConsentManagementThrottle]
+
+    def get(self, request):
+        user = request.user
+        consent_types = [
+            ('MARKETING_EMAIL', 'Marketing emails', True),
+            ('MARKETING_SMS', 'Marketing SMS', True),
+            ('MARKETING_PUSH', 'Marketing push notifications', True),
+            ('ANALYTICS', 'Usage analytics', True),
+            ('THIRD_PARTY_SHARING', 'Third-party data sharing', True),
+            ('PRIVACY_POLICY', 'Privacy Policy', False),
+            ('TERMS_OF_SERVICE', 'Terms of Service', False),
+        ]
+
+        consents = []
+        for consent_type, purpose, can_withdraw in consent_types:
+            record = ConsentRecord.get_current_consent(user, consent_type)
+            consents.append({
+                "consent_type": consent_type,
+                "purpose": purpose,
+                "status": "granted" if (record and record.action == 'GRANT') else "not_granted",
+                "granted_at": record.created_at.isoformat() if record else None,
+                "can_withdraw": can_withdraw
+            })
+
+        return Response({"consents": consents})
+
+
+class ConsentWithdrawView(APIView):
+    """
+    POST /api/users/me/consents/{consent_type}/withdraw/
+    Withdraw a specific consent
+    """
+    permission_classes = [permissions.IsAuthenticated]
+    throttle_classes = [ConsentManagementThrottle]
+
+    def post(self, request, consent_type):
+        user = request.user
+
+        # Check if consent can be withdrawn
+        non_withdrawable = ['PRIVACY_POLICY', 'TERMS_OF_SERVICE']
+        if consent_type in non_withdrawable:
+            return Response(
+                {"error": "This consent cannot be withdrawn while maintaining an account"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Record withdrawal
+        record = ConsentRecord.record_consent(
+            user=user,
+            consent_type=consent_type,
+            granted=False,
+            request=request,
+            source='PRIVACY_DASHBOARD'
+        )
+
+        return Response({
+            "status": "withdrawn",
+            "consent_type": consent_type,
+            "withdrawn_at": record.created_at.isoformat(),
+            "effective_immediately": True
+        })
+
+
+class PrivacyRequestListView(APIView):
+    """
+    GET /api/users/me/privacy-requests/
+    View status of all privacy requests
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        requests = PrivacyRequest.objects.filter(
+            user=request.user
+        ).order_by('-created_at')[:20]
+
+        return Response({
+            "requests": [
+                {
+                    "id": str(req.id),
+                    "type": req.request_type,
+                    "status": req.status,
+                    "submitted_at": req.created_at.isoformat(),
+                    "completed_at": req.processed_at.isoformat() if req.processed_at else None,
+                    "response_data": req.response_data if req.status == 'COMPLETED' else None
+                }
+                for req in requests
+            ]
+        })
+
+
+# ============================================================================
+# Admin Permission Management Views
+# ============================================================================
+
+from .permissions_constants import (
+    PERMISSION_PRESETS,
+    PERMISSION_DESCRIPTIONS,
+    PERMISSION_LABELS,
+    validate_permissions,
+)
+
+
+class AdminPermissionsPresetsView(APIView):
+    """
+    GET /api/users/permissions/
+    Get available permission presets and descriptions for UI display.
+    """
+    permission_classes = [IsAdmin]
+
+    def get(self, request):
+        return Response({
+            'presets': PERMISSION_PRESETS,
+            'descriptions': PERMISSION_DESCRIPTIONS,
+            'labels': PERMISSION_LABELS,
+        })
+
+
+class UpdateAdminPermissionsView(APIView):
+    """
+    PATCH /api/users/{user_id}/permissions/
+    Update admin permissions for a specific user.
+    Only users with 'can_manage_admins' permission can update permissions.
+    """
+    permission_classes = [IsAdmin, CanManageAdmins]
+
+    def patch(self, request, user_id):
+        try:
+            target_user = User.objects.get(id=user_id, role='ADMIN')
+        except User.DoesNotExist:
+            return Response(
+                {'detail': 'Admin user not found.'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        # Prevent self-permission modification
+        if target_user.id == request.user.id:
+            return Response(
+                {'detail': 'You cannot modify your own permissions.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Prevent modifying superuser permissions
+        if target_user.is_superuser:
+            return Response(
+                {'detail': 'Cannot modify superuser permissions.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        serializer = AdminPermissionsSerializer(data=request.data)
+        if serializer.is_valid():
+            # Validate and clean permissions
+            validated_permissions = validate_permissions(serializer.validated_data)
+            target_user.admin_permissions = validated_permissions
+            target_user.save()
+
+            # Log the permission change
+            logger.info(
+                f"Admin permissions updated for user {target_user.email} "
+                f"by {request.user.email}: {validated_permissions}"
+            )
+
+            return Response({
+                'detail': 'Permissions updated successfully.',
+                'user': UserSerializer(target_user).data
+            })
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def get(self, request, user_id):
+        """Get current permissions for a specific admin user."""
+        try:
+            target_user = User.objects.get(id=user_id, role='ADMIN')
+        except User.DoesNotExist:
+            return Response(
+                {'detail': 'Admin user not found.'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        return Response({
+            'user_id': target_user.id,
+            'email': target_user.email,
+            'permissions': target_user.get_all_permissions_dict(),
+            'is_full_admin': target_user.is_full_admin(),
+        })

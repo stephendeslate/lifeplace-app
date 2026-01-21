@@ -42,8 +42,8 @@ export const ServicesSection: React.FC = () => {
   ];
 
   return (
-    <Box sx={{ py: { xs: 8, md: 12 }, px: { xs: 2, sm: 3, md: 4 }, backgroundColor: 'primary.main', color: 'white', width: '100vw' }}>
-      <Box sx={{ maxWidth: 1400, mx: 'auto' }}>
+    <Box sx={{ py: { xs: 8, md: 12 }, px: { xs: 2, sm: 3, md: 4 }, backgroundColor: 'primary.main', color: 'white', width: '100%' }}>
+      <Box sx={{ maxWidth: 'clamp(320px, 90vw, 1400px)', mx: 'auto' }}>
         <Stack spacing={6}>
           <AnimatedElement animation="fadeIn" delay={100}>
             <Stack spacing={3} textAlign="center">

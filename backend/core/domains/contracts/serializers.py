@@ -1,19 +1,33 @@
 # backend/core/domains/contracts/serializers.py
 from core.domains.events.basic_serializers import EventTypeSerializer
 from core.domains.events.serializers import EventSerializer
+from core.domains.events.models import Event
 from core.domains.users.serializers import UserSerializer
 from rest_framework import serializers
 from decimal import Decimal
 
 from .basic_serializers import ContractTemplateSerializer, EventContractSerializer
 from .models import (
-    ContractTemplate, 
-    EventContract, 
-    ContractSignature, 
+    ContractTemplate,
+    EventContract,
+    ContractSignature,
     ContractAmendment,
     ContractDocument,
     ContractNote
 )
+
+
+class ContractEventSerializer(serializers.ModelSerializer):
+    """
+    Simplified event serializer for contract responses.
+    Includes 'title' as an alias for 'name' for mobile app compatibility.
+    """
+    title = serializers.CharField(source='name', read_only=True)
+
+    class Meta:
+        model = Event
+        fields = ['id', 'name', 'title', 'status', 'start_date', 'end_date']
+        read_only_fields = fields
 
 
 class ContractTemplateDetailSerializer(ContractTemplateSerializer):
@@ -32,25 +46,56 @@ class ContractSignatureSerializer(serializers.ModelSerializer):
     """Serializer for contract signatures"""
     signer = UserSerializer(read_only=True)
     role_display = serializers.CharField(source='get_role_display', read_only=True)
-    
+
+    # Mobile app compatibility fields
+    signer_role = serializers.CharField(source='role', read_only=True)
+    is_signed = serializers.SerializerMethodField()
+    is_client_signature = serializers.SerializerMethodField()
+
     class Meta:
         model = ContractSignature
         fields = [
             'id', 'contract', 'signer', 'role', 'role_display', 'signature_data',
             'signed_at', 'signer_name', 'signer_title', 'signer_email',
-            'is_verified', 'verification_method', 'created_at', 'updated_at'
+            'is_verified', 'verification_method',
+            # Security/compliance fields
+            'device_fingerprint', 'legal_disclosure_accepted',
+            'electronic_consent_timestamp', 'signature_intent_confirmed',
+            'signature_metadata', 'signature_confidence_score',
+            'ip_address', 'user_agent',
+            'created_at', 'updated_at',
+            # Mobile app compatibility fields
+            'signer_role', 'is_signed', 'is_client_signature',
         ]
         read_only_fields = ['id', 'signed_at', 'created_at', 'updated_at']
+
+    def get_is_signed(self, obj):
+        """Check if signature has been completed"""
+        return obj.signed_at is not None
+
+    def get_is_client_signature(self, obj):
+        """Check if this is a client signature"""
+        return obj.role == 'CLIENT'
 
 
 class ContractSignatureCreateSerializer(serializers.ModelSerializer):
     """Serializer for creating contract signatures"""
-    
+    # Security fields - optional with defaults
+    device_fingerprint = serializers.CharField(required=False, allow_blank=True, default='')
+    legal_disclosure_accepted = serializers.BooleanField(required=False, default=False)
+    electronic_consent_timestamp = serializers.DateTimeField(required=False, allow_null=True, default=None)
+    signature_intent_confirmed = serializers.BooleanField(required=False, default=False)
+    signature_metadata = serializers.JSONField(required=False, default=dict)
+
     class Meta:
         model = ContractSignature
         fields = [
             'contract', 'signer', 'role', 'signature_data', 'signer_name',
-            'signer_title', 'signer_email', 'verification_method', 'ip_address', 'user_agent'
+            'signer_title', 'signer_email', 'verification_method', 'ip_address', 'user_agent',
+            # Security/compliance fields
+            'device_fingerprint', 'legal_disclosure_accepted',
+            'electronic_consent_timestamp', 'signature_intent_confirmed',
+            'signature_metadata'
         ]
     
     def validate(self, data):
@@ -145,7 +190,8 @@ class ContractNoteSerializer(serializers.ModelSerializer):
 
 class EventContractDetailSerializer(EventContractSerializer):
     """Detailed serializer for EventContract including related objects"""
-    event = EventSerializer(read_only=True)
+    # Use ContractEventSerializer for mobile app compatibility (includes 'title' alias)
+    event = ContractEventSerializer(read_only=True)
     template = ContractTemplateSerializer(read_only=True)
     signatures = ContractSignatureSerializer(many=True, read_only=True)
     amendment_requests = ContractAmendmentSerializer(many=True, read_only=True)
@@ -157,17 +203,14 @@ class EventContractDetailSerializer(EventContractSerializer):
     missing_signatures = serializers.ListField(read_only=True)
     signature_progress = serializers.SerializerMethodField()
     can_client_sign = serializers.BooleanField(read_only=True)
-    
-    # Legacy compatibility
-    signed_by = UserSerializer(read_only=True)
-    
+
     class Meta(EventContractSerializer.Meta):
         fields = EventContractSerializer.Meta.fields + [
             'content', 'contract_value', 'payment_schedule_reference', 'currency',
             'is_amendment', 'original_contract', 'amendment_number',
             'signatures', 'amendment_requests', 'documents', 'notes',
             'is_fully_signed', 'missing_signatures', 'signature_progress',
-            'can_client_sign', 'signed_by', 'signature_data', 'witness_name', 'witness_signature'
+            'can_client_sign'
         ]
     
     def get_signature_progress(self, obj):
@@ -183,20 +226,6 @@ class EventContractDetailSerializer(EventContractSerializer):
             'signed_roles': signed_roles,
             'missing_roles': [role for role in required_roles if role not in signed_roles]
         }
-
-
-class ContractSigningSerializer(serializers.Serializer):
-    """Serializer for contract signing (legacy support)"""
-    signature_data = serializers.CharField(required=True)
-    role = serializers.ChoiceField(choices=ContractSignature.ROLE_CHOICES, default='CLIENT')
-    signer_name = serializers.CharField(required=True)
-    signer_title = serializers.CharField(required=False, allow_blank=True)
-    signer_email = serializers.EmailField(required=True)
-    verification_method = serializers.CharField(required=False, allow_blank=True)
-    
-    # Legacy fields for backward compatibility
-    witness_name = serializers.CharField(required=False, allow_blank=True)
-    witness_signature = serializers.CharField(required=False, allow_blank=True)
 
 
 class ContractTemplateCreateUpdateSerializer(serializers.ModelSerializer):

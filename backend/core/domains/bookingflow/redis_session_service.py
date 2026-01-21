@@ -13,7 +13,7 @@ from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
-# Use sessions cache (Redis database 0)
+# Use sessions cache (key prefix: lifeplace:session:)
 session_cache = caches['sessions']
 
 class BookingFlowSessionService:
@@ -425,7 +425,7 @@ class BookingFlowCacheWarmer:
         """
         Pre-warm cache with booking flow configuration
         """
-        from ..models import BookingFlow, BookingFlowStep
+        from .models import BookingFlow, BookingFlowStep
         
         try:
             # Cache booking flow configuration
@@ -433,25 +433,24 @@ class BookingFlowCacheWarmer:
                 'workflow_template'
             ).prefetch_related(
                 'steps',
-                'payment_gateways',
-                'analytics_events'
+                'allowed_payment_gateways',
             ).get(id=booking_flow_id, is_active=True)
-            
+
             flow_data = {
                 'id': flow.id,
                 'name': flow.name,
                 'steps': list(flow.steps.values(
-                    'id', 'step_type', 'step_order', 'is_required', 
-                    'conditional_logic', 'step_configuration'
+                    'id', 'step_type', 'order', 'is_required',
+                    'display_conditions', 'configuration'
                 )),
-                'payment_gateways': list(flow.payment_gateways.values()),
+                'payment_gateways': list(flow.allowed_payment_gateways.values()),
                 'workflow_template_id': flow.workflow_template_id,
             }
-            
+
             key = f"booking_flow:{booking_flow_id}"
             session_cache.set(key, flow_data, 3600)  # 1 hour
-            
+
             logger.info(f"Warmed cache for booking flow {booking_flow_id}")
-            
+
         except BookingFlow.DoesNotExist:
             logger.warning(f"Booking flow {booking_flow_id} not found for cache warming")

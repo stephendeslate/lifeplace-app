@@ -57,9 +57,8 @@ import type {
 } from '../../../types/bookingflows.types';
 
 // Modern Design System imports
-import { 
+import {
   ModernSettingsLayout,
-  ModernGlassCard,
   ModernMetricCard,
   ModernEmptyState,
   ModernPageHeader,
@@ -68,8 +67,6 @@ import {
 } from '../../../components/common/ModernDesignSystem';
 import { ModernDialog, createDeleteActions } from '../../../components/common';
 import { ErrorDisplay } from '../../../components/common/ErrorDisplay';
-import { tokens } from '../../../design-system';
-import { glassPresets } from '../../../design-system/utils/glassmorphism';
 import { 
   getEventTypeDisplayName, 
   getEventTypeChipColor,
@@ -191,10 +188,9 @@ export const BookingFlowDetails: React.FC = () => {
     setMenuAnchor(null);
   };
 
-  const handleMenuButtonClick = () => {
-    // Create a synthetic event for the menu button
-    if (menuButtonRef.current) {
-      setMenuAnchor(menuButtonRef.current);
+  const handleMenuButtonClick = (event?: React.MouseEvent<HTMLElement>) => {
+    if (event?.currentTarget) {
+      setMenuAnchor(event.currentTarget);
     }
   };
 
@@ -332,9 +328,9 @@ export const BookingFlowDetails: React.FC = () => {
 
   const handleStepSubmit = (data: CreateBookingFlowStepData | UpdateBookingFlowStepData) => {
     if (editingStep) {
-      updateStep({ 
-        id: editingStep.id, 
-        data: data as UpdateBookingFlowStepData 
+      updateStep({
+        id: editingStep.id,
+        data: data as UpdateBookingFlowStepData
       }, {
         onSuccess: () => {
           handleStepDialogClose();
@@ -342,9 +338,14 @@ export const BookingFlowDetails: React.FC = () => {
         }
       });
     } else {
+      // Calculate next order based on existing steps (max order + 1)
+      const maxOrder = steps.reduce((max, step) => Math.max(max, step.order ?? 0), 0);
+      const nextOrder = maxOrder + 1;
+
       createStep({
         ...data as CreateBookingFlowStepData,
-        booking_flow: flowId
+        booking_flow: flowId,
+        order: nextOrder
       }, {
         onSuccess: () => {
           handleStepDialogClose();
@@ -481,8 +482,6 @@ export const BookingFlowDetails: React.FC = () => {
             tooltip: 'Open settings'
           }
         ]}
-        glass
-        gradient
       />
       
       {/* Configuration Breadcrumb */}
@@ -501,7 +500,7 @@ export const BookingFlowDetails: React.FC = () => {
               Steps
             </Link>
             <Typography variant="body2" color="text.primary">
-              Configure: {selectedStepForConfig.name}
+              Configure: {selectedStepForConfig.step_type_display}
             </Typography>
           </Breadcrumbs>
         </Box>
@@ -514,10 +513,7 @@ export const BookingFlowDetails: React.FC = () => {
         onClose={handleMenuClose}
         PaperProps={{
           sx: {
-            ...glassPresets.medium,
-            borderRadius: tokens.spacing.radius.xl,
-            border: `1px solid ${tokens.color.borders.glass}`,
-            boxShadow: tokens.shadow.component.dropdown,
+            borderRadius: 2,
             mt: 1,
           },
         }}
@@ -555,38 +551,17 @@ export const BookingFlowDetails: React.FC = () => {
         </MenuItem>
       </Menu>
 
-      {/* Modern Tabs */}
-      <ModernGlassCard 
-        size="medium" 
-        borderRadius="xxl"
-        sx={{ mb: 4 }}
-      >
-        <Tabs 
-          value={activeTab} 
+      {/* Tabs */}
+      <Box sx={{ mb: 4, borderRadius: 1, bgcolor: 'background.paper' }}>
+        <Tabs
+          value={activeTab}
           onChange={handleTabChange}
           variant="scrollable"
           scrollButtons="auto"
           sx={{
-            '& .MuiTabs-indicator': {
-              backgroundColor: tokens.color.primary[500],
-              height: 3,
-              borderRadius: '3px 3px 0 0',
-            },
             '& .MuiTab-root': {
               fontWeight: 600,
               textTransform: 'none',
-              color: tokens.color.neutral[600],
-              borderRadius: tokens.spacing.radius.lg,
-              mx: 0.5,
-              transition: 'all 0.2s ease',
-              '&:hover': {
-                color: tokens.color.primary[600],
-                backgroundColor: tokens.color.primary[50],
-              },
-              '&.Mui-selected': {
-                color: tokens.color.primary[700],
-                backgroundColor: `${tokens.color.primary[50]}80`,
-              },
             },
           }}
         >
@@ -602,7 +577,7 @@ export const BookingFlowDetails: React.FC = () => {
           />
           <Tab 
             icon={<SettingsIcon />} 
-            label={selectedStepForConfig ? `Configure: ${selectedStepForConfig.name}` : "Configuration"}
+            label={selectedStepForConfig ? `Configure: ${selectedStepForConfig.step_type_display}` : "Configuration"}
             iconPosition="start"
             disabled={!selectedStepForConfig}
           />
@@ -618,7 +593,7 @@ export const BookingFlowDetails: React.FC = () => {
             disabled
           />
         </Tabs>
-      </ModernGlassCard>
+      </Box>
 
       {/* Tab Content */}
       <TabPanel value={activeTab} index={0}>
@@ -663,11 +638,8 @@ export const BookingFlowDetails: React.FC = () => {
           </Box>
 
           {/* Flow Information */}
-          <ModernGlassCard 
-            title="Flow Information"
-            size="large"
-            borderRadius="xxl"
-          >
+          <Box sx={{ borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
+            <Typography variant="h6" fontWeight="600" sx={{ mb: 3 }}>Flow Information</Typography>
             <Stack spacing={3}>
               <Box>
                 <Typography variant="subtitle2" color="text.secondary" gutterBottom>
@@ -702,14 +674,11 @@ export const BookingFlowDetails: React.FC = () => {
                 />
               </Box>
             </Stack>
-          </ModernGlassCard>
+          </Box>
 
           {/* Configuration Summary */}
-          <ModernGlassCard 
-            title="Configuration Summary"
-            size="large"
-            borderRadius="xxl"
-          >
+          <Box sx={{ borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
+            <Typography variant="h6" fontWeight="600" sx={{ mb: 3 }}>Configuration Summary</Typography>
             <Stack spacing={2.5}>
               <Box display="flex" justifyContent="space-between" alignItems="center">
                 <Typography variant="body2" fontWeight="500">Booking Window:</Typography>
@@ -750,7 +719,7 @@ export const BookingFlowDetails: React.FC = () => {
                 </Box>
               )}
             </Stack>
-          </ModernGlassCard>
+          </Box>
         </Stack>
       </TabPanel>
 
@@ -823,7 +792,6 @@ export const BookingFlowDetails: React.FC = () => {
           }}
           size="large"
           color="primary"
-          illustration="gradient"
         />
       </TabPanel>
 
@@ -860,15 +828,10 @@ export const BookingFlowDetails: React.FC = () => {
           <Typography variant="body1" sx={{ fontSize: '1rem', lineHeight: 1.6 }}>
             Are you sure you want to delete <strong>"{flow.name}"</strong>?
           </Typography>
-          <Alert 
+          <Alert
             severity="warning"
             sx={{
-              ...glassPresets.light,
-              borderRadius: tokens.spacing.radius.lg,
-              border: `1px solid ${tokens.color.warning[300]}`,
-              '& .MuiAlert-icon': {
-                color: tokens.color.warning[600]
-              }
+              borderRadius: 2,
             }}
           >
             <Typography variant="subtitle2" gutterBottom fontWeight="600">

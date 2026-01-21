@@ -25,45 +25,67 @@ export interface NotificationType {
 export interface NotificationPreference {
   id: number;
   user: number;
-  
+
   // Global delivery method toggles
   email_enabled: boolean;
   sms_enabled: boolean;
   in_app_enabled: boolean;
-  
-  // Category preferences
+  push_enabled: boolean;
+
+  // Category preferences - System
   system_email: boolean;
   system_sms: boolean;
   system_in_app: boolean;
-  
+  system_push: boolean;
+
+  // Category preferences - Event
   event_email: boolean;
   event_sms: boolean;
   event_in_app: boolean;
-  
+  event_push: boolean;
+
+  // Category preferences - Task
   task_email: boolean;
   task_sms: boolean;
   task_in_app: boolean;
-  
+  task_push: boolean;
+
+  // Category preferences - Payment
   payment_email: boolean;
   payment_sms: boolean;
   payment_in_app: boolean;
-  
+  payment_push: boolean;
+
+  // Category preferences - Client
   client_email: boolean;
   client_sms: boolean;
   client_in_app: boolean;
-  
+  client_push: boolean;
+
+  // Category preferences - Contract
   contract_email: boolean;
   contract_sms: boolean;
   contract_in_app: boolean;
-  
+  contract_push: boolean;
+
+  // Category preferences - Workflow
   workflow_email: boolean;
   workflow_sms: boolean;
   workflow_in_app: boolean;
-  
+  workflow_push: boolean;
+
+  // Category preferences - Communication
   communication_email: boolean;
   communication_sms: boolean;
   communication_in_app: boolean;
-  
+  communication_push: boolean;
+
+  // Marketing preferences (opt-in only for GDPR/DPA compliance)
+  marketing_email: boolean;
+  marketing_sms: boolean;
+  marketing_in_app: boolean;
+  marketing_push: boolean;
+
   // Advanced preferences
   quiet_hours_enabled: boolean;
   quiet_hours_start: string | null;
@@ -71,7 +93,7 @@ export interface NotificationPreference {
   digest_frequency: DigestFrequency;
   disabled_types: number[];
   disabled_types_details?: NotificationType[];
-  
+
   created_at: string;
   updated_at: string;
 }
@@ -107,7 +129,7 @@ export interface Notification {
   updated_at: string;
 }
 
-export type NotificationCategory = 
+export type NotificationCategory =
   | 'SYSTEM'
   | 'EVENT'
   | 'TASK'
@@ -115,7 +137,8 @@ export type NotificationCategory =
   | 'CLIENT'
   | 'CONTRACT'
   | 'WORKFLOW'
-  | 'COMMUNICATION';
+  | 'COMMUNICATION'
+  | 'MARKETING';
 
 export type NotificationPriority = 'LOW' | 'NORMAL' | 'HIGH' | 'URGENT';
 
@@ -130,6 +153,7 @@ export const NOTIFICATION_CATEGORIES = [
   { value: 'CONTRACT', label: 'Contract Management' },
   { value: 'WORKFLOW', label: 'Workflow Updates' },
   { value: 'COMMUNICATION', label: 'Communication Updates' },
+  { value: 'MARKETING', label: 'Marketing & Promotions' },
 ] as const;
 
 export const NOTIFICATION_PRIORITIES = [
@@ -174,40 +198,62 @@ export interface UpdateNotificationPreferenceData {
   email_enabled?: boolean;
   sms_enabled?: boolean;
   in_app_enabled?: boolean;
-  
-  // Category preferences
+  push_enabled?: boolean;
+
+  // Category preferences - System
   system_email?: boolean;
   system_sms?: boolean;
   system_in_app?: boolean;
-  
+  system_push?: boolean;
+
+  // Category preferences - Event
   event_email?: boolean;
   event_sms?: boolean;
   event_in_app?: boolean;
-  
+  event_push?: boolean;
+
+  // Category preferences - Task
   task_email?: boolean;
   task_sms?: boolean;
   task_in_app?: boolean;
-  
+  task_push?: boolean;
+
+  // Category preferences - Payment
   payment_email?: boolean;
   payment_sms?: boolean;
   payment_in_app?: boolean;
-  
+  payment_push?: boolean;
+
+  // Category preferences - Client
   client_email?: boolean;
   client_sms?: boolean;
   client_in_app?: boolean;
-  
+  client_push?: boolean;
+
+  // Category preferences - Contract
   contract_email?: boolean;
   contract_sms?: boolean;
   contract_in_app?: boolean;
-  
+  contract_push?: boolean;
+
+  // Category preferences - Workflow
   workflow_email?: boolean;
   workflow_sms?: boolean;
   workflow_in_app?: boolean;
-  
+  workflow_push?: boolean;
+
+  // Category preferences - Communication
   communication_email?: boolean;
   communication_sms?: boolean;
   communication_in_app?: boolean;
-  
+  communication_push?: boolean;
+
+  // Marketing preferences (opt-in only for GDPR/DPA compliance)
+  marketing_email?: boolean;
+  marketing_sms?: boolean;
+  marketing_in_app?: boolean;
+  marketing_push?: boolean;
+
   // Advanced preferences
   quiet_hours_enabled?: boolean;
   quiet_hours_start?: string | null;
@@ -243,40 +289,62 @@ export interface NotificationPreferenceFormData {
   email_enabled: boolean;
   sms_enabled: boolean;
   in_app_enabled: boolean;
-  
-  // Category preferences  
+  push_enabled: boolean;
+
+  // Category preferences - System
   system_email: boolean;
   system_sms: boolean;
   system_in_app: boolean;
-  
+  system_push: boolean;
+
+  // Category preferences - Event
   event_email: boolean;
   event_sms: boolean;
   event_in_app: boolean;
-  
+  event_push: boolean;
+
+  // Category preferences - Task
   task_email: boolean;
   task_sms: boolean;
   task_in_app: boolean;
-  
+  task_push: boolean;
+
+  // Category preferences - Payment
   payment_email: boolean;
   payment_sms: boolean;
   payment_in_app: boolean;
-  
+  payment_push: boolean;
+
+  // Category preferences - Client
   client_email: boolean;
   client_sms: boolean;
   client_in_app: boolean;
-  
+  client_push: boolean;
+
+  // Category preferences - Contract
   contract_email: boolean;
   contract_sms: boolean;
   contract_in_app: boolean;
-  
+  contract_push: boolean;
+
+  // Category preferences - Workflow
   workflow_email: boolean;
   workflow_sms: boolean;
   workflow_in_app: boolean;
-  
+  workflow_push: boolean;
+
+  // Category preferences - Communication
   communication_email: boolean;
   communication_sms: boolean;
   communication_in_app: boolean;
-  
+  communication_push: boolean;
+
+  // Marketing preferences (opt-in only for GDPR/DPA compliance)
+  marketing_email: boolean;
+  marketing_sms: boolean;
+  marketing_in_app: boolean;
+  marketing_push: boolean;
+
   // Advanced preferences
   quiet_hours_enabled: boolean;
   quiet_hours_start: string;

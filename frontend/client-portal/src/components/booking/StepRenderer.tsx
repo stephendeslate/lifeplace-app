@@ -7,6 +7,7 @@ import { useBookingSession } from '../../hooks/booking/useBookingCore';
 
 // Import step components
 import { CleanIntroductionStep } from './steps/CleanIntroductionStep';
+import { VenueSelectionStep } from './steps/VenueSelectionStep';
 import { IntelligentDateTimeStep } from './steps/IntelligentDateTimeStep';
 import { EnhancedContactInfoStep } from './steps/EnhancedContactInfoStep';
 import { PaymentStep } from './steps/PaymentStep';
@@ -15,17 +16,19 @@ import { ConfirmationStep } from './steps/ConfirmationStep';
 import { CleanPackageSelectionStep } from './steps/CleanPackageSelectionStep';
 import { AddonSelectionStep } from './steps/AddonSelectionStep';
 import { PricingSummaryStep } from './steps/PricingSummaryStep';
-import type { 
-  ContactInfoStepConfiguration, 
-  DateTimeStepConfiguration, 
-  IntroductionStepConfiguration, 
+import type {
+  ContactInfoStepConfiguration,
+  DateTimeStepConfiguration,
+  IntroductionStepConfiguration,
   PaymentInfoStepConfiguration,
   QuestionnaireStepConfiguration,
   PackageSelectionStepConfiguration,
   AddonSelectionStepConfiguration,
   ConfirmationStepConfiguration,
   StepValidationResult,
-  PricingSummaryStepConfiguration
+  PricingSummaryStepConfiguration,
+  VenueSelectionStepConfiguration,
+  RentableVenue,
 } from '../../types/booking';
 
 
@@ -49,9 +52,9 @@ export const StepRenderer: React.FC = () => {
       // The context will handle both local state and backend updates
       await actions.updateStepData(stepType, data as Record<string, unknown>);
     } catch (error) {
-      console.error('Failed to update step data:', error);
+      if (import.meta.env.DEV) console.error('Failed to update step data:', error);
     }
-  }, [currentStep, actions]);
+  }, [currentStep, actions.updateStepData]);
 
   const handleValidation = useCallback(async (data: unknown): Promise<StepValidationResult> => {
     if (!currentStep) {
@@ -62,13 +65,17 @@ export const StepRenderer: React.FC = () => {
       const result = await validateStep(currentStep.id as number, data as Record<string, unknown>);
       return result || { isValid: false, errors: [{ field: 'general', message: 'Validation failed' }] };
     } catch (error) {
-      console.error('Failed to validate step:', error);
+      if (import.meta.env.DEV) console.error('Failed to validate step:', error);
       return { isValid: false, errors: [{ field: 'general', message: 'Validation failed' }] };
     }
   }, [currentStep, validateStep]);
 
   const handleIntroductionChange = useCallback((data: unknown) => {
     handleDataChange('introduction', data);
+  }, [handleDataChange]);
+
+  const handleVenueSelectionChange = useCallback((data: unknown) => {
+    handleDataChange('venue_selection', data);
   }, [handleDataChange]);
 
   const handleDateTimeChange = useCallback((data: unknown) => {
@@ -137,7 +144,25 @@ export const StepRenderer: React.FC = () => {
         />
       );
 
-    case 'date_time':
+    case 'venue_selection':
+      return (
+        <VenueSelectionStep
+          stepData={state.stepData.venue_selection}
+          config={configuration_data as VenueSelectionStepConfiguration | null}
+          onDataChange={handleVenueSelectionChange}
+          validationErrors={mergedValidationErrors}
+          isValidating={state.ui.isValidating}
+          eventTypeId={state.currentFlow?.event_type}
+          isSkippable={currentStep.is_skippable as boolean | undefined}
+        />
+      );
+
+    case 'date_time': {
+      // Get selectedPackageId from booking data (could come from venue_selection or package_selection)
+      const bookingData = state.currentSession?.booking_data || {};
+      const selectedPackages = bookingData.selected_packages as Array<{ product_id: number }> | undefined;
+      const selectedPackageId = selectedPackages?.[0]?.product_id || null;
+
       return (
         <IntelligentDateTimeStep
           stepData={state.stepData.date_time}
@@ -147,8 +172,10 @@ export const StepRenderer: React.FC = () => {
           isValidating={state.ui.isValidating}
           onValidate={handleValidation}
           flow={state.currentFlow}
+          selectedPackageId={selectedPackageId}
         />
       );
+    }
 
     case 'questionnaire':
       return (
@@ -170,10 +197,33 @@ export const StepRenderer: React.FC = () => {
           onDataChange={handlePackageSelectionChange}
           validationErrors={mergedValidationErrors}
           isValidating={state.ui.isValidating}
+          venueSelectionData={state.stepData.venue_selection}
+          dateTimeStepData={state.stepData.date_time}
+          eventTypeId={state.currentFlow?.event_type}
         />
       );
 
-    case 'addon_selection':
+    case 'addon_selection': {
+      // Get selected venues from booking data
+      const bookingData = state.currentSession?.booking_data || {};
+      const venueSelectionData = bookingData.venue_selection as { selected_venue_ids?: number[] } | undefined;
+      const selectedVenueIds = venueSelectionData?.selected_venue_ids || [];
+
+      // Get venue details from package selection step config or venue selection step config
+      // We need to get the actual venue objects, not just IDs
+      // This requires fetching from the available venues in the config
+      const venueConfig = state.currentFlow?.enabled_steps?.find((s: { step_type: string; configuration_data?: unknown }) => s.step_type === 'venue_selection')?.configuration_data as { available_venues_details?: RentableVenue[] } | undefined;
+      const selectedVenues = venueConfig?.available_venues_details?.filter(v => selectedVenueIds.includes(v.id)) || [];
+
+      // Get existing venue_additional_hours from multiple sources (step data, booking data)
+      const packageSelectionData = state.stepData.package_selection;
+      const addonSelectionData = state.stepData.addon_selection;
+      const bookingDataHours = state.currentSession?.booking_data?.venue_additional_hours as Record<string, number> | undefined;
+      const venueAdditionalHours = addonSelectionData?.venue_additional_hours ||
+        packageSelectionData?.venue_additional_hours ||
+        bookingDataHours ||
+        {};
+
       return (
         <AddonSelectionStep
           stepData={state.stepData.addon_selection}
@@ -181,8 +231,11 @@ export const StepRenderer: React.FC = () => {
           onDataChange={handleAddonSelectionChange}
           validationErrors={mergedValidationErrors}
           isValidating={state.ui.isValidating}
+          selectedVenues={selectedVenues}
+          venueAdditionalHoursData={venueAdditionalHours}
         />
       );
+    }
 
     case 'pricing_summary':
       return (
@@ -237,27 +290,6 @@ export const StepRenderer: React.FC = () => {
           session={state.currentSession}
           completedBooking={null as unknown as Record<string, unknown> | undefined}
           onValidate={handleValidation}
-        />
-      );
-
-    case 'review_booking':
-      // DEPRECATED: review_booking was removed in migration 0015
-      // This fallback handles legacy production data during migration
-      console.warn(
-        `[StepRenderer] Deprecated 'review_booking' step encountered. ` +
-        `Using PricingSummaryStep as fallback. This step should be migrated to 'pricing_summary'.`
-      );
-      return (
-        <PricingSummaryStep
-          stepData={state.stepData.pricing_summary}
-          allStepData={state.stepData}
-          config={configuration_data as PricingSummaryStepConfiguration | null}
-          onDataChange={handlePricingSummaryChange}
-          validationErrors={mergedValidationErrors}
-          isValidating={state.ui.isValidating}
-          flow={state.currentFlow}
-          session={state.currentSession}
-          totalPrice={state.totalPrice}
         />
       );
 

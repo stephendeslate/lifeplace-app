@@ -27,13 +27,12 @@ import {
   Payment as InvoiceIcon,
   MoreVert as MoreVertIcon,
   Visibility as ViewIcon,
-  Edit as EditIcon,
   Send as SendIcon,
   GetApp as DownloadIcon,
   Receipt as ReceiptIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
-import { useInvoicesForClient } from '../../hooks/usePayments';
+import { useInvoicesForClient, useSendInvoice, useDownloadInvoicePdf } from '../../hooks/usePayments';
 import type { Invoice } from '../../types/payments.types';
 import type { Client } from '../../types/clients.types';
 import { formatCurrency } from '../../utils/currency';
@@ -52,6 +51,8 @@ export const ClientInvoices: React.FC<ClientInvoicesProps> = ({ client }) => {
   const { settings: currencySettings } = useCurrencySettings();
 
   const { data: invoices = [], isLoading } = useInvoicesForClient(client.id);
+  const { mutate: sendInvoice, isPending: isSendingInvoice } = useSendInvoice();
+  const { mutate: downloadPdf, isPending: isDownloadingPdf } = useDownloadInvoicePdf();
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, invoice: Invoice) => {
     setAnchorEl(event.currentTarget);
@@ -68,16 +69,18 @@ export const ClientInvoices: React.FC<ClientInvoicesProps> = ({ client }) => {
     setDetailDialogOpen(true);
   };
 
-  const handleEditInvoice = (invoice: Invoice) => {
-    navigate(`/invoices/${invoice.id}/edit`);
-  };
-
-  const handleCreateInvoice = () => {
-    navigate(`/invoices/new?client=${client.id}`);
-  };
-
   const handleRecordPayment = (invoice: Invoice) => {
     navigate(`/payments/new?invoice=${invoice.id}`);
+  };
+
+  const handleSendInvoice = (invoice: Invoice) => {
+    sendInvoice(invoice.id);
+    handleMenuClose();
+  };
+
+  const handleDownloadPdf = (invoice: Invoice) => {
+    downloadPdf(invoice.id);
+    handleMenuClose();
   };
 
   const formatInvoiceAmount = (amount: string | number, invoiceCurrency?: string) => {
@@ -125,14 +128,14 @@ export const ClientInvoices: React.FC<ClientInvoicesProps> = ({ client }) => {
           No Invoices Yet
         </Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-          Create an invoice to bill this client for services.
+          Invoices are created from event pages. View an event to create an invoice.
         </Typography>
         <Button
-          variant="contained"
+          variant="outlined"
           startIcon={<AddIcon />}
-          onClick={handleCreateInvoice}
+          onClick={() => navigate(`/events?client=${client.id}`)}
         >
-          Create Invoice
+          View Events
         </Button>
       </Paper>
     );
@@ -143,17 +146,17 @@ export const ClientInvoices: React.FC<ClientInvoicesProps> = ({ client }) => {
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
         <Typography variant="h6">Invoices</Typography>
         <Button
-          variant="contained"
+          variant="outlined"
           startIcon={<AddIcon />}
-          onClick={handleCreateInvoice}
+          onClick={() => navigate(`/events?client=${client.id}`)}
           size="small"
         >
-          Create Invoice
+          View Events
         </Button>
       </Box>
 
       <TableContainer component={Paper}>
-        <Table>
+        <Table size="small">
           <TableHead>
             <TableRow>
               <TableCell>Invoice #</TableCell>
@@ -232,20 +235,23 @@ export const ClientInvoices: React.FC<ClientInvoicesProps> = ({ client }) => {
         open={Boolean(anchorEl)}
         onClose={handleMenuClose}
       >
+        <MenuItem onClick={() => selectedInvoice && handleViewInvoice(selectedInvoice)}>
+          <ListItemIcon>
+            <ViewIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>View Details</ListItemText>
+        </MenuItem>
         {selectedInvoice?.status === 'DRAFT' && (
-          <MenuItem onClick={() => selectedInvoice && handleEditInvoice(selectedInvoice)}>
-            <ListItemIcon>
-              <EditIcon fontSize="small" />
-            </ListItemIcon>
-            <ListItemText>Edit</ListItemText>
-          </MenuItem>
-        )}
-        {selectedInvoice?.status === 'DRAFT' && (
-          <MenuItem onClick={handleMenuClose}>
+          <MenuItem
+            onClick={() => selectedInvoice && handleSendInvoice(selectedInvoice)}
+            disabled={isSendingInvoice}
+          >
             <ListItemIcon>
               <SendIcon fontSize="small" />
             </ListItemIcon>
-            <ListItemText>Send Invoice</ListItemText>
+            <ListItemText>
+              {isSendingInvoice ? 'Sending...' : 'Send Invoice'}
+            </ListItemText>
           </MenuItem>
         )}
         {selectedInvoice?.status !== 'PAID' && selectedInvoice?.status !== 'CANCELLED' && (
@@ -256,11 +262,16 @@ export const ClientInvoices: React.FC<ClientInvoicesProps> = ({ client }) => {
             <ListItemText>Record Payment</ListItemText>
           </MenuItem>
         )}
-        <MenuItem onClick={handleMenuClose}>
+        <MenuItem
+          onClick={() => selectedInvoice && handleDownloadPdf(selectedInvoice)}
+          disabled={isDownloadingPdf}
+        >
           <ListItemIcon>
             <DownloadIcon fontSize="small" />
           </ListItemIcon>
-          <ListItemText>Download PDF</ListItemText>
+          <ListItemText>
+            {isDownloadingPdf ? 'Downloading...' : 'Download PDF'}
+          </ListItemText>
         </MenuItem>
       </Menu>
 

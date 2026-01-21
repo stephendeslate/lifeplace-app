@@ -8,13 +8,6 @@ export interface SettingsFavorite {
   addedAt: string;
 }
 
-export interface SettingsRecentItem {
-  id: string;
-  path: string;
-  label: string;
-  visitedAt: string;
-}
-
 export interface SettingsConfigHealth {
   status: 'healthy' | 'warning' | 'error' | 'incomplete';
   completionRate: number;
@@ -48,13 +41,6 @@ export interface EnhancedSettingsNavigationGroup {
   items: EnhancedSettingsNavigationItem[];
   completionRate?: number;
   expandedByDefault?: boolean;
-}
-
-export interface SettingsLayoutMode {
-  sidebarCollapsed: boolean;
-  sidebarWidth: 'compact' | 'normal' | 'expanded';
-  contentLayout: 'cards' | 'list' | 'grid';
-  darkMode: boolean;
 }
 
 export interface SettingsFormSection {
@@ -108,13 +94,6 @@ export interface ProgressiveFormProps {
   variant?: 'stepped' | 'accordion' | 'tabs';
 }
 
-export interface KeyboardShortcut {
-  keys: string[];
-  action: string;
-  handler: () => void;
-  description: string;
-}
-
 export interface ThemeSettings {
   mode: 'light' | 'dark' | 'auto';
   primaryColor: string;
@@ -128,13 +107,6 @@ export interface SettingsContextValue {
   favorites: SettingsFavorite[];
   addFavorite: (item: SettingsFavorite) => void;
   removeFavorite: (id: string) => void;
-  recentItems: SettingsRecentItem[];
-  addRecentItem: (item: SettingsRecentItem) => void;
-  layoutMode: SettingsLayoutMode;
-  setLayoutMode: (mode: Partial<SettingsLayoutMode>) => void;
   theme: ThemeSettings;
   setTheme: (theme: Partial<ThemeSettings>) => void;
-  shortcuts: KeyboardShortcut[];
-  registerShortcut: (shortcut: KeyboardShortcut) => void;
-  unregisterShortcut: (keys: string[]) => void;
 }

@@ -3,8 +3,8 @@
 
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AccountTree as WorkflowIcon } from '@mui/icons-material';
-import { SettingsPage, type SettingsPageConfig, type SettingsTableColumn } from '../../../components/common/settings';
+import { AccountTree as WorkflowIcon, FileCopy as DuplicateIcon } from '@mui/icons-material';
+import { PermissionAwareSettingsPage, type SettingsPageConfig, type SettingsTableColumn } from '../../../components/common/settings';
 import { useWorkflowTemplates } from '../../../hooks/useWorkflows';
 import { useEventTypes } from '../../../hooks/useEvents';
 import type { WorkflowTemplate, CreateWorkflowTemplateData, UpdateWorkflowTemplateData } from '../../../types/workflows.types';
@@ -101,7 +101,9 @@ const defaultWorkflowTemplate: WorkflowTemplate = {
   event_type: null,
   event_type_name: '',
   is_active: true,
+  lead_stage_auto_stop: false,
   stages_count: 0,
+  events_using_count: 0,
   stages: [],
   created_at: '',
   updated_at: '',
@@ -118,10 +120,12 @@ export const WorkflowTemplates = () => {
     createTemplate,
     updateTemplate,
     deleteTemplate,
+    duplicateTemplate,
     refetchTemplates,
     isCreatingTemplate,
     isUpdatingTemplate,
     isDeletingTemplate,
+    isDuplicatingTemplate,
   } = useWorkflowTemplates();
 
   // Get event types for the form dropdown
@@ -215,22 +219,44 @@ export const WorkflowTemplates = () => {
     });
   };
 
+  // Fetch fresh workflow template data before editing to ensure we have the latest values
+  const handleFetchItem = async (id: string | number): Promise<WorkflowTemplate> => {
+    const { workflowsApi } = await import('../../../apis/workflows.api');
+    return workflowsApi.getWorkflowTemplate(Number(id));
+  };
+
   const handleRowClick = (template: WorkflowTemplate) => {
     navigate(`/settings/templates/workflow-templates/${template.id}`);
   };
 
+  const handleDuplicate = (template: WorkflowTemplate) => {
+    duplicateTemplate({ id: template.id });
+  };
+
+  // Custom table actions for duplicate
+  const customTableActions = [
+    {
+      label: 'Duplicate',
+      icon: <DuplicateIcon fontSize="small" />,
+      onClick: handleDuplicate,
+    },
+  ];
+
   return (
-    <SettingsPage
+    <PermissionAwareSettingsPage
       config={config}
+      requiredPermissions={['can_manage_workflows']}
       data={templates}
       defaultValues={defaultWorkflowTemplate}
-      isLoading={isLoadingTemplates}
+      isLoading={isLoadingTemplates || isDuplicatingTemplate}
       error={templatesError?.message}
       onRefresh={handleRefresh}
       onCreate={handleCreate}
       onUpdate={handleUpdate}
       onDelete={handleDelete}
+      onFetchItem={handleFetchItem}
       onRowClick={handleRowClick}
+      customTableActions={customTableActions}
       isCreating={isCreatingTemplate}
       isUpdating={isUpdatingTemplate}
       isDeleting={isDeletingTemplate}

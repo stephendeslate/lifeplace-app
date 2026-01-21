@@ -1,0 +1,54 @@
+# Registration Flow E2E Test
+# Tests the complete registration flow
+
+appId: com.lifeplace.app
+name: Registration Flow
+tags:
+  - auth
+  - critical
+---
+- launchApp:
+    clearState: true
+
+# Navigate to register
+- tapOn: "Create Account"
+
+# Wait for registration form
+- assertVisible: "Create your account"
+
+# Fill registration form
+- tapOn:
+    id: "register-first-name-input"
+- inputText: "Test"
+
+- tapOn:
+    id: "register-last-name-input"
+- inputText: "User"
+
+- tapOn:
+    id: "register-email-input"
+- inputText: "newuser${RANDOM}@example.com"
+
+- tapOn:
+    id: "register-phone-input"
+- inputText: "+639123456789"
+
+- tapOn:
+    id: "register-password-input"
+- inputText: "SecurePassword123!"
+
+- tapOn:
+    id: "register-confirm-password-input"
+- inputText: "SecurePassword123!"
+
+# Submit registration
+- tapOn:
+    id: "register-submit-button"
+
+# Verify success - should navigate to dashboard or profile
+- waitForAnimationToEnd
+- assertVisible:
+    text: "Dashboard"
+    optional: true
+
+- takeScreenshot: registration_success

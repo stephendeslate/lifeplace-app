@@ -284,9 +284,6 @@ export const BookingFlowPreviewPage: React.FC = () => {
                 
                 <Box sx={{ flexGrow: 1 }}>
                   <Typography variant="body2" fontWeight="medium">
-                    {step.name}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
                     {step.step_type_display}
                   </Typography>
                 </Box>
@@ -590,7 +587,7 @@ export const BookingFlowPreviewPage: React.FC = () => {
 
         {/* Main Preview Card - Placeholder for actual preview component */}
         <ModernCard
-          variant="glass"
+          variant="flat"
           size="large"
           color="primary"
           animation="none"
@@ -617,7 +614,7 @@ export const BookingFlowPreviewPage: React.FC = () => {
             </Typography>
             
             <ModernCard
-              variant="glass"
+              variant="flat"
               color="primary"
               size="small"
               animation="none"

@@ -17,6 +17,12 @@ from .models import CommunicationTemplate, CommunicationRecord
 from .config import communication_config
 from .resilience import provider_manager, delivery_queue
 from .monitoring import communication_metrics
+from .template_sandbox import (
+    sandboxed_template_engine,
+    validate_template_for_save,
+    TemplateSandboxError
+)
+from .layout_service import LayoutCompositionService
 
 User = get_user_model()
 logger = logging.getLogger(__name__)
@@ -60,40 +66,55 @@ class CommunicationTemplateService:
         # Check if template with name already exists
         if CommunicationTemplate.objects.filter(name__iexact=template_data['name']).exists():
             raise TemplateNameExists()
-        
-        # Validate template syntax
-        try:
-            if template_data.get('subject_template'):
-                Template(template_data['subject_template'])
-            Template(template_data['body_template'])
-        except Exception as e:
-            raise InvalidTemplateFormat(detail=f"Template syntax error: {str(e)}")
-        
+
+        # Validate template syntax and security using sandboxed engine
+        all_errors = []
+
+        if template_data.get('subject_template'):
+            is_valid, errors = validate_template_for_save(template_data['subject_template'])
+            if not is_valid:
+                all_errors.extend([f"Subject: {e}" for e in errors])
+
+        if template_data.get('body_template'):
+            is_valid, errors = validate_template_for_save(template_data['body_template'])
+            if not is_valid:
+                all_errors.extend([f"Body: {e}" for e in errors])
+
+        if all_errors:
+            raise InvalidTemplateFormat(detail=f"Template validation failed: {'; '.join(all_errors)}")
+
         return CommunicationTemplate.objects.create(**template_data)
     
     @staticmethod
     def update_template(template_id: int, template_data: Dict[str, Any]) -> CommunicationTemplate:
         """Update an existing template"""
         template = CommunicationTemplateService.get_template_by_id(template_id)
-        
+
         # Check if name is being changed and would conflict
         if 'name' in template_data and template_data['name'] != template.name:
             if CommunicationTemplate.objects.filter(name__iexact=template_data['name']).exists():
                 raise TemplateNameExists()
-        
-        # Validate template syntax
-        try:
-            if 'subject_template' in template_data and template_data['subject_template']:
-                Template(template_data['subject_template'])
-            if 'body_template' in template_data:
-                Template(template_data['body_template'])
-        except Exception as e:
-            raise InvalidTemplateFormat(detail=f"Template syntax error: {str(e)}")
-        
+
+        # Validate template syntax and security using sandboxed engine
+        all_errors = []
+
+        if 'subject_template' in template_data and template_data['subject_template']:
+            is_valid, errors = validate_template_for_save(template_data['subject_template'])
+            if not is_valid:
+                all_errors.extend([f"Subject: {e}" for e in errors])
+
+        if 'body_template' in template_data:
+            is_valid, errors = validate_template_for_save(template_data['body_template'])
+            if not is_valid:
+                all_errors.extend([f"Body: {e}" for e in errors])
+
+        if all_errors:
+            raise InvalidTemplateFormat(detail=f"Template validation failed: {'; '.join(all_errors)}")
+
         # Update template fields
         for key, value in template_data.items():
             setattr(template, key, value)
-        
+
         template.save()
         return template
     
@@ -109,57 +130,95 @@ class CommunicationTemplateService:
         return True
     
     @staticmethod
-    def preview_template(template_id: int, context_data: Dict[str, Any] = None) -> Dict[str, str]:
-        """Preview a template with context data - Enhanced for manual messages"""
+    def preview_template(
+        template_id: int,
+        context_data: Dict[str, Any] = None,
+        body_template_override: Optional[str] = None,
+        subject_template_override: Optional[str] = None,
+        layout_id_override: Optional[int] = None
+    ) -> Dict[str, str]:
+        """Preview a template with context data - Enhanced for manual messages, layout support, and live editing.
+
+        Args:
+            template_id: The ID of the template to preview
+            context_data: Dictionary of context variables for rendering
+            body_template_override: Override the saved body_template (for live editing preview)
+            subject_template_override: Override the saved subject_template (for live editing preview)
+            layout_id_override: Override the saved layout ID (for live editing preview).
+                               Pass 0 or explicit value to override; None means use saved layout.
+        """
+        from .models import EmailLayout
+
         template = CommunicationTemplateService.get_template_by_id(template_id)
-        
+
         if context_data is None:
             context_data = {}
-        
+
+        # Determine effective templates (use overrides if provided, otherwise use saved)
+        effective_body_template = body_template_override if body_template_override is not None else template.body_template
+        effective_subject_template = subject_template_override if subject_template_override is not None else template.subject_template
+
+        # Determine effective layout (use override if provided)
+        effective_layout = template.layout
+        if layout_id_override is not None:
+            if layout_id_override == 0 or layout_id_override == '':
+                # Explicitly no layout
+                effective_layout = None
+            else:
+                try:
+                    effective_layout = EmailLayout.objects.get(id=layout_id_override, is_active=True)
+                except EmailLayout.DoesNotExist:
+                    effective_layout = None
+
         try:
-            context = Context(context_data)
-            
             # Check if this is a custom/manual message with overrides
             custom_subject = context_data.get('custom_subject')
             custom_body = context_data.get('custom_body')
-            
+
             # Handle subject
             if custom_subject:
-                # Use custom subject for manual messages
-                subject = custom_subject
-            elif template.subject_template:
-                # Use template subject with context rendering
-                subject_template = Template(template.subject_template)
-                subject = subject_template.render(context)
+                # Use custom subject for manual messages (render it for variable substitution)
+                try:
+                    subject = sandboxed_template_engine.render(
+                        custom_subject, context_data, validate_first=True
+                    )
+                except TemplateSandboxError:
+                    # If custom subject fails validation, use it as-is
+                    subject = custom_subject
+            elif effective_subject_template:
+                # Use effective subject template with sandboxed rendering
+                subject = sandboxed_template_engine.render(
+                    effective_subject_template, context_data, validate_first=True
+                )
             else:
                 subject = None
-            
-            # Handle body
+
+            # Handle body with layout support
             if custom_body and template.category == 'MANUAL':
                 # For manual templates, create a combined template that includes the custom content
-                base_template = template.body_template
-                
+                base_template = effective_body_template
+
                 # Look for content placeholders in the template
                 content_placeholders = [
                     '{{content}}',
-                    '{{message}}', 
+                    '{{message}}',
                     '{{body}}',
                     '{{ content }}',
                     '{{ message }}',
                     '{{ body }}'
                 ]
-                
+
                 # Replace placeholder with custom content
                 combined_template = base_template
                 placeholder_found = False
-                
+
                 for placeholder in content_placeholders:
                     if placeholder in combined_template:
                         # Replace placeholder with user's custom content
                         combined_template = combined_template.replace(placeholder, custom_body)
                         placeholder_found = True
                         break
-                
+
                 # If no placeholder found, inject content into template structure
                 if not placeholder_found:
                     # Try to insert before closing body/content div
@@ -171,66 +230,174 @@ class CommunicationTemplateService:
                     else:
                         # Fallback: append to template
                         combined_template += f'<div style="margin: 16px 0;">{custom_body}</div>'
-                
-                # Now render the combined template with context
-                body_template = Template(combined_template)
-                body = body_template.render(context)
+
+                # Render the combined template
+                rendered_content = sandboxed_template_engine.render(
+                    combined_template, context_data, validate_first=True
+                )
+
+                # Apply layout if assigned (even for manual messages)
+                if effective_layout and template.channel == 'EMAIL':
+                    body = LayoutCompositionService.compose_content_only(
+                        content=rendered_content,
+                        layout=effective_layout,
+                        context=context_data,
+                        subject=subject
+                    )
+                else:
+                    body = rendered_content
             else:
-                # Use standard template rendering
-                body_template = Template(template.body_template)
-                body = body_template.render(context)
-            
+                # Standard template rendering
+                if effective_layout and template.channel == 'EMAIL':
+                    # Use layout composition with effective body template
+                    # Create a temporary template-like object for rendering
+                    body = LayoutCompositionService.compose_email_with_content(
+                        body_template=effective_body_template,
+                        layout=effective_layout,
+                        content_context=context_data,
+                        subject=subject
+                    )
+                else:
+                    # Legacy: render body_template directly (SMS or no layout)
+                    body = sandboxed_template_engine.render(
+                        effective_body_template, context_data, validate_first=True
+                    )
+
             return {
                 'subject': subject,
                 'body': body
             }
+        except TemplateSandboxError as e:
+            raise InvalidTemplateFormat(detail=f"Template security error: {str(e)}")
         except Exception as e:
             raise InvalidTemplateFormat(detail=f"Error rendering template: {str(e)}")
 
 
 class CommunicationService:
     """Service for sending and managing communications with resilience features"""
-    
+
+    # Categories that map to NotificationPreference fields
+    CATEGORY_PREFERENCE_MAP = {
+        'SYSTEM': 'system',
+        'MANUAL': 'communication',
+        'AUTO': 'communication',
+        'MARKETING': 'marketing',
+    }
+
     def __init__(self):
         # Use provider manager for resilience
         self.provider_manager = provider_manager
         print(f"🔧 CommunicationService initialized with ProviderManager ({len(self.provider_manager.providers)} providers)")
+
+    def _check_user_preferences(
+        self,
+        client: Optional[User],  # type: ignore
+        channel: str,
+        category: str
+    ) -> tuple[bool, str]:
+        """
+        Check if a user has opted in to receive communications of this type.
+
+        Returns:
+            tuple: (is_allowed: bool, reason: str)
+        """
+        # If no client, we can't check preferences - allow the send
+        if client is None:
+            return True, ""
+
+        try:
+            # Get user's notification preferences
+            from core.domains.notifications.models import NotificationPreference
+
+            try:
+                preferences = NotificationPreference.objects.get(user=client)
+            except NotificationPreference.DoesNotExist:
+                # No preferences set - use defaults (allow)
+                return True, ""
+
+            # Determine the method based on channel
+            method = 'email' if channel == 'EMAIL' else 'sms'
+
+            # Check global channel toggle first
+            if not getattr(preferences, f'{method}_enabled', True):
+                return False, f"User has disabled all {method} communications"
+
+            # Map category to preference field
+            preference_category = self.CATEGORY_PREFERENCE_MAP.get(category, 'communication')
+
+            # Check category-specific preference
+            preference_field = f'{preference_category}_{method}'
+            if not getattr(preferences, preference_field, True):
+                return False, f"User has disabled {preference_category} {method} communications"
+
+            # Check quiet hours if enabled
+            if preferences.quiet_hours_enabled and preferences.quiet_hours_start and preferences.quiet_hours_end:
+                from django.utils import timezone
+                current_time = timezone.now().time()
+                start = preferences.quiet_hours_start
+                end = preferences.quiet_hours_end
+
+                # Handle overnight quiet hours (e.g., 22:00 to 06:00)
+                if start <= end:
+                    in_quiet_hours = start <= current_time <= end
+                else:
+                    in_quiet_hours = current_time >= start or current_time <= end
+
+                if in_quiet_hours and method == 'sms':
+                    # Only block SMS during quiet hours (email can wait)
+                    return False, "User is in quiet hours - SMS blocked"
+
+            return True, ""
+
+        except Exception as e:
+            logger.warning(f"Error checking user preferences: {e}")
+            # On error, allow the send (fail open for communications)
+            return True, ""
     
     def send_communication(
         self,
         template_name: str,
         recipient: str,
         context_data: Dict[str, Any] = None,
-        client: Optional[User] = None, # type: ignore
-        sent_by: Optional[User] = None, # type: ignore
-        use_async: bool = False
+        client: Optional[User] = None,  # type: ignore
+        sent_by: Optional[User] = None,  # type: ignore
+        use_async: bool = False,
+        event=None,  # Optional Event instance
+        payment=None,  # Optional Payment instance for payment-related communications
+        invoice=None,  # Optional Invoice instance for invoice-related communications
+        skip_preference_check: bool = False  # Skip user preference check for critical messages
     ) -> Optional[CommunicationRecord]:
         """Send a communication using a template with optional async processing"""
-        
-        # If async is requested and Celery is available
-        if use_async and not getattr(settings, 'CELERY_TASK_ALWAYS_EAGER', True):
+
+        # If async is requested and Celery is available (not in eager/sync mode)
+        # Note: CELERY_TASK_ALWAYS_EAGER=True means tasks run synchronously (for testing)
+        if use_async and not getattr(settings, 'CELERY_TASK_ALWAYS_EAGER', False):
             try:
                 from .tasks import send_communication_async
-                
+
                 task_result = send_communication_async.delay(
                     template_name=template_name,
                     recipient=recipient,
                     context_data=context_data,
                     client_id=client.id if client else None,
-                    sent_by_id=sent_by.id if sent_by else None
+                    sent_by_id=sent_by.id if sent_by else None,
+                    event_id=event.id if event else None,
+                    payment_id=payment.id if payment else None,
+                    invoice_id=invoice.id if invoice else None,
+                    skip_preference_check=skip_preference_check
                 )
-                
+
                 logger.info(f"Queued async communication: task_id={task_result.id}")
                 print(f"🚀 Queued async communication: {task_result.id}")
-                
+
                 # Return a placeholder record (actual record will be created by task)
                 return None  # Async tasks don't return records immediately
-                
+
             except ImportError:
                 logger.warning("Celery not available, falling back to synchronous sending")
             except Exception as e:
                 logger.warning(f"Async task failed, falling back to sync: {str(e)}")
-        
+
         # Synchronous sending (default behavior)
         try:
             template = CommunicationTemplateService.get_template_by_name(template_name)
@@ -238,9 +405,11 @@ class CommunicationService:
             logger.error(f"Template '{template_name}' not found")
             print(f"❌ Template '{template_name}' not found")
             return None
-        
+
         return self.send_communication_by_template(
-            template, recipient, context_data, client, sent_by
+            template, recipient, context_data, client, sent_by, event,
+            payment=payment, invoice=invoice,
+            skip_preference_check=skip_preference_check
         )
     
     def send_communication_by_template(
@@ -248,14 +417,64 @@ class CommunicationService:
         template: CommunicationTemplate,
         recipient: str,
         context_data: Dict[str, Any] = None,
-        client: Optional[User] = None, # type: ignore
-        sent_by: Optional[User] = None # type: ignore
+        client: Optional[User] = None,  # type: ignore
+        sent_by: Optional[User] = None,  # type: ignore
+        event=None,  # Optional Event instance
+        payment=None,  # Optional Payment instance for payment-related communications
+        invoice=None,  # Optional Invoice instance for invoice-related communications
+        skip_preference_check: bool = False  # Skip user preference check for critical messages
     ) -> Optional[CommunicationRecord]:
-        """Send communication using template object - Enhanced for manual messages"""
-        
+        """Send communication using template object - Enhanced for manual messages and payments"""
+
         if context_data is None:
             context_data = {}
-        
+
+        # Auto-generate payment/invoice context if provided
+        if payment or invoice:
+            try:
+                from .context_service import CommunicationContextService, ContextType
+
+                # Determine context type
+                if payment:
+                    ctx_type = ContextType.PAYMENT
+                elif invoice:
+                    ctx_type = ContextType.INVOICE
+                else:
+                    ctx_type = template.context_type
+
+                # Generate context with payment/invoice data
+                generated_context = CommunicationContextService.generate_context(
+                    context_type=ctx_type,
+                    client=client,
+                    event=event,
+                    payment=payment,
+                    invoice=invoice,
+                    validate=False  # Don't validate, we're providing what we have
+                )
+
+                # Merge generated context with provided context (provided takes precedence)
+                generated_context.update(context_data)
+                context_data = generated_context
+
+            except Exception as e:
+                logger.warning(f"Failed to generate payment/invoice context: {e}")
+
+        # Check user preferences before sending (GDPR/CAN-SPAM compliance)
+        if not skip_preference_check and client is not None:
+            is_allowed, reason = self._check_user_preferences(
+                client=client,
+                channel=template.channel,
+                category=template.category
+            )
+            if not is_allowed:
+                logger.info(
+                    f"Communication blocked by user preference: {template.name} to {recipient}. "
+                    f"Reason: {reason}"
+                )
+                print(f"⏹️ Communication blocked by user preference: {reason}")
+                # Return None but don't create a failed record - user opted out
+                return None
+
         print(f"🚀 Sending communication: {template.name} to {recipient}")
         
         # Check if this is a manual message with custom content
@@ -316,6 +535,7 @@ class CommunicationService:
             body=body,
             client=client,
             sent_by=sent_by,
+            event=event,
             context_data=context_data,
             delivery_status='PENDING'
         )
@@ -401,8 +621,8 @@ class CommunicationService:
     ) -> List[CommunicationRecord]:
         """Send bulk communications with optional async processing"""
         
-        # For large batches, prefer async processing
-        if use_async and len(recipients) > 5 and not getattr(settings, 'CELERY_TASK_ALWAYS_EAGER', True):
+        # For large batches, prefer async processing (not in eager/sync mode)
+        if use_async and len(recipients) > 5 and not getattr(settings, 'CELERY_TASK_ALWAYS_EAGER', False):
             try:
                 from .tasks import send_bulk_communications_async
                 

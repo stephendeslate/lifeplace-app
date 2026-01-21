@@ -49,19 +49,27 @@ export class ProductsApi {
 
   /**
    * Get packages only (type = 'PACKAGE')
+   * @param eventTypeId - Optional event type ID to filter packages.
+   *                      If provided, only packages associated with this event type are returned.
+   *                      Packages with no event types are excluded when filtering.
    */
-  static async getPackages(): Promise<ProductOption[]> {
+  static async getPackages(eventTypeId?: number): Promise<ProductOption[]> {
+    const params: Record<string, unknown> = {
+      is_active: true,
+      type: 'PACKAGE'
+    };
+
+    // Add event_type_id filter if provided
+    if (eventTypeId !== undefined && eventTypeId !== null) {
+      params.event_type_id = eventTypeId;
+    }
+
     const response = await api.get<{
       count: number;
       next: string | null;
       previous: string | null;
       results: ProductOption[];
-    }>('/products/products/', {  // Fixed: changed from /options/ to /products/
-      params: { 
-        is_active: true,
-        type: 'PACKAGE'
-      }
-    });
+    }>('/products/products/', { params });
     // Handle paginated response structure
     return response.data.results || [];
   }
@@ -160,10 +168,10 @@ export class ProductsApi {
       
       return productMap;
     } catch (error) {
-      console.error('Failed to fetch products by IDs via batch API:', error);
-      
+      if (import.meta.env.DEV) console.error('Failed to fetch products by IDs via batch API:', error);
+
       // Fallback to individual requests only if batch API fails
-      console.warn('Falling back to individual product requests');
+      if (import.meta.env.DEV) console.warn('Falling back to individual product requests');
       const productMap = new Map<number, ProductOption>();
       
       // Try fetching individually and handle failures gracefully
@@ -172,7 +180,7 @@ export class ProductsApi {
           const product = await this.getProductOption(id);
           productMap.set(id, product);
         } catch (err) {
-          console.warn(`Failed to fetch product ${id}:`, err);
+          if (import.meta.env.DEV) console.warn(`Failed to fetch product ${id}:`, err);
         }
       }
       
@@ -212,8 +220,10 @@ export class ProductsApi {
     const basePrice = parseFloat(packageOption.base_price);
     
     if (packageOption.has_excess_hours && packageOption.included_hours) {
-      const includedHours = packageOption.included_hours;
-      
+      const includedHours = typeof packageOption.included_hours === 'number'
+        ? packageOption.included_hours
+        : parseFloat(String(packageOption.included_hours)) || 0;
+
       if (duration <= includedHours) {
         return basePrice;
       } else {
@@ -239,6 +249,25 @@ export class ProductsApi {
   ): number {
     const basePrice = parseFloat(addon.base_price);
     return basePrice * quantity;
+  }
+
+  /**
+   * Calculate total with excess hours costs for venues
+   */
+  static calculateTotalWithExcessHours(
+    basePrice: number,
+    venues: Array<{ id: number; standalone_excess_hour_price: string }>,
+    venueAdditionalHours: Record<number, number>
+  ): number {
+    let total = basePrice;
+
+    venues.forEach(venue => {
+      const additionalHours = venueAdditionalHours[venue.id] || 0;
+      const excessPrice = parseFloat(venue.standalone_excess_hour_price || '0');
+      total += additionalHours * excessPrice;
+    });
+
+    return total;
   }
 
   /**

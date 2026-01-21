@@ -1,6 +1,6 @@
 // frontend/client-portal/src/components/booking/BookingContainer.tsx
 
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Box,
   Container,
@@ -18,6 +18,7 @@ import {
   Backdrop,
   CircularProgress,
   alpha,
+  Collapse,
 } from '@mui/material';
 import { GlassCard } from '../../design-system/components/GlassCard';
 import { AnimatedElement } from '../../design-system/components/AnimatedElement';
@@ -28,6 +29,7 @@ import {
   Close,
   Schedule,
   Warning,
+  KeyboardArrowDown,
 } from '@mui/icons-material';
 // import { useNavigate } from 'react-router-dom'; // Available for future use
 import { useBooking } from '../../contexts/BookingContext';
@@ -45,6 +47,7 @@ export const BookingContainer: React.FC<BookingContainerProps> = ({ children }) 
   // const navigate = useNavigate();
   const { state, actions } = useBooking();
   const { formatAmount } = useCurrencySettings();
+  const [priceDetailsExpanded, setPriceDetailsExpanded] = useState(false);
 
   // Use session timer hook for expiry tracking
   const { 
@@ -54,7 +57,7 @@ export const BookingContainer: React.FC<BookingContainerProps> = ({ children }) 
   } = useSessionTimer(state.currentSession?.expires_at);
 
   // Get current step info
-  const getCurrentStepInfo = () => {
+  const getCurrentStepInfo = (): { stepName: string; stepIndex: number } => {
     if (!state.currentFlow || !state.currentSession?.current_step) {
       return { stepName: 'Loading...', stepIndex: 0 };
     }
@@ -63,9 +66,9 @@ export const BookingContainer: React.FC<BookingContainerProps> = ({ children }) 
     const stepIndex = state.currentFlow.enabled_steps.findIndex(
       (step) => step.id === currentStep.id
     );
-    
+
     return {
-      stepName: currentStep.name as string,
+      stepName: String(currentStep.step_type_display || 'Step'),
       stepIndex: Math.max(0, stepIndex),
     };
   };
@@ -208,13 +211,13 @@ export const BookingContainer: React.FC<BookingContainerProps> = ({ children }) 
             />
           </Box>
 
-          {/* Step Navigation (integrated) */}
+          {/* Step Navigation - Desktop Stepper */}
           {!isMobile && state.currentFlow && (
             <Box sx={{ mt: 2 }}>
               <Stepper activeStep={stepIndex} alternativeLabel>
                 {state.currentFlow.enabled_steps.map(
                   (step, index) => (
-                    <Step 
+                    <Step
                       key={step.id}
                       completed={state.progress.completedSteps.includes(step.id)}
                     >
@@ -226,12 +229,55 @@ export const BookingContainer: React.FC<BookingContainerProps> = ({ children }) 
                           },
                         }}
                       >
-                        {step.name}
+                        {step.step_type_display}
                       </StepLabel>
                     </Step>
                   )
                 )}
               </Stepper>
+            </Box>
+          )}
+
+          {/* Mobile Progress Indicator */}
+          {isMobile && state.currentFlow && (
+            <Box
+              sx={{
+                mt: 2,
+                px: 2,
+                py: 1.5,
+                textAlign: 'center',
+                backgroundColor: alpha(theme.palette.primary.main, 0.05),
+                borderRadius: 2,
+              }}
+            >
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                sx={{ fontWeight: 500, mb: 1 }}
+              >
+                Step {stepIndex + 1} of {state.progress.totalSteps}
+              </Typography>
+              <Typography
+                variant="subtitle2"
+                color="primary.main"
+                sx={{ fontWeight: 600 }}
+              >
+                {stepName}
+              </Typography>
+              <LinearProgress
+                variant="determinate"
+                value={((stepIndex + 1) / state.progress.totalSteps) * 100}
+                sx={{
+                  mt: 1.5,
+                  borderRadius: 1,
+                  height: 8,
+                  backgroundColor: alpha(theme.palette.primary.main, 0.1),
+                  '& .MuiLinearProgress-bar': {
+                    borderRadius: 1,
+                    backgroundColor: theme.palette.primary.main,
+                  },
+                }}
+              />
             </Box>
           )}
         </Container>
@@ -371,27 +417,93 @@ export const BookingContainer: React.FC<BookingContainerProps> = ({ children }) 
 
         {/* Pricing Summary (if available) */}
         {state.totalPrice !== '0.00' && (
-          <AnimatedElement animation="slideUp" delay={500}>
-            <GlassCard
-              variant="light"
-              intensity="subtle"
-              sx={{
-                mt: 3,
-                p: 2,
-                backgroundColor: alpha(theme.palette.success.main, 0.08),
-                border: `1px solid ${alpha(theme.palette.success.main, 0.2)}`,
-              }}
-            >
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <GlassCard
+            variant="light"
+            intensity="subtle"
+            onClick={() => setPriceDetailsExpanded(!priceDetailsExpanded)}
+            sx={{
+              mt: 3,
+              p: 2,
+              backgroundColor: alpha(theme.palette.success.main, 0.08),
+              border: `1px solid ${alpha(theme.palette.success.main, 0.2)}`,
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              '&:hover': {
+                backgroundColor: alpha(theme.palette.success.main, 0.12),
+              },
+              '&:active': {
+                transform: 'scale(0.99)',
+              },
+            }}
+          >
+            {/* Subtotal row - always show if we have breakdown data */}
+            {state.pricingBreakdown.formattedSubtotal && (
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
                 <Typography variant="body2" color="text.secondary">
-                  Current Total:
+                  Subtotal:
                 </Typography>
-                <Typography variant="h6" sx={{ fontWeight: 600, color: 'primary.main' }}>
-                  {formatAmount(state.totalPrice || '0')}
+                <Typography variant="body2" color="text.secondary">
+                  {state.pricingBreakdown.formattedSubtotal}
                 </Typography>
               </Box>
-            </GlassCard>
-          </AnimatedElement>
+            )}
+
+            {/* Collapsible Tax and Discount details */}
+            <Collapse in={priceDetailsExpanded} timeout="auto">
+              {/* Tax row - only show if we have tax data */}
+              {state.pricingBreakdown.formattedTax && parseFloat(state.pricingBreakdown.tax) > 0 && (
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
+                  <Typography variant="body2" color="text.secondary">
+                    Tax:
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {state.pricingBreakdown.formattedTax}
+                  </Typography>
+                </Box>
+              )}
+
+              {/* Discount row - only show if discount exists */}
+              {state.pricingBreakdown.formattedDiscount && parseFloat(state.pricingBreakdown.discount) > 0 && (
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
+                  <Typography variant="body2" sx={{ color: 'success.main' }}>
+                    Discount:
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: 'success.main' }}>
+                    -{state.pricingBreakdown.formattedDiscount}
+                  </Typography>
+                </Box>
+              )}
+            </Collapse>
+
+            {/* Divider if we have breakdown details */}
+            {state.pricingBreakdown.formattedSubtotal && (
+              <Box sx={{ borderTop: `1px solid ${alpha(theme.palette.divider, 0.2)}`, my: 1 }} />
+            )}
+
+            {/* Total row with expand indicator */}
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                <Typography variant="body2" color="text.secondary" sx={{ fontWeight: state.pricingBreakdown.formattedSubtotal ? 500 : 400 }}>
+                  {state.pricingBreakdown.formattedSubtotal ? 'Total:' : 'Current Total:'}
+                </Typography>
+                {/* Show expand hint if there's tax or discount to reveal */}
+                {((state.pricingBreakdown.formattedTax && parseFloat(state.pricingBreakdown.tax) > 0) ||
+                  (state.pricingBreakdown.formattedDiscount && parseFloat(state.pricingBreakdown.discount) > 0)) && (
+                  <KeyboardArrowDown
+                    sx={{
+                      fontSize: 18,
+                      color: 'text.secondary',
+                      transform: priceDetailsExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
+                      transition: 'transform 0.3s ease',
+                    }}
+                  />
+                )}
+              </Box>
+              <Typography variant="h6" sx={{ fontWeight: 600, color: 'primary.main' }}>
+                {formatAmount(state.totalPrice || '0')}
+              </Typography>
+            </Box>
+          </GlassCard>
         )}
       </Container>
     </Box>

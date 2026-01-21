@@ -1,7 +1,6 @@
 // frontend/client-portal/src/apis/booking/core.api.ts
 
 import api from '../../utils/api';
-import { ErrorHandler } from '../../utils/errorHandler';
 import type {
   EventType,
   BookingFlow,
@@ -111,26 +110,109 @@ export class BookingCoreApi {
   }
 
   /**
+   * Validate date availability and create a temporary reservation.
+   *
+   * IMPORTANT: This should be called BEFORE processing payment to prevent
+   * charging the customer for an unavailable date.
+   *
+   * The reservation is valid for 5 minutes, during which the payment
+   * should be processed.
+   *
+   * @param sessionId - The booking session UUID
+   * @returns Promise with availability status and reservation token
+   *
+   * @example
+   * const result = await BookingCoreApi.validateAvailability(sessionId);
+   * if (result.available) {
+   *   // Proceed with payment, pass reservation_token to completeBooking
+   *   await BookingCoreApi.completeBooking(sessionId, 'payment', result.reservation_token);
+   * } else {
+   *   // Show error, date is no longer available
+   *   showDateUnavailableModal(result.error);
+   * }
+   */
+  static async validateAvailability(sessionId: string): Promise<{
+    available: boolean;
+    reservation_token?: string;
+    expires_at?: string;
+    error?: string;
+    blocking_event_id?: number;
+    message?: string;
+  }> {
+    const response = await api.post<{
+      available: boolean;
+      reservation_token?: string;
+      expires_at?: string;
+      error?: string;
+      blocking_event_id?: number;
+      message?: string;
+    }>(`/bookingflow/public/flows/session/${sessionId}/validate-availability/`);
+    return response.data;
+  }
+
+  /**
+   * Release a date reservation.
+   *
+   * This should be called if:
+   * 1. Payment fails
+   * 2. User cancels during payment
+   * 3. Any error occurs after reservation was created
+   *
+   * @param sessionId - The booking session UUID
+   * @param reservationToken - The reservation token to release
+   * @returns Promise with success status
+   */
+  static async releaseReservation(
+    sessionId: string,
+    reservationToken: string
+  ): Promise<{ success: boolean; error?: string; message?: string }> {
+    const response = await api.post<{
+      success: boolean;
+      error?: string;
+      message?: string;
+    }>(`/bookingflow/public/flows/session/${sessionId}/release-reservation/`, {
+      reservation_token: reservationToken,
+    });
+    return response.data;
+  }
+
+  /**
    * Complete the booking and create event
    *
    * This is the primary completion method that should be used by all frontend components.
    *
    * @param sessionId - The booking session UUID
    * @param completionType - 'payment' for immediate payment processing, 'quote' for quote generation only
+   * @param reservationToken - Optional reservation token from validateAvailability
    * @returns Promise<BookingCompletionResult> - Contains event details and completion status
    *
    * @example
-   * // For immediate payment
-   * const result = await BookingCoreApi.completeBooking(sessionId, 'payment');
+   * // For immediate payment with pre-validation
+   * const validation = await BookingCoreApi.validateAvailability(sessionId);
+   * if (validation.available) {
+   *   const result = await BookingCoreApi.completeBooking(sessionId, 'payment', validation.reservation_token);
+   * }
    *
    * @example
-   * // For quote request
+   * // For quote request (no pre-validation needed)
    * const result = await BookingCoreApi.completeBooking(sessionId, 'quote');
    */
-  static async completeBooking(sessionId: string, completionType: 'payment' | 'quote' = 'payment'): Promise<BookingCompletionResult> {
-    const response = await api.post<BookingCompletionResult>(`/bookingflow/public/flows/session/${sessionId}/complete/`, {
-      completion_type: completionType
-    });
+  static async completeBooking(
+    sessionId: string,
+    completionType: 'payment' | 'quote' = 'payment',
+    reservationToken?: string
+  ): Promise<BookingCompletionResult> {
+    const payload: Record<string, unknown> = {
+      completion_type: completionType,
+    };
+    if (reservationToken) {
+      payload.reservation_token = reservationToken;
+    }
+
+    const response = await api.post<BookingCompletionResult>(
+      `/bookingflow/public/flows/session/${sessionId}/complete/`,
+      payload
+    );
     return response.data;
   }
 
@@ -194,7 +276,7 @@ export class BookingCoreApi {
       };
       localStorage.setItem(storageKey, JSON.stringify(dataToStore));
     } catch (error) {
-      console.warn('Failed to save session to local storage:', error);
+      if (import.meta.env.DEV) console.warn('Failed to save session to local storage:', error);
     }
   }
 
@@ -220,7 +302,7 @@ export class BookingCoreApi {
 
       return sessionData;
     } catch (error) {
-      console.warn('Failed to load session from local storage:', error);
+      if (import.meta.env.DEV) console.warn('Failed to load session from local storage:', error);
       return null;
     }
   }
@@ -233,7 +315,7 @@ export class BookingCoreApi {
       const storageKey = `booking_session_${sessionId}`;
       localStorage.removeItem(storageKey);
     } catch (error) {
-      console.warn('Failed to clear session from local storage:', error);
+      if (import.meta.env.DEV) console.warn('Failed to clear session from local storage:', error);
     }
   }
 
@@ -257,7 +339,21 @@ export class BookingCoreApi {
         }
       });
     } catch (error) {
-      console.warn('Failed to cleanup expired sessions:', error);
+      if (import.meta.env.DEV) console.warn('Failed to cleanup expired sessions:', error);
+    }
+  }
+
+  /**
+   * Clear ALL booking sessions from local storage
+   * Used when user clicks "Start Over" to ensure a clean slate
+   */
+  static clearAllSessionsFromLocal(): void {
+    try {
+      const keys = Object.keys(localStorage);
+      const sessionKeys = keys.filter(key => key.startsWith('booking_session_'));
+      sessionKeys.forEach(key => localStorage.removeItem(key));
+    } catch (error) {
+      if (import.meta.env.DEV) console.warn('Failed to clear all sessions from local storage:', error);
     }
   }
 
@@ -359,39 +455,47 @@ export class BookingCoreApi {
     return response.data as Record<string, unknown>;
   }
 
-  // Error handling helpers
-
-  /**
-   * Handle API errors and extract user-friendly messages
-   * @deprecated Use ErrorHandler.extractMessage() instead
-   */
-  static handleApiError(error: unknown): string {
-    return ErrorHandler.extractMessage(error);
-  }
-
-  /**
-   * Extract validation errors from API response
-   * @deprecated Use ErrorHandler.extractValidationErrorsAsRecord() instead
-   */
-  static extractValidationErrors(error: unknown): Record<string, string[]> {
-    return ErrorHandler.extractValidationErrorsAsRecord(error);
-  }
-
   /**
  * Calculate pricing for current session state
  */
 static async calculatePricing(
     sessionId: string,
-    discountCode?: string
+    discountCode?: string,
+    venueAdditionalHours?: Record<string, number>
   ): Promise<PricingCalculation> {
-    const data = discountCode ? { discount_code: discountCode } : {};
-    
+    const data: Record<string, unknown> = {};
+    if (discountCode) {
+      data.discount_code = discountCode;
+    }
+    // Pass venue_additional_hours directly to avoid race condition with debounced session updates
+    if (venueAdditionalHours && Object.keys(venueAdditionalHours).length > 0) {
+      data.venue_additional_hours = venueAdditionalHours;
+    }
+
     const response = await api.post<PricingCalculation>(
       `/bookingflow/public/flows/session/${sessionId}/calculate-pricing/`,
       data
     );
-    
+
     return response.data;
+  }
+
+  /**
+   * Handle API errors and extract user-friendly message
+   */
+  static handleApiError(error: unknown): string {
+    if (error instanceof Error) {
+      // Check for Axios error structure
+      const axiosError = error as { response?: { data?: { detail?: string; message?: string } } };
+      if (axiosError.response?.data?.detail) {
+        return axiosError.response.data.detail;
+      }
+      if (axiosError.response?.data?.message) {
+        return axiosError.response.data.message;
+      }
+      return error.message;
+    }
+    return 'An unexpected error occurred';
   }
 }
 

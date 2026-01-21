@@ -38,15 +38,20 @@ class ClientPaymentMethodViewSetTest(TestCase):
         )
 
         # Create payment gateway
-        self.gateway = PaymentGateway.objects.create(
-            name='Test Stripe',
+        self.gateway, _ = PaymentGateway.objects.get_or_create(
             code='stripe',
-            is_active=True,
-            config={
-                'secret_key': 'sk_test_123',
-                'publishable_key': 'pk_test_123'
+            defaults={
+                'name': 'Test Stripe',
+                'is_active': True,
             }
         )
+        # Always update config to ensure test settings are applied
+        self.gateway.config = {
+            'secret_key': 'sk_test_123',
+            'publishable_key': 'pk_test_123'
+        }
+        self.gateway.is_active = True
+        self.gateway.save()
 
         # Create test payment method
         self.payment_method = PaymentMethod.objects.create(
@@ -157,12 +162,17 @@ class ClientInvoiceViewSetTest(TestCase):
         )
 
         # Create payment gateway
-        self.gateway = PaymentGateway.objects.create(
-            name='Test Stripe',
+        self.gateway, _ = PaymentGateway.objects.get_or_create(
             code='stripe',
-            is_active=True,
-            config={'secret_key': 'test', 'publishable_key': 'test'}
+            defaults={
+                'name': 'Test Stripe',
+                'is_active': True,
+            }
         )
+        # Always update config to ensure test settings are applied
+        self.gateway.config = {'secret_key': 'test', 'publishable_key': 'test'}
+        self.gateway.is_active = True
+        self.gateway.save()
 
         self.client = APIClient()
 

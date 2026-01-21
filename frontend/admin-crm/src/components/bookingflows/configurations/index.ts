@@ -1,6 +1,7 @@
 // frontend/admin-crm/src/components/bookingflows/configurations/index.ts
 
 export { IntroductionStepConfig } from './IntroductionStepConfig';
+export { VenueSelectionStepConfig } from './VenueSelectionStepConfig';
 export { DateTimeStepConfig } from './DateTimeStepConfig';
 export { QuestionnaireStepConfig } from './QuestionnaireStepConfig';
 export { PackageSelectionStepConfig } from './PackageSelectionStepConfig';

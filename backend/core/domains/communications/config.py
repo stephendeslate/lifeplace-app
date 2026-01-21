@@ -9,7 +9,52 @@ logger = logging.getLogger(__name__)
 
 class CommunicationConfig:
     """Configuration management for communications domain"""
-    
+
+    # CAN-SPAM Compliance: Company physical address for email footer
+    # This should be configured via settings for production
+    COMPANY_ADDRESS = {
+        'name': 'LifePlace Events',
+        'street': '123 Event Street',
+        'city': 'Manila',
+        'state': 'Metro Manila',
+        'postal_code': '1000',
+        'country': 'Philippines',
+    }
+
+    @classmethod
+    def get_company_address(cls) -> dict:
+        """Get company address from settings or default"""
+        return getattr(settings, 'COMPANY_ADDRESS', cls.COMPANY_ADDRESS)
+
+    @classmethod
+    def get_company_address_html(cls) -> str:
+        """Get formatted company address for email footer"""
+        addr = cls.get_company_address()
+        return (
+            f"{addr.get('name', 'LifePlace Events')}<br>"
+            f"{addr.get('street', '')}<br>"
+            f"{addr.get('city', '')}, {addr.get('state', '')} {addr.get('postal_code', '')}<br>"
+            f"{addr.get('country', '')}"
+        )
+
+    # CAN-SPAM Compliance: Email footer with unsubscribe link and address
+    EMAIL_FOOTER_TEMPLATE = '''
+    <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e0e0e0; color: #888; font-size: 12px; text-align: center;">
+        <p style="margin-bottom: 10px;">
+            {{company_address|safe}}
+        </p>
+        {% if unsubscribe_url %}
+        <p style="margin-bottom: 10px;">
+            <a href="{{unsubscribe_url}}" style="color: #666; text-decoration: underline;">Unsubscribe</a>
+            from marketing emails
+        </p>
+        {% endif %}
+        <p style="color: #aaa; font-size: 11px;">
+            &copy; {{current_year}} {{site_name|default:"LifePlace"}}. All rights reserved.
+        </p>
+    </div>
+    '''
+
     # Default template mappings
     DEFAULT_TEMPLATES = {
         'EMAIL_LAYOUT': 'Manual Email Layout',
@@ -74,7 +119,7 @@ class CommunicationConfig:
         'BULK_SEND_LIMIT': 100,
         'TEMPLATE_PREVIEW_PER_MINUTE': 30
     }
-    
+
     # Cache configuration
     CACHE_TIMEOUTS = {
         'TEMPLATE_LIST': 1800,  # 30 minutes
@@ -82,7 +127,41 @@ class CommunicationConfig:
         'TEMPLATE_PREVIEW': 3600,  # 1 hour
         'ANALYTICS': 300,  # 5 minutes
         'VARIABLE_SCHEMAS': 14400,  # 4 hours
+        'DELIVERY_QUEUE': 86400,  # 24 hours for delivery retry queue
     }
+
+    # Data retention configuration
+    RETENTION = {
+        'RECORD_RETENTION_DAYS': 90,  # Days to retain communication records
+        'WEBHOOK_LOG_RETENTION_DAYS': 30,  # Days to retain webhook logs
+    }
+
+    # Circuit breaker configuration for provider resilience
+    CIRCUIT_BREAKER = {
+        'FAILURE_THRESHOLD': 5,  # Consecutive failures before opening circuit
+        'RECOVERY_TIMEOUT_SECONDS': 60,  # Seconds to wait before half-open
+        'HALF_OPEN_SUCCESS_THRESHOLD': 2,  # Successes needed to close circuit
+    }
+
+    @classmethod
+    def get_retention_days(cls, retention_key: str) -> int:
+        """Get data retention period from configuration"""
+        custom_retention = getattr(settings, 'COMMUNICATION_RETENTION', {})
+
+        if retention_key in custom_retention:
+            return custom_retention[retention_key]
+
+        return cls.RETENTION.get(retention_key, 90)  # Default 90 days
+
+    @classmethod
+    def get_circuit_breaker_config(cls, config_key: str) -> int:
+        """Get circuit breaker configuration"""
+        custom_config = getattr(settings, 'COMMUNICATION_CIRCUIT_BREAKER', {})
+
+        if config_key in custom_config:
+            return custom_config[config_key]
+
+        return cls.CIRCUIT_BREAKER.get(config_key, 5)  # Default threshold
     
     @classmethod
     def get_template_name(cls, template_key: str) -> str:

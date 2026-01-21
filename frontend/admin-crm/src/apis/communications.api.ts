@@ -19,6 +19,7 @@ export interface ManualSendData {
   template_id: number;
   recipient: string;
   client_id?: number;
+  event_id?: number;
   context_data?: Record<string, unknown>;
   custom_subject?: string;
   custom_body?: string;
@@ -76,10 +77,11 @@ export const communicationsApi = {
   getRecords: async (filters?: CommunicationFilters): Promise<CommunicationRecord[]> => {
     const params = new URLSearchParams();
     if (filters?.client_id) params.append('client_id', filters.client_id.toString());
+    if (filters?.event_id) params.append('event_id', filters.event_id.toString());
     if (filters?.template_name) params.append('template_name', filters.template_name);
     if (filters?.status) params.append('status', filters.status);
     if (filters?.channel) params.append('channel', filters.channel);
-    
+
     const response = await api.get(`/communications/records/?${params.toString()}`);
     const data = response.data as { results?: CommunicationRecord[] } | CommunicationRecord[];
     return (Array.isArray(data) ? data : data.results) || [];
@@ -104,8 +106,76 @@ export const communicationsApi = {
     const params = new URLSearchParams();
     if (templateName) params.append('template_name', templateName);
     params.append('days', days.toString());
-    
+
     const response = await api.get<AnalyticsData>(`/communications/records/analytics/?${params.toString()}`);
+    return response.data;
+  },
+
+  // Mark all records as read
+  markAllAsRead: async (filters?: { client_id?: number; channel?: string; category?: string }): Promise<{ updated_count: number }> => {
+    const response = await api.post<{ updated_count: number }>('/communications/records/mark_all_as_read/', filters || {});
+    return response.data;
+  },
+
+  // Template history
+  getTemplateHistory: async (templateId: number): Promise<TemplateHistoryEntry[]> => {
+    const response = await api.get<TemplateHistoryEntry[]>(`/communications/templates/${templateId}/history/`);
+    return response.data;
+  },
+
+  rollbackTemplate: async (templateId: number, version: number): Promise<CommunicationTemplate> => {
+    const response = await api.post<CommunicationTemplate>(`/communications/templates/${templateId}/rollback/`, { version });
+    return response.data;
+  },
+
+  // Duplicate template
+  duplicateTemplate: async (templateId: number, newName?: string): Promise<CommunicationTemplate> => {
+    const response = await api.post<CommunicationTemplate>(`/communications/templates/${templateId}/duplicate/`, { new_name: newName });
+    return response.data;
+  },
+
+  // Template usage statistics
+  getTemplateStats: async (templateId: number, days: number = 30): Promise<TemplateStats> => {
+    const params = new URLSearchParams();
+    params.append('days', days.toString());
+    const response = await api.get<TemplateStats>(`/communications/templates/${templateId}/stats/?${params.toString()}`);
     return response.data;
   }
 };
+
+// Template statistics type
+export interface TemplateStats {
+  template_id: number;
+  template_name: string;
+  days: number;
+  total_sent: number;
+  delivered: number;
+  failed: number;
+  bounced: number;
+  pending: number;
+  opened: number;
+  delivery_rate: number;
+  open_rate: number;
+  failure_rate: number;
+  bounce_rate: number;
+  by_channel: Record<string, number>;
+  by_day: Array<{ date: string; count: number }>;
+}
+
+// Template history entry type
+export interface TemplateHistoryEntry {
+  id: number;
+  version: number;
+  name: string;
+  channel: string;
+  category: string;
+  context_type: string;
+  include_client_context: boolean;
+  include_event_context: boolean;
+  subject_template: string | null;
+  body_template: string;
+  reason: 'CREATE' | 'UPDATE' | 'ROLLBACK' | 'SYSTEM';
+  notes: string;
+  changed_by: { id: number; email: string; first_name: string; last_name: string } | null;
+  created_at: string;
+}

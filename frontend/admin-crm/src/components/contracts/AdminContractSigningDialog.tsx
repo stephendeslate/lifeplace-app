@@ -105,21 +105,11 @@ export const AdminContractSigningDialog: React.FC<AdminContractSigningDialogProp
   }, [isSubmitting, onClose]);
 
   const handleNext = useCallback(() => {
-    console.log('➡️ Next button clicked:', {
-      currentStep,
-      currentStepIndex,
-      signatureData: signatureData ? 'present' : 'null',
-      timestamp: Date.now()
-    });
-    
     const nextStepIndex = currentStepIndex + 1;
     if (nextStepIndex < SIGNING_STEPS.length) {
-      console.log(`🚀 Moving to next step: ${SIGNING_STEPS[nextStepIndex].label}`);
       setCurrentStep(SIGNING_STEPS[nextStepIndex].key);
-    } else {
-      console.log('❌ Cannot proceed - already at last step');
     }
-  }, [currentStepIndex, currentStep, signatureData]);
+  }, [currentStepIndex]);
 
   const handleBack = useCallback(() => {
     const prevStepIndex = currentStepIndex - 1;
@@ -180,60 +170,26 @@ export const AdminContractSigningDialog: React.FC<AdminContractSigningDialogProp
   ]);
 
   const canProceed = useCallback(() => {
-    console.log('🔄 AdminContractSigningDialog - canProceed check:', {
-      currentStep,
-      timestamp: Date.now()
-    });
-    
     switch (currentStep) {
       case 'review_contract':
-        console.log('✅ Review step - always can proceed');
-        return true; // Always can proceed from review
+        return true;
       case 'signer_info': {
-        const canProceedSignerInfo = (
+        return (
           signerName.trim() !== '' &&
           signerEmail.trim() !== '' &&
           /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(signerEmail) &&
           legalDisclosureAccepted
         );
-        console.log('📝 Signer info step:', {
-          signerName: signerName.trim(),
-          signerEmail: signerEmail.trim(),
-          emailValid: /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(signerEmail),
-          legalDisclosureAccepted,
-          canProceed: canProceedSignerInfo
-        });
-        return canProceedSignerInfo;
       }
       case 'signature_capture': {
         const hasSignature = signatureData !== null;
         const hasWitnessInfo = !requiresWitness || (witnessName.trim() !== '' && witnessSignature.trim() !== '');
-        const canProceedSignature = hasSignature && hasWitnessInfo;
-        
-        console.log('✍️ Signature capture step:', {
-          signatureData: signatureData ? 'present' : 'null',
-          signatureDataLength: signatureData?.length || 0,
-          hasSignature,
-          requiresWitness,
-          witnessName: witnessName.trim(),
-          witnessSignature: witnessSignature.trim(),
-          hasWitnessInfo,
-          canProceed: canProceedSignature
-        });
-        
-        return canProceedSignature;
+        return hasSignature && hasWitnessInfo;
       }
-      case 'confirmation': {
-        console.log('✓ Confirmation step:', {
-          signatureIntentConfirmed,
-          canProceed: signatureIntentConfirmed
-        });
+      case 'confirmation':
         return signatureIntentConfirmed;
-      }
-      default: {
-        console.log('❌ Unknown step, cannot proceed');
+      default:
         return false;
-      }
     }
   }, [currentStep, signerName, signerEmail, legalDisclosureAccepted, signatureData, requiresWitness, witnessName, witnessSignature, signatureIntentConfirmed]);
 
@@ -402,18 +358,9 @@ export const AdminContractSigningDialog: React.FC<AdminContractSigningDialogProp
 
             <SimpleSignaturePad
               onSignatureChange={(data) => {
-                console.log('📝 AdminContractSigningDialog - signature data received:', {
-                  hasData: !!data,
-                  dataLength: data?.length || 0,
-                  timestamp: Date.now(),
-                });
-                
                 setSignatureData(data);
                 if (data) {
                   setErrors(prev => prev.filter(error => !error.includes('signature')));
-                  console.log('✅ Signature data set, cleared signature-related errors');
-                } else {
-                  console.log('❌ Signature data is null/empty');
                 }
               }}
               width={isMobile ? 300 : 500}

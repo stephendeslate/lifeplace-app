@@ -1,0 +1,23 @@
+# Client Portal - Allow selective crawling
+User-agent: *
+
+# Allow public pages
+Allow: /
+Allow: /booking/
+
+# Disallow private/authenticated areas
+Disallow: /dashboard/
+Disallow: /events/
+Disallow: /invoices/
+Disallow: /payments/
+Disallow: /profile/
+Disallow: /api/
+
+# Disallow authentication pages
+Disallow: /login
+Disallow: /register
+Disallow: /forgot-password
+Disallow: /reset-password
+
+# Sitemap location (update with actual domain)
+# Sitemap: https://yourdomain.com/sitemap.xml

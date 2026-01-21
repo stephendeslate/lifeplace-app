@@ -24,8 +24,6 @@ import {
   Skeleton,
 } from '@mui/material';
 
-// Modern Design System imports
-import { ModernCard } from '../../common/ModernCard';
 import {
   ExpandMore as ExpandMoreIcon,
   ShoppingCart as AddonIcon,
@@ -50,6 +48,7 @@ interface AddonConfigFormData {
   available_addons: number[];
   min_selection: number;
   max_selection: number;
+  filter_by_event_type: boolean;
   group_by_category: boolean;
   show_recommendations: boolean;
   recommendation_logic: Record<string, unknown>;
@@ -60,6 +59,7 @@ const defaultFormData: AddonConfigFormData = {
   available_addons: [],
   min_selection: 0,
   max_selection: 0,
+  filter_by_event_type: true,
   group_by_category: true,
   show_recommendations: true,
   recommendation_logic: {},
@@ -108,17 +108,18 @@ export const AddonSelectionStepConfig: React.FC<AddonSelectionStepConfigProps> =
     if (configuration && configuration.id) {
       // Type guard to ensure we have AddonSelectionStepConfiguration
       const addonConfig = configuration as AddonSelectionStepConfiguration;
-      
+
       const newFormData: AddonConfigFormData = {
         available_categories: addonConfig.available_categories || [],
         available_addons: addonConfig.available_addons || [],
         min_selection: addonConfig.min_selection || 0,
         max_selection: addonConfig.max_selection || 0,
+        filter_by_event_type: addonConfig.filter_by_event_type ?? true,
         group_by_category: addonConfig.group_by_category ?? true,
         show_recommendations: addonConfig.show_recommendations ?? true,
         recommendation_logic: addonConfig.recommendation_logic || {},
       };
-      
+
       setFormData(newFormData);
       setHasChanges(false);
     }
@@ -134,11 +135,12 @@ export const AddonSelectionStepConfig: React.FC<AddonSelectionStepConfigProps> =
         available_addons: addonConfig.available_addons || [],
         min_selection: addonConfig.min_selection || 0,
         max_selection: addonConfig.max_selection || 0,
+        filter_by_event_type: addonConfig.filter_by_event_type ?? true,
         group_by_category: addonConfig.group_by_category ?? true,
         show_recommendations: addonConfig.show_recommendations ?? true,
         recommendation_logic: addonConfig.recommendation_logic || {},
       });
-      
+
       setHasChanges(currentData !== originalData);
     }
   }, [formData, configuration]);
@@ -213,9 +215,11 @@ export const AddonSelectionStepConfig: React.FC<AddonSelectionStepConfigProps> =
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
 
-    // Business validation: Must select either categories or specific addons
-    if (formData.available_categories.length === 0 && formData.available_addons.length === 0) {
-      newErrors.selection = 'Select either categories or specific add-ons';
+    // Business validation: Must select either categories, specific addons, or use event type filtering
+    if (!formData.filter_by_event_type &&
+        formData.available_categories.length === 0 &&
+        formData.available_addons.length === 0) {
+      newErrors.selection = 'Select either categories, specific add-ons, or enable "Filter by Event Type"';
     }
 
     // Numeric validation
@@ -251,6 +255,7 @@ export const AddonSelectionStepConfig: React.FC<AddonSelectionStepConfigProps> =
         available_addons: formData.available_addons,
         min_selection: formData.min_selection,
         max_selection: formData.max_selection,
+        filter_by_event_type: formData.filter_by_event_type,
         group_by_category: formData.group_by_category,
         show_recommendations: formData.show_recommendations,
         recommendation_logic: formData.recommendation_logic,
@@ -271,6 +276,7 @@ export const AddonSelectionStepConfig: React.FC<AddonSelectionStepConfigProps> =
         available_addons: addonConfig.available_addons || [],
         min_selection: addonConfig.min_selection || 0,
         max_selection: addonConfig.max_selection || 0,
+        filter_by_event_type: addonConfig.filter_by_event_type ?? true,
         group_by_category: addonConfig.group_by_category ?? true,
         show_recommendations: addonConfig.show_recommendations ?? true,
         recommendation_logic: addonConfig.recommendation_logic || {},
@@ -316,22 +322,39 @@ export const AddonSelectionStepConfig: React.FC<AddonSelectionStepConfigProps> =
 
       <Stack spacing={3}>
         {/* Add-on Availability */}
-        <ModernCard variant="glass" size="medium" animation="none">
-          <Box sx={{ p: 3 }}>
-            <Typography variant="subtitle1" gutterBottom>
-              Available Add-ons
-            </Typography>
-            
+        <Box sx={{ borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
+          <Typography variant="subtitle1" gutterBottom>
+            Available Add-ons
+          </Typography>
+
             <Stack spacing={2}>
+              {/* Event Type Filtering Toggle */}
+              <Box>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={formData.filter_by_event_type}
+                      onChange={handleSwitchChange('filter_by_event_type')}
+                      disabled={isDataLoading}
+                    />
+                  }
+                  label="Filter by Event Type"
+                />
+                <Typography variant="caption" color="text.secondary" display="block" sx={{ ml: 6 }}>
+                  When enabled, automatically show all active add-ons associated with the booking flow's event type.
+                  When disabled, only add-ons explicitly configured below will be shown.
+                </Typography>
+              </Box>
+
               {/* Categories Selection */}
-              <FormControl fullWidth>
+              <FormControl fullWidth disabled={formData.filter_by_event_type}>
                 <InputLabel>Filter by Categories</InputLabel>
                 <Select
                   multiple
                   value={formData.available_categories}
                   onChange={(e) => handleCategoriesChange(e.target.value as number[])}
                   label="Filter by Categories"
-                  disabled={isDataLoading}
+                  disabled={isDataLoading || formData.filter_by_event_type}
                   renderValue={(selected) => (
                     <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
                       {selected.map((categoryId) => {
@@ -371,14 +394,14 @@ export const AddonSelectionStepConfig: React.FC<AddonSelectionStepConfigProps> =
               </FormControl>
 
               {/* Specific Add-ons Selection */}
-              <FormControl fullWidth>
+              <FormControl fullWidth disabled={formData.filter_by_event_type}>
                 <InputLabel>Specific Add-ons (Override)</InputLabel>
                 <Select
                   multiple
                   value={formData.available_addons}
                   onChange={(e) => handleAddonsChange(e.target.value as number[])}
                   label="Specific Add-ons (Override)"
-                  disabled={isDataLoading}
+                  disabled={isDataLoading || formData.filter_by_event_type}
                   renderValue={(selected) => (
                     <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
                       {selected.map((addonId) => {
@@ -422,15 +445,13 @@ export const AddonSelectionStepConfig: React.FC<AddonSelectionStepConfigProps> =
                 <Alert severity="error">{errors.selection}</Alert>
               )}
             </Stack>
-          </Box>
-        </ModernCard>
+        </Box>
 
         {/* Selection Behavior */}
-        <ModernCard variant="glass" size="medium" animation="none">
-          <Box sx={{ p: 3 }}>
-            <Typography variant="subtitle1" gutterBottom>
-              Selection Behavior
-            </Typography>
+        <Box sx={{ borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
+          <Typography variant="subtitle1" gutterBottom>
+            Selection Behavior
+          </Typography>
             
             <Stack spacing={2}>
               <Box display="flex" gap={2}>
@@ -459,15 +480,13 @@ export const AddonSelectionStepConfig: React.FC<AddonSelectionStepConfigProps> =
                 />
               </Box>
             </Stack>
-          </Box>
-        </ModernCard>
+        </Box>
 
         {/* Display Options */}
-        <ModernCard variant="glass" size="medium" animation="none">
-          <Box sx={{ p: 3 }}>
-            <Typography variant="subtitle1" gutterBottom>
-              Display Options
-            </Typography>
+        <Box sx={{ borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
+          <Typography variant="subtitle1" gutterBottom>
+            Display Options
+          </Typography>
             
             <Stack spacing={2}>
               <FormControlLabel
@@ -498,8 +517,7 @@ export const AddonSelectionStepConfig: React.FC<AddonSelectionStepConfigProps> =
                 Highlight recommended add-ons based on the client's selections
               </Typography>
             </Stack>
-          </Box>
-        </ModernCard>
+        </Box>
 
         {/* Advanced Recommendations */}
         <Accordion>
@@ -542,11 +560,10 @@ export const AddonSelectionStepConfig: React.FC<AddonSelectionStepConfigProps> =
         </Accordion>
 
         {/* Configuration Summary */}
-        <ModernCard variant="glass" size="medium" animation="none">
-          <Box sx={{ p: 3 }}>
-            <Typography variant="subtitle1" gutterBottom>
-              Configuration Summary
-            </Typography>
+        <Box sx={{ borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
+          <Typography variant="subtitle1" gutterBottom>
+            Configuration Summary
+          </Typography>
             
             {isDataLoading ? (
               <Stack spacing={1}>
@@ -558,11 +575,13 @@ export const AddonSelectionStepConfig: React.FC<AddonSelectionStepConfigProps> =
               <Stack spacing={1}>
                 <Typography variant="body2">
                   <strong>Add-on Source:</strong>{' '}
-                  {formData.available_addons.length > 0 
-                    ? `${formData.available_addons.length} specific add-ons` 
-                    : formData.available_categories.length > 0 
-                      ? `${formData.available_categories.length} categories (${availableCategories.filter(c => formData.available_categories.includes(c.id)).map(c => c.name).join(', ')})`
-                      : 'All add-ons'
+                  {formData.filter_by_event_type
+                    ? 'Filtered by event type (automatic)'
+                    : formData.available_addons.length > 0
+                      ? `${formData.available_addons.length} specific add-ons`
+                      : formData.available_categories.length > 0
+                        ? `${formData.available_categories.length} categories (${availableCategories.filter(c => formData.available_categories.includes(c.id)).map(c => c.name).join(', ')})`
+                        : 'All add-ons'
                   }
                 </Typography>
                 
@@ -586,8 +605,7 @@ export const AddonSelectionStepConfig: React.FC<AddonSelectionStepConfigProps> =
                 )}
               </Stack>
             )}
-          </Box>
-        </ModernCard>
+        </Box>
 
         {/* Actions */}
         <Box display="flex" gap={2} alignItems="center">

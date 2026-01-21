@@ -224,8 +224,8 @@ VITE_WS_BASE_URL=ws://localhost:8000  # Development
 VITE_WS_BASE_URL=wss://yourdomain.com  # Production
 
 # API endpoints (existing)
-VITE_API_BASE_URL=http://localhost:8000  # Development
-VITE_API_BASE_URL=https://yourdomain.com  # Production
+VITE_API_URL=http://localhost:8000  # Development
+VITE_API_URL=https://yourdomain.com  # Production
 ```
 
 ### Production Considerations

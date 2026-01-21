@@ -32,6 +32,12 @@ export const useInvoicePayments = () => {
       queryClient.invalidateQueries({ queryKey: financialKeys.paymentSummary() });
       queryClient.invalidateQueries({ queryKey: financialKeys.paymentPlans() });
 
+      // Payment triggers backend workflow automation (PAYMENT_RECEIVED)
+      // that may progress workflow stages, create tasks, update event status
+      // Invalidate events and contracts to reflect any workflow-triggered changes
+      queryClient.invalidateQueries({ queryKey: ['events'] });
+      queryClient.invalidateQueries({ queryKey: ['contracts'] });
+
       showToast({
         type: 'success',
         title: 'Payment Successful'
@@ -63,7 +69,7 @@ export const useInvoicePayments = () => {
       invoiceId: number;
       planData: PaymentPlanRequest
     }) => {
-      console.warn('⚠️ WIP: Payment plan setup mutation is currently disabled');
+      if (import.meta.env.DEV) console.warn('⚠️ WIP: Payment plan setup mutation is currently disabled');
       return FinancialApi.setupInvoicePaymentPlan(invoiceId, planData);
     },
     onSuccess: (_, { invoiceId }) => {
@@ -105,7 +111,7 @@ export const useInvoicePayments = () => {
    * ⚠️ WORK IN PROGRESS - Payment Plan feature is being redesigned
    */
   const setupPaymentPlan = (invoiceId: number, planData: PaymentPlanRequest) => {
-    console.warn('⚠️ WIP: Payment plan setup is currently disabled');
+    if (import.meta.env.DEV) console.warn('⚠️ WIP: Payment plan setup is currently disabled');
     return setupPaymentPlanMutation.mutate({ invoiceId, planData });
   };
 

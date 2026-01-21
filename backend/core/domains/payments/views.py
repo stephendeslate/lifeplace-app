@@ -2,10 +2,13 @@
 from core.utils.pagination import StandardResultsSetPagination
 from core.utils.permissions import IsAdmin
 from django.db import models
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.decorators import method_decorator
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
+from rest_framework.views import APIView
 import logging
 
 from .models import (
@@ -14,10 +17,8 @@ from .models import (
     InvoiceTax,
     Payment,
     PaymentGateway,
-    PaymentInstallment,
     PaymentMethod,
     PaymentNotification,
-    PaymentPlan,
     PaymentSettings,
     PaymentTransaction,
     Refund,
@@ -29,10 +30,8 @@ from .serializers import (
     InvoiceTaxSerializer,
     PaymentGatewaySerializer,
     PaymentGatewayAdminSerializer,
-    PaymentInstallmentSerializer,
     PaymentMethodSerializer,
     PaymentNotificationSerializer,
-    PaymentPlanSerializer,
     PaymentSerializer,
     PaymentSettingsSerializer,
     PaymentTransactionSerializer,
@@ -44,10 +43,10 @@ from .services import (
     InvoiceService,
     PaymentGatewayService,
     PaymentMethodService,
-    PaymentPlanService,
     PaymentService,
     TaxRateService,
 )
+from .services.unified_webhook_processor import UnifiedWebhookProcessor
 from .cache_service import payments_cache_service
 
 logger = logging.getLogger(__name__)
@@ -115,7 +114,7 @@ class PaymentSettingsViewSet(viewsets.ModelViewSet):
 class PaymentViewSet(viewsets.ModelViewSet):
     """ViewSet for managing payments"""
     queryset = Payment.objects.select_related(
-        'event', 
+        'event',
         'event__client',
         'event__event_type',
         'payment_method',
@@ -124,8 +123,6 @@ class PaymentViewSet(viewsets.ModelViewSet):
         'processed_by',
         'quote',
         'invoice',
-        'installment',
-        'installment__payment_plan'
     ).prefetch_related(
         'transactions',
         'notifications',
@@ -256,7 +253,23 @@ class PaymentViewSet(viewsets.ModelViewSet):
                 return Response({"detail": "Receipt sent successfully"})
             else:
                 return Response(
-                    {"detail": "Receipt could not be sent"}, 
+                    {"detail": "Receipt could not be sent"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+        except Exception as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=True, methods=['post'])
+    def send_reminder(self, request, pk=None):
+        """Send payment reminder to client"""
+        try:
+            payment = self.get_object()
+            success = payment.send_reminder_notification()
+            if success:
+                return Response({"detail": "Reminder sent successfully"})
+            else:
+                return Response(
+                    {"detail": "Reminder could not be sent. Payment may already be completed or cancelled."},
                     status=status.HTTP_400_BAD_REQUEST
                 )
         except Exception as e:
@@ -321,6 +334,88 @@ class PaymentGatewayViewSet(viewsets.ModelViewSet):
             return Response(status=status.HTTP_204_NO_CONTENT)
         except Exception as e:
             return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=False, methods=['get'])
+    def health(self, request):
+        """
+        Get health status for all payment gateways.
+
+        Returns health information including:
+        - Configuration status
+        - Last successful transaction
+        - Test mode status
+        - Any error messages
+        """
+        from django.utils import timezone
+        from datetime import timedelta
+
+        gateways = self.get_queryset()
+        health_data = {}
+
+        for gateway in gateways:
+            # Check if gateway is properly configured
+            is_configured = False
+            test_mode = False
+            error_message = None
+
+            if gateway.config:
+                # Check for Stripe configuration
+                if gateway.code == 'stripe':
+                    is_configured = bool(
+                        gateway.config.get('publishable_key') and
+                        gateway.config.get('secret_key')
+                    )
+                    test_mode = gateway.config.get('test_mode', False)
+                # Check for PayMongo configuration
+                elif gateway.code == 'paymongo':
+                    is_configured = bool(
+                        gateway.config.get('public_key') and
+                        gateway.config.get('secret_key')
+                    )
+                    test_mode = gateway.config.get('test_mode', False)
+                # Generic check for other gateways
+                else:
+                    is_configured = len(gateway.config) > 0
+                    test_mode = gateway.config.get('test_mode', False)
+
+            # Get last successful transaction
+            last_transaction = PaymentTransaction.objects.filter(
+                gateway=gateway,
+                status='COMPLETED'
+            ).order_by('-created_at').first()
+
+            last_successful = last_transaction.created_at.isoformat() if last_transaction else None
+
+            # Determine health status
+            if not gateway.is_active:
+                health_status = 'unknown'
+            elif not is_configured:
+                health_status = 'unhealthy'
+                error_message = 'Gateway is not properly configured'
+            elif last_transaction:
+                # Check if there was a successful transaction in the last 24 hours
+                if last_transaction.created_at > timezone.now() - timedelta(hours=24):
+                    health_status = 'healthy'
+                else:
+                    health_status = 'degraded'
+                    error_message = 'No recent transactions'
+            else:
+                # No transactions but configured - could be new gateway
+                health_status = 'degraded'
+                error_message = 'No transaction history'
+
+            health_data[gateway.id] = {
+                'gateway_id': gateway.id,
+                'gateway_code': gateway.code,
+                'status': health_status,
+                'last_checked': timezone.now().isoformat(),
+                'last_successful_transaction': last_successful,
+                'error_message': error_message,
+                'is_configured': is_configured,
+                'test_mode': test_mode,
+            }
+
+        return Response(health_data)
 
 
 class TaxRateViewSet(viewsets.ModelViewSet):
@@ -516,114 +611,6 @@ class PaymentMethodViewSet(viewsets.ModelViewSet):
             )
 
 
-class PaymentPlanViewSet(viewsets.ModelViewSet):
-    """ViewSet for managing payment plans"""
-    queryset = PaymentPlan.objects.all()
-    serializer_class = PaymentPlanSerializer
-    permission_classes = [IsAuthenticated, IsAdmin]
-    
-    def get_queryset(self):
-        queryset = super().get_queryset().order_by('-created_at')
-        
-        # Apply filters
-        event_id = self.request.query_params.get('event', None)
-        
-        # Try cache for event-specific payment plans
-        if event_id:
-            cached_plans = payments_cache_service.get_cached_payment_plans_by_event(int(event_id))
-            if cached_plans is not None:
-                logger.debug(f"Payment plans for event {event_id} served from cache")
-                return queryset.filter(event_id=event_id)
-        
-        if event_id:
-            queryset = queryset.filter(event_id=event_id)
-        
-        return queryset
-    
-    def retrieve(self, request, *args, **kwargs):
-        """Retrieve payment plan with caching"""
-        plan_id = kwargs.get('pk')
-        
-        # Try to get from cache first
-        cached_plan = payments_cache_service.get_cached_payment_plan_detail(int(plan_id))
-        
-        if cached_plan is not None:
-            logger.debug(f"Payment plan detail for {plan_id} served from cache")
-            return Response(cached_plan)
-        
-        # Cache miss - get from database
-        plan = self.get_object()
-        serializer = self.get_serializer(plan)
-        
-        # Cache the payment plan detail
-        payments_cache_service.cache_payment_plan_detail(plan.id, serializer.data)
-        logger.info(f"Payment plan detail for {plan_id} cached after database query")
-        
-        return Response(serializer.data)
-    
-    def create(self, request, *args, **kwargs):
-        """Create a new payment plan"""
-        try:
-            plan = PaymentPlanService.create_payment_plan(request.data, request.user)
-            serializer = self.get_serializer(plan)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        except Exception as e:
-            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-    
-    def update(self, request, *args, **kwargs):
-        """Update a payment plan (limited fields)"""
-        try:
-            plan = PaymentPlanService.update_payment_plan(
-                kwargs.get('pk'), request.data, request.user
-            )
-            serializer = self.get_serializer(plan)
-            return Response(serializer.data)
-        except Exception as e:
-            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-
-
-class PaymentInstallmentViewSet(viewsets.ModelViewSet):
-    """ViewSet for managing payment installments"""
-    queryset = PaymentInstallment.objects.all()
-    serializer_class = PaymentInstallmentSerializer
-    permission_classes = [IsAuthenticated, IsAdmin]
-    
-    def get_queryset(self):
-        queryset = super().get_queryset().order_by('due_date')
-        
-        # Apply filters
-        payment_plan_id = self.request.query_params.get('payment_plan', None)
-        status = self.request.query_params.get('status', None)
-        due_date_start = self.request.query_params.get('due_date_start', None)
-        due_date_end = self.request.query_params.get('due_date_end', None)
-        
-        if payment_plan_id:
-            queryset = queryset.filter(payment_plan_id=payment_plan_id)
-        
-        if status:
-            queryset = queryset.filter(status=status)
-        
-        if due_date_start:
-            queryset = queryset.filter(due_date__gte=due_date_start)
-        
-        if due_date_end:
-            queryset = queryset.filter(due_date__lte=due_date_end)
-        
-        return queryset
-    
-    @action(detail=True, methods=['post'])
-    def create_payment(self, request, pk=None):
-        """Create a payment for this installment"""
-        try:
-            payment = PaymentPlanService.create_payment_from_installment(
-                pk, request.data, request.user
-            )
-            serializer = PaymentSerializer(payment)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        except Exception as e:
-            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-
-
 class InvoiceViewSet(viewsets.ModelViewSet):
     """ViewSet for managing invoices"""
     queryset = Invoice.objects.select_related(
@@ -700,8 +687,84 @@ class InvoiceViewSet(viewsets.ModelViewSet):
         # Cache the invoice detail
         payments_cache_service.cache_invoice_detail(invoice.id, serializer.data)
         logger.info(f"Invoice detail for {invoice_id} cached after database query")
-        
+
         return Response(serializer.data)
+
+    @action(detail=True, methods=['post'])
+    def send_invoice(self, request, pk=None):
+        """Send invoice to client via email"""
+        from core.domains.communications.services import CommunicationService
+
+        try:
+            invoice = self.get_object()
+
+            # Update status to ISSUED if it's a draft
+            if invoice.status == 'DRAFT':
+                invoice.status = 'ISSUED'
+                invoice.save(update_fields=['status'])
+
+            # Send invoice email via CommunicationService
+            comm_service = CommunicationService()
+            record = comm_service.send_communication(
+                template_name='Invoice Issued',
+                recipient=invoice.client.email,
+                client=invoice.client,
+                event=invoice.event,
+                context_data={
+                    'invoice_id': invoice.invoice_id,
+                    'invoice_total': str(invoice.total_amount),
+                    'invoice_currency': invoice.currency,
+                    'due_date': invoice.due_date.strftime("%B %d, %Y"),
+                },
+                skip_preference_check=True  # Invoices are transactional
+            )
+
+            if record:
+                # Invalidate cache
+                payments_cache_service.invalidate_invoice_cache(invoice.id)
+
+                return Response({
+                    "detail": "Invoice sent successfully",
+                    "status": invoice.status
+                })
+            else:
+                return Response(
+                    {"detail": "Failed to send invoice. Please check email configuration."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+        except Exception as e:
+            logger.error(f"Error sending invoice {pk}: {str(e)}")
+            return Response(
+                {"detail": str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+    @action(detail=True, methods=['get'])
+    def download_pdf(self, request, pk=None):
+        """Download invoice as PDF"""
+        from django.http import HttpResponse
+        from .pdf_service import PaymentReceiptPDFService
+
+        try:
+            invoice = self.get_object()
+
+            # Generate PDF
+            pdf_buffer = PaymentReceiptPDFService.generate_invoice_receipt_pdf(invoice)
+
+            # Create response with PDF
+            response = HttpResponse(
+                pdf_buffer.getvalue(),
+                content_type='application/pdf'
+            )
+            response['Content-Disposition'] = f'attachment; filename="invoice-{invoice.invoice_id}.pdf"'
+
+            return response
+        except Exception as e:
+            logger.error(f"Error generating PDF for invoice {pk}: {str(e)}")
+            return Response(
+                {"detail": f"Failed to generate PDF: {str(e)}"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
 
 class PaymentTransactionViewSet(viewsets.ModelViewSet):
@@ -709,24 +772,30 @@ class PaymentTransactionViewSet(viewsets.ModelViewSet):
     queryset = PaymentTransaction.objects.all()
     serializer_class = PaymentTransactionSerializer
     permission_classes = [IsAuthenticated, IsAdmin]
-    
+
     def get_queryset(self):
-        queryset = super().get_queryset().order_by('-created_at')
-        
+        # Optimize queries with select_related for ForeignKey relationships
+        queryset = super().get_queryset().select_related(
+            'gateway',
+            'payment',
+            'payment__event',
+            'payment__invoice',
+        ).order_by('-created_at')
+
         # Apply filters
         payment_id = self.request.query_params.get('payment', None)
         gateway_id = self.request.query_params.get('gateway', None)
         status = self.request.query_params.get('status', None)
-        
+
         if payment_id:
             queryset = queryset.filter(payment_id=payment_id)
-        
+
         if gateway_id:
             queryset = queryset.filter(gateway_id=gateway_id)
-        
+
         if status:
             queryset = queryset.filter(status=status)
-        
+
         return queryset
 
 
@@ -735,20 +804,26 @@ class RefundViewSet(viewsets.ModelViewSet):
     queryset = Refund.objects.all()
     serializer_class = RefundSerializer
     permission_classes = [IsAuthenticated, IsAdmin]
-    
+
     def get_queryset(self):
-        queryset = super().get_queryset().order_by('-created_at')
-        
+        # Optimize queries with select_related for ForeignKey relationships
+        queryset = super().get_queryset().select_related(
+            'payment',
+            'payment__event',
+            'payment__invoice',
+            'refunded_by',
+        ).order_by('-created_at')
+
         # Apply filters
         payment_id = self.request.query_params.get('payment', None)
         status = self.request.query_params.get('status', None)
-        
+
         if payment_id:
             queryset = queryset.filter(payment_id=payment_id)
-        
+
         if status:
             queryset = queryset.filter(status=status)
-        
+
         return queryset
 
 
@@ -757,16 +832,22 @@ class InvoiceLineItemViewSet(viewsets.ModelViewSet):
     queryset = InvoiceLineItem.objects.all()
     serializer_class = InvoiceLineItemSerializer
     permission_classes = [IsAuthenticated, IsAdmin]
-    
+
     def get_queryset(self):
-        queryset = super().get_queryset().order_by('id')
-        
+        # Optimize queries with select_related for ForeignKey relationships
+        queryset = super().get_queryset().select_related(
+            'invoice',
+            'invoice__event',
+            'invoice__client',
+            'product',
+        ).order_by('id')
+
         # Apply filters
         invoice_id = self.request.query_params.get('invoice', None)
-        
+
         if invoice_id:
             queryset = queryset.filter(invoice_id=invoice_id)
-        
+
         return queryset
 
 
@@ -775,16 +856,21 @@ class InvoiceTaxViewSet(viewsets.ModelViewSet):
     queryset = InvoiceTax.objects.all()
     serializer_class = InvoiceTaxSerializer
     permission_classes = [IsAuthenticated, IsAdmin]
-    
+
     def get_queryset(self):
-        queryset = super().get_queryset().order_by('id')
-        
+        # Optimize queries with select_related for ForeignKey relationships
+        queryset = super().get_queryset().select_related(
+            'invoice',
+            'invoice__event',
+            'tax_rate',
+        ).order_by('id')
+
         # Apply filters
         invoice_id = self.request.query_params.get('invoice', None)
-        
+
         if invoice_id:
             queryset = queryset.filter(invoice_id=invoice_id)
-        
+
         return queryset
 
 
@@ -793,23 +879,104 @@ class PaymentNotificationViewSet(viewsets.ModelViewSet):
     queryset = PaymentNotification.objects.all()
     serializer_class = PaymentNotificationSerializer
     permission_classes = [IsAuthenticated, IsAdmin]
-    
+
     def get_queryset(self):
-        queryset = super().get_queryset().order_by('-created_at')
-        
+        # Optimize queries with select_related for ForeignKey relationships
+        queryset = super().get_queryset().select_related(
+            'payment',
+            'payment__event',
+            'payment__invoice',
+            'template_used',
+        ).order_by('-created_at')
+
         # Apply filters
         payment_id = self.request.query_params.get('payment', None)
         notification_type = self.request.query_params.get('notification_type', None)
         is_successful = self.request.query_params.get('is_successful', None)
-        
+
         if payment_id:
             queryset = queryset.filter(payment_id=payment_id)
-        
+
         if notification_type:
             queryset = queryset.filter(notification_type=notification_type)
-        
+
         if is_successful is not None:
             is_successful = is_successful.lower() == 'true'
             queryset = queryset.filter(is_successful=is_successful)
-        
+
         return queryset
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class StripeWebhookView(APIView):
+    """
+    Webhook endpoint for Stripe payment events.
+
+    This endpoint receives and processes webhook events from Stripe including:
+    - payment_intent.succeeded
+    - payment_intent.payment_failed
+    - payment_intent.canceled
+    - charge.refunded
+    - charge.dispute.created
+
+    Stripe sends POST requests to this endpoint when payment events occur.
+    The signature is verified using the webhook secret configured in PaymentGateway.
+    """
+    permission_classes = [AllowAny]
+    authentication_classes = []  # No authentication for webhooks
+
+    def post(self, request):
+        """Handle incoming Stripe webhook"""
+        try:
+            # Process webhook using unified processor
+            result = UnifiedWebhookProcessor.process_webhook(request, 'stripe')
+
+            if result.success:
+                logger.info(
+                    f"Stripe webhook processed successfully: "
+                    f"action={result.action_taken}, "
+                    f"payment_id={result.payment_id}"
+                )
+                return Response(
+                    {'status': 'success', 'message': result.message},
+                    status=status.HTTP_200_OK
+                )
+            else:
+                # Log the error but return 200 to prevent Stripe from retrying
+                # for permanent failures (e.g., duplicate, parse error)
+                if result.error_code in ['duplicate_ignored', 'parse_error', 'unsupported_gateway']:
+                    logger.warning(
+                        f"Stripe webhook non-fatal error: "
+                        f"error_code={result.error_code}, "
+                        f"message={result.message}"
+                    )
+                    return Response(
+                        {'status': 'ignored', 'message': result.message},
+                        status=status.HTTP_200_OK
+                    )
+
+                # For signature verification failures, return 401
+                if result.error_code == 'signature_verification_failed':
+                    logger.error("Stripe webhook signature verification failed")
+                    return Response(
+                        {'status': 'error', 'message': 'Invalid signature'},
+                        status=status.HTTP_401_UNAUTHORIZED
+                    )
+
+                # For other errors, return 500 so Stripe will retry
+                logger.error(
+                    f"Stripe webhook processing failed: "
+                    f"error_code={result.error_code}, "
+                    f"message={result.message}"
+                )
+                return Response(
+                    {'status': 'error', 'message': 'Processing failed'},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
+
+        except Exception as e:
+            logger.error(f"Unexpected error in Stripe webhook: {e}", exc_info=True)
+            return Response(
+                {'status': 'error', 'message': 'Internal server error'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )

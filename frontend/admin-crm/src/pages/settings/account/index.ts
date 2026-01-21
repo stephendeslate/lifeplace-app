@@ -2,3 +2,4 @@
 
 export { AccountSettings } from './AccountSettings';
 export { AdminUsers } from './AdminUsers';
+export { CompanySettings } from './CompanySettings';

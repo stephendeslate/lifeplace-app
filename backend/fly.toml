@@ -1,0 +1,52 @@
+# Fly.io configuration for LifePlace Backend
+# Deploy with: fly deploy
+
+app = "lifeplace-api"
+primary_region = "sin"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  ENV = "production"
+  PORT = "8080"
+
+# Process groups - each runs as a separate Fly machine
+[processes]
+  web = "daphne -b 0.0.0.0 -p 8080 core.asgi:application"
+  worker = "celery -A core worker --loglevel=info --queues=celery,communications,notifications,analytics,events,payments,contracts,sales"
+  beat = "celery -A core beat --loglevel=info"
+
+# HTTP service configuration (only applies to 'web' process)
+[[services]]
+  internal_port = 8080
+  protocol = "tcp"
+  processes = ["web"]
+
+  [services.concurrency]
+    type = "connections"
+    hard_limit = 100
+    soft_limit = 80
+
+  [[services.ports]]
+    port = 80
+    handlers = ["http"]
+    force_https = true
+
+  [[services.ports]]
+    port = 443
+    handlers = ["tls", "http"]
+
+  [[services.http_checks]]
+    interval = "30s"
+    timeout = "5s"
+    grace_period = "10s"
+    method = "GET"
+    # SECURITY FIX: Corrected health check path (was /api/health/, actual endpoint is /health/)
+    path = "/health/"
+
+# Machine configuration
+[[vm]]
+  cpu_kind = "shared"
+  cpus = 1
+  memory_mb = 512

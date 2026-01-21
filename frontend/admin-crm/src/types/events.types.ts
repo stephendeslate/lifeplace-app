@@ -33,6 +33,10 @@ export interface EventTask {
   due_date: string | null;
 }
 
+export type DateHoldStatus = 'NONE' | 'TEMPORARY_HOLD' | 'PERMANENT_BLOCK';
+export type CheckInStatus = 'PENDING' | 'CHECKED_IN' | 'CHECKED_OUT' | 'NO_SHOW';
+export type CancelledReason = 'CLIENT_REQUEST' | 'PAYMENT_TIMEOUT' | 'DATE_TAKEN' | 'ADMIN';
+
 export interface Event {
   id: number;
   client: number | Client;
@@ -73,9 +77,71 @@ export interface Event {
     created_at: string | null;
     due_date: string | null;
   } | null;
+  // Date blocking fields
+  date_blocked: boolean;
+  date_blocked_at: string | null;
+  // Date holding fields
+  date_hold_status: DateHoldStatus;
+  date_hold_expires_at: string | null;
+  date_held_at: string | null;
+  date_hold_extended_count: number;
+  // Rescheduling tracking
+  original_start_date: string | null;
+  reschedule_count: number;
+  last_rescheduled_at: string | null;
+  // Check-in/out tracking
+  check_in_status: CheckInStatus;
+  scheduled_check_in_time: string | null;
+  scheduled_checkout_time: string | null;
+  actual_check_in_time: string | null;
+  actual_checkout_time: string | null;
+  checked_in_by: number | null;
+  checked_in_by_name: string | null;
+  checked_out_by: number | null;
+  checked_out_by_name: string | null;
+  check_in_notes: string;
+  checkout_notes: string;
+  // Late checkout
+  late_checkout_fee_applied: boolean;
+  late_checkout_fee_amount: string | null;
+  // Cancellation
+  cancelled_reason: CancelledReason | null;
+  cancelled_at: string | null;
+  can_rebook: boolean;
+  // Guest count
+  num_participants: number | null;
+  // Preferences (includes inquiry data from contact form submissions)
+  preferences?: EventPreferences;
+  // Timestamps
   created_at: string;
   updated_at: string;
 }
+
+// Inquiry data stored in preferences when event is created from contact form
+export interface InquiryData {
+  type: 'GENERAL' | 'EVENT_QUESTION' | 'PARTNERSHIP' | 'PRICING' | 'OTHER';
+  message: string;
+  phone?: string;
+  submitted_at: string;
+}
+
+export interface EventPreferences {
+  inquiry?: InquiryData;
+  [key: string]: unknown;
+}
+
+export const DATE_HOLD_STATUSES = [
+  { value: 'NONE', label: 'No Hold' },
+  { value: 'TEMPORARY_HOLD', label: 'Temporary Hold' },
+  { value: 'PERMANENT_BLOCK', label: 'Permanently Blocked' },
+] as const;
+
+export const CHECK_IN_STATUSES = [
+  { value: 'PENDING', label: 'Pending' },
+  { value: 'CHECKED_IN', label: 'Checked In' },
+  { value: 'CHECKED_OUT', label: 'Checked Out' },
+  { value: 'NO_SHOW', label: 'No Show' },
+] as const;
 
 export type EventStatus = 'LEAD' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED';
 export type PaymentStatus = 'UNPAID' | 'PARTIALLY_PAID' | 'PAID';
@@ -112,6 +178,9 @@ export interface CreateEventData {
   end_date?: string | null;
   lead_source?: string;
   total_price?: string | null;
+  num_participants?: number | null;
+  scheduled_check_in_time?: string | null;
+  scheduled_checkout_time?: string | null;
 }
 
 export type UpdateEventData = Partial<CreateEventData>;
@@ -125,6 +194,7 @@ export interface EventTypeFilters {
 export interface EventFilters {
   search?: string;
   event_type?: number;
+  workflow_template?: number;
   status?: EventStatus;
   client?: number;
   start_date_from?: string;
@@ -149,6 +219,9 @@ export interface EventFormData {
   end_date: string;
   lead_source: string;
   total_price: string;
+  num_participants: string;
+  scheduled_check_in_time: string;
+  scheduled_checkout_time: string;
 }
 
 // Component prop types

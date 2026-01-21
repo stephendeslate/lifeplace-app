@@ -99,7 +99,7 @@ export const EventTypeSelection: React.FC<EventTypeSelectionProps> = ({
         const data = await BookingCoreApi.getEventTypes();
         setEventTypes(data);
       } catch (err) {
-        console.error('Failed to load event types:', err);
+        if (import.meta.env.DEV) console.error('Failed to load event types:', err);
         setError(BookingCoreApi.handleApiError(err));
       } finally {
         setLoading(false);
@@ -119,7 +119,7 @@ export const EventTypeSelection: React.FC<EventTypeSelectionProps> = ({
     try {
       await onSelectEventType(eventType);
     } catch (error) {
-      console.error('Failed to select event type:', error);
+      if (import.meta.env.DEV) console.error('Failed to select event type:', error);
     } finally {
       setIsSelecting(false);
       setIsDetailDialogOpen(false);
@@ -293,6 +293,15 @@ export const EventTypeSelection: React.FC<EventTypeSelectionProps> = ({
                   variant="light"
                   intensity="medium"
                   hover
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`Select ${eventType.name} event type. ${eventType.description || ''}`}
+                  onKeyDown={(e: React.KeyboardEvent) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      handleCardClick(eventType);
+                    }
+                  }}
                   sx={{
                     height: '100%',
                     backgroundColor: alpha('#fff', 0.08),
@@ -300,11 +309,16 @@ export const EventTypeSelection: React.FC<EventTypeSelectionProps> = ({
                     border: `1px solid ${alpha('#fff', 0.1)}`,
                     cursor: 'pointer',
                     transition: 'all 0.3s ease',
-                    '&:hover': {
+                    '&:hover, &:focus': {
                       transform: 'translateY(-8px)',
                       backgroundColor: alpha('#fff', 0.15),
                       border: `1px solid ${alpha(eventColor, 0.3)}`,
                       boxShadow: `0 20px 60px ${alpha(eventColor, 0.2)}`,
+                      outline: 'none',
+                    },
+                    '&:focus-visible': {
+                      outline: `2px solid ${eventColor}`,
+                      outlineOffset: '2px',
                     },
                   }}
                   onClick={() => handleCardClick(eventType)}

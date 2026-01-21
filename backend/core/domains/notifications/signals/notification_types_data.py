@@ -332,6 +332,135 @@ def get_default_notification_types():
             'supports_sms': False,
         },
         
+        # Quote notifications
+        {
+            'code': 'QUOTE_SENT',
+            'name': 'Quote Sent',
+            'description': 'Notification when a quote is sent to client',
+            'category': 'PAYMENT',
+            'icon': 'DescriptionIcon',
+            'color': '#667eea',
+            'priority': 'HIGH',
+            'default_title_template': 'Quote Ready for Review',
+            'default_content_template': 'Your quote for {{ event_name }} is ready for review.',
+            'default_email_template': '''
+            <p>Dear {{ recipient_name }},</p>
+            <p>Your quote is ready for review:</p>
+            <ul>
+                <li><strong>Event:</strong> {{ event_name }}</li>
+                <li><strong>Total:</strong> {{ total_amount }}</li>
+                <li><strong>Valid Until:</strong> {{ valid_until }}</li>
+            </ul>
+            <p>Please review the quote and let us know if you have any questions.</p>
+            {% if action_url %}<p><a href="{{ action_url }}">View Quote</a></p>{% endif %}
+            ''',
+            'default_sms_template': 'Quote ready for {{ event_name }}. Please review.',
+            'supports_email': True,
+            'supports_sms': True,
+        },
+        {
+            'code': 'QUOTE_EXPIRED',
+            'name': 'Quote Expired',
+            'description': 'Notification when a quote has expired',
+            'category': 'PAYMENT',
+            'icon': 'EventBusyIcon',
+            'color': '#F44336',
+            'priority': 'HIGH',
+            'default_title_template': 'Quote Has Expired',
+            'default_content_template': 'Your quote for {{ event_name }} has expired. Please contact us if you would like a new quote.',
+            'default_email_template': '''
+            <p>Dear {{ recipient_name }},</p>
+            <p>Unfortunately, your quote has expired:</p>
+            <ul>
+                <li><strong>Event:</strong> {{ event_name }}</li>
+                <li><strong>Expired on:</strong> {{ valid_until }}</li>
+            </ul>
+            <p>If you would still like to proceed, please contact us to request a new quote.</p>
+            {% if action_url %}<p><a href="{{ action_url }}">Contact Us</a></p>{% endif %}
+            ''',
+            'default_sms_template': 'Your quote for {{ event_name }} has expired. Contact us for a new quote.',
+            'supports_email': True,
+            'supports_sms': True,
+        },
+        {
+            'code': 'QUOTE_REJECTED',
+            'name': 'Quote Rejected',
+            'description': 'Notification when a client rejects a quote',
+            'category': 'PAYMENT',
+            'icon': 'CancelIcon',
+            'color': '#F44336',
+            'priority': 'NORMAL',
+            'default_title_template': 'Quote Rejected: {{ event_name }}',
+            'default_content_template': '{{ client_name }} has rejected the quote for {{ event_name }}.',
+            'default_email_template': '''
+            <p>Hello {{ recipient_name }},</p>
+            <p>A quote has been rejected:</p>
+            <ul>
+                <li><strong>Event:</strong> {{ event_name }}</li>
+                <li><strong>Client:</strong> {{ client_name }}</li>
+            </ul>
+            <p>Please follow up with the client to understand their concerns.</p>
+            {% if action_url %}<p><a href="{{ action_url }}">View Quote</a></p>{% endif %}
+            ''',
+            'default_sms_template': 'Quote rejected by {{ client_name }} for {{ event_name }}',
+            'supports_email': True,
+            'supports_sms': False,
+        },
+
+        # Invoice notifications
+        {
+            'code': 'INVOICE_SENT',
+            'name': 'Invoice Sent',
+            'description': 'Notification when an invoice is sent to client',
+            'category': 'PAYMENT',
+            'icon': 'ReceiptIcon',
+            'color': '#667eea',
+            'priority': 'HIGH',
+            'default_title_template': 'Invoice Ready',
+            'default_content_template': 'Invoice #{{ invoice_number }} for {{ event_name }} is ready for payment.',
+            'default_email_template': '''
+            <p>Dear {{ recipient_name }},</p>
+            <p>Your invoice is ready:</p>
+            <ul>
+                <li><strong>Invoice:</strong> #{{ invoice_number }}</li>
+                <li><strong>Event:</strong> {{ event_name }}</li>
+                <li><strong>Amount:</strong> {{ total_amount }}</li>
+                <li><strong>Due Date:</strong> {{ due_date }}</li>
+            </ul>
+            <p>Please make payment by the due date.</p>
+            {% if action_url %}<p><a href="{{ action_url }}">View Invoice</a></p>{% endif %}
+            ''',
+            'default_sms_template': 'Invoice #{{ invoice_number }} ready for {{ event_name }}. Amount: {{ total_amount }}',
+            'supports_email': True,
+            'supports_sms': True,
+        },
+        {
+            'code': 'INVOICE_OVERDUE',
+            'name': 'Invoice Overdue',
+            'description': 'Notification when an invoice is overdue',
+            'category': 'PAYMENT',
+            'icon': 'WarningIcon',
+            'color': '#F44336',
+            'priority': 'URGENT',
+            'default_title_template': 'Invoice Overdue',
+            'default_content_template': 'Invoice #{{ invoice_number }} for {{ event_name }} is overdue. Please make payment immediately.',
+            'default_email_template': '''
+            <p>Dear {{ recipient_name }},</p>
+            <p>Your invoice is overdue:</p>
+            <ul>
+                <li><strong>Invoice:</strong> #{{ invoice_number }}</li>
+                <li><strong>Event:</strong> {{ event_name }}</li>
+                <li><strong>Amount:</strong> {{ total_amount }}</li>
+                <li><strong>Original Due Date:</strong> {{ due_date }}</li>
+            </ul>
+            <p>Please make payment immediately to avoid any issues with your booking.</p>
+            {% if action_url %}<p><a href="{{ action_url }}">Pay Now</a></p>{% endif %}
+            ''',
+            'default_sms_template': 'OVERDUE: Invoice #{{ invoice_number }} for {{ event_name }}. Please pay immediately.',
+            'supports_email': True,
+            'supports_sms': True,
+        },
+
         # Payment notifications
         {
             'code': 'PAYMENT_RECEIVED',
@@ -461,7 +590,56 @@ def get_default_notification_types():
             'supports_email': True,
             'supports_sms': False,
         },
-        
+        {
+            'code': 'CONTRACT_EXPIRING_SOON',
+            'name': 'Contract Expiring Soon',
+            'description': 'Notification when a contract is about to expire',
+            'category': 'CONTRACT',
+            'icon': 'AccessTimeIcon',
+            'color': '#FF9800',
+            'priority': 'HIGH',
+            'default_title_template': 'Contract Expires in {{ days_remaining }} Day(s)',
+            'default_content_template': 'Your contract for {{ event_name }} expires on {{ valid_until }}. Please sign the contract before it expires to secure your booking.',
+            'default_email_template': '''
+            <p>Dear {{ recipient_name }},</p>
+            <p>Your contract is expiring soon:</p>
+            <ul>
+                <li><strong>Event:</strong> {{ event_name }}</li>
+                <li><strong>Expires:</strong> {{ valid_until }}</li>
+                <li><strong>Days Remaining:</strong> {{ days_remaining }}</li>
+            </ul>
+            <p>Please sign the contract before it expires to secure your booking date.</p>
+            {% if action_url %}<p><a href="{{ action_url }}">Sign Contract Now</a></p>{% endif %}
+            ''',
+            'default_sms_template': 'Your contract for {{ event_name }} expires in {{ days_remaining }} day(s). Please sign soon.',
+            'supports_email': True,
+            'supports_sms': True,
+        },
+        {
+            'code': 'CONTRACT_EXPIRED',
+            'name': 'Contract Expired',
+            'description': 'Notification when a contract has expired',
+            'category': 'CONTRACT',
+            'icon': 'EventBusyIcon',
+            'color': '#F44336',
+            'priority': 'HIGH',
+            'default_title_template': 'Contract Has Expired',
+            'default_content_template': 'The contract for {{ event_name }} expired on {{ valid_until }}. Please contact us if you would like to request a new contract.',
+            'default_email_template': '''
+            <p>Dear {{ recipient_name }},</p>
+            <p>Unfortunately, your contract has expired:</p>
+            <ul>
+                <li><strong>Event:</strong> {{ event_name }}</li>
+                <li><strong>Expired on:</strong> {{ valid_until }}</li>
+            </ul>
+            <p>If you would still like to proceed with your booking, please contact us to request a new contract.</p>
+            {% if action_url %}<p><a href="{{ action_url }}">Contact Us</a></p>{% endif %}
+            ''',
+            'default_sms_template': 'Your contract for {{ event_name }} has expired. Contact us for a new contract.',
+            'supports_email': True,
+            'supports_sms': True,
+        },
+
         # Communication notifications
         {
             'code': 'MESSAGE_RECEIVED',

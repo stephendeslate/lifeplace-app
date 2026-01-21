@@ -1,15 +1,14 @@
 # backend/core/domains/payments/signals.py
+from decimal import Decimal
 from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 import logging
 
 from .models import (
-    Payment, 
-    Invoice, 
-    InvoiceLineItem, 
+    Payment,
+    Invoice,
+    InvoiceLineItem,
     InvoiceTax,
-    PaymentPlan, 
-    PaymentInstallment,
     PaymentMethod,
     PaymentGateway,
     PaymentTransaction,
@@ -27,52 +26,177 @@ def update_event_financial_totals(event):
     """Update event's total_amount_paid and total_amount_due based on invoices and payments"""
     if not event:
         return
-    
+
     try:
-        # Calculate total from invoices
-        total_invoiced = 0
-        total_paid = 0
-        
+        # Calculate total from invoices using Decimal for financial precision
+        total_invoiced = Decimal('0')
+        total_paid = Decimal('0')
+
         # Get all invoices for this event
         invoices = Invoice.objects.filter(event=event)
         for invoice in invoices:
             if invoice.total_amount:
-                total_invoiced += float(invoice.total_amount)
-                
+                total_invoiced += invoice.total_amount  # Already Decimal from model
+
                 # Calculate paid amount from related payments
-                paid_for_this_invoice = 0
+                paid_for_this_invoice = Decimal('0')
                 if hasattr(invoice, 'related_payments'):
                     for payment in invoice.related_payments.filter(status='COMPLETED'):
                         if payment.amount:
-                            paid_for_this_invoice += float(payment.amount)
-                
+                            paid_for_this_invoice += payment.amount  # Already Decimal from model
+
                 total_paid += paid_for_this_invoice
-        
+
         # Also add direct event payments (not linked to invoices)
         direct_payments = Payment.objects.filter(event=event, invoice__isnull=True, status='COMPLETED')
         for payment in direct_payments:
             if payment.amount:
-                total_paid += float(payment.amount)
-        
+                total_paid += payment.amount  # Already Decimal from model
+
+        # Store previous payment status
+        previous_payment_status = event.payment_status
+
         # Update event fields
         event.total_amount_paid = total_paid
         event.total_amount_due = max(0, total_invoiced - total_paid)  # Can't be negative
-        
+
         # Update payment status based on amounts
         if total_invoiced == 0:
             event.payment_status = 'UNPAID'
         elif total_paid >= total_invoiced:
-            event.payment_status = 'PAID'  
+            event.payment_status = 'PAID'
         elif total_paid > 0:
             event.payment_status = 'PARTIALLY_PAID'
         else:
             event.payment_status = 'UNPAID'
-            
+
         event.save(update_fields=['total_amount_paid', 'total_amount_due', 'payment_status'])
         logger.info(f"Updated event {event.id} financials: paid={total_paid}, due={event.total_amount_due}, status={event.payment_status}")
-        
+
+        # DATE BLOCKING: Check if payment meets downpayment threshold for ON_DOWNPAYMENT policy
+        # Only trigger when payment status transitions from UNPAID to PARTIALLY_PAID or PAID
+        if previous_payment_status == 'UNPAID' and event.payment_status in ('PARTIALLY_PAID', 'PAID'):
+            _check_and_process_downpayment_received(event, total_paid, total_invoiced)
+
     except Exception as e:
         logger.error(f"Failed to update event {event.id} financial totals: {e}")
+
+
+def _check_and_process_downpayment_received(event, total_paid, total_invoiced):
+    """
+    Check if payment meets downpayment threshold and process date blocking.
+
+    This implements the first-to-pay-wins logic for ON_DOWNPAYMENT policy.
+    UPDATED: Now uses atomic version with row-level locking to prevent race conditions.
+    """
+    try:
+        from core.domains.events.services.date_blocking_service import DateBlockingService
+        from decimal import Decimal
+
+        # Skip if event is already blocked or cancelled
+        if event.date_blocked or event.status == 'CANCELLED':
+            logger.info(f"Skipping downpayment check for event {event.id}: already blocked or cancelled")
+            return
+
+        # Get effective payment terms
+        terms = DateBlockingService.get_effective_payment_terms(event)
+        policy = terms.get('date_blocking_policy', 'IMMEDIATE')
+
+        # Only process for ON_DOWNPAYMENT policy
+        if policy != 'ON_DOWNPAYMENT':
+            logger.info(f"Skipping downpayment check for event {event.id}: policy is {policy}")
+            return
+
+        # Check if payment meets downpayment threshold
+        downpayment_percentage = terms.get('downpayment_percentage', 30)
+        required_amount = Decimal(str(total_invoiced)) * (Decimal(str(downpayment_percentage)) / Decimal('100'))
+
+        if Decimal(str(total_paid)) >= required_amount:
+            logger.info(
+                f"Downpayment threshold met for event {event.id}: "
+                f"paid {total_paid} >= required {required_amount} ({downpayment_percentage}%)"
+            )
+
+            # Get the most recent completed payment for this event
+            latest_payment = Payment.objects.filter(
+                event=event,
+                status='COMPLETED'
+            ).order_by('-created_at').first()
+
+            # Get reservation token from event's associated booking session if available
+            reservation_token = None
+            try:
+                from core.domains.bookingflow.models import BookingSession
+                # Find the booking session that created this event
+                session = BookingSession.objects.filter(created_event=event).first()
+                if session and session.booking_data:
+                    reservation_token = session.booking_data.get('_reservation_token')
+                    if reservation_token:
+                        logger.info(f"Found reservation_token {reservation_token} from booking session for event {event.id}")
+            except Exception as e:
+                logger.debug(f"Could not retrieve reservation token from booking session: {e}")
+
+            # Use ATOMIC version with row-level locking to prevent race conditions
+            result = DateBlockingService.atomic_process_downpayment_received(
+                event,
+                payment=latest_payment,
+                reservation_token=reservation_token
+            )
+
+            if result['success']:
+                logger.info(
+                    f"Date blocking processed for event {event.id}: "
+                    f"blocked={result['blocked']}, cancelled_events={len(result['cancelled_events'])}"
+                )
+            else:
+                logger.warning(f"Date blocking failed for event {event.id}: {result['error']}")
+
+                # If blocking failed because date was already taken, trigger auto-refund
+                if result['error'] and 'already blocked' in result['error']:
+                    _trigger_auto_refund_for_race_condition(event, result['error'])
+        else:
+            logger.info(
+                f"Downpayment threshold NOT met for event {event.id}: "
+                f"paid {total_paid} < required {required_amount} ({downpayment_percentage}%)"
+            )
+
+    except Exception as e:
+        logger.error(f"Error checking downpayment for event {event.id}: {e}")
+        import traceback
+        logger.error(f"Traceback: {traceback.format_exc()}")
+
+
+def _trigger_auto_refund_for_race_condition(event, error_message: str):
+    """
+    Trigger auto-refund when a race condition causes booking to fail.
+
+    This is called when payment succeeded but date blocking failed because
+    another booking took the date first.
+    """
+    try:
+        from core.domains.payments.services.auto_refund_service import AutoRefundService
+
+        logger.warning(
+            f"Race condition detected for event {event.id}: {error_message}. "
+            f"Initiating auto-refund."
+        )
+
+        result = AutoRefundService.initiate_refund_for_race_condition(event)
+
+        if result['success']:
+            logger.info(
+                f"Auto-refund completed for event {event.id}: "
+                f"refunded {result['total_refunded']}"
+            )
+        else:
+            logger.error(
+                f"Auto-refund failed for event {event.id}: {result['error']}"
+            )
+
+    except ImportError:
+        logger.warning("AutoRefundService not available yet")
+    except Exception as e:
+        logger.error(f"Error triggering auto-refund for event {event.id}: {e}")
 
 
 # === PAYMENT CACHE INVALIDATION SIGNALS ===
@@ -153,39 +277,6 @@ def invalidate_invoice_tax_caches(sender, instance, **kwargs):
         logger.info(f"Invalidated invoice caches for tax change: Invoice {instance.invoice.id}")
     except Exception as e:
         logger.error(f"Failed to invalidate invoice tax caches: {e}")
-
-
-@receiver([post_save, post_delete], sender=PaymentPlan)
-def invalidate_payment_plan_caches(sender, instance, **kwargs):
-    """Invalidate payment plan caches when plans are modified"""
-    try:
-        from .cache_service import payments_cache_service
-        payments_cache_service.invalidate_payment_plan_caches(
-            plan_id=instance.id,
-            event_id=getattr(instance.event, 'id', None) if instance.event else None
-        )
-        logger.info(f"Invalidated payment plan caches for: Plan {instance.id}")
-    except Exception as e:
-        logger.error(f"Failed to invalidate payment plan caches: {e}")
-
-
-@receiver([post_save, post_delete], sender=PaymentInstallment)
-def invalidate_installment_caches(sender, instance, **kwargs):
-    """Invalidate installment caches when installments are modified"""
-    try:
-        from .cache_service import payments_cache_service
-        payments_cache_service.invalidate_installment_caches(
-            installment_id=instance.id,
-            plan_id=instance.payment_plan.id
-        )
-        # Also invalidate parent payment plan cache
-        payments_cache_service.invalidate_payment_plan_caches(
-            plan_id=instance.payment_plan.id,
-            event_id=getattr(instance.payment_plan.event, 'id', None) if instance.payment_plan.event else None
-        )
-        logger.info(f"Invalidated installment caches for: Installment {instance.id}")
-    except Exception as e:
-        logger.error(f"Failed to invalidate installment caches: {e}")
 
 
 @receiver([post_save, post_delete], sender=PaymentMethod)

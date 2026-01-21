@@ -197,13 +197,13 @@ export const BookingFlowStepsTable: React.FC<BookingFlowStepsTableProps> = ({
       ),
     },
     {
-      key: 'name',
+      key: 'step_type_display',
       label: 'Step Name',
       sortable: true,
       render: (_, step) => (
         <Box>
           <Typography variant="body2" fontWeight="medium">
-            {step.name}
+            {step.step_type_display}
           </Typography>
           {step.description && (
             <Typography 

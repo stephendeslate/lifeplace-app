@@ -1,0 +1,242 @@
+[
+  {
+    "model": "products.productcategory",
+    "pk": 1,
+    "fields": {
+      "created_at": "2025-06-15T10:03:04.527",
+      "updated_at": "2025-10-10T00:57:22.029",
+      "name": "Weddings",
+      "description": "Wedding planning and coordination services",
+      "slug": "weddings",
+      "parent": null,
+      "is_active": true,
+      "sort_order": 1,
+      "requires_venue": true,
+      "typical_duration_hours": 8
+    }
+  },
+  {
+    "model": "products.productcategory",
+    "pk": 50,
+    "fields": {
+      "created_at": "2025-07-10T08:38:28.447",
+      "updated_at": "2025-07-10T08:38:28.447",
+      "name": "Add-on Services",
+      "description": "Add-on and Misc. Services",
+      "slug": "add-on-services",
+      "parent": null,
+      "is_active": true,
+      "sort_order": 0,
+      "requires_venue": false,
+      "typical_duration_hours": null
+    }
+  },
+  {
+    "model": "products.productcategory",
+    "pk": 51,
+    "fields": {
+      "created_at": "2025-10-10T01:20:02.289",
+      "updated_at": "2025-10-10T01:20:02.289",
+      "name": "Ceremony & Reception Packages",
+      "description": "6-hour ceremony and reception venue packages",
+      "slug": "ceremony-reception-packages",
+      "parent": 1,
+      "is_active": true,
+      "sort_order": 1,
+      "requires_venue": true,
+      "typical_duration_hours": 6
+    }
+  },
+  {
+    "model": "products.productcategory",
+    "pk": 52,
+    "fields": {
+      "created_at": "2025-10-10T01:20:02.297",
+      "updated_at": "2025-10-10T01:20:02.297",
+      "name": "All-Inclusive Wedding Packages",
+      "description": "Complete wedding packages including venue, catering, photography, and coordination",
+      "slug": "all-inclusive-wedding-packages",
+      "parent": 1,
+      "is_active": true,
+      "sort_order": 2,
+      "requires_venue": true,
+      "typical_duration_hours": 6
+    }
+  },
+  {
+    "model": "products.productcategory",
+    "pk": 53,
+    "fields": {
+      "created_at": "2025-12-20T00:40:58.958",
+      "updated_at": "2025-12-20T00:41:13.091",
+      "name": "Camps & Retreats",
+      "description": "Packages",
+      "slug": "camps-retreats",
+      "parent": null,
+      "is_active": true,
+      "sort_order": 0,
+      "requires_venue": true,
+      "typical_duration_hours": null
+    }
+  },
+  {
+    "model": "products.productcategory",
+    "pk": 54,
+    "fields": {
+      "created_at": "2026-01-08T03:39:40.163",
+      "updated_at": "2026-01-08T03:39:40.163",
+      "name": "Wedding Packages",
+      "description": "Ceremony and Reception Packages for Weddings",
+      "slug": "wedding-packages",
+      "parent": null,
+      "is_active": true,
+      "sort_order": 1,
+      "requires_venue": true,
+      "typical_duration_hours": 6
+    }
+  },
+  {
+    "model": "products.productcategory",
+    "pk": 55,
+    "fields": {
+      "created_at": "2026-01-08T03:39:40.166",
+      "updated_at": "2026-01-08T03:39:40.166",
+      "name": "Wedding Add-ons",
+      "description": "Optional add-ons for wedding events",
+      "slug": "wedding-addons",
+      "parent": null,
+      "is_active": true,
+      "sort_order": 10,
+      "requires_venue": false,
+      "typical_duration_hours": null
+    }
+  },
+  {
+    "model": "products.productcategory",
+    "pk": 56,
+    "fields": {
+      "created_at": "2026-01-08T04:32:08.084",
+      "updated_at": "2026-01-08T04:32:08.084",
+      "name": "Budget Packages",
+      "description": "Economical packages with basic inclusions",
+      "slug": "camps-budget",
+      "parent": 53,
+      "is_active": true,
+      "sort_order": 1,
+      "requires_venue": false,
+      "typical_duration_hours": null
+    }
+  },
+  {
+    "model": "products.productcategory",
+    "pk": 57,
+    "fields": {
+      "created_at": "2026-01-08T04:32:08.085",
+      "updated_at": "2026-01-08T04:32:08.085",
+      "name": "Basic Packages",
+      "description": "Standard packages with Havilah accommodation and meals",
+      "slug": "camps-basic",
+      "parent": 53,
+      "is_active": true,
+      "sort_order": 2,
+      "requires_venue": false,
+      "typical_duration_hours": null
+    }
+  },
+  {
+    "model": "products.productcategory",
+    "pk": 58,
+    "fields": {
+      "created_at": "2026-01-08T04:32:08.086",
+      "updated_at": "2026-01-08T04:32:08.086",
+      "name": "Premium Packages",
+      "description": "Full-featured packages with cabanas and function hall",
+      "slug": "camps-premium",
+      "parent": 53,
+      "is_active": true,
+      "sort_order": 3,
+      "requires_venue": false,
+      "typical_duration_hours": null
+    }
+  },
+  {
+    "model": "products.productcategory",
+    "pk": 59,
+    "fields": {
+      "created_at": "2026-01-08T04:32:08.087",
+      "updated_at": "2026-01-08T04:32:08.087",
+      "name": "Team Building",
+      "description": "Corporate team building packages",
+      "slug": "team-building",
+      "parent": null,
+      "is_active": true,
+      "sort_order": 20,
+      "requires_venue": false,
+      "typical_duration_hours": null
+    }
+  },
+  {
+    "model": "products.productcategory",
+    "pk": 60,
+    "fields": {
+      "created_at": "2026-01-08T04:32:08.088",
+      "updated_at": "2026-01-08T04:32:08.088",
+      "name": "Facilitation Only",
+      "description": "Team building facilitation services (venue/meals separate)",
+      "slug": "tb-facilitation",
+      "parent": 59,
+      "is_active": true,
+      "sort_order": 1,
+      "requires_venue": false,
+      "typical_duration_hours": null
+    }
+  },
+  {
+    "model": "products.productcategory",
+    "pk": 61,
+    "fields": {
+      "created_at": "2026-01-08T04:32:08.088",
+      "updated_at": "2026-01-08T04:32:08.088",
+      "name": "All-In Packages",
+      "description": "Complete team building packages with venue, meals, and facilitation",
+      "slug": "tb-all-in",
+      "parent": 59,
+      "is_active": true,
+      "sort_order": 2,
+      "requires_venue": false,
+      "typical_duration_hours": null
+    }
+  },
+  {
+    "model": "products.productcategory",
+    "pk": 62,
+    "fields": {
+      "created_at": "2026-01-08T04:32:08.089",
+      "updated_at": "2026-01-08T04:32:08.089",
+      "name": "All-In Wedding Packages",
+      "description": "Complete wedding packages including venue, catering, photography, and more",
+      "slug": "all-in-weddings",
+      "parent": null,
+      "is_active": true,
+      "sort_order": 5,
+      "requires_venue": true,
+      "typical_duration_hours": null
+    }
+  },
+  {
+    "model": "products.productcategory",
+    "pk": 63,
+    "fields": {
+      "created_at": "2026-01-08T04:32:08.090",
+      "updated_at": "2026-01-08T04:32:08.090",
+      "name": "Event Add-ons",
+      "description": "Optional add-on services and facilities",
+      "slug": "event-addons",
+      "parent": null,
+      "is_active": true,
+      "sort_order": 100,
+      "requires_venue": false,
+      "typical_duration_hours": null
+    }
+  }
+]

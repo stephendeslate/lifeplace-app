@@ -1,13 +1,14 @@
 // Questionnaire Templates Settings Page - Standardized Version
 // Migrated to use the unified settings system
 
-import React from 'react';
-import { Quiz as QuestionnaireIcon } from '@mui/icons-material';
-import { SettingsPage, type SettingsPageConfig, type SettingsTableColumn } from '../../../components/common/settings';
+import React, { useState } from 'react';
+import { Quiz as QuestionnaireIcon, Edit as EditIcon, Visibility as PreviewIcon } from '@mui/icons-material';
+import { PermissionAwareSettingsPage, type SettingsPageConfig, type SettingsTableColumn } from '../../../components/common/settings';
 import { useQuestionnaires } from '../../../hooks/useQuestionnaires';
 import { useEventTypes } from '../../../hooks/useEvents';
 import type { Questionnaire, CreateQuestionnaireData, UpdateQuestionnaireData } from '../../../types/questionnaires.types';
 import type { ModernFormSection } from '../../../components/common/ModernForm';
+import { ManageQuestionsDialog, QuestionnairePreviewDialog } from '../../../components/questionnaires';
 
 // Table columns configuration
 const columns: SettingsTableColumn<Questionnaire>[] = [
@@ -111,6 +112,10 @@ const defaultQuestionnaire: Questionnaire = {
 };
 
 export const QuestionnaireTemplates = () => {
+  const [manageQuestionsOpen, setManageQuestionsOpen] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [selectedQuestionnaire, setSelectedQuestionnaire] = useState<Questionnaire | null>(null);
+
   // Get questionnaires and event types
   const {
     questionnaires = [],
@@ -217,21 +222,80 @@ export const QuestionnaireTemplates = () => {
     });
   };
 
+  // Fetch fresh questionnaire data before editing to ensure we have the latest values
+  const handleFetchItem = async (id: string | number): Promise<Questionnaire> => {
+    const { questionnairesApi } = await import('../../../apis/questionnaires.api');
+    return questionnairesApi.getQuestionnaire(Number(id));
+  };
+
+  const handleManageQuestions = (questionnaire: Questionnaire) => {
+    setSelectedQuestionnaire(questionnaire);
+    setManageQuestionsOpen(true);
+  };
+
+  const handleCloseManageQuestions = () => {
+    setManageQuestionsOpen(false);
+    setSelectedQuestionnaire(null);
+  };
+
+  const handlePreview = (questionnaire: Questionnaire) => {
+    setSelectedQuestionnaire(questionnaire);
+    setPreviewOpen(true);
+  };
+
+  const handleClosePreview = () => {
+    setPreviewOpen(false);
+    setSelectedQuestionnaire(null);
+  };
+
   return (
-    <SettingsPage
-      config={config}
-      data={questionnaires}
-      defaultValues={defaultQuestionnaire}
-      isLoading={isLoadingQuestionnaires}
-      error={questionnairesError?.message}
-      onRefresh={handleRefresh}
-      onCreate={handleCreate}
-      onUpdate={handleUpdate}
-      onDelete={handleDelete}
-      isCreating={isCreatingQuestionnaire}
-      isUpdating={isUpdatingQuestionnaire}
-      isDeleting={isDeletingQuestionnaire}
-    />
+    <>
+      <PermissionAwareSettingsPage
+        config={config}
+        requiredPermissions={['can_manage_templates']}
+        data={questionnaires}
+        defaultValues={defaultQuestionnaire}
+        isLoading={isLoadingQuestionnaires}
+        error={questionnairesError?.message}
+        onRefresh={handleRefresh}
+        onCreate={handleCreate}
+        onUpdate={handleUpdate}
+        onDelete={handleDelete}
+        onFetchItem={handleFetchItem}
+        isCreating={isCreatingQuestionnaire}
+        isUpdating={isUpdatingQuestionnaire}
+        isDeleting={isDeletingQuestionnaire}
+        customTableActions={[
+          {
+            label: 'Preview',
+            icon: React.createElement(PreviewIcon),
+            onClick: handlePreview,
+            color: 'secondary',
+          },
+          {
+            label: 'Manage Questions',
+            icon: React.createElement(EditIcon),
+            onClick: handleManageQuestions,
+            color: 'primary',
+          },
+        ]}
+      />
+
+      <ManageQuestionsDialog
+        open={manageQuestionsOpen}
+        onClose={handleCloseManageQuestions}
+        questionnaire={selectedQuestionnaire ? {
+          id: selectedQuestionnaire.id,
+          name: selectedQuestionnaire.name,
+        } : null}
+      />
+
+      <QuestionnairePreviewDialog
+        open={previewOpen}
+        onClose={handleClosePreview}
+        questionnaire={selectedQuestionnaire}
+      />
+    </>
   );
 };
 

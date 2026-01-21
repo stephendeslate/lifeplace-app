@@ -21,8 +21,8 @@ import {
   Event as EventIcon,
   CalendarMonth as BookingIcon,
   Payment as PaymentIcon,
-  Description as ContractIcon,
-  Message as MessageIcon,
+  Folder as DocumentsIcon,
+  AssignmentTurnedIn as ActionCenterIcon,
   Person as ProfileIcon,
   HelpOutline as HelpIcon,
   Home as HomeIcon,
@@ -30,7 +30,8 @@ import {
 } from '@mui/icons-material';
 import { AnimatedElement } from '../../design-system/components/AnimatedElement';
 import { GlassCard } from '../../design-system/components/GlassCard';
-import { useContracts } from '../../contexts/ContractsContext';
+import { useActionCount } from '../../hooks/useActionCenter';
+import { useUnreadRecordsCount } from '../../hooks/useCommunications';
 
 interface ClientSidebarProps {
   open: boolean;
@@ -69,17 +70,10 @@ const navigationItems: NavigationItem[] = [
     icon: <HistoryIcon />,
   },
   {
-    id: 'messages',
-    label: 'Messages',
-    path: '/messages',
-    icon: <MessageIcon />,
-    // TODO: Replace with unread messages count
-  },
-  {
-    id: 'booking',
-    label: 'Book New Event',
-    path: '/booking',
-    icon: <BookingIcon />,
+    id: 'actions',
+    label: 'Action Center',
+    path: '/actions',
+    icon: <ActionCenterIcon />,
   },
   {
     id: 'payments',
@@ -89,11 +83,16 @@ const navigationItems: NavigationItem[] = [
     // TODO: Replace with API-driven outstanding payments count
   },
   {
-    id: 'contracts',
-    label: 'Contracts',
-    path: '/contracts',
-    icon: <ContractIcon />,
-    // TODO: Replace with API-driven pending contracts count
+    id: 'documents',
+    label: 'Documents',
+    path: '/documents',
+    icon: <DocumentsIcon />,
+  },
+  {
+    id: 'booking',
+    label: 'Book New Event',
+    path: '/booking',
+    icon: <BookingIcon />,
   },
 ];
 
@@ -127,24 +126,22 @@ export const ClientSidebar: React.FC<ClientSidebarProps> = ({
   const theme = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
-  const { pendingContracts } = useContracts();
-  
-  // Messaging state removed - feature under development
+  const { count: actionCount } = useActionCount();
+  const { count: unreadRecordsCount } = useUnreadRecordsCount();
 
   // Enhanced navigation items with dynamic badges
   const getEnhancedNavigationItems = (): NavigationItem[] => {
     return navigationItems.map(item => {
-      if (item.id === 'contracts') {
+      if (item.id === 'actions') {
         return {
           ...item,
-          badge: pendingContracts.length > 0 ? pendingContracts.length : undefined,
+          badge: actionCount > 0 ? actionCount : undefined,
         };
       }
-      // Messages badge disabled - feature under development
-      if (item.id === 'messages') {
+      if (item.id === 'records') {
         return {
           ...item,
-          badge: undefined,
+          badge: unreadRecordsCount > 0 ? unreadRecordsCount : undefined,
         };
       }
       return item;

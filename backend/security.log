@@ -1876,3 +1876,192 @@ DETAIL:  Failing row contains (259, 2025-09-10 01:22:12.901702+00, LOGIN_SUCCESS
 🔒 SECURITY 2025-10-11 12:30:15,171 WARNING [ROLE_UPGRADE] User upgrade@example.com upgraded from CLIENT to ADMIN
 🔒 SECURITY 2025-10-11 12:30:16,577 WARNING [ROLE_UPGRADE] User preserve@example.com upgraded from CLIENT to ADMIN
 🔒 SECURITY 2025-10-11 12:31:32,930 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully
+🔒 SECURITY 2025-10-11 12:56:59,107 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully
+🔒 SECURITY 2025-12-05 14:47:44,188 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully
+🔒 SECURITY 2025-12-05 14:47:52,643 WARNING [LOGIN_FAILURE] Failed login attempt for john.doe@gmail.com: Invalid credentials
+🔒 SECURITY 2025-12-05 14:47:57,071 WARNING [LOGIN_FAILURE] Failed login attempt for john.doe@gmail.com: Invalid credentials
+🔒 SECURITY 2025-12-05 14:48:10,093 WARNING [LOGIN_FAILURE] Failed login attempt for demo@test.com: Invalid credentials
+🔒 SECURITY 2025-12-05 14:48:13,797 WARNING [LOGIN_FAILURE] Failed login attempt for demo@test.com: Invalid credentials
+🔒 SECURITY 2025-12-05 14:49:06,030 ERROR [LOGIN_FAILURE] Failed login attempt for john.test@gmail.com: Invalid credentials
+🔒 SECURITY 2025-12-05 14:49:09,633 INFO [LOGIN_SUCCESS] User john.test@gmail.com logged in successfully
+🔒 SECURITY 2025-12-05 16:01:02,819 INFO [LOGIN_SUCCESS] New client registration and auto-login: sd@gmail.com
+🔒 SECURITY 2025-12-05 16:06:48,123 INFO [LOGIN_SUCCESS] User john.des@gmail.com logged in successfully
+🔒 SECURITY 2025-12-10 15:50:26,654 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully
+🔒 SECURITY 2025-12-10 15:58:05,862 WARNING [LOGIN_FAILURE] Failed login attempt for john.test@gmail.com: Invalid credentials
+🔒 SECURITY 2025-12-10 15:58:21,882 INFO [LOGIN_SUCCESS] User john.test@gmail.com logged in successfully
+🔒 SECURITY 2025-12-10 16:12:30,320 INFO [LOGIN_SUCCESS] User john.test@gmail.com logged in successfully
+🔒 SECURITY 2025-12-13 09:26:57,350 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully
+🔒 SECURITY 2025-12-15 23:33:29,179 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully
+🔒 SECURITY 2025-12-16 02:07:40,056 WARNING [LOGIN_FAILURE] Failed login attempt for john.test@gmail.com: Invalid credentials
+🔒 SECURITY 2025-12-16 02:07:45,635 INFO [LOGIN_SUCCESS] User john.test@gmail.com logged in successfully
+🔒 SECURITY 2025-12-16 10:40:28,927 INFO [LOGIN_SUCCESS] User john.test@gmail.com logged in successfully
+🔒 SECURITY 2025-12-16 10:40:53,631 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully
+🔒 SECURITY 2025-12-17 13:50:37,301 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully
+🔒 SECURITY 2025-12-18 00:16:01,352 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully
+🔒 SECURITY 2025-12-18 09:01:18,836 INFO [LOGIN_SUCCESS] User john.test@gmail.com logged in successfully
+🔒 SECURITY 2025-12-18 11:18:50,416 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully
+🔒 SECURITY 2025-12-18 11:19:41,774 INFO [LOGIN_SUCCESS] User john.test@gmail.com logged in successfully
+🔒 SECURITY 2025-12-18 12:51:02,592 WARNING [LOGIN_FAILURE] Failed login attempt for stephendeslate@gmail.com: Invalid credentials
+🔒 SECURITY 2025-12-18 12:51:03,956 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully
+🔒 SECURITY 2025-12-18 23:14:49,840 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully
+🔒 SECURITY 2025-12-19 00:04:17,250 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully
+🔒 SECURITY 2025-12-19 08:26:42,286 INFO [LOGIN_SUCCESS] User john.test@gmail.com logged in successfully
+🔒 SECURITY 2025-12-19 08:28:43,410 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully
+🔒 SECURITY 2025-12-19 10:44:02,832 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully
+🔒 SECURITY 2025-12-19 10:48:52,627 INFO [LOGIN_SUCCESS] User john.test@gmail.com logged in successfully
+🔒 SECURITY 2025-12-19 16:33:00,882 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully
+🔒 SECURITY 2025-12-20 02:54:44,357 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully
+🔒 SECURITY 2025-12-20 17:39:58,186 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully
+🔒 SECURITY 2025-12-21 02:02:37,537 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully
+🔒 SECURITY 2025-12-21 05:38:54,373 INFO [LOGIN_SUCCESS] User john.test@gmail.com logged in successfully
+🔒 SECURITY 2025-12-21 11:51:34,704 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully
+🔒 SECURITY 2025-12-22 01:53:24,992 INFO [LOGIN_SUCCESS] User john.test@gmail.com logged in successfully
+🔒 SECURITY 2025-12-22 01:53:45,971 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully
+🔒 SECURITY 2025-12-22 02:42:01,589 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully
+🔒 SECURITY 2025-12-22 03:43:26,984 INFO [LOGIN_SUCCESS] User john.test@gmail.com logged in successfully
+🔒 SECURITY 2025-12-22 06:09:39,527 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully
+🔒 SECURITY 2025-12-22 06:09:59,964 INFO [LOGIN_SUCCESS] User john.test@gmail.com logged in successfully
+🔒 SECURITY 2025-12-23 04:59:06,116 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully
+🔒 SECURITY 2025-12-23 04:59:30,645 INFO [LOGIN_SUCCESS] User john.test@gmail.com logged in successfully
+🔒 SECURITY 2025-12-24 03:23:32,859 INFO [LOGIN_SUCCESS] User john.test@gmail.com logged in successfully
+🔒 SECURITY 2025-12-24 04:58:33,744 INFO [LOGIN_SUCCESS] User john.test@gmail.com logged in successfully
+🔒 SECURITY 2025-12-24 04:59:28,206 INFO [LOGIN_SUCCESS] User john.test@gmail.com logged in successfully
+🔒 SECURITY 2025-12-26 01:56:17,959 INFO [LOGIN_SUCCESS] User john.test@gmail.com logged in successfully
+🔒 SECURITY 2025-12-31 04:45:17,368 INFO [LOGIN_SUCCESS] User john.test@gmail.com logged in successfully
+🔒 SECURITY 2025-12-31 05:36:43,383 INFO [LOGIN_SUCCESS] User john.test@gmail.com logged in successfully
+🔒 SECURITY 2025-12-31 07:09:58,537 WARNING [LOGIN_FAILURE] Failed login attempt for john.test@gmail.com: Invalid credentials
+🔒 SECURITY 2025-12-31 07:10:30,915 INFO [LOGIN_SUCCESS] User john.test@gmail.com logged in successfully
+🔒 SECURITY 2025-12-31 08:34:18,915 INFO [LOGIN_SUCCESS] User john.test@gmail.com logged in successfully
+🔒 SECURITY 2025-12-31 10:35:44,970 INFO [LOGIN_SUCCESS] User john.test@gmail.com logged in successfully
+🔒 SECURITY 2025-12-31 13:57:51,698 INFO [LOGIN_SUCCESS] User john.test@gmail.com logged in successfully
+🔒 SECURITY 2026-01-01 01:27:16,184 INFO [LOGIN_SUCCESS] User john.test@gmail.com logged in successfully
+🔒 SECURITY 2026-01-01 02:06:05,446 INFO [LOGIN_SUCCESS] User john.test@gmail.com logged in successfully
+🔒 SECURITY 2026-01-01 06:49:39,656 INFO [LOGIN_SUCCESS] User john.test@gmail.com logged in successfully
+🔒 SECURITY 2026-01-04 11:24:46,266 INFO [LOGIN_SUCCESS] User john.test@gmail.com logged in successfully
+🔒 SECURITY 2026-01-06 09:00:18,720 INFO [LOGIN_SUCCESS] User john.test@gmail.com logged in successfully
+🔒 SECURITY 2026-01-06 11:00:57,659 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully
+🔒 SECURITY 2026-01-06 11:18:51,615 INFO [LOGIN_SUCCESS] User john.test@gmail.com logged in successfully
+🔒 SECURITY 2026-01-06 12:35:43,776 INFO [LOGIN_SUCCESS] User john.test@gmail.com logged in successfully
+🔒 SECURITY 2026-01-06 13:17:50,387 INFO [LOGIN_SUCCESS] User john.test@gmail.com logged in successfully
+🔒 SECURITY 2026-01-07 03:49:11,219 INFO [LOGIN_SUCCESS] User john.test@gmail.com logged in successfully
+🔒 SECURITY 2026-01-07 04:01:23,431 INFO [LOGIN_SUCCESS] User john.test@gmail.com logged in successfully
+🔒 SECURITY 2026-01-07 04:06:23,724 INFO [LOGIN_SUCCESS] User john.test@gmail.com logged in successfully
+🔒 SECURITY 2026-01-07 04:34:16,997 INFO [LOGIN_SUCCESS] User john.test@gmail.com logged in successfully
+🔒 SECURITY 2026-01-07 04:40:46,555 INFO [LOGIN_SUCCESS] User john.test@gmail.com logged in successfully
+🔒 SECURITY 2026-01-07 05:26:51,922 INFO [LOGIN_SUCCESS] User john.test@gmail.com logged in successfully
+🔒 SECURITY 2026-01-07 06:08:16,513 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully
+🔒 SECURITY 2026-01-07 08:49:04,982 INFO [LOGIN_SUCCESS] User john.test@gmail.com logged in successfully
+🔒 SECURITY 2026-01-07 09:06:05,701 INFO [LOGIN_SUCCESS] User john.test@gmail.com logged in successfully
+🔒 SECURITY 2026-01-07 09:59:31,093 INFO [LOGIN_SUCCESS] User john.test@gmail.com logged in successfully
+🔒 SECURITY 2026-01-07 12:14:27,929 INFO [LOGIN_SUCCESS] User john.test@gmail.com logged in successfully
+🔒 SECURITY 2026-01-07 15:32:25,642 INFO [LOGIN_SUCCESS] User john.test@gmail.com logged in successfully
+🔒 SECURITY 2026-01-07 17:47:48,879 INFO [LOGIN_SUCCESS] User john.test@gmail.com logged in successfully
+🔒 SECURITY 2026-01-08 03:13:32,109 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully
+🔒 SECURITY 2026-01-08 03:46:47,602 INFO [LOGIN_SUCCESS] User john.test@gmail.com logged in successfully
+🔒 SECURITY 2026-01-08 04:32:00,601 INFO [LOGIN_SUCCESS] User john.test@gmail.com logged in successfully
+🔒 SECURITY 2026-01-08 04:58:53,167 INFO [LOGIN_SUCCESS] User john.test@gmail.com logged in successfully
+🔒 SECURITY 2026-01-08 08:34:42,387 INFO [LOGIN_SUCCESS] User john.test@gmail.com logged in successfully
+🔒 SECURITY 2026-01-08 09:56:16,477 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully
+🔒 SECURITY 2026-01-09 09:22:38,209 INFO [LOGIN_SUCCESS] User john.test@gmail.com logged in successfully
+🔒 SECURITY 2026-01-09 09:30:42,774 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully
+🔒 SECURITY 2026-01-09 09:55:47,467 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully
+🔒 SECURITY 2026-01-09 09:56:47,481 INFO [LOGIN_SUCCESS] User john.test@gmail.com logged in successfully
+🔒 SECURITY 2026-01-09 13:43:42,987 INFO [LOGIN_SUCCESS] User john.test@gmail.com logged in successfully
+🔒 SECURITY 2026-01-10 02:45:19,123 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully
+🔒 SECURITY 2026-01-10 02:48:13,403 INFO [LOGIN_SUCCESS] User john.test@gmail.com logged in successfully
+🔒 SECURITY 2026-01-10 03:17:32,932 INFO [LOGIN_SUCCESS] User john.test@gmail.com logged in successfully
+🔒 SECURITY 2026-01-12 15:16:39,527 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully
+🔒 SECURITY 2026-01-12 15:48:45,480 INFO [LOGIN_SUCCESS] User john.test@gmail.com logged in successfully
+🔒 SECURITY 2026-01-13 08:39:56,107 INFO [LOGIN_SUCCESS] User john.test@gmail.com logged in successfully
+🔒 SECURITY 2026-01-13 10:49:48,002 INFO [LOGIN_SUCCESS] User john.test@gmail.com logged in successfully
+🔒 SECURITY 2026-01-13 10:52:04,277 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully
+🔒 SECURITY 2026-01-13 12:55:18,395 INFO [LOGIN_SUCCESS] User john.test@gmail.com logged in successfully
+🔒 SECURITY 2026-01-13 12:56:57,179 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully
+🔒 SECURITY 2026-01-13 13:24:44,688 INFO [LOGIN_SUCCESS] User john.test@gmail.com logged in successfully
+🔒 SECURITY 2026-01-13 15:02:41,717 INFO [LOGIN_SUCCESS] User john.test@gmail.com logged in successfully
+🔒 SECURITY 2026-01-13 15:40:20,814 INFO [LOGIN_SUCCESS] User john.test@gmail.com logged in successfully
+🔒 SECURITY 2026-01-14 03:27:33,091 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully
+🔒 SECURITY 2026-01-14 11:35:49,755 INFO [LOGIN_SUCCESS] User john.test@gmail.com logged in successfully
+🔒 SECURITY 2026-01-15 09:48:37,010 WARNING [ROLE_UPGRADE] User client@example.com upgraded from CLIENT to ADMIN
+🔒 SECURITY 2026-01-15 09:50:43,382 INFO [LOGIN_SUCCESS] User test@example.com logged in successfully
+🔒 SECURITY 2026-01-15 09:50:57,309 ERROR Failed to log security event: relation "security_events" does not exist
+LINE 1: INSERT INTO "security_events" ("timestamp", "event_type", "s...
+                    ^
+
+🔒 SECURITY 2026-01-15 09:50:57,309 INFO [LOGIN_SUCCESS] New client registration and auto-login: newclient@example.com (IP: 127.0.0.1, User: newclient@example.com)
+🔒 SECURITY 2026-01-15 09:50:58,220 ERROR Failed to log security event: relation "security_events" does not exist
+LINE 1: INSERT INTO "security_events" ("timestamp", "event_type", "s...
+                    ^
+
+🔒 SECURITY 2026-01-15 09:50:58,220 WARNING [LOGIN_FAILURE] Failed login attempt for test@example.com: Invalid credentials (IP: 127.0.0.1, User: anonymous)
+🔒 SECURITY 2026-01-15 09:50:58,399 ERROR Failed to log security event: relation "security_events" does not exist
+LINE 1: INSERT INTO "security_events" ("timestamp", "event_type", "s...
+                    ^
+
+🔒 SECURITY 2026-01-15 09:50:58,399 INFO [LOGIN_SUCCESS] User test@example.com logged in successfully (IP: 127.0.0.1, User: test@example.com)
+🔒 SECURITY 2026-01-15 09:50:58,571 ERROR Failed to log security event: relation "security_events" does not exist
+LINE 1: INSERT INTO "security_events" ("timestamp", "event_type", "s...
+                    ^
+
+🔒 SECURITY 2026-01-15 09:50:58,571 INFO [LOGIN_SUCCESS] User test@example.com logged in successfully (IP: 127.0.0.1, User: test@example.com)
+🔒 SECURITY 2026-01-15 09:50:58,660 ERROR Failed to log security event: relation "security_events" does not exist
+LINE 1: INSERT INTO "security_events" ("timestamp", "event_type", "s...
+                    ^
+
+🔒 SECURITY 2026-01-15 09:50:58,660 WARNING [LOGIN_FAILURE] Failed login attempt for nonexistent@example.com: Invalid credentials (IP: 127.0.0.1, User: anonymous)
+🔒 SECURITY 2026-01-15 09:50:58,832 ERROR Failed to log security event: relation "security_events" does not exist
+LINE 1: INSERT INTO "security_events" ("timestamp", "event_type", "s...
+                    ^
+
+🔒 SECURITY 2026-01-15 09:50:58,832 WARNING [LOGIN_FAILURE] Failed login attempt for test@example.com: Invalid credentials (IP: 127.0.0.1, User: anonymous)
+🔒 SECURITY 2026-01-15 09:51:07,398 ERROR Failed to log security event: relation "security_events" does not exist
+LINE 1: INSERT INTO "security_events" ("timestamp", "event_type", "s...
+                    ^
+
+🔒 SECURITY 2026-01-15 09:51:07,398 INFO [LOGIN_SUCCESS] User test@example.com logged in successfully (IP: 127.0.0.1, User: test@example.com)
+🔒 SECURITY 2026-01-17 10:57:41,860 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully
+🔒 SECURITY 2026-01-17 11:26:54,465 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully
+🔒 SECURITY 2026-01-17 13:21:04,899 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully
+🔒 SECURITY 2026-01-17 18:28:55,912 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully
+🔒 SECURITY 2026-01-19 06:28:46,094 INFO [LOGIN_SUCCESS] User loadtest-client@example.com logged in successfully
+🔒 SECURITY 2026-01-19 06:28:49,076 INFO [LOGIN_SUCCESS] User loadtest-admin@example.com logged in successfully
+🔒 SECURITY 2026-01-19 06:31:16,100 INFO [LOGIN_SUCCESS] User loadtest-client@example.com logged in successfully
+🔒 SECURITY 2026-01-19 06:31:19,096 INFO [LOGIN_SUCCESS] User loadtest-admin@example.com logged in successfully
+🔒 SECURITY 2026-01-19 06:43:58,207 INFO [LOGIN_SUCCESS] User john.test@gmail.com logged in successfully
+🔒 SECURITY 2026-01-19 06:47:05,139 INFO [LOGIN_SUCCESS] User john.test@gmail.com logged in successfully
+🔒 SECURITY 2026-01-19 06:56:43,980 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully
+🔒 SECURITY 2026-01-19 07:21:52,418 WARNING [ADMIN_ACTION] Admin request: POST /admin/communications/communicationrecord/
+🔒 SECURITY 2026-01-19 07:21:53,460 WARNING [ADMIN_ACTION] Admin request: POST /admin/communications/communicationrecord/
+🔒 SECURITY 2026-01-19 07:21:53,531 WARNING [ADMIN_ACTION] Admin request failed: POST /admin/communications/communicationrecord/ - 500
+🔒 SECURITY 2026-01-19 07:22:36,578 WARNING [ADMIN_ACTION] Admin request: POST /admin/communications/communicationrecord/
+🔒 SECURITY 2026-01-19 07:22:37,809 WARNING [ADMIN_ACTION] Admin request: POST /admin/communications/communicationrecord/
+🔒 SECURITY 2026-01-19 07:23:04,138 WARNING [ADMIN_ACTION] Admin request: POST /admin/bookingflow/bookingflow/
+🔒 SECURITY 2026-01-19 07:23:14,006 WARNING [ADMIN_ACTION] Admin request: POST /admin/bookingflow/bookingflow/
+🔒 SECURITY 2026-01-19 08:51:25,966 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully
+🔒 SECURITY 2026-01-19 09:12:31,987 INFO [LOGIN_SUCCESS] User john.test@gmail.com logged in successfully
+🔒 SECURITY 2026-01-19 09:19:28,622 INFO [ADMIN_ACTION] Admin request: POST /admin/events/event/289/change/
+🔒 SECURITY 2026-01-19 09:19:38,051 INFO [ADMIN_ACTION] Admin request: POST /admin/events/event/288/change/
+🔒 SECURITY 2026-01-19 09:20:14,002 WARNING [ADMIN_ACTION] Admin request: POST /admin/events/event/
+🔒 SECURITY 2026-01-19 09:20:16,650 WARNING [ADMIN_ACTION] Admin request: POST /admin/events/event/
+🔒 SECURITY 2026-01-19 09:28:16,206 WARNING [ADMIN_ACTION] Admin request: POST /admin/events/event/
+🔒 SECURITY 2026-01-19 09:28:18,341 WARNING [ADMIN_ACTION] Admin request: POST /admin/events/event/
+🔒 SECURITY 2026-01-19 10:44:49,551 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully
+🔒 SECURITY 2026-01-19 11:10:37,469 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully
+🔒 SECURITY 2026-01-19 11:24:20,753 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully
+🔒 SECURITY 2026-01-19 11:28:01,666 WARNING [ADMIN_ACTION] Admin request: POST /admin/events/eventtype/
+🔒 SECURITY 2026-01-19 11:28:02,920 WARNING [ADMIN_ACTION] Admin request: POST /admin/events/eventtype/
+🔒 SECURITY 2026-01-19 11:29:36,900 INFO [LOGIN_SUCCESS] User john.test@gmail.com logged in successfully
+🔒 SECURITY 2026-01-19 12:10:12,268 INFO [LOGIN_SUCCESS] User john.test@gmail.com logged in successfully
+🔒 SECURITY 2026-01-19 12:26:52,572 INFO [LOGIN_SUCCESS] User john.test@gmail.com logged in successfully
+🔒 SECURITY 2026-01-19 20:36:12,342 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully
+🔒 SECURITY 2026-01-20 05:25:14,844 INFO [LOGIN_SUCCESS] User john.test@gmail.com logged in successfully
+🔒 SECURITY 2026-01-20 05:31:21,700 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully
+🔒 SECURITY 2026-01-21 09:35:57,960 INFO 🧹 Security log cleanup: No old records to delete
+🔒 SECURITY 2026-01-21 09:35:57,961 ERROR ❌ Account data cleanup failed: Cannot resolve keyword 'updated_at' into field. Choices are: admin_permissions, admin_upgrade_invitation, affecteduser, appsettings, assigned_disputes, assigned_tasks, assigned_threads, booking_sessions, client_notifications, client_threads, communication_records, completed_tasks, consent_records, contract_signatures, contractdocument, contractnote, created_notes, created_quotes, currencysettings, date_joined, deleted_communications, email, event_actions, eventfeedback, eventfile, events, events_checked_in, events_checked_out, feedback_responses, first_name, groups, id, invitations, invoices, is_active, is_staff, is_superuser, last_login, last_name, layout_changes, led_breaches, logentry, messagereadstatus, notification_digests, notification_preferences, notifications, outstandingtoken, password, password_reset_tokens, payment_methods, privacy_requests, processed_payments, processed_privacy_requests, profile, push_tokens, quoteactivity, read_messages, refund, replayed_tasks, requested_amendments, resolved_dead_letters, reviewed_amendments, role, securityevent, sent_client_invitations, sent_communications, sent_invitations, sent_messages, template_changes, unsubscribe_tokens, updated_legal_documents, user_permissions, venue_blocks_created, vip_assignments, vip_point_adjustments, vip_status, vip_tier_changes, workflow_overrides_created
+🔒 SECURITY 2026-01-21 09:36:02,822 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully
+🔒 SECURITY 2026-01-21 09:40:57,965 ERROR ❌ Account data cleanup failed: Cannot resolve keyword 'updated_at' into field. Choices are: admin_permissions, admin_upgrade_invitation, affecteduser, appsettings, assigned_disputes, assigned_tasks, assigned_threads, booking_sessions, client_notifications, client_threads, communication_records, completed_tasks, consent_records, contract_signatures, contractdocument, contractnote, created_notes, created_quotes, currencysettings, date_joined, deleted_communications, email, event_actions, eventfeedback, eventfile, events, events_checked_in, events_checked_out, feedback_responses, first_name, groups, id, invitations, invoices, is_active, is_staff, is_superuser, last_login, last_name, layout_changes, led_breaches, logentry, messagereadstatus, notification_digests, notification_preferences, notifications, outstandingtoken, password, password_reset_tokens, payment_methods, privacy_requests, processed_payments, processed_privacy_requests, profile, push_tokens, quoteactivity, read_messages, refund, replayed_tasks, requested_amendments, resolved_dead_letters, reviewed_amendments, role, securityevent, sent_client_invitations, sent_communications, sent_invitations, sent_messages, template_changes, unsubscribe_tokens, updated_legal_documents, user_permissions, venue_blocks_created, vip_assignments, vip_point_adjustments, vip_status, vip_tier_changes, workflow_overrides_created
+🔒 SECURITY 2026-01-21 09:45:57,973 ERROR ❌ Account data cleanup failed: Cannot resolve keyword 'updated_at' into field. Choices are: admin_permissions, admin_upgrade_invitation, affecteduser, appsettings, assigned_disputes, assigned_tasks, assigned_threads, booking_sessions, client_notifications, client_threads, communication_records, completed_tasks, consent_records, contract_signatures, contractdocument, contractnote, created_notes, created_quotes, currencysettings, date_joined, deleted_communications, email, event_actions, eventfeedback, eventfile, events, events_checked_in, events_checked_out, feedback_responses, first_name, groups, id, invitations, invoices, is_active, is_staff, is_superuser, last_login, last_name, layout_changes, led_breaches, logentry, messagereadstatus, notification_digests, notification_preferences, notifications, outstandingtoken, password, password_reset_tokens, payment_methods, privacy_requests, processed_payments, processed_privacy_requests, profile, push_tokens, quoteactivity, read_messages, refund, replayed_tasks, requested_amendments, resolved_dead_letters, reviewed_amendments, role, securityevent, sent_client_invitations, sent_communications, sent_invitations, sent_messages, template_changes, unsubscribe_tokens, updated_legal_documents, user_permissions, venue_blocks_created, vip_assignments, vip_point_adjustments, vip_status, vip_tier_changes, workflow_overrides_created
+🔒 SECURITY 2026-01-21 09:50:57,980 ERROR ❌ Account data cleanup failed: Cannot resolve keyword 'updated_at' into field. Choices are: admin_permissions, admin_upgrade_invitation, affecteduser, appsettings, assigned_disputes, assigned_tasks, assigned_threads, booking_sessions, client_notifications, client_threads, communication_records, completed_tasks, consent_records, contract_signatures, contractdocument, contractnote, created_notes, created_quotes, currencysettings, date_joined, deleted_communications, email, event_actions, eventfeedback, eventfile, events, events_checked_in, events_checked_out, feedback_responses, first_name, groups, id, invitations, invoices, is_active, is_staff, is_superuser, last_login, last_name, layout_changes, led_breaches, logentry, messagereadstatus, notification_digests, notification_preferences, notifications, outstandingtoken, password, password_reset_tokens, payment_methods, privacy_requests, processed_payments, processed_privacy_requests, profile, push_tokens, quoteactivity, read_messages, refund, replayed_tasks, requested_amendments, resolved_dead_letters, reviewed_amendments, role, securityevent, sent_client_invitations, sent_communications, sent_invitations, sent_messages, template_changes, unsubscribe_tokens, updated_legal_documents, user_permissions, venue_blocks_created, vip_assignments, vip_point_adjustments, vip_status, vip_tier_changes, workflow_overrides_created
+🔒 SECURITY 2026-01-21 10:17:12,054 WARNING [ADMIN_ACTION] Admin request: POST /admin/events/event/
+🔒 SECURITY 2026-01-21 10:17:14,937 WARNING [ADMIN_ACTION] Admin request: POST /admin/events/event/
+🔒 SECURITY 2026-01-21 10:39:40,742 INFO [LOGIN_SUCCESS] User stephendeslate@gmail.com logged in successfully

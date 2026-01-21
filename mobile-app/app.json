@@ -1,0 +1,150 @@
+{
+  "expo": {
+    "name": "LifePlace",
+    "slug": "lifeplace",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#B5CAA0"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.lifeplace.app",
+      "infoPlist": {
+        "NSCameraUsageDescription": "LifePlace needs camera access to upload photos for your event.",
+        "NSPhotoLibraryUsageDescription": "LifePlace needs photo library access to upload photos for your event.",
+        "NSFaceIDUsageDescription": "LifePlace uses Face ID to securely authenticate you and protect your account.",
+        "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": false
+        },
+        "ITSAppUsesNonExemptEncryption": false
+      },
+      "associatedDomains": [
+        "applinks:app.lifeplace.dev",
+        "applinks:*.lifeplace.dev"
+      ]
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#B5CAA0"
+      },
+      "package": "com.lifeplace.app",
+      "edgeToEdgeEnabled": true,
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE"
+      ],
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "https",
+              "host": "app.lifeplace.dev",
+              "pathPrefix": "/actions"
+            },
+            {
+              "scheme": "https",
+              "host": "app.lifeplace.dev",
+              "pathPrefix": "/quotes"
+            },
+            {
+              "scheme": "https",
+              "host": "app.lifeplace.dev",
+              "pathPrefix": "/contracts"
+            },
+            {
+              "scheme": "https",
+              "host": "app.lifeplace.dev",
+              "pathPrefix": "/payments"
+            },
+            {
+              "scheme": "https",
+              "host": "app.lifeplace.dev",
+              "pathPrefix": "/events"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
+        }
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#B5CAA0",
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 200
+        }
+      ],
+      "expo-font",
+      [
+        "@stripe/stripe-react-native",
+        {
+          "merchantIdentifier": "merchant.com.lifeplace.app",
+          "enableGooglePay": true
+        }
+      ],
+      "expo-document-picker",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "LifePlace needs access to your photos to upload event images.",
+          "cameraPermission": "LifePlace needs access to your camera to take event photos."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#228B22"
+        }
+      ],
+      "expo-local-authentication",
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "networkInspector": false
+          }
+        }
+      ]
+    ],
+    "notification": {
+      "icon": "./assets/notification-icon.png",
+      "color": "#228B22",
+      "iosDisplayInForeground": true,
+      "androidMode": "default",
+      "androidCollapsedTitle": "LifePlace"
+    },
+    "experiments": {
+      "typedRoutes": true
+    },
+    "scheme": "lifeplace",
+    "extra": {
+      "eas": {
+        "projectId": "53b517db-6212-4786-8680-4c555a74fdf4"
+      },
+      "privacyPolicyUrl": "https://yourdomain.com/privacy",
+      "termsOfServiceUrl": "https://yourdomain.com/terms"
+    }
+  }
+}

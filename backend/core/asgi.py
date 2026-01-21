@@ -27,10 +27,11 @@ application = ProtocolTypeRouter({
     # Django's ASGI application to handle traditional HTTP requests
     "http": django_asgi_app,
 
-    # WebSocket chat handler
-    # Note: AllowedHostsOriginValidator removed for development
-    # In production, configure with proper allowed origins
-    "websocket": AuthMiddlewareStack(
-        URLRouter(websocket_urlpatterns)
+    # WebSocket chat handler with origin validation
+    # AllowedHostsOriginValidator validates WebSocket connections against ALLOWED_HOSTS
+    "websocket": AllowedHostsOriginValidator(
+        AuthMiddlewareStack(
+            URLRouter(websocket_urlpatterns)
+        )
     ),
 })

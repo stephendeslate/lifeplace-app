@@ -10,10 +10,14 @@ class Note(BaseModel):
     title = models.CharField(max_length=255, blank=True)
     content = models.TextField()
     created_by = models.ForeignKey(
-        'users.User', 
-        on_delete=models.SET_NULL, 
-        null=True, 
+        'users.User',
+        on_delete=models.SET_NULL,
+        null=True,
         related_name='created_notes'
+    )
+    is_client_visible = models.BooleanField(
+        default=False,
+        help_text="If True, note is visible to clients"
     )
     
     # Generic relationship

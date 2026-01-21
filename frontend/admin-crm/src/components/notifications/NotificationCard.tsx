@@ -12,7 +12,6 @@ import {
   ListItemIcon,
   ListItemText,
   Chip,
-  useTheme,
   Stack,
   Tooltip,
 } from '@mui/material';
@@ -31,6 +30,7 @@ import {
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import type { Notification } from '../../types/notifications.types';
+import { tokens } from '../../design-system';
 
 interface NotificationCardProps {
   notification: Notification;
@@ -47,7 +47,6 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
   onDelete,
   compact = false,
 }) => {
-  const theme = useTheme();
   const navigate = useNavigate();
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
   const [expanded, setExpanded] = useState(false);
@@ -121,15 +120,15 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
 
   const getCategoryColor = (category: string) => {
     switch (category) {
-      case 'SYSTEM': return '#757575';
-      case 'EVENT': return '#1976d2';
-      case 'TASK': return '#388e3c';
-      case 'PAYMENT': return '#f57c00';
-      case 'CLIENT': return '#7b1fa2';
-      case 'CONTRACT': return '#d32f2f';
-      case 'WORKFLOW': return '#0288d1';
-      case 'COMMUNICATION': return '#5d4037';
-      default: return '#757575';
+      case 'SYSTEM': return tokens.color.notification.system;
+      case 'EVENT': return tokens.color.notification.event;
+      case 'TASK': return tokens.color.notification.task;
+      case 'PAYMENT': return tokens.color.notification.payment;
+      case 'CLIENT': return tokens.color.notification.client;
+      case 'CONTRACT': return tokens.color.notification.contract;
+      case 'WORKFLOW': return tokens.color.notification.workflow;
+      case 'COMMUNICATION': return tokens.color.notification.communication;
+      default: return tokens.color.notification.system;
     }
   };
 
@@ -149,59 +148,50 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
 
   return (
     <Card
-      elevation={notification.is_read ? 1 : (notification.notification_type_details?.priority === 'URGENT' ? 6 : 3)}
+      elevation={0}
       sx={{
         cursor: notification.action_url ? 'pointer' : 'default',
-        transition: 'all 0.2s ease-in-out',
+        transition: 'background-color 0.2s ease-in-out',
         position: 'relative',
         overflow: 'visible',
         // Base styling for all notifications
         bgcolor: notification.is_read ? 'background.paper' : 'background.paper',
         borderLeft: `4px solid ${getCategoryColor(notification.notification_type_details?.category || 'SYSTEM')}`,
-        
+        border: `1px solid ${tokens.color.neutral[200]}`,
+
         // Priority-based styling
         ...(notification.notification_type_details?.priority === 'URGENT' && {
-          borderLeft: `6px solid #d32f2f`,
-          bgcolor: notification.is_read ? 'error.50' : '#ffebee',
-          border: '2px solid #d32f2f',
-          boxShadow: '0 0 0 2px rgba(211, 47, 47, 0.1)',
+          borderLeft: `6px solid ${tokens.color.error[600]}`,
+          bgcolor: notification.is_read ? tokens.color.error[50] : tokens.color.error[50],
+          border: `1px solid ${tokens.color.error[300]}`,
         }),
-        
+
         ...(notification.notification_type_details?.priority === 'HIGH' && {
-          borderLeft: `5px solid #f57c00`,
-          bgcolor: notification.is_read ? 'warning.50' : '#fff3e0',
+          borderLeft: `5px solid ${tokens.color.warning[600]}`,
+          bgcolor: notification.is_read ? tokens.color.warning[50] : tokens.color.warning[50],
+          border: `1px solid ${tokens.color.warning[300]}`,
         }),
-        
+
         // Read/Unread styling
-        ...(notification.is_read 
-          ? { 
+        ...(notification.is_read
+          ? {
               opacity: 0.75,
-              filter: 'grayscale(0.2)'
             }
-          : { 
-              border: notification.notification_type_details?.priority !== 'URGENT' ? '1px solid' : undefined,
-              borderColor: notification.notification_type_details?.priority !== 'URGENT' ? 'primary.light' : undefined,
-              bgcolor: notification.notification_type_details?.priority === 'URGENT' 
-                ? '#ffebee' 
+          : {
+              bgcolor: notification.notification_type_details?.priority === 'URGENT'
+                ? tokens.color.error[50]
                 : notification.notification_type_details?.priority === 'HIGH'
-                ? '#fff3e0'
-                : 'primary.50',
-              boxShadow: notification.notification_type_details?.priority === 'URGENT' 
-                ? '0 4px 20px rgba(211, 47, 47, 0.15)' 
-                : notification.notification_type_details?.priority === 'HIGH'
-                ? '0 2px 12px rgba(245, 124, 0, 0.1)'
-                : theme.shadows[2]
+                ? tokens.color.warning[50]
+                : tokens.color.primary[50],
             }
         ),
-        
+
         '&:hover': {
-          elevation: notification.notification_type_details?.priority === 'URGENT' ? 8 : 4,
-          transform: 'translateY(-2px)',
-          boxShadow: notification.notification_type_details?.priority === 'URGENT' 
-            ? '0 8px 32px rgba(211, 47, 47, 0.2)' 
+          bgcolor: notification.notification_type_details?.priority === 'URGENT'
+            ? tokens.color.error[100]
             : notification.notification_type_details?.priority === 'HIGH'
-            ? '0 6px 24px rgba(245, 124, 0, 0.15)'
-            : theme.shadows[6],
+            ? tokens.color.warning[100]
+            : tokens.color.neutral[100],
         },
       }}
       onClick={handleCardClick}

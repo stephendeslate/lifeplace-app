@@ -16,9 +16,6 @@ import {
   Tooltip,
   Badge,
 } from '@mui/material';
-// Modern Design System imports
-import { ModernCard } from '../../common/ModernCard';
-import { tokens } from '../../../design-system';
 import {
   MoreVert as MoreVertIcon,
   Edit as EditIcon,
@@ -192,7 +189,8 @@ export const BookingFlowCard: React.FC<BookingFlowCardProps> = ({
         height: '100%',
         cursor: 'pointer',
         '&:focus-visible': {
-          outline: `2px solid ${tokens.color.primary[500]}`,
+          outline: '2px solid',
+          outlineColor: 'primary.main',
           outlineOffset: '2px',
         }
       }}
@@ -207,20 +205,16 @@ export const BookingFlowCard: React.FC<BookingFlowCardProps> = ({
       role="button"
       aria-label={`Edit booking flow: ${flow.name}`}
     >
-      <ModernCard
-        variant="glass"
-        size="large"
-        color={flow.is_active ? 'primary' : 'secondary'}
-        animation="none"
-        sx={{ 
+      <Box
+        sx={{
+          borderRadius: 1,
+          bgcolor: 'background.paper',
           height: '100%',
           display: 'flex',
           flexDirection: 'column',
           ...(configStatus.hasIssues && {
-            border: `2px solid ${tokens.color.warning[400]}`,
-            '&::before': {
-              background: `linear-gradient(135deg, ${tokens.color.warning[500]}08 0%, ${tokens.color.warning[600]}06 100%)`,
-            },
+            border: '2px solid',
+            borderColor: 'warning.main',
           }),
         }}
       >
@@ -481,7 +475,7 @@ export const BookingFlowCard: React.FC<BookingFlowCardProps> = ({
           <ListItemText>Delete Flow</ListItemText>
         </MenuItem>
       </Menu>
-      </ModernCard>
+      </Box>
     </Box>
   );
 };

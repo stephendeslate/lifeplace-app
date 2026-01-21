@@ -15,6 +15,7 @@ class ContractTemplate(BaseModel):
     variables = models.JSONField(default=list)
     requires_signature = models.BooleanField(default=True)
     sections = models.JSONField(default=list, help_text="JSON structure of contract sections")
+    is_active = models.BooleanField(default=True, help_text="Inactive templates are hidden from selection but preserved for historical records")
     
     # Multi-party signature configuration
     signature_requirements = models.JSONField(
@@ -30,20 +31,39 @@ class ContractTemplate(BaseModel):
     
     def __str__(self):
         return self.name
-        
+
+    def save(self, *args, **kwargs):
+        """Sync signature_requirements from boolean fields on save"""
+        self._sync_signature_requirements()
+        super().save(*args, **kwargs)
+
+    def _sync_signature_requirements(self):
+        """
+        Build signature_requirements list from boolean fields.
+        This ensures the JSON field stays in sync with the boolean toggles.
+        """
+        requirements = ['CLIENT']  # Client signature is always required
+        if self.requires_company_signature:
+            requirements.append('COMPANY_REP')
+        if self.requires_witness:
+            requirements.append('WITNESS')
+        self.signature_requirements = requirements
+
     def get_sections(self):
         """Returns parsed sections or an empty list"""
         return self.sections or []
-    
+
     def get_signature_requirements(self):
         """Returns required signature roles"""
+        # signature_requirements is now always kept in sync via save()
+        # but we keep the fallback for safety
         if not self.signature_requirements:
-            base_requirements = ['CLIENT']
+            requirements = ['CLIENT']
             if self.requires_company_signature:
-                base_requirements.append('COMPANY_REP')
+                requirements.append('COMPANY_REP')
             if self.requires_witness:
-                base_requirements.append('WITNESS')
-            return base_requirements
+                requirements.append('WITNESS')
+            return requirements
         return self.signature_requirements
 
 
@@ -78,20 +98,7 @@ class EventContract(BaseModel):
         help_text="Reference to payment schedule or terms"
     )
     currency = models.CharField(max_length=3, default='PHP')
-    
-    # Legacy fields for backward compatibility (will be deprecated)
-    signed_at = models.DateTimeField(null=True, blank=True, help_text="DEPRECATED: Use ContractSignature model")
-    signed_by = models.ForeignKey(
-        'users.User', 
-        on_delete=models.SET_NULL, 
-        null=True, 
-        related_name='legacy_signed_contracts',
-        help_text="DEPRECATED: Use ContractSignature model"
-    )
-    signature_data = models.TextField(null=True, blank=True, help_text="DEPRECATED: Use ContractSignature model")
-    witness_name = models.CharField(max_length=255, blank=True, help_text="DEPRECATED: Use ContractSignature model")
-    witness_signature = models.TextField(null=True, blank=True, help_text="DEPRECATED: Use ContractSignature model")
-    
+
     # Amendment tracking
     is_amendment = models.BooleanField(default=False)
     original_contract = models.ForeignKey(
@@ -151,6 +158,10 @@ class EventContract(BaseModel):
                         }
                     )
 
+                # Send contract signed email notifications
+                if not was_signed:
+                    self._send_contract_signed_notifications()
+
         elif self.signatures.exists() and self.status in ['SENT', 'DRAFT']:
             self.status = 'PARTIALLY_SIGNED'
             self.save(update_fields=['status'])
@@ -158,10 +169,72 @@ class EventContract(BaseModel):
     def can_be_amended(self):
         """Check if contract can be amended"""
         return (
-            self.template.allows_amendments and 
-            self.status == 'SIGNED' and 
+            self.template.allows_amendments and
+            self.status == 'SIGNED' and
             not self.is_amendment
         )
+
+    def _send_contract_signed_notifications(self):
+        """Send email notifications when contract is fully signed."""
+        import logging
+        logger = logging.getLogger(__name__)
+
+        try:
+            from core.domains.communications.services import CommunicationService
+            from core.domains.communications.context_service import (
+                CommunicationContextService, ContextType
+            )
+            from core.domains.users.models import User
+
+            client = self.event.client
+            if not client:
+                logger.warning(f"Contract {self.id} event has no client for signed notifications")
+                return
+
+            comm_service = CommunicationService()
+            template_data = CommunicationContextService.generate_context(
+                context_type=ContextType.CONTRACT,
+                client=client,
+                event=self.event,
+                contract=self,
+            )
+
+            # Send client confirmation email
+            if client.email:
+                try:
+                    comm_service.send_communication(
+                        template_name='Contract Signed Client Confirmation',
+                        recipient=client.email,
+                        context_data=template_data,
+                        client=client,
+                        event=self.event,
+                        use_async=True,
+                    )
+                    logger.info(f"Sent Contract Signed Client Confirmation for contract {self.id}")
+                except Exception as client_email_error:
+                    logger.warning(f"Failed to send client confirmation for contract {self.id}: {client_email_error}")
+
+            # Send admin notification emails
+            admin_emails = list(User.objects.filter(
+                is_staff=True, is_active=True
+            ).exclude(email='').values_list('email', flat=True))
+
+            for admin_email in admin_emails:
+                try:
+                    comm_service.send_communication(
+                        template_name='Contract Signed Admin Notification',
+                        recipient=admin_email,
+                        context_data=template_data,
+                        use_async=True,
+                    )
+                except Exception as admin_email_error:
+                    logger.warning(f"Failed to send admin notification to {admin_email}: {admin_email_error}")
+
+            if admin_emails:
+                logger.info(f"Sent Contract Signed Admin Notification for contract {self.id}")
+
+        except Exception as e:
+            logger.error(f"Failed to send contract signed notifications for contract {self.id}: {e}")
 
 
 class ContractSignature(BaseModel):

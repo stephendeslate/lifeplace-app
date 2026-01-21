@@ -18,7 +18,7 @@ import {
   Button,
 } from '@mui/material';
 import {
-  SettingsPage,
+  PermissionAwareSettingsPage,
   type SettingsPageConfig,
   type SettingsTableColumn
 } from '../../../components/common/settings';
@@ -42,15 +42,16 @@ import { SettingsTable } from '../../../components/common/settings/SettingsTable
 import { SettingsFormDialog } from '../../../components/common/settings/SettingsFormDialog';
 import type { ModernTableAction } from '../../../components/common/ModernTable';
 
-// Step type options for the form
+// Step type options for the form (matches backend STEP_TYPES)
 const STEP_TYPE_OPTIONS = [
   { value: 'introduction', label: 'Introduction' },
-  { value: 'contact_info', label: 'Contact Information' },
+  { value: 'venue_selection', label: 'Venue Selection' },
   { value: 'date_time', label: 'Date & Time Selection' },
+  { value: 'questionnaire', label: 'Questionnaire' },
   { value: 'package_selection', label: 'Package Selection' },
   { value: 'addon_selection', label: 'Add-on Selection' },
-  { value: 'questionnaire', label: 'Questionnaire' },
   { value: 'pricing_summary', label: 'Pricing Summary' },
+  { value: 'contact_info', label: 'Contact Information' },
   { value: 'payment_info', label: 'Payment Information' },
   { value: 'confirmation', label: 'Confirmation' },
 ];
@@ -77,6 +78,7 @@ const columns: SettingsTableColumn<BookingFlowStep>[] = [
     render: (value, row) => {
       const colors: Record<string, 'primary' | 'info' | 'success' | 'warning' | 'secondary' | 'error' | 'default'> = {
         introduction: 'primary',
+        venue_selection: 'info',
         date_time: 'info',
         questionnaire: 'success',
         package_selection: 'warning',
@@ -120,12 +122,12 @@ const formSections: ModernFormSection[] = [
     title: 'Basic Information',
     fields: [
       {
-        name: 'name',
-        label: 'Step Name',
-        type: 'text',
+        name: 'step_type',
+        label: 'Step Type',
+        type: 'select',
         required: true,
-        placeholder: 'e.g., Contact Information',
-        helperText: 'A descriptive name for this step',
+        helperText: 'The type of step - this determines the step name displayed to users',
+        options: STEP_TYPE_OPTIONS,
       },
       {
         name: 'description',
@@ -135,14 +137,6 @@ const formSections: ModernFormSection[] = [
         rows: 2,
         placeholder: 'Brief description of what this step does...',
         helperText: 'Optional description for internal reference',
-      },
-      {
-        name: 'step_type',
-        label: 'Step Type',
-        type: 'select',
-        required: true,
-        helperText: 'The type of information collected in this step',
-        options: STEP_TYPE_OPTIONS,
       },
     ],
   },
@@ -169,18 +163,10 @@ const formSections: ModernFormSection[] = [
       },
     ],
   },
-  {
-    title: 'Display Settings',
-    fields: [
-      {
-        name: 'order',
-        label: 'Display Order',
-        type: 'number',
-        helperText: 'The position of this step in the flow (auto-assigned)',
-      },
-    ],
-  },
 ];
+
+// Note: Display order is intentionally not in the form - it's auto-assigned
+// based on existing steps and can be changed via the "Reorder Steps" dialog
 
 // Embedded table component for use within BookingFlowDetails
 interface EmbeddedStepsTableProps {
@@ -334,7 +320,6 @@ const EmbeddedStepsTable: React.FC<EmbeddedStepsTableProps> = ({
 const defaultStepValues: BookingFlowStep = {
   id: 0,
   booking_flow: 0,
-  name: '',
   description: '',
   step_type: 'contact_info' as StepType,
   step_type_display: 'Contact Information',
@@ -401,12 +386,15 @@ export const BookingFlowSteps: React.FC<BookingFlowStepsProps> = ({
 
   // Handle step creation
   const handleCreate = async (data: BookingFlowStep) => {
+    // Calculate next order based on existing steps (max order + 1)
+    const maxOrder = steps.reduce((max, step) => Math.max(max, step.order ?? 0), 0);
+    const nextOrder = maxOrder + 1;
+
     const createData: CreateBookingFlowStepData = {
       booking_flow: flowId,
-      name: data.name,
       description: data.description,
       step_type: data.step_type,
-      order: data.order || steps.length + 1,
+      order: nextOrder,
       is_enabled: data.is_enabled,
       is_required: data.is_required,
       is_skippable: data.is_skippable,
@@ -426,7 +414,6 @@ export const BookingFlowSteps: React.FC<BookingFlowStepsProps> = ({
   // Handle step update
   const handleUpdate = async (id: string | number, data: BookingFlowStep) => {
     const updateData: UpdateBookingFlowStepData = {
-      name: data.name,
       description: data.description,
       step_type: data.step_type,
       order: data.order,
@@ -460,6 +447,12 @@ export const BookingFlowSteps: React.FC<BookingFlowStepsProps> = ({
         onError: reject,
       });
     });
+  };
+
+  // Fetch fresh step data before editing to ensure we have the latest values
+  const handleFetchItem = async (id: string | number): Promise<BookingFlowStep> => {
+    const { bookingFlowsApi } = await import('../../../apis/bookingflows.api');
+    return bookingFlowsApi.getBookingFlowStep(Number(id));
   };
 
   // Handle configuration click
@@ -589,8 +582,9 @@ export const BookingFlowSteps: React.FC<BookingFlowStepsProps> = ({
           handleDelete={handleDelete}
         />
       ) : (
-        <SettingsPage
+        <PermissionAwareSettingsPage
           config={config}
+          requiredPermissions={['can_manage_booking_flows']}
           data={sortedSteps}
           defaultValues={defaultStepValues}
           isLoading={isLoadingSteps}
@@ -599,6 +593,7 @@ export const BookingFlowSteps: React.FC<BookingFlowStepsProps> = ({
           onCreate={handleCreate}
           onUpdate={handleUpdate}
           onDelete={handleDelete}
+          onFetchItem={handleFetchItem}
           isCreating={isCreatingStep}
           isUpdating={isUpdatingStep}
           isDeleting={isDeletingStep}
@@ -615,7 +610,7 @@ export const BookingFlowSteps: React.FC<BookingFlowStepsProps> = ({
             setShowConfiguration(false);
             setSelectedStep(null);
           }}
-          title={`Configure: ${selectedStep.name}`}
+          title={`Configure: ${selectedStep.step_type_display}`}
           maxWidth="xl"
           fullWidth
         >

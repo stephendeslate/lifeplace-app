@@ -118,10 +118,14 @@ export const useDeleteContractTemplate = () => {
 };
 
 // Event Contracts
-export const useEventContracts = (filters?: EventContractFilters) => {
+export const useEventContracts = (
+  filters?: EventContractFilters,
+  options?: { refetchInterval?: number }
+) => {
   return useQuery({
     queryKey: ['eventContracts', filters],
     queryFn: () => contractsApi.getEventContracts(filters),
+    refetchInterval: options?.refetchInterval,
   });
 };
 
@@ -389,6 +393,11 @@ export const useApproveAmendment = () => {
       contractsApi.approveAmendment(id, reviewNotes),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['contractAmendments'] });
+      showToast({
+        type: 'success',
+        title: 'Amendment Approved',
+        message: 'Contract amendment has been approved successfully.',
+      });
     },
     onError: (error: unknown) => {
       const message = (error && typeof error === 'object' && 'response' in error)
@@ -528,6 +537,44 @@ export const useSendContract = () => {
       showToast({
         type: 'error',
         title: 'Send Failed',
+        message,
+      });
+    },
+  });
+};
+
+export const useDownloadContractPdf = () => {
+  const { showToast } = useToast();
+
+  return useMutation({
+    mutationFn: async (contractId: number) => {
+      const blob = await contractsApi.downloadContractPdf(contractId);
+      return { blob, contractId };
+    },
+    onSuccess: ({ blob, contractId }) => {
+      // Create a download link and trigger download
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `contract-${contractId}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      showToast({
+        type: 'success',
+        title: 'Download Started',
+        message: 'Contract PDF download has started.',
+      });
+    },
+    onError: (error: unknown) => {
+      const message = (error && typeof error === 'object' && 'response' in error)
+        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to download contract PDF'
+        : 'Failed to download contract PDF';
+      showToast({
+        type: 'error',
+        title: 'Download Failed',
         message,
       });
     },

@@ -33,6 +33,7 @@ const navigationItems: NavigationItem[] = [
   { id: 'facilities', label: 'Facilities', path: '/facilities' },
   { id: 'partner', label: 'Partner With Us', path: '/partner' },
   { id: 'reviews', label: 'Reviews', path: '/reviews' },
+  { id: 'podcasts', label: 'Podcasts', path: '/podcasts' },
   { id: 'contact', label: 'Contact', path: '/contact' },
 ];
 

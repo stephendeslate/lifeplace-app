@@ -2,6 +2,7 @@
 from ..serializers import EventProductOptionSerializer, EventTaskDetailSerializer
 from core.utils.pagination import StandardResultsSetPagination
 from core.utils.permissions import IsAdmin, IsAdminOrClient
+from django.db.models import Prefetch
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
 from rest_framework import filters, status, viewsets
@@ -10,6 +11,8 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
 from ..models import Event, EventProductOption, EventTask, EventType
+from core.domains.payments.models import Invoice
+from core.domains.sales.models import EventQuote
 from ..cache_service import EventCacheService
 from ..serializers import (
     EventCreateUpdateSerializer,
@@ -136,15 +139,24 @@ class EventViewSet(viewsets.ModelViewSet):
         return EventSerializer
     
     def get_queryset(self):
+        user = self.request.user
+
         # Extract filter parameters
         event_type_id = self.request.query_params.get('event_type')
         status = self.request.query_params.get('status')
-        client_id = self.request.query_params.get('client')
         start_date_from = self.request.query_params.get('start_date_from')
         start_date_to = self.request.query_params.get('start_date_to')
         payment_status = self.request.query_params.get('payment_status')
         search_query = self.request.query_params.get('search')
-        
+
+        # SECURITY FIX (P0-B0): For CLIENT users, force filter to only their own events
+        # This prevents clients from accessing other clients' events by passing ?client={other_id}
+        if user.role == 'CLIENT':
+            client_id = user.id  # Force to their own ID, ignore query param
+        else:
+            # ADMIN can filter by any client
+            client_id = self.request.query_params.get('client')
+
         queryset = EventService.get_all_events(
             search_query=search_query,
             event_type_id=event_type_id,
@@ -163,8 +175,28 @@ class EventViewSet(viewsets.ModelViewSet):
             'workflow_template',  # Join workflow template
             'current_stage',  # Join current workflow stage
         )
-        
-        # For detail view, prefetch all related objects
+
+        # Prefetch invoices and quotes for all views to prevent N+1 in EventSerializer
+        # The serializer's get_current_total_amount, get_current_quote, get_current_invoice
+        # all query these related objects
+        queryset = queryset.prefetch_related(
+            Prefetch(
+                'invoices',
+                queryset=Invoice.objects.filter(
+                    status__in=['DRAFT', 'SENT', 'PAID']
+                ).order_by('-created_at'),
+                to_attr='_prefetched_invoices'
+            ),
+            Prefetch(
+                'quotes',
+                queryset=EventQuote.objects.filter(
+                    status='ACCEPTED'
+                ).order_by('-created_at'),
+                to_attr='_prefetched_quotes'
+            ),
+        )
+
+        # For detail view, prefetch additional related objects
         if self.action == 'retrieve':
             queryset = queryset.prefetch_related(
                 'tasks__assigned_to',  # Prefetch tasks with assigned users
@@ -175,7 +207,7 @@ class EventViewSet(viewsets.ModelViewSet):
                 'feedback__submitted_by',  # Prefetch feedback submitters
                 'feedback__response_by',  # Prefetch feedback responders
             )
-        
+
         return queryset
     
     def retrieve(self, request, *args, **kwargs):
@@ -202,11 +234,19 @@ class EventViewSet(viewsets.ModelViewSet):
         """
         List events with intelligent caching
         """
+        user = request.user
+
+        # SECURITY FIX (P0-B0): For CLIENT users, force client filter to their own ID
+        if user.role == 'CLIENT':
+            client_filter = str(user.id)
+        else:
+            client_filter = request.query_params.get('client')
+
         # Build filter dictionary from query params
         filters = {
             'event_type': request.query_params.get('event_type'),
             'status': request.query_params.get('status'),
-            'client': request.query_params.get('client'),
+            'client': client_filter,
             'start_date_from': request.query_params.get('start_date_from'),
             'start_date_to': request.query_params.get('start_date_to'),
             'payment_status': request.query_params.get('payment_status'),
@@ -318,55 +358,67 @@ class EventViewSet(viewsets.ModelViewSet):
         """
         Get tasks for an event
         """
+        # SECURITY FIX (P0-B0): Verify user has access to this event
+        event = self.get_object()
+
         status_filter = request.query_params.get('status')
         assigned_to = request.query_params.get('assigned_to')
-        
+
         tasks = EventTaskService.get_tasks_for_event(
-            pk, 
-            status=status_filter, 
+            event.id,
+            status=status_filter,
             assigned_to=assigned_to
         )
-        
+
         serializer = EventTaskSerializer(tasks, many=True)
         return Response(serializer.data)
-    
+
     @action(detail=True, methods=['get'])
     def timeline(self, request, pk=None):
         """
         Get timeline entries for an event
         """
+        # SECURITY FIX (P0-B0): Verify user has access to this event
+        event = self.get_object()
+
         is_public = request.query_params.get('is_public')
         if is_public is not None:
             is_public = is_public.lower() == 'true'
-        
-        timeline_entries = EventTimelineService.get_timeline_for_event(pk, is_public)
+
+        timeline_entries = EventTimelineService.get_timeline_for_event(event.id, is_public)
         serializer = EventTimelineSerializer(timeline_entries, many=True)
         return Response(serializer.data)
-    
+
     @action(detail=True, methods=['get'])
     def files(self, request, pk=None):
         """
         Get files for an event
         """
+        # SECURITY FIX (P0-B0): Verify user has access to this event
+        event = self.get_object()
+
         category = request.query_params.get('category')
         is_public = request.query_params.get('is_public')
         if is_public is not None:
             is_public = is_public.lower() == 'true'
-        
-        files = EventFileService.get_files_for_event(pk, category, is_public)
+
+        files = EventFileService.get_files_for_event(event.id, category, is_public)
         serializer = EventFileSerializer(
-            files, 
-            many=True, 
+            files,
+            many=True,
             context={'request': request}
         )
         return Response(serializer.data)
-    
+
     @action(detail=True, methods=['get'])
     def feedback(self, request, pk=None):
         """
         Get feedback for an event
         """
-        feedback = EventFeedbackService.get_feedback_for_event(pk)
+        # SECURITY FIX (P0-B0): Verify user has access to this event
+        event = self.get_object()
+
+        feedback = EventFeedbackService.get_feedback_for_event(event.id)
         serializer = EventFeedbackSerializer(feedback, many=True)
         return Response(serializer.data)
     
@@ -377,13 +429,227 @@ class EventViewSet(viewsets.ModelViewSet):
         """
         event = self.get_object()
         next_task = event.next_task
-        
+
         if next_task:
             serializer = EventTaskSerializer(next_task)
             return Response(serializer.data)
         else:
             return Response(None)
-        
+
+    # ============================================================
+    # CHECK-IN/OUT ACTIONS
+    # ============================================================
+
+    @action(detail=True, methods=['post'])
+    def check_in(self, request, pk=None):
+        """
+        Check in an event - records the actual check-in time.
+
+        POST /events/{id}/check_in/
+        Body: { "notes": "optional notes" }
+        """
+        from ..services import CheckInService
+
+        event = self.get_object()
+        notes = request.data.get('notes', '')
+
+        result = CheckInService.check_in(event, request.user, notes)
+
+        if not result['success']:
+            return Response(
+                {"detail": result['error']},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Invalidate cache and return updated event
+        EventCacheService.invalidate_event(event.id)
+        event.refresh_from_db()
+        return Response(EventDetailSerializer(event, context=self.get_serializer_context()).data)
+
+    @action(detail=True, methods=['post'])
+    def checkout(self, request, pk=None):
+        """
+        Check out an event - records the actual checkout time.
+        Optionally calculates late checkout fee.
+
+        POST /events/{id}/checkout/
+        Body: { "notes": "optional notes", "apply_late_fee": true/false }
+        """
+        from ..services import CheckInService
+
+        event = self.get_object()
+        notes = request.data.get('notes', '')
+        apply_late_fee = request.data.get('apply_late_fee', True)
+
+        result = CheckInService.checkout(event, request.user, notes, apply_late_fee)
+
+        if not result['success']:
+            return Response(
+                {"detail": result['error']},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Invalidate cache and return updated event with late fee info
+        EventCacheService.invalidate_event(event.id)
+        event.refresh_from_db()
+
+        response_data = EventDetailSerializer(event, context=self.get_serializer_context()).data
+
+        # Include late fee info in response if applicable
+        if result.get('late_fee_applied'):
+            response_data['late_checkout_info'] = {
+                'fee_applied': True,
+                'fee_amount': str(result.get('late_fee_amount', 0)),
+                'hours_late': result.get('hours_late', 0),
+            }
+
+        return Response(response_data)
+
+    @action(detail=True, methods=['post'])
+    def no_show(self, request, pk=None):
+        """
+        Mark an event as no-show.
+
+        POST /events/{id}/no_show/
+        Body: { "notes": "optional notes" }
+        """
+        from ..services import CheckInService
+
+        event = self.get_object()
+        notes = request.data.get('notes', '')
+
+        result = CheckInService.mark_no_show(event, request.user, notes)
+
+        if not result['success']:
+            return Response(
+                {"detail": result['error']},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Invalidate cache and return updated event
+        EventCacheService.invalidate_event(event.id)
+        event.refresh_from_db()
+        return Response(EventDetailSerializer(event, context=self.get_serializer_context()).data)
+
+    @action(detail=True, methods=['get'])
+    def check_in_status(self, request, pk=None):
+        """
+        Get detailed check-in status for an event.
+
+        GET /events/{id}/check_in_status/
+        """
+        from ..services import CheckInService
+
+        event = self.get_object()
+        status_info = CheckInService.get_check_in_status(event)
+
+        return Response(status_info)
+
+    @action(detail=True, methods=['get'])
+    def late_checkout_preview(self, request, pk=None):
+        """
+        Preview late checkout fee without applying it.
+
+        GET /events/{id}/late_checkout_preview/
+        """
+        from ..services import LateCheckoutService
+
+        event = self.get_object()
+        preview = LateCheckoutService.preview_late_checkout_fee(event)
+
+        return Response(preview)
+
+    # ============================================================
+    # DATE HOLD ACTIONS
+    # ============================================================
+
+    @action(detail=True, methods=['post'])
+    def place_hold(self, request, pk=None):
+        """
+        Place a temporary date hold on an event.
+
+        POST /events/{id}/place_hold/
+        """
+        from ..services import DateHoldingService
+
+        event = self.get_object()
+        result = DateHoldingService.place_temporary_hold(event)
+
+        if not result['success']:
+            return Response(
+                {"detail": result['error']},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        EventCacheService.invalidate_event(event.id)
+        event.refresh_from_db()
+        return Response(EventDetailSerializer(event, context=self.get_serializer_context()).data)
+
+    @action(detail=True, methods=['post'])
+    def extend_hold(self, request, pk=None):
+        """
+        Extend an existing temporary date hold.
+
+        POST /events/{id}/extend_hold/
+        """
+        from ..services import DateHoldingService
+
+        event = self.get_object()
+        result = DateHoldingService.extend_hold(event)
+
+        if not result['success']:
+            return Response(
+                {"detail": result['error']},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        EventCacheService.invalidate_event(event.id)
+        event.refresh_from_db()
+
+        response_data = EventDetailSerializer(event, context=self.get_serializer_context()).data
+        response_data['extensions_remaining'] = result.get('extensions_remaining', 0)
+        return Response(response_data)
+
+    @action(detail=True, methods=['post'])
+    def release_hold(self, request, pk=None):
+        """
+        Release a temporary date hold.
+
+        POST /events/{id}/release_hold/
+        Body: { "reason": "optional reason" }
+        """
+        from ..services import DateHoldingService
+
+        event = self.get_object()
+        reason = request.data.get('reason', 'Manual release')
+
+        result = DateHoldingService.release_hold(event, reason)
+
+        if not result['success']:
+            return Response(
+                {"detail": result['error']},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        EventCacheService.invalidate_event(event.id)
+        event.refresh_from_db()
+        return Response(EventDetailSerializer(event, context=self.get_serializer_context()).data)
+
+    @action(detail=True, methods=['get'])
+    def hold_status(self, request, pk=None):
+        """
+        Get detailed date hold status for an event.
+
+        GET /events/{id}/hold_status/
+        """
+        from ..services import DateHoldingService
+
+        event = self.get_object()
+        status_info = DateHoldingService.get_hold_status(event)
+
+        return Response(status_info)
+
+
 class EventProductOptionViewSet(viewsets.ModelViewSet):
     """
     ViewSet for managing event product options

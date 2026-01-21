@@ -89,13 +89,64 @@ class WorkflowTemplateService:
     def delete_template(template_id):
         """Delete a workflow template"""
         template = WorkflowTemplateService.get_template_by_id(template_id)
-        
+
         with transaction.atomic():
             template_name = template.name
             template.delete()
             logger.info(f"Deleted workflow template: {template_name}")
             return True
-    
+
+    @staticmethod
+    def duplicate_template(template_id, new_name=None):
+        """
+        Deep clone a workflow template with all its stages
+
+        Args:
+            template_id: ID of the template to duplicate
+            new_name: Optional new name for the copy. Defaults to "{original_name} (Copy)"
+
+        Returns:
+            WorkflowTemplate: The newly created template with all stages
+        """
+        original = WorkflowTemplateService.get_template_by_id(template_id)
+
+        with transaction.atomic():
+            # Create the new template
+            new_template = WorkflowTemplate.objects.create(
+                name=new_name or f"{original.name} (Copy)",
+                description=original.description,
+                event_type=original.event_type,
+                is_active=False,  # Start inactive for safety
+                lead_stage_auto_stop=original.lead_stage_auto_stop,
+            )
+
+            # Clone all stages from the original template
+            for stage in original.stages.all().order_by('stage', 'order'):
+                WorkflowStage.objects.create(
+                    template=new_template,
+                    name=stage.name,
+                    stage=stage.stage,
+                    order=stage.order,
+                    is_automated=stage.is_automated,
+                    automation_type=stage.automation_type,
+                    trigger_time=stage.trigger_time,
+                    email_template=stage.email_template,
+                    contract_template=stage.contract_template,
+                    questionnaire_template=stage.questionnaire_template,
+                    task_description=stage.task_description,
+                    progression_condition=stage.progression_condition,
+                    required_tasks_completed=stage.required_tasks_completed,
+                    trigger_on_payment_received=stage.trigger_on_payment_received,
+                    trigger_on_quote_accepted=stage.trigger_on_quote_accepted,
+                    trigger_on_contract_signed=stage.trigger_on_contract_signed,
+                    trigger_on_event_created=stage.trigger_on_event_created,
+                    trigger_on_quote_sent=stage.trigger_on_quote_sent,
+                    metadata=stage.metadata.copy() if stage.metadata else {},
+                )
+
+            logger.info(f"Duplicated workflow template '{original.name}' to '{new_template.name}' with {original.stages.count()} stages")
+            return new_template
+
     @staticmethod
     def _create_stage(template, stage_data):
         """Helper method to create a stage for a template"""

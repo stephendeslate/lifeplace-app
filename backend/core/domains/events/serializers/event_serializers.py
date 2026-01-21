@@ -156,18 +156,43 @@ class EventSerializer(serializers.ModelSerializer):
     current_quote = serializers.SerializerMethodField()
     current_invoice = serializers.SerializerMethodField()
     
+    # Check-in/out staff names
+    checked_in_by_name = serializers.SerializerMethodField()
+    checked_out_by_name = serializers.SerializerMethodField()
+
     class Meta:
         model = Event
         fields = [
             'id', 'client', 'client_name', 'event_type', 'event_type_name', 'name',
             'status', 'start_date', 'end_date', 'workflow_template', 'workflow_template_name',
-            'current_stage', 'current_stage_name', 'lead_source', 'last_contacted', 
-            'total_price', 'payment_status', 'total_amount_due', 'total_amount_paid', 
-            'workflow_progress', 'next_task', 'preferences', 'created_at', 'updated_at',
-            'current_total_amount', 'current_quote', 'current_invoice'
+            'current_stage', 'current_stage_name', 'lead_source', 'last_contacted',
+            'total_price', 'payment_status', 'total_amount_due', 'total_amount_paid',
+            'workflow_progress', 'next_task', 'preferences', 'num_participants',
+            'created_at', 'updated_at',
+            'current_total_amount', 'current_quote', 'current_invoice',
+            # Date blocking fields
+            'date_blocked', 'date_blocked_at',
+            # Date holding fields
+            'date_hold_status', 'date_hold_expires_at', 'date_held_at', 'date_hold_extended_count',
+            # Rescheduling tracking
+            'original_start_date', 'reschedule_count', 'last_rescheduled_at',
+            # Check-in/out tracking
+            'check_in_status', 'scheduled_check_in_time', 'scheduled_checkout_time',
+            'actual_check_in_time', 'actual_checkout_time',
+            'checked_in_by', 'checked_in_by_name', 'checked_out_by', 'checked_out_by_name',
+            'check_in_notes', 'checkout_notes',
+            # Late checkout
+            'late_checkout_fee_applied', 'late_checkout_fee_amount',
+            # Cancellation
+            'cancelled_reason', 'cancelled_at', 'can_rebook',
         ]
-        read_only_fields = ['id', 'created_at', 'updated_at', 'workflow_progress', 'next_task', 
-                           'current_total_amount', 'current_quote', 'current_invoice']
+        read_only_fields = ['id', 'created_at', 'updated_at', 'workflow_progress', 'next_task',
+                           'current_total_amount', 'current_quote', 'current_invoice',
+                           'date_blocked_at', 'date_held_at', 'actual_check_in_time',
+                           'actual_checkout_time', 'cancelled_at',
+                           # Prevent mass assignment of status/financial fields
+                           'status', 'payment_status', 'date_blocked', 'total_price',
+                           'total_amount_due', 'total_amount_paid']
     
     def get_client_name(self, obj):
         if obj.client:
@@ -189,32 +214,52 @@ class EventSerializer(serializers.ModelSerializer):
     
     def get_current_total_amount(self, obj):
         """Get current total amount from invoice or quote (single source of truth)
-        
+
         Returns the final total amount including tax that the client should pay.
         Priority: Invoice total → Quote total → Legacy event.total_price
+
+        OPTIMIZATION: Uses prefetched data when available to avoid N+1 queries.
         """
         try:
             # Priority 1: Most recent invoice (includes tax)
-            latest_invoice = obj.invoices.filter(status__in=['DRAFT', 'SENT', 'PAID']).order_by('-created_at').first()
-            if latest_invoice:
-                return str(latest_invoice.total_amount)  # This should include tax
-            
+            # Use prefetched data if available (set by EventViewSet)
+            if hasattr(obj, '_prefetched_invoices'):
+                invoices = obj._prefetched_invoices
+            else:
+                invoices = list(obj.invoices.filter(status__in=['DRAFT', 'SENT', 'PAID']).order_by('-created_at')[:1])
+
+            if invoices:
+                return str(invoices[0].total_amount)
+
             # Priority 2: Most recent accepted quote (includes tax)
-            latest_quote = obj.quotes.filter(status='ACCEPTED').order_by('-created_at').first()
-            if latest_quote:
-                return str(latest_quote.total_amount)  # This should include tax
-            
+            if hasattr(obj, '_prefetched_quotes'):
+                quotes = obj._prefetched_quotes
+            else:
+                quotes = list(obj.quotes.filter(status='ACCEPTED').order_by('-created_at')[:1])
+
+            if quotes:
+                return str(quotes[0].total_amount)
+
             # Fallback: event.total_price (legacy)
             return str(obj.total_price) if obj.total_price else None
-            
+
         except Exception:
             return str(obj.total_price) if obj.total_price else None
     
     def get_current_quote(self, obj):
-        """Get current quote summary"""
+        """Get current quote summary
+
+        OPTIMIZATION: Uses prefetched data when available to avoid N+1 queries.
+        """
         try:
-            latest_quote = obj.quotes.filter(status='ACCEPTED').order_by('-created_at').first()
-            if latest_quote:
+            # Use prefetched data if available (set by EventViewSet)
+            if hasattr(obj, '_prefetched_quotes'):
+                quotes = obj._prefetched_quotes
+            else:
+                quotes = list(obj.quotes.filter(status='ACCEPTED').order_by('-created_at')[:1])
+
+            if quotes:
+                latest_quote = quotes[0]
                 return {
                     'id': latest_quote.id,
                     'version': latest_quote.version,
@@ -228,10 +273,19 @@ class EventSerializer(serializers.ModelSerializer):
             return None
     
     def get_current_invoice(self, obj):
-        """Get current invoice summary"""
+        """Get current invoice summary
+
+        OPTIMIZATION: Uses prefetched data when available to avoid N+1 queries.
+        """
         try:
-            latest_invoice = obj.invoices.filter(status__in=['DRAFT', 'SENT', 'PAID']).order_by('-created_at').first()
-            if latest_invoice:
+            # Use prefetched data if available (set by EventViewSet)
+            if hasattr(obj, '_prefetched_invoices'):
+                invoices = obj._prefetched_invoices
+            else:
+                invoices = list(obj.invoices.filter(status__in=['DRAFT', 'SENT', 'PAID']).order_by('-created_at')[:1])
+
+            if invoices:
+                latest_invoice = invoices[0]
                 return {
                     'id': latest_invoice.id,
                     'invoice_number': latest_invoice.invoice_number,
@@ -243,7 +297,19 @@ class EventSerializer(serializers.ModelSerializer):
             return None
         except Exception:
             return None
-    
+
+    def get_checked_in_by_name(self, obj):
+        """Get name of staff who performed check-in"""
+        if obj.checked_in_by:
+            return f"{obj.checked_in_by.first_name} {obj.checked_in_by.last_name}"
+        return None
+
+    def get_checked_out_by_name(self, obj):
+        """Get name of staff who performed checkout"""
+        if obj.checked_out_by:
+            return f"{obj.checked_out_by.first_name} {obj.checked_out_by.last_name}"
+        return None
+
     def validate(self, data):
         """Validate event data"""
         # Ensure end_date is after start_date if both are provided

@@ -2,7 +2,9 @@
 
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { EVENT_TAB_INDICES } from '../events/EventDetail';
 import { formatInTimeZone } from 'date-fns-tz';
+import { isValid, parseISO } from 'date-fns';
 import {
   Box,
   Typography,
@@ -27,23 +29,42 @@ import {
   Payment as PaymentIcon,
   Warning as WarningIcon,
   AttachMoney as MoneyIcon,
-  TrendingUp as TrendingUpIcon,
   AccessTime as AccessTimeIcon,
   PriorityHigh as PriorityIcon,
+  ShoppingCart as BookingIcon,
+  ArrowForward as ArrowForwardIcon,
+  History as HistoryIcon,
+  Update as UpdateIcon,
 } from '@mui/icons-material';
+import { SEO } from '../../hooks/useSEO';
+import { getRelativeTime } from '../../utils/eventHelpers';
 import { useAuth } from '../../contexts/AuthContext';
-import { useCommunications } from '../../hooks/useCommunications';
 import { useDashboardData } from '../../hooks/useDashboardData';
+import { useUnfinishedBookings } from '../../hooks/useUnfinishedBookings';
 import { GlassCard } from '../../design-system/components/GlassCard';
 import { AnimatedElement } from '../../design-system/components/AnimatedElement';
 import { useAcceptQuote, useRejectQuote } from '../../hooks/useEventQuotes';
 import { QuoteRejectionDialog } from '../../components/common/QuoteRejectionDialog';
+import { useCurrencySettings } from '../../hooks/useCurrency';
 
+
+// Helper function to safely format dates - validates before formatting to prevent RangeError
+const safeFormatDate = (dateString: string | null | undefined, timezone: string, format: string, fallback = 'Date not available'): string => {
+  if (!dateString) return fallback;
+  try {
+    const date = parseISO(dateString);
+    if (!isValid(date)) return fallback;
+    return formatInTimeZone(dateString, timezone, format);
+  } catch {
+    return fallback;
+  }
+};
 
 const Dashboard: React.FC = () => {
   const { user } = useAuth();
   const theme = useTheme();
   const navigate = useNavigate();
+  const { formatAmount } = useCurrencySettings();
   const PHILIPPINE_TIMEZONE = 'Asia/Manila';
   const [rejectionDialog, setRejectionDialog] = useState<{
     open: boolean;
@@ -51,15 +72,12 @@ const Dashboard: React.FC = () => {
     quoteName: string | null;
   }>({ open: false, quoteId: null, quoteName: null });
 
-  const { useAnalytics } = useCommunications();
   const dashboardData = useDashboardData();
+  const { data: unfinishedBookings, isLoading: isLoadingBookings } = useUnfinishedBookings();
 
   // Quote action hooks
   const acceptQuoteMutation = useAcceptQuote();
   const rejectQuoteMutation = useRejectQuote();
-
-  // Get communication analytics
-  const { data: commAnalytics, isLoading: isLoadingAnalytics } = useAnalytics();
 
   // Handler for quote actions
   const handleQuoteAction = async (quoteId: number, action: 'accept' | 'reject') => {
@@ -69,7 +87,7 @@ const Dashboard: React.FC = () => {
         // Dashboard data will automatically refresh via React Query
       } catch (error) {
         // Error handling is already done in the hook
-        console.error('Failed to accept quote:', error);
+        if (import.meta.env.DEV) console.error('Failed to accept quote:', error);
       }
     } else {
       // For reject, open the rejection dialog
@@ -94,7 +112,7 @@ const Dashboard: React.FC = () => {
       // Dashboard data will automatically refresh via React Query
     } catch (error) {
       // Error handling is already done in the hook
-      console.error('Failed to reject quote:', error);
+      if (import.meta.env.DEV) console.error('Failed to reject quote:', error);
     }
   };
 
@@ -118,8 +136,14 @@ const Dashboard: React.FC = () => {
 
 
   return (
-    <Box sx={{ width: '100%' }}>
-      {/* Welcome Header */}
+    <>
+      <SEO
+        title="Dashboard | LifePlace Alfonso"
+        description="Your LifePlace Alfonso client dashboard."
+        noIndex={true}
+      />
+      <Box sx={{ width: '100%' }}>
+        {/* Welcome Header */}
       <Box sx={{ mb: 4 }}>
         <Typography variant="h4" sx={{ fontWeight: 600, mb: 1, color: 'primary.main' }}>
           Welcome back, {user?.first_name || 'Client'}! 🌿
@@ -149,6 +173,74 @@ const Dashboard: React.FC = () => {
             <Alert severity="error">{dashboardData.error}</Alert>
           ) : (
             <Stack spacing={4}>
+              {/* Unfinished Bookings Section */}
+              {!isLoadingBookings && unfinishedBookings && unfinishedBookings.length > 0 && (
+                <Box>
+                  <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <BookingIcon color="primary" />
+                    Continue Your Booking
+                  </Typography>
+
+                  <Stack spacing={2}>
+                    {unfinishedBookings.map((session) => (
+                      <GlassCard
+                        key={session.session_id}
+                        variant="light"
+                        intensity="subtle"
+                        hover={true}
+                        sx={{
+                          backgroundColor: alpha(theme.palette.primary.main, 0.08),
+                          border: `1px solid ${alpha(theme.palette.primary.main, 0.3)}`,
+                          cursor: 'pointer',
+                        }}
+                        onClick={() => navigate(`/book?session_id=${session.session_id}`)}
+                      >
+                        <Box display="flex" alignItems="center" gap={2} p={2}>
+                          <Box
+                            sx={{
+                              p: 1,
+                              borderRadius: 1,
+                              backgroundColor: alpha(theme.palette.primary.main, 0.15),
+                              color: theme.palette.primary.main,
+                            }}
+                          >
+                            <BookingIcon />
+                          </Box>
+                          <Box sx={{ flex: 1 }}>
+                            <Typography variant="body1" sx={{ fontWeight: 600 }}>
+                              {session.booking_flow?.name || 'Booking in Progress'}
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary">
+                              {session.current_step?.name || 'Step'} - {session.progress_percentage}% complete
+                            </Typography>
+                          </Box>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <LinearProgress
+                              variant="determinate"
+                              value={session.progress_percentage}
+                              sx={{ width: 60, height: 6, borderRadius: 3 }}
+                            />
+                            <Button
+                              variant="contained"
+                              size="small"
+                              endIcon={<ArrowForwardIcon />}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                navigate(`/book?session_id=${session.session_id}`);
+                              }}
+                            >
+                              Continue
+                            </Button>
+                          </Box>
+                        </Box>
+                      </GlassCard>
+                    ))}
+                  </Stack>
+                </Box>
+              )}
+
+              {unfinishedBookings && unfinishedBookings.length > 0 && <Divider />}
+
               {/* Critical Actions Bar */}
               <Box>
                 <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -174,7 +266,7 @@ const Dashboard: React.FC = () => {
                           border: `1px solid ${alpha(theme.palette.error.main, 0.3)}`,
                           cursor: 'pointer',
                         }}
-                        onClick={() => navigate(`/events/${quote.event_details.id}`, { state: { activeTab: 5 } })}
+                        onClick={() => navigate(`/events/${quote.event_details.id}`, { state: { activeTab: EVENT_TAB_INDICES.QUOTES } })}
                       >
                         <Box display="flex" alignItems="center" gap={2} p={2}>
                           <Box
@@ -278,7 +370,7 @@ const Dashboard: React.FC = () => {
                           border: `1px solid ${alpha(theme.palette.warning.main, 0.3)}`,
                           cursor: 'pointer',
                         }}
-                        onClick={() => navigate(`/events/${task.eventId}`, { state: { activeTab: 3 } })}
+                        onClick={() => navigate(`/events/${task.eventId}`, { state: { activeTab: EVENT_TAB_INDICES.TASKS } })}
                       >
                         <Box display="flex" alignItems="center" gap={2} p={2}>
                           <Box
@@ -296,7 +388,7 @@ const Dashboard: React.FC = () => {
                               {task.title || task.description || 'Urgent Task'}
                             </Typography>
                             <Typography variant="body2" color="text.secondary">
-                              {task.eventName} - Due: {formatInTimeZone(task.due_date, PHILIPPINE_TIMEZONE, 'MMM dd, yyyy')}
+                              {task.eventName} - Due: {safeFormatDate(task.due_date, PHILIPPINE_TIMEZONE, 'MMM dd, yyyy')}
                             </Typography>
                           </Box>
                           <Button
@@ -325,7 +417,7 @@ const Dashboard: React.FC = () => {
                           border: `1px solid ${alpha(theme.palette.warning.main, 0.3)}`,
                           cursor: 'pointer',
                         }}
-                        onClick={() => navigate(`/events/${contract.eventId}`, { state: { activeTab: 6 } })}
+                        onClick={() => navigate(`/events/${contract.eventId}`, { state: { activeTab: EVENT_TAB_INDICES.CONTRACTS } })}
                       >
                         <Box display="flex" alignItems="center" gap={2} p={2}>
                           <Box
@@ -351,7 +443,7 @@ const Dashboard: React.FC = () => {
                             size="small"
                             onClick={(e) => {
                               e.stopPropagation();
-                              navigate(`/events/${contract.eventId}`, { state: { activeTab: 6 } });
+                              navigate(`/events/${contract.eventId}`, { state: { activeTab: EVENT_TAB_INDICES.CONTRACTS } });
                             }}
                           >
                             Sign Contract
@@ -405,9 +497,10 @@ const Dashboard: React.FC = () => {
                               {dashboardData.eventStatus.nextUpcomingEvent.name}
                             </Typography>
                             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                              {formatInTimeZone(dashboardData.eventStatus.nextUpcomingEvent.start_date, PHILIPPINE_TIMEZONE, 'MMM dd, yyyy')}
-                              {formatInTimeZone(dashboardData.eventStatus.nextUpcomingEvent.start_date, PHILIPPINE_TIMEZONE, 'yyyy-MM-dd') !== formatInTimeZone(dashboardData.eventStatus.nextUpcomingEvent.end_date, PHILIPPINE_TIMEZONE, 'yyyy-MM-dd') &&
-                                ` - ${formatInTimeZone(dashboardData.eventStatus.nextUpcomingEvent.end_date, PHILIPPINE_TIMEZONE, 'MMM dd, yyyy')}`
+                              {safeFormatDate(dashboardData.eventStatus.nextUpcomingEvent.start_date, PHILIPPINE_TIMEZONE, 'MMM dd, yyyy')}
+                              {dashboardData.eventStatus.nextUpcomingEvent.end_date &&
+                                safeFormatDate(dashboardData.eventStatus.nextUpcomingEvent.start_date, PHILIPPINE_TIMEZONE, 'yyyy-MM-dd') !== safeFormatDate(dashboardData.eventStatus.nextUpcomingEvent.end_date, PHILIPPINE_TIMEZONE, 'yyyy-MM-dd') &&
+                                ` - ${safeFormatDate(dashboardData.eventStatus.nextUpcomingEvent.end_date, PHILIPPINE_TIMEZONE, 'MMM dd, yyyy')}`
                               }
                             </Typography>
                             <Chip
@@ -437,45 +530,83 @@ const Dashboard: React.FC = () => {
                     </GlassCard>
                   </Box>
 
-                  {/* Current Event Progress */}
+                  {/* Recent Activity */}
                   <Box sx={{ flex: 1 }}>
                     <GlassCard variant="light" intensity="subtle" sx={{ height: '100%' }}>
                       <CardContent>
-                        <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2 }}>
-                          Current Event Progress
+                        <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <HistoryIcon fontSize="small" color="action" />
+                          Recent Activity
                         </Typography>
-                        {dashboardData.eventStatus.currentEventProgress ? (
-                          <Box>
-                            <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
-                              {dashboardData.eventStatus.currentEventProgress.event.name}
-                            </Typography>
-                            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                              {dashboardData.eventStatus.currentEventProgress.completedTasks} of {dashboardData.eventStatus.currentEventProgress.totalTasks} tasks completed
-                            </Typography>
-                            <Box sx={{ mb: 2 }}>
-                              <LinearProgress
-                                variant="determinate"
-                                value={dashboardData.eventStatus.currentEventProgress.progressPercentage}
-                                sx={{ height: 8, borderRadius: 4 }}
-                              />
-                              <Typography variant="body2" sx={{ textAlign: 'center', mt: 1 }}>
-                                {dashboardData.eventStatus.currentEventProgress.progressPercentage}% Complete
-                              </Typography>
-                            </Box>
-                            <Button
-                              variant="outlined"
-                              size="small"
-                              fullWidth
-                              onClick={() => handleViewEvent(dashboardData.eventStatus.currentEventProgress!.event.id)}
-                            >
-                              View Progress
-                            </Button>
-                          </Box>
+                        {dashboardData.eventStatus.recentUpdates.length > 0 ? (
+                          <Stack spacing={1.5}>
+                            {dashboardData.eventStatus.recentUpdates.slice(0, 4).map((update) => (
+                              <Box
+                                key={update.id}
+                                sx={{
+                                  display: 'flex',
+                                  alignItems: 'flex-start',
+                                  gap: 1.5,
+                                  p: 1.5,
+                                  borderRadius: 1,
+                                  backgroundColor: alpha(theme.palette.primary.main, 0.04),
+                                  border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+                                  cursor: 'pointer',
+                                  transition: 'all 0.2s ease',
+                                  '&:hover': {
+                                    backgroundColor: alpha(theme.palette.primary.main, 0.08),
+                                    borderColor: alpha(theme.palette.primary.main, 0.2),
+                                  },
+                                }}
+                                onClick={() => handleViewEvent(update.eventId)}
+                              >
+                                <Box
+                                  sx={{
+                                    p: 0.75,
+                                    borderRadius: 1,
+                                    backgroundColor: alpha(theme.palette.info.main, 0.1),
+                                    color: theme.palette.info.main,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                  }}
+                                >
+                                  <UpdateIcon fontSize="small" />
+                                </Box>
+                                <Box sx={{ flex: 1, minWidth: 0 }}>
+                                  <Typography
+                                    variant="body2"
+                                    sx={{
+                                      fontWeight: 500,
+                                      overflow: 'hidden',
+                                      textOverflow: 'ellipsis',
+                                      whiteSpace: 'nowrap',
+                                    }}
+                                  >
+                                    {update.description}
+                                  </Typography>
+                                  <Typography variant="caption" color="text.secondary">
+                                    {update.eventName} · {getRelativeTime(update.created_at)}
+                                  </Typography>
+                                </Box>
+                              </Box>
+                            ))}
+                            {dashboardData.eventStatus.recentUpdates.length > 4 && (
+                              <Button
+                                variant="text"
+                                size="small"
+                                onClick={() => navigate('/events')}
+                                sx={{ alignSelf: 'center', mt: 0.5 }}
+                              >
+                                View All Activity
+                              </Button>
+                            )}
+                          </Stack>
                         ) : (
                           <Box sx={{ textAlign: 'center', py: 3 }}>
-                            <TrendingUpIcon sx={{ fontSize: 48, color: 'grey.400', mb: 2 }} />
+                            <HistoryIcon sx={{ fontSize: 48, color: 'grey.400', mb: 2 }} />
                             <Typography variant="body2" color="text.secondary">
-                              No events currently in progress
+                              No recent activity
                             </Typography>
                           </Box>
                         )}
@@ -512,7 +643,7 @@ const Dashboard: React.FC = () => {
                       Total Outstanding
                     </Typography>
                     <Typography variant="h4" sx={{ fontWeight: 600, mb: 1 }}>
-                      ${dashboardData.financialSummary.totalOutstanding}
+                      {formatAmount(parseFloat(dashboardData.financialSummary.totalOutstanding))}
                     </Typography>
                     <Chip
                       label={dashboardData.financialSummary.urgencyLevel.toUpperCase()}
@@ -578,7 +709,7 @@ const Dashboard: React.FC = () => {
                               {message.subject || 'No Subject'}
                             </Typography>
                             <Typography variant="body2" color="text.secondary">
-                              {formatInTimeZone(message.created_at, PHILIPPINE_TIMEZONE, 'MMM dd, yyyy')}
+                              {safeFormatDate(message.created_at, PHILIPPINE_TIMEZONE, 'MMM dd, yyyy')}
                             </Typography>
                           </Box>
                           <Chip
@@ -615,73 +746,16 @@ const Dashboard: React.FC = () => {
         </GlassCard>
       </AnimatedElement>
 
-      {/* Communication Analytics (if available) */}
-      {commAnalytics && !isLoadingAnalytics && (
-        <AnimatedElement animation="fadeIn" delay={500}>
-          <GlassCard 
-            variant="light" 
-            intensity="medium"
-            sx={{ 
-              mt: 4,
-              border: `1px solid ${alpha('#fff', 0.1)}`,
-            }}
-          >
-            <Typography variant="h6" sx={{ fontWeight: 600, mb: 3 }}>
-              Communication Summary
-            </Typography>
-            <Box 
-              sx={{ 
-                display: 'flex',
-                flexDirection: { xs: 'column', sm: 'row' },
-                gap: 3
-              }}
-            >
-              <Box sx={{ flex: 1, textAlign: 'center' }}>
-                <Typography variant="h4" sx={{ fontWeight: 600, color: 'primary.main' }}>
-                  {commAnalytics.total_sent}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Total Messages
-                </Typography>
-              </Box>
-              <Box sx={{ flex: 1, textAlign: 'center' }}>
-                <Typography variant="h4" sx={{ fontWeight: 600, color: 'success.main' }}>
-                  {commAnalytics.delivered}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Delivered
-                </Typography>
-              </Box>
-              <Box sx={{ flex: 1, textAlign: 'center' }}>
-                <Typography variant="h4" sx={{ fontWeight: 600, color: 'info.main' }}>
-                  {commAnalytics.opened}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Opened
-                </Typography>
-              </Box>
-              <Box sx={{ flex: 1, textAlign: 'center' }}>
-                <Typography variant="h4" sx={{ fontWeight: 600, color: 'success.main' }}>
-                  {commAnalytics.open_rate}%
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Open Rate
-                </Typography>
-              </Box>
-            </Box>
-          </GlassCard>
-        </AnimatedElement>
-      )}
-
-      {/* Quote Rejection Dialog */}
-      <QuoteRejectionDialog
-        open={rejectionDialog.open}
-        onClose={handleRejectionDialogClose}
-        onConfirm={handleQuoteRejection}
-        quoteName={rejectionDialog.quoteName || undefined}
-        isLoading={rejectQuoteMutation.isPending}
-      />
-    </Box>
+        {/* Quote Rejection Dialog */}
+        <QuoteRejectionDialog
+          open={rejectionDialog.open}
+          onClose={handleRejectionDialogClose}
+          onConfirm={handleQuoteRejection}
+          quoteName={rejectionDialog.quoteName || undefined}
+          isLoading={rejectQuoteMutation.isPending}
+        />
+      </Box>
+    </>
   );
 };
 

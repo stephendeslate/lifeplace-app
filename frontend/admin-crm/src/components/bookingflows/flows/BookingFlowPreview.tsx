@@ -14,7 +14,6 @@ import {
   Avatar,
   Divider,
 } from '@mui/material';
-import { ModernCard } from '../../common/ModernCard';
 import {
   Preview as PreviewIcon,
   NavigateNext as NextIcon,
@@ -34,14 +33,10 @@ import {
   Inventory as PackageIcon,
   Add as AddonIcon,
   ContactMail as ContactIcon,
-  RateReview as ReviewIcon,
   Celebration as ConfirmationIcon,
   Info as IntroIcon,
   Schedule as PricingIcon,
 } from '@mui/icons-material';
-// Modern Design System imports
-import { tokens } from '../../../design-system';
-import { glassPresets } from '../../../design-system/utils/glassmorphism';
 import { formatCurrency } from '../../../utils/currency';
 import type { 
   BookingFlowDetail, 
@@ -105,9 +100,6 @@ const StepPreview: React.FC<StepPreviewProps> = ({
       }
       case 'payment_info': {
         return <PaymentIcon {...iconProps} />;
-      }
-      case 'review_booking': {
-        return <ReviewIcon {...iconProps} />;
       }
       case 'confirmation': {
         return <ConfirmationIcon {...iconProps} />;
@@ -329,11 +321,12 @@ const StepPreview: React.FC<StepPreviewProps> = ({
             <Typography variant="subtitle1" gutterBottom>
               Pricing Summary
             </Typography>
-            <Box sx={{ 
-              p: 2, 
-              ...glassPresets.light,
-              border: `1px solid ${tokens.color.borders.glass}`,
-              borderRadius: tokens.spacing.radius.lg
+            <Box sx={{
+              p: 2,
+              borderRadius: 1,
+              bgcolor: 'background.paper',
+              border: 1,
+              borderColor: 'divider'
             }}>
               <Stack spacing={1}>
                 <Box display="flex" justifyContent="space-between">
@@ -448,46 +441,6 @@ const StepPreview: React.FC<StepPreviewProps> = ({
         );
       }
 
-      case 'review_booking': {
-        return (
-          <Box>
-            <Typography variant="subtitle1" gutterBottom>
-              Review Your Booking
-            </Typography>
-            <Typography color="text.secondary" gutterBottom>
-              Please review all details before confirming your booking.
-            </Typography>
-            
-            <Box sx={{ 
-              p: 2, 
-              ...glassPresets.light,
-              border: `1px solid ${tokens.color.borders.glass}`,
-              borderRadius: tokens.spacing.radius.lg
-            }}>
-              <Stack spacing={2}>
-                <Box>
-                  <Typography variant="body2" color="text.secondary">Event Date</Typography>
-                  <Typography>Saturday, March 15, 2024 at 2:00 PM</Typography>
-                </Box>
-                <Box>
-                  <Typography variant="body2" color="text.secondary">Package</Typography>
-                  <Typography>Premium Package</Typography>
-                </Box>
-                <Box>
-                  <Typography variant="body2" color="text.secondary">Contact</Typography>
-                  <Typography>John Doe (john.doe@example.com)</Typography>
-                </Box>
-                <Divider />
-                <Box>
-                  <Typography variant="body2" color="text.secondary">Total Amount</Typography>
-                  <Typography variant="h6" color="primary">{formatCurrency(1250, 'PHP')}</Typography>
-                </Box>
-              </Stack>
-            </Box>
-          </Box>
-        );
-      }
-
       case 'confirmation': {
         const confirmationConfig = config as ConfirmationStepConfiguration;
         return (
@@ -552,15 +505,12 @@ const StepPreview: React.FC<StepPreviewProps> = ({
       <Box display="flex" alignItems="center" gap={1} mb={2}>
         {getStepIcon()}
         <Box display="flex" alignItems="center" gap={1} flex={1}>
-          <Typography 
-            variant={compact ? "body2" : "subtitle1"} 
+          <Typography
+            variant={compact ? "body2" : "subtitle1"}
             fontWeight={isActive ? "bold" : "medium"}
             color={!step.is_enabled ? "text.disabled" : isActive ? "primary" : "text.primary"}
           >
-            {step.name}
-          </Typography>
-          <Typography variant="caption" color="text.secondary">
-            ({step.step_type_display})
+            {step.step_type_display}
           </Typography>
         </Box>
         
@@ -578,12 +528,13 @@ const StepPreview: React.FC<StepPreviewProps> = ({
       </Box>
       
       {isActive && !compact && (
-        <Box sx={{ 
-          p: 2, 
-          mb: 2, 
-          ...glassPresets.light,
-          border: `1px solid ${tokens.color.borders.glass}`,
-          borderRadius: tokens.spacing.radius.lg
+        <Box sx={{
+          p: 2,
+          mb: 2,
+          borderRadius: 1,
+          bgcolor: 'background.paper',
+          border: 1,
+          borderColor: 'divider'
         }}>
           {getStepContent()}
         </Box>
@@ -631,7 +582,7 @@ export const BookingFlowPreview: React.FC<BookingFlowPreviewProps> = ({
 
   if (!flow.steps || flow.steps.length === 0) {
     return (
-      <ModernCard variant="glass" size="large">
+      <Box sx={{ borderRadius: 1, bgcolor: 'background.paper' }}>
         <Box sx={{ textAlign: 'center', py: 4 }}>
           <PreviewIcon sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }} />
           <Typography variant="h6" color="text.secondary" gutterBottom>
@@ -641,39 +592,38 @@ export const BookingFlowPreview: React.FC<BookingFlowPreviewProps> = ({
             Add steps to this booking flow to see the preview
           </Typography>
         </Box>
-      </ModernCard>
+      </Box>
     );
   }
 
   if (enabledSteps.length === 0) {
     return (
-      <ModernCard variant="glass" size="large" color="warning">
+      <Box sx={{ borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
         <Alert severity="warning">
           All steps in this booking flow are disabled. Enable at least one step to preview the client experience.
         </Alert>
         {hasDeprecatedSteps && (
           <Alert severity="error" sx={{ mt: 2 }}>
-            This flow contains deprecated step types (availability_check, event_details). 
+            This flow contains deprecated step types (availability_check, event_details).
             Please migrate or remove these steps for the flow to function properly.
           </Alert>
         )}
-      </ModernCard>
+      </Box>
     );
   }
 
   return (
-    <ModernCard 
-      variant="glass" 
-      size="large" 
-      color="primary"
+    <Box
       sx={{
+        borderRadius: 1,
+        bgcolor: 'background.paper',
         maxWidth: isMobileView ? 375 : '100%',
         mx: isMobileView ? 'auto' : 0,
         transition: 'max-width 0.3s ease-in-out'
       }}
     >
       {/* Preview Header */}
-      <Box sx={{ p: 3, borderBottom: 1, borderColor: tokens.color.borders.glass }}>
+      <Box sx={{ p: 3, borderBottom: 1, borderColor: 'divider' }}>
         <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
           <Box display="flex" alignItems="center" gap={1}>
             <Avatar sx={{ bgcolor: 'primary.main', width: 32, height: 32 }}>
@@ -815,7 +765,7 @@ export const BookingFlowPreview: React.FC<BookingFlowPreviewProps> = ({
               </Button>
 
               <Typography variant="body2" color="text.secondary" textAlign="center" flex={1}>
-                {currentStep?.name}
+                {currentStep?.step_type_display}
               </Typography>
 
               <Button
@@ -838,6 +788,6 @@ export const BookingFlowPreview: React.FC<BookingFlowPreviewProps> = ({
           </Typography>
         </Alert>
       </Box>
-    </ModernCard>
+    </Box>
   );
 };

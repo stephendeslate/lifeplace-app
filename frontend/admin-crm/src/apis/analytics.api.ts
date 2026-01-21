@@ -1,436 +1,345 @@
 // frontend/admin-crm/src/apis/analytics.api.ts
+// Simplified analytics API layer
 
 import api from '../utils/api';
 import type {
-  MetricDefinition,
-  Dashboard,
-  Widget,
-  AnalyticsReport,
-  ReportExecution,
-  AnalyticsEvent,
-  ConversionFunnel,
-  AlertRule,
-  EventAggregation,
-  CreateMetricDefinitionData,
-  UpdateMetricDefinitionData,
-  CreateDashboardData,
-  UpdateDashboardData,
-  CreateWidgetData,
-  UpdateWidgetData,
-  CreateAnalyticsReportData,
-  UpdateAnalyticsReportData,
-  CreateConversionFunnelData,
-  UpdateConversionFunnelData,
-  CreateAlertRuleData,
-  UpdateAlertRuleData,
-  MetricCalculationRequest,
-  MetricCalculationResult,
-  DashboardDataRequest,
-  DashboardDataResult,
-  ReportExecutionRequest,
-  EventTrackingRequest,
-  FunnelTrackingRequest,
-  AlertRuleTestRequest,
-  BusinessMetricsResult,
-  FunnelAnalyticsResult,
-  MetricDefinitionFilters,
-  DashboardFilters,
-  AnalyticsReportFilters,
-  EventFilters,
-  FunnelFilters,
-  AlertRuleFilters,
-  EventAggregationFilters,
-  ExportData,
-  ExportOptions,
+  DateRange,
+  PeriodType,
+  ExportFormat,
+  DashboardKPIs,
+  BookingSummary,
+  ReservationPipeline,
+  RevenueByType,
+  PaymentTracking,
+  EventAttendance,
+  PackagePerformance,
+  FeedbackScores,
+  EventTypeBreakdown,
+  LeadSource,
+  ConversionRates,
+  CustomerRecord,
+  CustomerGrowth,
+  VenueUsage,
+  CalendarUtilization,
+  BookingTimeAnalysis,
+  PlaceholderResponse,
+  BookingFlowFunnelStep,
+  BookingFlowPerformance,
+  BookingFlowAbandonment,
+  BookingFlowTrend,
+  QuestionnaireSummary,
+  QuestionnaireFieldHeatmap,
+  QuestionnaireProblemField,
 } from '../types/analytics.types';
 
+// Helper to build URL params from date range
+const buildParams = (dateRange: DateRange, extra?: Record<string, string>): string => {
+  const params = new URLSearchParams();
+  params.append('start_date', dateRange.startDate);
+  params.append('end_date', dateRange.endDate);
+  if (extra) {
+    Object.entries(extra).forEach(([key, value]) => params.append(key, value));
+  }
+  return params.toString();
+};
+
+// Helper to trigger file download
+const downloadFile = (blob: Blob, filename: string) => {
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  window.URL.revokeObjectURL(url);
+};
+
 export const analyticsApi = {
-  // Metric Definitions
-  getMetricDefinitions: async (filters?: MetricDefinitionFilters): Promise<MetricDefinition[]> => {
+  // =========================================================================
+  // Dashboard
+  // =========================================================================
+
+  getDashboardKPIs: async (dateRange: DateRange): Promise<DashboardKPIs> => {
+    const response = await api.get<DashboardKPIs>(`/analytics/dashboard/?${buildParams(dateRange)}`);
+    return response.data;
+  },
+
+  // =========================================================================
+  // Sales & Reservations
+  // =========================================================================
+
+  getBookingsSummary: async (
+    dateRange: DateRange,
+    period: PeriodType = 'daily'
+  ): Promise<BookingSummary[]> => {
+    const response = await api.get<BookingSummary[]>(
+      `/analytics/sales/bookings/?${buildParams(dateRange, { period })}`
+    );
+    return response.data;
+  },
+
+  exportBookingsSummary: async (
+    dateRange: DateRange,
+    period: PeriodType = 'daily',
+    format: ExportFormat = 'csv'
+  ): Promise<void> => {
+    const response = await api.get<Blob>(
+      `/analytics/sales/bookings/?${buildParams(dateRange, { period, format })}`,
+      { responseType: 'blob' }
+    );
+    const filename = `bookings_${dateRange.startDate}_${dateRange.endDate}.${format === 'excel' ? 'xlsx' : 'csv'}`;
+    downloadFile(response.data, filename);
+  },
+
+  getReservationPipeline: async (dateRange: DateRange): Promise<ReservationPipeline[]> => {
+    const response = await api.get<ReservationPipeline[]>(`/analytics/sales/pipeline/?${buildParams(dateRange)}`);
+    return response.data;
+  },
+
+  getRevenueByType: async (dateRange: DateRange): Promise<RevenueByType[]> => {
+    const response = await api.get<RevenueByType[]>(`/analytics/sales/revenue/?${buildParams(dateRange)}`);
+    return response.data;
+  },
+
+  exportRevenueReport: async (
+    dateRange: DateRange,
+    format: ExportFormat = 'csv'
+  ): Promise<void> => {
+    const response = await api.get<Blob>(
+      `/analytics/sales/revenue/?${buildParams(dateRange, { format })}`,
+      { responseType: 'blob' }
+    );
+    const filename = `revenue_${dateRange.startDate}_${dateRange.endDate}.${format === 'excel' ? 'xlsx' : 'csv'}`;
+    downloadFile(response.data, filename);
+  },
+
+  getPaymentTracking: async (dateRange: DateRange): Promise<PaymentTracking> => {
+    const response = await api.get<PaymentTracking>(`/analytics/sales/payments/?${buildParams(dateRange)}`);
+    return response.data;
+  },
+
+  // =========================================================================
+  // Events & Guests
+  // =========================================================================
+
+  getEventAttendance: async (dateRange: DateRange): Promise<EventAttendance[]> => {
+    const response = await api.get<EventAttendance[]>(`/analytics/events/attendance/?${buildParams(dateRange)}`);
+    return response.data;
+  },
+
+  getPackagePerformance: async (
+    dateRange: DateRange,
+    limit: number = 10
+  ): Promise<PackagePerformance[]> => {
+    const response = await api.get<PackagePerformance[]>(
+      `/analytics/events/packages/?${buildParams(dateRange, { limit: String(limit) })}`
+    );
+    return response.data;
+  },
+
+  getFeedbackScores: async (dateRange: DateRange): Promise<FeedbackScores> => {
+    const response = await api.get<FeedbackScores>(`/analytics/events/feedback/?${buildParams(dateRange)}`);
+    return response.data;
+  },
+
+  getEventTypeBreakdown: async (dateRange: DateRange): Promise<EventTypeBreakdown[]> => {
+    const response = await api.get<EventTypeBreakdown[]>(`/analytics/events/types/?${buildParams(dateRange)}`);
+    return response.data;
+  },
+
+  getGuestDemographics: async (): Promise<PlaceholderResponse> => {
+    const response = await api.get<PlaceholderResponse>('/analytics/events/demographics/');
+    return response.data;
+  },
+
+  getRepeatClients: async (): Promise<PlaceholderResponse> => {
+    const response = await api.get<PlaceholderResponse>('/analytics/events/repeat-clients/');
+    return response.data;
+  },
+
+  // =========================================================================
+  // Customers & Leads
+  // =========================================================================
+
+  getLeadSources: async (dateRange: DateRange): Promise<LeadSource[]> => {
+    const response = await api.get<LeadSource[]>(`/analytics/customers/leads/?${buildParams(dateRange)}`);
+    return response.data;
+  },
+
+  exportLeadSources: async (
+    dateRange: DateRange,
+    format: ExportFormat = 'csv'
+  ): Promise<void> => {
+    const response = await api.get<Blob>(
+      `/analytics/customers/leads/?${buildParams(dateRange, { format })}`,
+      { responseType: 'blob' }
+    );
+    const filename = `lead_sources_${dateRange.startDate}_${dateRange.endDate}.${format === 'excel' ? 'xlsx' : 'csv'}`;
+    downloadFile(response.data, filename);
+  },
+
+  getConversionRates: async (dateRange: DateRange): Promise<ConversionRates> => {
+    const response = await api.get<ConversionRates>(`/analytics/customers/conversion/?${buildParams(dateRange)}`);
+    return response.data;
+  },
+
+  getCustomerList: async (
+    dateRange?: DateRange,
+    limit?: number
+  ): Promise<CustomerRecord[]> => {
     const params = new URLSearchParams();
-    if (filters?.search) params.append('search', filters.search);
-    if (filters?.source_domain) params.append('source_domain', filters.source_domain);
-    if (filters?.is_active !== undefined) params.append('is_active', filters.is_active.toString());
-    
-    const response = await api.get(`/analytics/metrics/?${params.toString()}`);
-    const data = response.data as { results?: MetricDefinition[] } | MetricDefinition[];
-    return (Array.isArray(data) ? data : data.results) || [];
-  },
-
-  getMetricDefinition: async (id: number): Promise<MetricDefinition> => {
-    const response = await api.get<MetricDefinition>(`/analytics/metrics/${id}/`);
-    return response.data;
-  },
-
-  createMetricDefinition: async (data: CreateMetricDefinitionData): Promise<MetricDefinition> => {
-    const response = await api.post<MetricDefinition>('/analytics/metrics/', data);
-    return response.data;
-  },
-
-  updateMetricDefinition: async (id: number, data: UpdateMetricDefinitionData): Promise<MetricDefinition> => {
-    const response = await api.patch<MetricDefinition>(`/analytics/metrics/${id}/`, data);
-    return response.data;
-  },
-
-  deleteMetricDefinition: async (id: number): Promise<void> => {
-    await api.delete(`/analytics/metrics/${id}/`);
-  },
-
-  calculateMetric: async (id: number, request: MetricCalculationRequest): Promise<MetricCalculationResult> => {
-    const response = await api.post<MetricCalculationResult>(`/analytics/metrics/${id}/calculate/`, request);
-    return response.data;
-  },
-
-  getActiveMetrics: async (): Promise<MetricDefinition[]> => {
-    const response = await api.get<MetricDefinition[]>('/analytics/metrics/active/');
-    const data = response.data as { results?: MetricDefinition[] } | MetricDefinition[];
-    return (Array.isArray(data) ? data : data.results) || [];
-  },
-
-  // Dashboards
-  getDashboards: async (filters?: DashboardFilters): Promise<Dashboard[]> => {
-    const params = new URLSearchParams();
-    if (filters?.dashboard_type) params.append('dashboard_type', filters.dashboard_type);
-    if (filters?.is_active !== undefined) params.append('is_active', filters.is_active.toString());
-    if (filters?.search) params.append('search', filters.search);
-    
-    const response = await api.get(`/analytics/dashboards/?${params.toString()}`);
-    const data = response.data as { results?: Dashboard[] } | Dashboard[];
-    return (Array.isArray(data) ? data : data.results) || [];
-  },
-
-  getDashboard: async (id: number): Promise<Dashboard> => {
-    const response = await api.get<Dashboard>(`/analytics/dashboards/${id}/`);
-    return response.data;
-  },
-
-  createDashboard: async (data: CreateDashboardData): Promise<Dashboard> => {
-    const response = await api.post<Dashboard>('/analytics/dashboards/', data);
-    return response.data;
-  },
-
-  updateDashboard: async (id: number, data: UpdateDashboardData): Promise<Dashboard> => {
-    const response = await api.patch<Dashboard>(`/analytics/dashboards/${id}/`, data);
-    return response.data;
-  },
-
-  deleteDashboard: async (id: number): Promise<void> => {
-    await api.delete(`/analytics/dashboards/${id}/`);
-  },
-
-  getDashboardData: async (id: number, request: DashboardDataRequest): Promise<DashboardDataResult> => {
-    const response = await api.post<DashboardDataResult>(`/analytics/dashboards/${id}/get_data/`, request);
-    return response.data;
-  },
-
-  addWidgetToDashboard: async (dashboardId: number, data: CreateWidgetData): Promise<Widget> => {
-    const response = await api.post<Widget>(`/analytics/dashboards/${dashboardId}/add_widget/`, data);
-    return response.data;
-  },
-
-  // Widgets
-  getWidgets: async (filters?: { dashboard_id?: number }): Promise<Widget[]> => {
-    const params = new URLSearchParams();
-    if (filters?.dashboard_id) params.append('dashboard_id', filters.dashboard_id.toString());
-    
-    const response = await api.get(`/analytics/widgets/?${params.toString()}`);
-    const data = response.data as { results?: Widget[] } | Widget[];
-    return (Array.isArray(data) ? data : data.results) || [];
-  },
-
-  getWidget: async (id: number): Promise<Widget> => {
-    const response = await api.get<Widget>(`/analytics/widgets/${id}/`);
-    return response.data;
-  },
-
-  updateWidget: async (id: number, data: UpdateWidgetData): Promise<Widget> => {
-    const response = await api.patch<Widget>(`/analytics/widgets/${id}/`, data);
-    return response.data;
-  },
-
-  deleteWidget: async (id: number): Promise<void> => {
-    await api.delete(`/analytics/widgets/${id}/`);
-  },
-
-  // Analytics Reports
-  getAnalyticsReports: async (filters?: AnalyticsReportFilters): Promise<AnalyticsReport[]> => {
-    const params = new URLSearchParams();
-    if (filters?.report_type) params.append('report_type', filters.report_type);
-    if (filters?.is_active !== undefined) params.append('is_active', filters.is_active.toString());
-    if (filters?.search) params.append('search', filters.search);
-    
-    const response = await api.get(`/analytics/reports/?${params.toString()}`);
-    const data = response.data as { results?: AnalyticsReport[] } | AnalyticsReport[];
-    return (Array.isArray(data) ? data : data.results) || [];
-  },
-
-  getAnalyticsReport: async (id: number): Promise<AnalyticsReport> => {
-    const response = await api.get<AnalyticsReport>(`/analytics/reports/${id}/`);
-    return response.data;
-  },
-
-  createAnalyticsReport: async (data: CreateAnalyticsReportData): Promise<AnalyticsReport> => {
-    const response = await api.post<AnalyticsReport>('/analytics/reports/', data);
-    return response.data;
-  },
-
-  updateAnalyticsReport: async (id: number, data: UpdateAnalyticsReportData): Promise<AnalyticsReport> => {
-    const response = await api.patch<AnalyticsReport>(`/analytics/reports/${id}/`, data);
-    return response.data;
-  },
-
-  deleteAnalyticsReport: async (id: number): Promise<void> => {
-    await api.delete(`/analytics/reports/${id}/`);
-  },
-
-  executeReport: async (id: number, request: ReportExecutionRequest): Promise<ReportExecution> => {
-    const response = await api.post<ReportExecution>(`/analytics/reports/${id}/execute/`, request);
-    return response.data;
-  },
-
-  getReportExecutions: async (reportId: number): Promise<ReportExecution[]> => {
-    const response = await api.get<ReportExecution[]>(`/analytics/reports/${reportId}/executions/`);
-    const data = response.data as { results?: ReportExecution[] } | ReportExecution[];
-    return (Array.isArray(data) ? data : data.results) || [];
-  },
-
-  // Report Executions
-  getReportExecution: async (executionId: string): Promise<ReportExecution> => {
-    const response = await api.get<ReportExecution>(`/analytics/executions/${executionId}/`);
-    return response.data;
-  },
-
-  // Analytics Events
-  getAnalyticsEvents: async (filters?: EventFilters): Promise<AnalyticsEvent[]> => {
-    const params = new URLSearchParams();
-    if (filters?.event_category) params.append('event_category', filters.event_category);
-    if (filters?.source_domain) params.append('source_domain', filters.source_domain);
-    if (filters?.user_id) params.append('user_id', filters.user_id.toString());
-    if (filters?.search) params.append('search', filters.search);
-    
-    const response = await api.get(`/analytics/events/?${params.toString()}`);
-    const data = response.data as { results?: AnalyticsEvent[] } | AnalyticsEvent[];
-    return (Array.isArray(data) ? data : data.results) || [];
-  },
-
-  trackEvent: async (request: EventTrackingRequest): Promise<AnalyticsEvent> => {
-    const response = await api.post<AnalyticsEvent>('/analytics/events/', request);
-    return response.data;
-  },
-
-  // Conversion Funnels
-  getConversionFunnels: async (filters?: FunnelFilters): Promise<ConversionFunnel[]> => {
-    const params = new URLSearchParams();
-    if (filters?.is_active !== undefined) params.append('is_active', filters.is_active.toString());
-    
-    const response = await api.get(`/analytics/funnels/?${params.toString()}`);
-    const data = response.data as { results?: ConversionFunnel[] } | ConversionFunnel[];
-    return (Array.isArray(data) ? data : data.results) || [];
-  },
-
-  getConversionFunnel: async (id: number): Promise<ConversionFunnel> => {
-    const response = await api.get<ConversionFunnel>(`/analytics/funnels/${id}/`);
-    return response.data;
-  },
-
-  createConversionFunnel: async (data: CreateConversionFunnelData): Promise<ConversionFunnel> => {
-    const response = await api.post<ConversionFunnel>('/analytics/funnels/', data);
-    return response.data;
-  },
-
-  updateConversionFunnel: async (id: number, data: UpdateConversionFunnelData): Promise<ConversionFunnel> => {
-    const response = await api.patch<ConversionFunnel>(`/analytics/funnels/${id}/`, data);
-    return response.data;
-  },
-
-  deleteConversionFunnel: async (id: number): Promise<void> => {
-    await api.delete(`/analytics/funnels/${id}/`);
-  },
-
-  trackFunnelEvent: async (funnelId: number, request: FunnelTrackingRequest): Promise<{ success: boolean }> => {
-    const response = await api.post<{ success: boolean }>(`/analytics/funnels/${funnelId}/track/`, request);
-    return response.data;
-  },
-
-  getFunnelAnalytics: async (funnelId: number, filters?: { start_date?: string; end_date?: string }): Promise<FunnelAnalyticsResult> => {
-    const params = new URLSearchParams();
-    if (filters?.start_date) params.append('start_date', filters.start_date);
-    if (filters?.end_date) params.append('end_date', filters.end_date);
-    
-    const response = await api.get<FunnelAnalyticsResult>(`/analytics/funnels/${funnelId}/analytics/?${params.toString()}`);
-    return response.data;
-  },
-
-  // Alert Rules
-  getAlertRules: async (filters?: AlertRuleFilters): Promise<AlertRule[]> => {
-    const params = new URLSearchParams();
-    if (filters?.is_active !== undefined) params.append('is_active', filters.is_active.toString());
-    if (filters?.search) params.append('search', filters.search);
-    
-    const response = await api.get(`/analytics/alerts/?${params.toString()}`);
-    const data = response.data as { results?: AlertRule[] } | AlertRule[];
-    return (Array.isArray(data) ? data : data.results) || [];
-  },
-
-  getAlertRule: async (id: number): Promise<AlertRule> => {
-    const response = await api.get<AlertRule>(`/analytics/alerts/${id}/`);
-    return response.data;
-  },
-
-  createAlertRule: async (data: CreateAlertRuleData): Promise<AlertRule> => {
-    const response = await api.post<AlertRule>('/analytics/alerts/', data);
-    return response.data;
-  },
-
-  updateAlertRule: async (id: number, data: UpdateAlertRuleData): Promise<AlertRule> => {
-    const response = await api.patch<AlertRule>(`/analytics/alerts/${id}/`, data);
-    return response.data;
-  },
-
-  deleteAlertRule: async (id: number): Promise<void> => {
-    await api.delete(`/analytics/alerts/${id}/`);
-  },
-
-  testAlertRule: async (id: number, request: AlertRuleTestRequest): Promise<{ alert_rule: string; current_value: number; threshold_value: number; operator: string; threshold_met: boolean; test_time: string }> => {
-    const response = await api.post<{ alert_rule: string; current_value: number; threshold_value: number; operator: string; threshold_met: boolean; test_time: string }>(`/analytics/alerts/${id}/test/`, request);
-    return response.data;
-  },
-
-  // Event Aggregations
-  getEventAggregations: async (filters?: EventAggregationFilters): Promise<EventAggregation[]> => {
-    const params = new URLSearchParams();
-    if (filters?.metric_id) params.append('metric_id', filters.metric_id.toString());
-    if (filters?.aggregation_type) params.append('aggregation_type', filters.aggregation_type);
-    
-    const response = await api.get(`/analytics/aggregations/?${params.toString()}`);
-    const data = response.data as { results?: EventAggregation[] } | EventAggregation[];
-    return (Array.isArray(data) ? data : data.results) || [];
-  },
-
-  // Analytics API endpoints
-  getBusinessMetrics: async (filters?: { start_date?: string; end_date?: string }): Promise<BusinessMetricsResult> => {
-    const params = new URLSearchParams();
-    if (filters?.start_date) params.append('start_date', filters.start_date);
-    if (filters?.end_date) params.append('end_date', filters.end_date);
-    
-    const response = await api.get<BusinessMetricsResult>(`/analytics/api/business_metrics/?${params.toString()}`);
-    return response.data;
-  },
-
-  trackPublicEvent: async (request: EventTrackingRequest): Promise<{ success: boolean; event_tracked: boolean }> => {
-    const response = await api.post<{ success: boolean; event_tracked: boolean }>('/analytics/api/track_event/', request);
-    return response.data;
-  },
-
-  createDailyAggregations: async (date?: string): Promise<{ success: boolean; date: string }> => {
-    const data = date ? { date } : {};
-    const response = await api.post<{ success: boolean; date: string }>('/analytics/api/create_daily_aggregations/', data);
-    return response.data;
-  },
-
-  cleanupOldEvents: async (daysToKeep: number = 90): Promise<{ success: boolean; deleted_count: number }> => {
-    const response = await api.post<{ success: boolean; deleted_count: number }>('/analytics/api/cleanup_events/', { days_to_keep: daysToKeep });
-    return response.data;
-  },
-
-  evaluateAlerts: async (): Promise<{ success: boolean; message: string }> => {
-    const response = await api.post<{ success: boolean; message: string }>('/analytics/api/evaluate_alerts/');
-    return response.data;
-  },
-
-  // Public tracking endpoint
-  trackPublicAnalytics: async (request: EventTrackingRequest): Promise<{ success: boolean }> => {
-    const response = await api.post<{ success: boolean }>('/analytics/public/track/', request);
-    return response.data;
-  },
-
-  // Export functions
-  exportMetricsConfiguration: async (options: ExportOptions = { format: 'json' }): Promise<ExportData | void> => {
-    const params = new URLSearchParams();
-    params.append('format', options.format);
-    
-    if (options.format === 'json') {
-      const response = await api.get<ExportData>(`/analytics/api/export_metrics_configuration/?${params.toString()}`);
-      return response.data;
-    } else {
-      // For CSV downloads, trigger file download
-      const response = await api.get(`/analytics/api/export_metrics_configuration/?${params.toString()}`, {
-        responseType: 'blob',
-      });
-      
-      // Create download link
-      const url = window.URL.createObjectURL(new Blob([response.data as BlobPart]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `metrics_configuration_${new Date().toISOString().split('T')[0]}.csv`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
+    if (dateRange) {
+      params.append('start_date', dateRange.startDate);
+      params.append('end_date', dateRange.endDate);
     }
-  },
-
-  exportDashboardSettings: async (options: ExportOptions = { format: 'json' }): Promise<ExportData | void> => {
-    const params = new URLSearchParams();
-    params.append('format', options.format);
-    
-    if (options.format === 'json') {
-      const response = await api.get<ExportData>(`/analytics/api/export_dashboard_settings/?${params.toString()}`);
-      return response.data;
-    } else {
-      // For CSV downloads, trigger file download
-      const response = await api.get(`/analytics/api/export_dashboard_settings/?${params.toString()}`, {
-        responseType: 'blob',
-      });
-      
-      const url = window.URL.createObjectURL(new Blob([response.data as BlobPart]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `dashboard_settings_${new Date().toISOString().split('T')[0]}.csv`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
+    if (limit) {
+      params.append('limit', String(limit));
     }
+    const response = await api.get<CustomerRecord[]>(`/analytics/customers/list/?${params.toString()}`);
+    return response.data;
   },
 
-  exportAlertRules: async (options: ExportOptions = { format: 'json' }): Promise<ExportData | void> => {
+  exportCustomers: async (
+    dateRange: DateRange | undefined,
+    format: ExportFormat = 'csv'
+  ): Promise<void> => {
     const params = new URLSearchParams();
-    params.append('format', options.format);
-    
-    if (options.format === 'json') {
-      const response = await api.get<ExportData>(`/analytics/api/export_alert_rules/?${params.toString()}`);
-      return response.data;
-    } else {
-      // For CSV downloads, trigger file download
-      const response = await api.get(`/analytics/api/export_alert_rules/?${params.toString()}`, {
-        responseType: 'blob',
-      });
-      
-      const url = window.URL.createObjectURL(new Blob([response.data as BlobPart]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `alert_rules_${new Date().toISOString().split('T')[0]}.csv`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
+    if (dateRange) {
+      params.append('start_date', dateRange.startDate);
+      params.append('end_date', dateRange.endDate);
     }
-  },
+    params.append('format', format);
 
-  createFullBackup: async (): Promise<void> => {
-    const response = await api.get('/analytics/api/create_full_backup/', {
+    const response = await api.get<Blob>(`/analytics/customers/list/?${params.toString()}`, {
       responseType: 'blob',
     });
-    
-    const blob = response.data as Blob;
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `analytics_backup_${new Date().toISOString().split('T')[0]}.json`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    window.URL.revokeObjectURL(url);
+    const filename = `customers_export.${format === 'excel' ? 'xlsx' : 'csv'}`;
+    downloadFile(response.data, filename);
+  },
+
+  getCustomerGrowth: async (dateRange: DateRange): Promise<CustomerGrowth[]> => {
+    const response = await api.get<CustomerGrowth[]>(`/analytics/customers/growth/?${buildParams(dateRange)}`);
+    return response.data;
+  },
+
+  // =========================================================================
+  // Operations
+  // =========================================================================
+
+  getVenueUsage: async (dateRange: DateRange): Promise<VenueUsage[]> => {
+    const response = await api.get<VenueUsage[]>(`/analytics/operations/venues/?${buildParams(dateRange)}`);
+    return response.data;
+  },
+
+  getCalendarUtilization: async (dateRange: DateRange): Promise<CalendarUtilization> => {
+    const response = await api.get<CalendarUtilization>(`/analytics/operations/calendar/?${buildParams(dateRange)}`);
+    return response.data;
+  },
+
+  getBookingTimeAnalysis: async (dateRange: DateRange): Promise<BookingTimeAnalysis[]> => {
+    const response = await api.get<BookingTimeAnalysis[]>(`/analytics/operations/booking-times/?${buildParams(dateRange)}`);
+    return response.data;
+  },
+
+  getKitchenUsage: async (): Promise<PlaceholderResponse> => {
+    const response = await api.get<PlaceholderResponse>('/analytics/operations/kitchen/');
+    return response.data;
+  },
+
+  getInventoryReport: async (): Promise<PlaceholderResponse> => {
+    const response = await api.get<PlaceholderResponse>('/analytics/operations/inventory/');
+    return response.data;
+  },
+
+  // =========================================================================
+  // App Engagement (Placeholder)
+  // =========================================================================
+
+  getAppEngagement: async (): Promise<PlaceholderResponse> => {
+    const response = await api.get<PlaceholderResponse>('/analytics/engagement/');
+    return response.data;
+  },
+
+  // =========================================================================
+  // Booking Flow Analytics
+  // =========================================================================
+
+  getBookingFlowFunnel: async (
+    dateRange: DateRange,
+    flowId?: string
+  ): Promise<BookingFlowFunnelStep[]> => {
+    const params: Record<string, string> = {};
+    if (flowId) params.flow_id = flowId;
+    const response = await api.get<BookingFlowFunnelStep[]>(
+      `/analytics/booking-flow/funnel/?${buildParams(dateRange, params)}`
+    );
+    return response.data;
+  },
+
+  getBookingFlowPerformance: async (
+    dateRange: DateRange
+  ): Promise<BookingFlowPerformance[]> => {
+    const response = await api.get<BookingFlowPerformance[]>(
+      `/analytics/booking-flow/performance/?${buildParams(dateRange)}`
+    );
+    return response.data;
+  },
+
+  getBookingFlowAbandonment: async (
+    dateRange: DateRange,
+    flowId?: string
+  ): Promise<BookingFlowAbandonment> => {
+    const params: Record<string, string> = {};
+    if (flowId) params.flow_id = flowId;
+    const response = await api.get<BookingFlowAbandonment>(
+      `/analytics/booking-flow/abandonment/?${buildParams(dateRange, params)}`
+    );
+    return response.data;
+  },
+
+  getBookingFlowTrends: async (
+    dateRange: DateRange,
+    flowId?: string
+  ): Promise<BookingFlowTrend[]> => {
+    const params: Record<string, string> = {};
+    if (flowId) params.flow_id = flowId;
+    const response = await api.get<BookingFlowTrend[]>(
+      `/analytics/booking-flow/trends/?${buildParams(dateRange, params)}`
+    );
+    return response.data;
+  },
+
+  // =========================================================================
+  // Questionnaire Analytics
+  // =========================================================================
+
+  getQuestionnaireSummary: async (
+    dateRange: DateRange
+  ): Promise<QuestionnaireSummary> => {
+    const response = await api.get<QuestionnaireSummary>(
+      `/analytics/questionnaires/summary/?${buildParams(dateRange)}`
+    );
+    return response.data;
+  },
+
+  getQuestionnaireFieldHeatmap: async (
+    questionnaireId: number,
+    dateRange: DateRange
+  ): Promise<QuestionnaireFieldHeatmap[]> => {
+    const response = await api.get<QuestionnaireFieldHeatmap[]>(
+      `/analytics/questionnaires/${questionnaireId}/heatmap/?${buildParams(dateRange)}`
+    );
+    return response.data;
+  },
+
+  getQuestionnaireProblemFields: async (
+    dateRange: DateRange,
+    threshold: number = 80
+  ): Promise<QuestionnaireProblemField[]> => {
+    const response = await api.get<QuestionnaireProblemField[]>(
+      `/analytics/questionnaires/problem-fields/?${buildParams(dateRange, { threshold: String(threshold) })}`
+    );
+    return response.data;
   },
 };

@@ -1,0 +1,102 @@
+[
+  {
+    "model": "venues.venueeventtypeconfiguration",
+    "pk": 1,
+    "fields": {
+      "created_at": "2026-01-09T09:08:01.244",
+      "updated_at": "2026-01-09T09:08:01.244",
+      "venue": 1,
+      "event_type": 5,
+      "base_price": "3300.00",
+      "included_hours": "22.0",
+      "excess_hour_price": null,
+      "is_all_day_access": true,
+      "default_check_in_time": null,
+      "default_checkout_time": null,
+      "checkout_next_day": null,
+      "maximum_program_hours": null,
+      "is_fixed_duration": null,
+      "notes": ""
+    }
+  },
+  {
+    "model": "venues.venueeventtypeconfiguration",
+    "pk": 2,
+    "fields": {
+      "created_at": "2026-01-09T09:08:01.248",
+      "updated_at": "2026-01-09T09:08:01.248",
+      "venue": 1,
+      "event_type": 7,
+      "base_price": "3300.00",
+      "included_hours": "22.0",
+      "excess_hour_price": null,
+      "is_all_day_access": true,
+      "default_check_in_time": null,
+      "default_checkout_time": null,
+      "checkout_next_day": null,
+      "maximum_program_hours": null,
+      "is_fixed_duration": null,
+      "notes": ""
+    }
+  },
+  {
+    "model": "venues.venueeventtypeconfiguration",
+    "pk": 3,
+    "fields": {
+      "created_at": "2026-01-09T09:08:01.248",
+      "updated_at": "2026-01-09T09:08:01.248",
+      "venue": 1,
+      "event_type": 18,
+      "base_price": "3300.00",
+      "included_hours": "22.0",
+      "excess_hour_price": null,
+      "is_all_day_access": false,
+      "default_check_in_time": null,
+      "default_checkout_time": null,
+      "checkout_next_day": null,
+      "maximum_program_hours": null,
+      "is_fixed_duration": null,
+      "notes": ""
+    }
+  },
+  {
+    "model": "venues.venueeventtypeconfiguration",
+    "pk": 4,
+    "fields": {
+      "created_at": "2026-01-09T09:08:01.249",
+      "updated_at": "2026-01-09T09:08:01.249",
+      "venue": 1,
+      "event_type": 19,
+      "base_price": "3300.00",
+      "included_hours": "22.0",
+      "excess_hour_price": null,
+      "is_all_day_access": false,
+      "default_check_in_time": null,
+      "default_checkout_time": null,
+      "checkout_next_day": null,
+      "maximum_program_hours": null,
+      "is_fixed_duration": null,
+      "notes": ""
+    }
+  },
+  {
+    "model": "venues.venueeventtypeconfiguration",
+    "pk": 5,
+    "fields": {
+      "created_at": "2026-01-09T09:08:01.249",
+      "updated_at": "2026-01-09T09:08:01.249",
+      "venue": 1,
+      "event_type": 20,
+      "base_price": "3300.00",
+      "included_hours": "22.0",
+      "excess_hour_price": null,
+      "is_all_day_access": false,
+      "default_check_in_time": null,
+      "default_checkout_time": null,
+      "checkout_next_day": null,
+      "maximum_program_hours": null,
+      "is_fixed_duration": null,
+      "notes": ""
+    }
+  }
+]

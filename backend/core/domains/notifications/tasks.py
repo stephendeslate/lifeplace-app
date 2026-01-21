@@ -90,7 +90,7 @@ def create_notification_async(
             try:
                 from core.domains.events.models import Event
                 event = Event.objects.get(id=event_id)
-            except:
+            except Exception:
                 logger.warning(f"Event not found: {event_id}")
         
         if client_id:
@@ -339,7 +339,7 @@ def collect_delivery_metrics():
         }
         
         # Count by delivery methods
-        for method in ['in_app', 'email', 'sms']:
+        for method in ['in_app', 'email', 'sms', 'push']:
             metrics['delivery_methods'][method] = recent_notifications.filter(
                 delivered_via__contains=[method]
             ).count()
@@ -416,3 +416,212 @@ def health_check():
     except Exception as e:
         logger.error(f"❌ Health check failed: {str(e)}")
         return {'status': 'unhealthy', 'message': str(e)}
+
+
+# =============================================================================
+# Push Notification Tasks
+# =============================================================================
+
+@shared_task(bind=True, max_retries=3, default_retry_delay=30)
+def send_push_notification_task(
+    self,
+    user_id: int,
+    title: str,
+    body: str,
+    data: Optional[Dict[str, Any]] = None,
+    badge: Optional[int] = None,
+    priority: str = 'default',
+    channel_id: str = 'default',
+    category_id: Optional[str] = None
+):
+    """
+    Async task to send push notification to a user's devices
+
+    Args:
+        user_id: User to send notification to
+        title: Notification title
+        body: Notification body
+        data: Custom data payload
+        badge: Badge count (iOS)
+        priority: Push priority
+        channel_id: Android notification channel
+        category_id: iOS category identifier
+    """
+    try:
+        from .services import PushNotificationService
+
+        result = PushNotificationService.send_push_to_user(
+            user_id=user_id,
+            title=title,
+            body=body,
+            data=data,
+            badge=badge,
+            priority=priority,
+            channel_id=channel_id,
+            category_id=category_id,
+        )
+
+        logger.info(
+            f"📱 Push sent to user {user_id}: "
+            f"{result['successful']}/{result['total_devices']} devices succeeded"
+        )
+
+        return {
+            'status': 'success',
+            'user_id': user_id,
+            **result
+        }
+
+    except Exception as e:
+        logger.error(f"❌ Push notification task failed: {str(e)}")
+
+        if self.request.retries < self.max_retries:
+            raise self.retry(countdown=30 * (2 ** self.request.retries))
+
+        return {
+            'status': 'error',
+            'user_id': user_id,
+            'message': str(e)
+        }
+
+
+@shared_task
+def check_push_receipts():
+    """
+    Check push notification receipts from Expo
+
+    This task should run periodically (e.g., every 15 minutes) to check
+    delivery receipts and deactivate tokens that are no longer valid.
+    """
+    try:
+        from .services import PushNotificationService
+
+        # Get all cached ticket IDs
+        ticket_ids = []
+        ticket_keys = cache.keys('push_ticket:*')
+
+        if not ticket_keys:
+            logger.debug("No push tickets to check")
+            return {'status': 'success', 'checked': 0}
+
+        for key in ticket_keys:
+            ticket_id = key.replace('push_ticket:', '')
+            ticket_ids.append(ticket_id)
+
+        if not ticket_ids:
+            return {'status': 'success', 'checked': 0}
+
+        # Check receipts in batches of 100
+        batch_size = 100
+        total_checked = 0
+        total_delivered = 0
+        total_failed = 0
+
+        for i in range(0, len(ticket_ids), batch_size):
+            batch = ticket_ids[i:i + batch_size]
+
+            try:
+                results = PushNotificationService.check_receipts(batch)
+
+                for ticket_id, result in results.items():
+                    total_checked += 1
+                    if result.get('status') == 'delivered':
+                        total_delivered += 1
+                    elif result.get('status') == 'failed':
+                        total_failed += 1
+
+            except Exception as e:
+                logger.error(f"Error checking receipt batch: {str(e)}")
+
+        logger.info(
+            f"📋 Checked {total_checked} push receipts: "
+            f"{total_delivered} delivered, {total_failed} failed"
+        )
+
+        return {
+            'status': 'success',
+            'checked': total_checked,
+            'delivered': total_delivered,
+            'failed': total_failed
+        }
+
+    except Exception as e:
+        logger.error(f"❌ Check push receipts task failed: {str(e)}")
+        return {'status': 'error', 'message': str(e)}
+
+
+@shared_task
+def cleanup_inactive_push_tokens(days: int = 90):
+    """
+    Clean up inactive or stale push tokens
+
+    This task should run daily (e.g., at 3 AM) to remove:
+    - Deactivated tokens
+    - Tokens not used in X days
+    - Tokens created X days ago that were never used
+
+    Args:
+        days: Number of days of inactivity before cleanup (default 90)
+    """
+    try:
+        from .services import PushNotificationService
+
+        deleted_count = PushNotificationService.cleanup_inactive_tokens(days=days)
+
+        logger.info(f"🧹 Cleaned up {deleted_count} inactive push tokens (> {days} days)")
+
+        # Update cleanup metrics
+        cache.set('push_token_cleanup_last_run', timezone.now().isoformat(), timeout=86400)
+        cache.set('push_token_cleanup_last_count', deleted_count, timeout=86400)
+
+        return {
+            'status': 'success',
+            'deleted_count': deleted_count,
+            'days_threshold': days
+        }
+
+    except Exception as e:
+        logger.error(f"❌ Push token cleanup task failed: {str(e)}")
+        return {'status': 'error', 'message': str(e)}
+
+
+@shared_task
+def send_bulk_push_notifications(
+    user_ids: List[int],
+    title: str,
+    body: str,
+    data: Optional[Dict[str, Any]] = None,
+    **kwargs
+):
+    """
+    Send push notifications to multiple users
+
+    Queues individual push tasks for each user to allow for parallel processing.
+    """
+    results = []
+
+    for user_id in user_ids:
+        try:
+            task = send_push_notification_task.delay(
+                user_id=user_id,
+                title=title,
+                body=body,
+                data=data,
+                **kwargs
+            )
+            results.append({
+                'user_id': user_id,
+                'task_id': task.id,
+                'status': 'queued'
+            })
+        except Exception as e:
+            logger.error(f"Failed to queue push for user {user_id}: {str(e)}")
+            results.append({
+                'user_id': user_id,
+                'task_id': None,
+                'status': 'error',
+                'error': str(e)
+            })
+
+    logger.info(f"📱 Queued {len(results)} push notification tasks")
+    return results

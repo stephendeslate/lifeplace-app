@@ -25,31 +25,42 @@ export interface QuestionnaireField {
   order: number;
   options: string[] | null;
   placeholder?: string;
-  help_text?: string;
+  // Phase 1.1: Description (sent from backend as 'description')
+  description?: string;
+  help_text?: string; // Legacy alias for description
+  // Phase 1.3: Guest count (deprecated - use 'guests' type)
+  is_guest_count?: boolean;
+  // Phase 2.1: Conditional display
+  show_conditions?: Record<string, unknown>;
   validation_rules?: Record<string, string | number | boolean>;
   display_conditions?: Record<string, string | number | boolean>;
+  // Phase 4.1: File upload settings (field-level)
+  max_file_size_mb?: number;
+  allowed_file_types?: string[];
+  max_files?: number;
   created_at: string;
   updated_at: string;
 }
 
-export type QuestionnaireFieldType = 
-  | 'text' 
+export type QuestionnaireFieldType =
+  | 'text'
   | 'textarea'
-  | 'number' 
-  | 'date' 
-  | 'time' 
+  | 'number'
+  | 'date'
+  | 'time'
   | 'datetime'
-  | 'boolean' 
-  | 'select' 
-  | 'multi-select' 
+  | 'boolean'
+  | 'select'
+  | 'multi-select'
   | 'radio'
   | 'checkbox'
-  | 'email' 
-  | 'phone' 
+  | 'email'
+  | 'phone'
   | 'url'
   | 'file'
   | 'range'
-  | 'rating';
+  | 'rating'
+  | 'guests';
 
 export interface QuestionnaireStepItem {
   id: number;
@@ -246,7 +257,7 @@ export const QUESTIONNAIRE_FIELD_TYPE_LABELS: Record<QuestionnaireFieldType, str
   textarea: 'Text Area',
   number: 'Number Input',
   date: 'Date Picker',
-  time: 'Time Picker', 
+  time: 'Time Picker',
   datetime: 'Date & Time Picker',
   boolean: 'Yes/No',
   select: 'Dropdown',
@@ -259,6 +270,7 @@ export const QUESTIONNAIRE_FIELD_TYPE_LABELS: Record<QuestionnaireFieldType, str
   file: 'File Upload',
   range: 'Range Slider',
   rating: 'Rating Scale',
+  guests: 'Guest Count',
 };
 
 // HTML input type mappings for form rendering
@@ -280,4 +292,5 @@ export const QUESTIONNAIRE_FIELD_INPUT_TYPES: Record<QuestionnaireFieldType, str
   file: 'file',
   range: 'range',
   rating: 'number',
+  guests: 'number',
 };

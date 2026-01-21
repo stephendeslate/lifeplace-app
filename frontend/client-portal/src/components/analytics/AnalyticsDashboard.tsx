@@ -1,6 +1,6 @@
 // frontend/client-portal/src/components/analytics/AnalyticsDashboard.tsx
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Box,
   Typography,
@@ -15,164 +15,205 @@ import {
   Chip,
   Avatar,
   Stack,
+  Skeleton,
+  Alert,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
 } from '@mui/material';
 import {
-  TrendingUp,
-  TrendingDown,
   Event as EventIcon,
   Payment as PaymentIcon,
   AttachMoney as MoneyIcon,
   Schedule as ScheduleIcon,
   Refresh as RefreshIcon,
-  FilterList as FilterIcon,
+  Warning as WarningIcon,
+  CheckCircle as CheckCircleIcon,
+  AccessTime as AccessTimeIcon,
 } from '@mui/icons-material';
 import {
   AreaChart,
   Area,
-  BarChart,
-  Bar,
-  PieChart,
-  Pie,
-  Cell,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  Legend,
 } from 'recharts';
 import { GlassCard } from '../../design-system/components/GlassCard';
 import { AnimatedElement } from '../../design-system/components/AnimatedElement';
+import {
+  useClientDashboard,
+  useClientSpendingTrends,
+  useClientDeadlines,
+  useClientEventHistory,
+} from '../../hooks/useClientAnalytics';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface AnalyticsMetric {
   id: string;
   title: string;
   value: string;
-  change: number;
-  changeType: 'increase' | 'decrease' | 'neutral';
   icon: React.ReactNode;
   color: string;
-}
-
-interface ChartDataPoint {
-  name: string;
-  value?: number;
-  revenue?: number;
-  bookings?: number;
-  events?: number;
+  subtitle?: string;
 }
 
 export const AnalyticsDashboard: React.FC = () => {
   const theme = useTheme();
-  const [timeRange, setTimeRange] = useState('30d');
+  const queryClient = useQueryClient();
+  const [timeRange, setTimeRange] = useState('12m');
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Mock analytics data
-  const metrics: AnalyticsMetric[] = [
-    {
-      id: 'total-events',
-      title: 'Total Events',
-      value: '47',
-      change: 15.2,
-      changeType: 'increase',
-      icon: <EventIcon fontSize="small" />,
-      color: theme.palette.primary.main,
-    },
-    {
-      id: 'revenue',
-      title: 'Revenue',
-      value: '₱125,450',
-      change: 8.7,
-      changeType: 'increase',
-      icon: <MoneyIcon fontSize="small" />,
-      color: theme.palette.success.main,
-    },
-    {
-      id: 'pending-payments',
-      title: 'Pending Payments',
-      value: '₱28,900',
-      change: -5.3,
-      changeType: 'decrease',
-      icon: <PaymentIcon fontSize="small" />,
-      color: theme.palette.warning.main,
-    },
-    {
-      id: 'avg-booking-time',
-      title: 'Avg. Booking Time',
-      value: '12 min',
-      change: -18.5,
-      changeType: 'decrease',
-      icon: <ScheduleIcon fontSize="small" />,
-      color: theme.palette.info.main,
-    },
-  ];
+  // Calculate date range based on selection
+  const dateRange = useMemo(() => {
+    const end = new Date();
+    const start = new Date();
 
-  const revenueData: ChartDataPoint[] = [
-    { name: 'Jan', revenue: 45000, bookings: 12 },
-    { name: 'Feb', revenue: 52000, bookings: 15 },
-    { name: 'Mar', revenue: 48000, bookings: 13 },
-    { name: 'Apr', revenue: 61000, bookings: 18 },
-    { name: 'May', revenue: 55000, bookings: 16 },
-    { name: 'Jun', revenue: 67000, bookings: 20 },
-    { name: 'Jul', revenue: 73000, bookings: 22 },
-    { name: 'Aug', revenue: 68000, bookings: 19 },
-    { name: 'Sep', revenue: 79000, bookings: 24 },
-    { name: 'Oct', revenue: 82000, bookings: 26 },
-    { name: 'Nov', revenue: 88000, bookings: 28 },
-    { name: 'Dec', revenue: 94000, bookings: 31 },
-  ];
+    switch (timeRange) {
+      case '7d':
+        start.setDate(start.getDate() - 7);
+        break;
+      case '30d':
+        start.setDate(start.getDate() - 30);
+        break;
+      case '90d':
+        start.setDate(start.getDate() - 90);
+        break;
+      case '12m':
+      default:
+        start.setFullYear(start.getFullYear() - 1);
+        break;
+    }
 
-  const eventTypeData: ChartDataPoint[] = [
-    { name: 'Weddings', value: 45, events: 18 },
-    { name: 'Corporate', value: 30, events: 12 },
-    { name: 'Birthdays', value: 15, events: 8 },
-    { name: 'Anniversaries', value: 10, events: 9 },
-  ];
+    return {
+      startDate: start.toISOString().split('T')[0],
+      endDate: end.toISOString().split('T')[0],
+    };
+  }, [timeRange]);
 
-  const bookingFlowData: ChartDataPoint[] = [
-    { name: 'Introduction', value: 100 },
-    { name: 'Contact Info', value: 87 },
-    { name: 'Date & Time', value: 75 },
-    { name: 'Package Selection', value: 65 },
-    { name: 'Add-ons', value: 58 },
-    { name: 'Payment', value: 52 },
-    { name: 'Confirmation', value: 47 },
-  ];
+  // Fetch data from API
+  const { data: dashboard, isLoading: dashboardLoading, error: dashboardError } = useClientDashboard(
+    dateRange.startDate,
+    dateRange.endDate
+  );
+  const { data: spendingTrends, isLoading: trendsLoading } = useClientSpendingTrends(
+    timeRange === '12m' ? 12 : timeRange === '90d' ? 3 : 1
+  );
+  const { data: deadlines, isLoading: deadlinesLoading } = useClientDeadlines(30);
+  const { data: eventHistory, isLoading: historyLoading } = useClientEventHistory(5);
 
-  const COLORS = [
-    theme.palette.primary.main,
-    theme.palette.secondary.main,
-    theme.palette.success.main,
-    theme.palette.warning.main,
-    theme.palette.error.main,
-    theme.palette.info.main,
-  ];
+  // Format currency
+  const formatCurrency = (value: number) =>
+    new Intl.NumberFormat('en-PH', {
+      style: 'currency',
+      currency: 'PHP',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(value);
+
+  // Build metrics from API data
+  const metrics: AnalyticsMetric[] = useMemo(() => {
+    if (!dashboard) return [];
+
+    return [
+      {
+        id: 'total-events',
+        title: 'Total Events',
+        value: String(dashboard.events.total),
+        subtitle: `${dashboard.events.upcoming} upcoming`,
+        icon: <EventIcon fontSize="small" />,
+        color: theme.palette.primary.main,
+      },
+      {
+        id: 'total-spent',
+        title: 'Total Spent',
+        value: formatCurrency(dashboard.financials.total_spent),
+        subtitle: 'completed payments',
+        icon: <MoneyIcon fontSize="small" />,
+        color: theme.palette.success.main,
+      },
+      {
+        id: 'pending-payments',
+        title: 'Pending Payments',
+        value: formatCurrency(dashboard.financials.pending_amount),
+        subtitle: dashboard.financials.overdue_count > 0
+          ? `${dashboard.financials.overdue_count} overdue`
+          : 'all on track',
+        icon: <PaymentIcon fontSize="small" />,
+        color: dashboard.financials.overdue_count > 0
+          ? theme.palette.error.main
+          : theme.palette.warning.main,
+      },
+      {
+        id: 'upcoming-due',
+        title: 'Due Soon',
+        value: formatCurrency(dashboard.financials.upcoming_amount),
+        subtitle: `${dashboard.financials.upcoming_count} payments in 30 days`,
+        icon: <ScheduleIcon fontSize="small" />,
+        color: theme.palette.info.main,
+      },
+    ];
+  }, [dashboard, theme]);
+
+  // Format spending trends for chart
+  const chartData = useMemo(() => {
+    if (!spendingTrends || spendingTrends.length === 0) return [];
+
+    return spendingTrends.map((trend) => ({
+      name: trend.month_name,
+      amount: trend.amount,
+      payments: trend.payment_count,
+    }));
+  }, [spendingTrends]);
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    setIsRefreshing(false);
+    await queryClient.invalidateQueries({ queryKey: ['client-analytics'] });
+    setTimeout(() => setIsRefreshing(false), 1000);
   };
 
-  const renderTrendIcon = (changeType: string, change: number) => {
-    const isPositive = changeType === 'increase';
+  const getDeadlineIcon = (type: string) => {
+    switch (type) {
+      case 'payment':
+        return <PaymentIcon fontSize="small" />;
+      case 'event':
+        return <EventIcon fontSize="small" />;
+      case 'contract':
+        return <AccessTimeIcon fontSize="small" />;
+      default:
+        return <ScheduleIcon fontSize="small" />;
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'COMPLETED':
+        return theme.palette.success.main;
+      case 'CONFIRMED':
+        return theme.palette.primary.main;
+      case 'LEAD':
+        return theme.palette.warning.main;
+      case 'CANCELLED':
+        return theme.palette.error.main;
+      default:
+        return theme.palette.grey[500];
+    }
+  };
+
+  // Error state
+  if (dashboardError) {
     return (
-      <Box
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          color: isPositive ? 'success.main' : 'error.main',
-          gap: 0.5,
-        }}
-      >
-        {isPositive ? <TrendingUp fontSize="small" /> : <TrendingDown fontSize="small" />}
-        <Typography variant="caption" sx={{ fontWeight: 600 }}>
-          {Math.abs(change)}%
-        </Typography>
+      <Box sx={{ p: 3 }}>
+        <Alert severity="error">
+          Unable to load analytics data. Please try again later.
+        </Alert>
       </Box>
     );
-  };
+  }
 
   return (
     <Box sx={{ p: 3 }}>
@@ -181,10 +222,10 @@ export const AnalyticsDashboard: React.FC = () => {
         <Box sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
           <Box>
             <Typography variant="h4" sx={{ fontWeight: 600, color: 'primary.main' }}>
-              Analytics Dashboard
+              My Dashboard
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-              Track your event bookings, revenue, and performance metrics
+              Track your events, payments, and upcoming deadlines
             </Typography>
           </Box>
 
@@ -223,244 +264,306 @@ export const AnalyticsDashboard: React.FC = () => {
             >
               <RefreshIcon sx={{ animation: isRefreshing ? 'spin 1s linear infinite' : 'none' }} />
             </IconButton>
-
-            <IconButton
-              sx={{
-                backgroundColor: alpha('#fff', 0.1),
-                backdropFilter: 'blur(10px)',
-                '&:hover': {
-                  backgroundColor: alpha('#fff', 0.2),
-                },
-              }}
-            >
-              <FilterIcon />
-            </IconButton>
           </Box>
         </Box>
       </AnimatedElement>
 
       {/* Key Metrics Cards */}
       <AnimatedElement animation="slideUp" delay={200}>
-        <Box 
-          sx={{ 
+        <Box
+          sx={{
             display: 'grid',
             gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
             gap: 3,
-            mb: 4
+            mb: 4,
           }}
         >
-          {metrics.map((metric, index) => (
-            <AnimatedElement key={metric.id} animation="slideUp" delay={200 + index * 50}>
+          {dashboardLoading ? (
+            // Loading skeletons
+            [...Array(4)].map((_, index) => (
+              <Skeleton
+                key={index}
+                variant="rectangular"
+                height={140}
+                sx={{ borderRadius: 2 }}
+              />
+            ))
+          ) : (
+            metrics.map((metric, index) => (
+              <AnimatedElement key={metric.id} animation="slideUp" delay={200 + index * 50}>
+                <GlassCard
+                  variant="light"
+                  intensity="medium"
+                  hover
+                  sx={{
+                    p: 3,
+                    height: '100%',
+                    backgroundColor: alpha('#fff', 0.08),
+                    backdropFilter: 'blur(20px)',
+                    border: `1px solid ${alpha('#fff', 0.1)}`,
+                  }}
+                >
+                  <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 2 }}>
+                    <Avatar
+                      sx={{
+                        backgroundColor: alpha(metric.color, 0.15),
+                        color: metric.color,
+                        width: 48,
+                        height: 48,
+                      }}
+                    >
+                      {metric.icon}
+                    </Avatar>
+                  </Box>
+
+                  <Typography variant="h4" sx={{ fontWeight: 700, mb: 0.5 }}>
+                    {metric.value}
+                  </Typography>
+
+                  <Typography variant="body2" color="text.secondary">
+                    {metric.title}
+                  </Typography>
+
+                  {metric.subtitle && (
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+                      {metric.subtitle}
+                    </Typography>
+                  )}
+                </GlassCard>
+              </AnimatedElement>
+            ))
+          )}
+        </Box>
+      </AnimatedElement>
+
+      {/* Charts and Details */}
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+        {/* Spending Trend & Deadlines Row */}
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: '2fr 1fr' }, gap: 3 }}>
+          {/* Spending Trend Chart */}
+          <Box>
+            <AnimatedElement animation="slideUp" delay={400}>
               <GlassCard
                 variant="light"
                 intensity="medium"
-                hover
                 sx={{
                   p: 3,
-                  height: '100%',
                   backgroundColor: alpha('#fff', 0.08),
                   backdropFilter: 'blur(20px)',
                   border: `1px solid ${alpha('#fff', 0.1)}`,
                 }}
               >
-                <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 2 }}>
-                  <Avatar
-                    sx={{
-                      backgroundColor: alpha(metric.color, 0.15),
-                      color: metric.color,
-                      width: 48,
-                      height: 48,
-                    }}
-                  >
-                    {metric.icon}
-                  </Avatar>
-                  {renderTrendIcon(metric.changeType, metric.change)}
+                <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Box>
+                    <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                      Spending Trend
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Your payment history over time
+                    </Typography>
+                  </Box>
                 </Box>
 
-                <Typography variant="h4" sx={{ fontWeight: 700, mb: 0.5 }}>
-                  {metric.value}
-                </Typography>
-
-                <Typography variant="body2" color="text.secondary">
-                  {metric.title}
-                </Typography>
+                <Box sx={{ height: 300, position: 'relative' }}>
+                  {(isRefreshing || trendsLoading) && (
+                    <LinearProgress
+                      sx={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        backgroundColor: alpha('#fff', 0.1),
+                      }}
+                    />
+                  )}
+                  {trendsLoading ? (
+                    <Skeleton variant="rectangular" height={280} />
+                  ) : chartData.length > 0 ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart data={chartData}>
+                        <defs>
+                          <linearGradient id="amountGradient" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor={theme.palette.primary.main} stopOpacity={0.3} />
+                            <stop offset="95%" stopColor={theme.palette.primary.main} stopOpacity={0.05} />
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" stroke={alpha('#fff', 0.1)} />
+                        <XAxis
+                          dataKey="name"
+                          stroke={alpha('#fff', 0.6)}
+                          fontSize={12}
+                        />
+                        <YAxis
+                          stroke={alpha('#fff', 0.6)}
+                          fontSize={12}
+                          tickFormatter={(value) => `${(value / 1000).toFixed(0)}k`}
+                        />
+                        <Tooltip
+                          contentStyle={{
+                            backgroundColor: alpha('#fff', 0.95),
+                            backdropFilter: 'blur(20px)',
+                            border: `1px solid ${alpha('#fff', 0.2)}`,
+                            borderRadius: 12,
+                            boxShadow: '0 8px 32px rgba(0,0,0,0.15)',
+                          }}
+                          formatter={(value: number) => [formatCurrency(value), 'Amount']}
+                        />
+                        <Area
+                          type="monotone"
+                          dataKey="amount"
+                          stroke={theme.palette.primary.main}
+                          strokeWidth={3}
+                          fill="url(#amountGradient)"
+                          name="Amount"
+                        />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <Box
+                      sx={{
+                        height: '100%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <Typography color="text.secondary">
+                        No spending data available yet
+                      </Typography>
+                    </Box>
+                  )}
+                </Box>
               </GlassCard>
             </AnimatedElement>
-          ))}
-        </Box>
-      </AnimatedElement>
+          </Box>
 
-      {/* Charts Grid */}
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-        {/* Revenue & Pie Chart Row */}
-        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: '2fr 1fr' }, gap: 3 }}>
-          {/* Revenue Trend Chart */}
+          {/* Upcoming Deadlines */}
           <Box>
-          <AnimatedElement animation="slideUp" delay={400}>
-            <GlassCard
-              variant="light"
-              intensity="medium"
-              sx={{
-                p: 3,
-                backgroundColor: alpha('#fff', 0.08),
-                backdropFilter: 'blur(20px)',
-                border: `1px solid ${alpha('#fff', 0.1)}`,
-              }}
-            >
-              <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Box>
+            <AnimatedElement animation="slideUp" delay={500}>
+              <GlassCard
+                variant="light"
+                intensity="medium"
+                sx={{
+                  p: 3,
+                  backgroundColor: alpha('#fff', 0.08),
+                  backdropFilter: 'blur(20px)',
+                  border: `1px solid ${alpha('#fff', 0.1)}`,
+                  height: '100%',
+                }}
+              >
+                <Box sx={{ mb: 2 }}>
                   <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                    Revenue & Bookings Trend
+                    Upcoming Deadlines
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    Monthly performance overview
+                    Next 30 days
                   </Typography>
                 </Box>
-                <Stack direction="row" spacing={1}>
-                  <Chip
-                    label="Revenue"
-                    size="small"
-                    sx={{
-                      backgroundColor: alpha(theme.palette.primary.main, 0.1),
-                      color: theme.palette.primary.main,
-                    }}
-                  />
-                  <Chip
-                    label="Bookings"
-                    size="small"
-                    sx={{
-                      backgroundColor: alpha(theme.palette.secondary.main, 0.1),
-                      color: theme.palette.secondary.main,
-                    }}
-                  />
-                </Stack>
-              </Box>
 
-              <Box sx={{ height: 350, position: 'relative' }}>
-                {isRefreshing && (
-                  <LinearProgress 
-                    sx={{ 
-                      position: 'absolute', 
-                      top: 0, 
-                      left: 0, 
-                      right: 0,
-                      backgroundColor: alpha('#fff', 0.1),
-                    }} 
-                  />
+                {deadlinesLoading ? (
+                  <Stack spacing={2}>
+                    {[1, 2, 3].map((i) => (
+                      <Skeleton key={i} variant="rectangular" height={60} />
+                    ))}
+                  </Stack>
+                ) : deadlines && deadlines.length > 0 ? (
+                  <Stack spacing={2} sx={{ maxHeight: 280, overflow: 'auto' }}>
+                    {deadlines.slice(0, 5).map((deadline, index) => (
+                      <Box
+                        key={index}
+                        sx={{
+                          p: 2,
+                          borderRadius: 2,
+                          backgroundColor: alpha(
+                            deadline.urgency === 'high'
+                              ? theme.palette.error.main
+                              : theme.palette.primary.main,
+                            0.1
+                          ),
+                          border: `1px solid ${alpha(
+                            deadline.urgency === 'high'
+                              ? theme.palette.error.main
+                              : theme.palette.primary.main,
+                            0.2
+                          )}`,
+                        }}
+                      >
+                        <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5 }}>
+                          <Avatar
+                            sx={{
+                              width: 32,
+                              height: 32,
+                              backgroundColor: alpha(
+                                deadline.urgency === 'high'
+                                  ? theme.palette.error.main
+                                  : theme.palette.primary.main,
+                                0.2
+                              ),
+                              color:
+                                deadline.urgency === 'high'
+                                  ? theme.palette.error.main
+                                  : theme.palette.primary.main,
+                            }}
+                          >
+                            {getDeadlineIcon(deadline.type)}
+                          </Avatar>
+                          <Box sx={{ flex: 1, minWidth: 0 }}>
+                            <Typography
+                              variant="body2"
+                              sx={{
+                                fontWeight: 600,
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
+                              }}
+                            >
+                              {deadline.title}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              {new Date(deadline.due_date).toLocaleDateString('en-US', {
+                                month: 'short',
+                                day: 'numeric',
+                                year: 'numeric',
+                              })}
+                            </Typography>
+                            {deadline.amount && (
+                              <Typography
+                                variant="caption"
+                                sx={{ display: 'block', fontWeight: 600, mt: 0.5 }}
+                              >
+                                {formatCurrency(deadline.amount)}
+                              </Typography>
+                            )}
+                          </Box>
+                          {deadline.urgency === 'high' && (
+                            <WarningIcon fontSize="small" color="error" />
+                          )}
+                        </Box>
+                      </Box>
+                    ))}
+                  </Stack>
+                ) : (
+                  <Box
+                    sx={{
+                      py: 4,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      gap: 1,
+                    }}
+                  >
+                    <CheckCircleIcon sx={{ fontSize: 48, color: 'success.main', opacity: 0.5 }} />
+                    <Typography color="text.secondary" align="center">
+                      No upcoming deadlines
+                    </Typography>
+                  </Box>
                 )}
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={revenueData}>
-                    <defs>
-                      <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor={theme.palette.primary.main} stopOpacity={0.3}/>
-                        <stop offset="95%" stopColor={theme.palette.primary.main} stopOpacity={0.05}/>
-                      </linearGradient>
-                      <linearGradient id="bookingsGradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor={theme.palette.secondary.main} stopOpacity={0.3}/>
-                        <stop offset="95%" stopColor={theme.palette.secondary.main} stopOpacity={0.05}/>
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke={alpha('#fff', 0.1)} />
-                    <XAxis 
-                      dataKey="name" 
-                      stroke={alpha('#fff', 0.6)}
-                      fontSize={12}
-                    />
-                    <YAxis stroke={alpha('#fff', 0.6)} fontSize={12} />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: alpha('#fff', 0.95),
-                        backdropFilter: 'blur(20px)',
-                        border: `1px solid ${alpha('#fff', 0.2)}`,
-                        borderRadius: 12,
-                        boxShadow: '0 8px 32px rgba(0,0,0,0.15)',
-                      }}
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="revenue"
-                      stroke={theme.palette.primary.main}
-                      strokeWidth={3}
-                      fill="url(#revenueGradient)"
-                      name="Revenue (₱)"
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="bookings"
-                      stroke={theme.palette.secondary.main}
-                      strokeWidth={3}
-                      fill="url(#bookingsGradient)"
-                      name="Bookings"
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </Box>
-            </GlassCard>
-          </AnimatedElement>
-          </Box>
-
-          {/* Event Types Distribution */}
-          <Box>
-          <AnimatedElement animation="slideUp" delay={500}>
-            <GlassCard
-              variant="light"
-              intensity="medium"
-              sx={{
-                p: 3,
-                backgroundColor: alpha('#fff', 0.08),
-                backdropFilter: 'blur(20px)',
-                border: `1px solid ${alpha('#fff', 0.1)}`,
-                height: '100%',
-              }}
-            >
-              <Box sx={{ mb: 3 }}>
-                <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                  Event Types Distribution
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Breakdown by event category
-                </Typography>
-              </Box>
-
-              <Box sx={{ height: 350 }}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={eventTypeData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={60}
-                      outerRadius={120}
-                      paddingAngle={5}
-                      dataKey="value"
-                    >
-                      {eventTypeData.map((_, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: alpha('#fff', 0.95),
-                        backdropFilter: 'blur(20px)',
-                        border: `1px solid ${alpha('#fff', 0.2)}`,
-                        borderRadius: 8,
-                      }}
-                    />
-                    <Legend
-                      wrapperStyle={{
-                        fontSize: '12px',
-                        color: theme.palette.text.primary,
-                      }}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-              </Box>
-            </GlassCard>
-          </AnimatedElement>
+              </GlassCard>
+            </AnimatedElement>
           </Box>
         </Box>
 
-        {/* Booking Flow Conversion */}
+        {/* Recent Events */}
         <Box>
           <AnimatedElement animation="slideUp" delay={600}>
             <GlassCard
@@ -475,47 +578,97 @@ export const AnalyticsDashboard: React.FC = () => {
             >
               <Box sx={{ mb: 3 }}>
                 <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                  Booking Flow Conversion
+                  Recent Events
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  Step-by-step conversion rates through the booking process
+                  Your latest event history
                 </Typography>
               </Box>
 
-              <Box sx={{ height: 300 }}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={bookingFlowData} layout="horizontal">
-                    <CartesianGrid strokeDasharray="3 3" stroke={alpha('#fff', 0.1)} />
-                    <XAxis 
-                      type="number" 
-                      stroke={alpha('#fff', 0.6)}
-                      fontSize={12}
-                      domain={[0, 100]}
-                    />
-                    <YAxis 
-                      type="category" 
-                      dataKey="name" 
-                      stroke={alpha('#fff', 0.6)}
-                      fontSize={12}
-                    />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: alpha('#fff', 0.95),
-                        backdropFilter: 'blur(20px)',
-                        border: `1px solid ${alpha('#fff', 0.2)}`,
-                        borderRadius: 8,
-                      }}
-                      formatter={(value) => [`${value}%`, 'Conversion Rate']}
-                    />
-                    <Bar 
-                      dataKey="value" 
-                      fill={theme.palette.success.main}
-                      radius={[0, 4, 4, 0]}
-                      opacity={0.8}
-                    />
-                  </BarChart>
-                </ResponsiveContainer>
-              </Box>
+              {historyLoading ? (
+                <Skeleton variant="rectangular" height={200} />
+              ) : eventHistory && eventHistory.length > 0 ? (
+                <TableContainer>
+                  <Table size="small">
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>Event</TableCell>
+                        <TableCell>Date</TableCell>
+                        <TableCell>Status</TableCell>
+                        <TableCell align="right">Total</TableCell>
+                        <TableCell align="right">Paid</TableCell>
+                        <TableCell align="right">Balance</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {eventHistory.map((event) => (
+                        <TableRow key={event.id} hover>
+                          <TableCell>
+                            <Box>
+                              <Typography variant="body2" fontWeight={500}>
+                                {event.name}
+                              </Typography>
+                              <Typography variant="caption" color="text.secondary">
+                                {event.event_type} - {event.venue}
+                              </Typography>
+                            </Box>
+                          </TableCell>
+                          <TableCell>
+                            {new Date(event.start_date).toLocaleDateString('en-US', {
+                              month: 'short',
+                              day: 'numeric',
+                              year: 'numeric',
+                            })}
+                          </TableCell>
+                          <TableCell>
+                            <Chip
+                              label={event.status_display}
+                              size="small"
+                              sx={{
+                                backgroundColor: alpha(getStatusColor(event.status), 0.1),
+                                color: getStatusColor(event.status),
+                                fontWeight: 500,
+                              }}
+                            />
+                          </TableCell>
+                          <TableCell align="right">
+                            {formatCurrency(event.total_price)}
+                          </TableCell>
+                          <TableCell align="right">
+                            <Typography color="success.main">
+                              {formatCurrency(event.amount_paid)}
+                            </Typography>
+                          </TableCell>
+                          <TableCell align="right">
+                            {event.amount_pending > 0 ? (
+                              <Typography color="warning.main">
+                                {formatCurrency(event.amount_pending)}
+                              </Typography>
+                            ) : (
+                              <CheckCircleIcon fontSize="small" color="success" />
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              ) : (
+                <Box
+                  sx={{
+                    py: 4,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: 1,
+                  }}
+                >
+                  <EventIcon sx={{ fontSize: 48, opacity: 0.3 }} />
+                  <Typography color="text.secondary" align="center">
+                    No events yet
+                  </Typography>
+                </Box>
+              )}
             </GlassCard>
           </AnimatedElement>
         </Box>

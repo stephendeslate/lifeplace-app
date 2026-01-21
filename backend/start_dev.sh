@@ -12,10 +12,10 @@ echo "=========================================="
 
 # Start Celery worker in background
 echo "📨 Starting Celery worker..."
-celery -A core worker --loglevel=info --queues=celery,communications,notifications,analytics &
+celery -A core worker --loglevel=info --queues=celery,communications,notifications,analytics,events,payments,contracts,sales &
 CELERY_WORKER_PID=$!
 echo "✅ Celery worker started (PID: $CELERY_WORKER_PID)"
-echo "   Listening on queues: celery, communications, notifications, analytics"
+echo "   Listening on queues: celery, communications, notifications, analytics, events, payments, contracts, sales"
 
 # Start Celery beat for periodic tasks in background
 echo "⏰ Starting Celery beat..."
@@ -34,7 +34,7 @@ echo "🛑 Press Ctrl+C to stop all services"
 echo "=========================================="
 
 # Start Daphne in foreground
-daphne -p 8000 core.asgi:application
+daphne -b 0.0.0.0 -p 8000 core.asgi:application
 
 # Cleanup function - runs on script exit
 cleanup() {

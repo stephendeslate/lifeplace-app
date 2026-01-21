@@ -1,0 +1,25 @@
+[
+  {
+    "model": "vip.vipsettings",
+    "pk": 1,
+    "fields": {
+      "created_at": "2025-12-18T23:43:43.518",
+      "updated_at": "2025-12-18T23:43:43.518",
+      "is_program_enabled": true,
+      "program_name": "VIP Program",
+      "earning_automatic_enabled": true,
+      "earning_points_enabled": false,
+      "earning_manual_enabled": true,
+      "automatic_earning_type": "SPENDING",
+      "points_per_currency_spent": "1.00",
+      "points_currency_unit": "100.00",
+      "points_expiry_months": 0,
+      "expiration_type": "NEVER",
+      "expiration_months": 12,
+      "show_vip_status_to_client": true,
+      "show_tier_progress_to_client": true,
+      "show_available_rewards_to_client": true,
+      "show_points_balance_to_client": true
+    }
+  }
+]

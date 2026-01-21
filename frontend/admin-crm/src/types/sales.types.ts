@@ -39,6 +39,7 @@ export interface QuoteTemplateProduct {
 export interface EventQuote {
   id: number;
   event: number;
+  event_type?: number | null;
   event_details?: {
     id: number;
     name: string;
@@ -54,6 +55,7 @@ export interface EventQuote {
   status_display: string;
   subtotal: string;
   tax_amount: string;
+  service_charge_amount: string;
   discount_amount: string;
   total_amount: string;
   valid_until: string;
@@ -82,6 +84,12 @@ export interface QuoteLineItem {
   total: string;
   product: number | null;
   notes: string;
+  // Enhanced pricing fields for excess hours
+  item_type?: 'PACKAGE' | 'ADDON';
+  base_unit_price?: string;
+  excess_hours?: number | null;
+  excess_hour_price?: string | null;
+  excess_cost?: string;
   created_at: string;
   updated_at: string;
 }
@@ -197,6 +205,13 @@ export interface UpdateEventQuoteData {
   terms_and_conditions?: string;
   client_message?: string;
   rejection_reason?: string;
+  line_items?: Array<{
+    id?: number;
+    description: string;
+    quantity: number;
+    unit_price: string;
+    product_id?: number | null;
+  }>;
 }
 
 export interface CreateQuoteLineItemData {

@@ -40,7 +40,8 @@ import {
   AccessTime as ExpiredIcon,
 } from '@mui/icons-material';
 import { format } from 'date-fns';
-import { useQuotesForEvent } from '../../hooks/useSales';
+import { useQuotesForEvent, useDuplicateQuote, useDeleteEventQuote } from '../../hooks/useSales';
+import { useConfirmDialog } from '../common/ConfirmDialog';
 import type { Event } from '../../types/events.types';
 import type { EventQuote } from '../../types/sales.types';
 import { formatCurrency } from '../../utils/currency';
@@ -49,6 +50,7 @@ import { QuoteDetailsDialog } from '../sales/QuoteDetailsDialog';
 import { QuoteCreateDialog } from './QuoteCreateDialog';
 import QuoteEditDialog from '../sales/QuoteEditDialog';
 import QuoteSendConfirmDialog from '../sales/QuoteSendConfirmDialog';
+import { tokens } from '../../design-system';
 
 interface EventQuotesProps {
   event: Event;
@@ -76,39 +78,39 @@ const getStatusStyles = (status: string) => {
   switch (status) {
     case 'DRAFT':
       return {
-        backgroundColor: '#e3f2fd',
-        color: '#1976d2',
-        '& .MuiChip-icon': { color: '#1976d2' }
+        backgroundColor: tokens.color.eventStatus.draft.bg,
+        color: tokens.color.eventStatus.draft.text,
+        '& .MuiChip-icon': { color: tokens.color.eventStatus.draft.text }
       };
     case 'SENT':
       return {
-        backgroundColor: '#e1f5fe',
-        color: '#0277bd',
-        '& .MuiChip-icon': { color: '#0277bd' }
+        backgroundColor: tokens.color.eventStatus.sent.bg,
+        color: tokens.color.eventStatus.sent.text,
+        '& .MuiChip-icon': { color: tokens.color.eventStatus.sent.text }
       };
     case 'ACCEPTED':
       return {
-        backgroundColor: '#e8f5e8',
-        color: '#2e7d32',
-        '& .MuiChip-icon': { color: '#2e7d32' }
+        backgroundColor: tokens.color.eventStatus.accepted.bg,
+        color: tokens.color.eventStatus.accepted.text,
+        '& .MuiChip-icon': { color: tokens.color.eventStatus.accepted.text }
       };
     case 'REJECTED':
       return {
-        backgroundColor: '#ffebee',
-        color: '#c62828',
-        '& .MuiChip-icon': { color: '#c62828' }
+        backgroundColor: tokens.color.eventStatus.rejected.bg,
+        color: tokens.color.eventStatus.rejected.text,
+        '& .MuiChip-icon': { color: tokens.color.eventStatus.rejected.text }
       };
     case 'EXPIRED':
       return {
-        backgroundColor: '#fff3e0',
-        color: '#f57c00',
-        '& .MuiChip-icon': { color: '#f57c00' }
+        backgroundColor: tokens.color.eventStatus.expired.bg,
+        color: tokens.color.eventStatus.expired.text,
+        '& .MuiChip-icon': { color: tokens.color.eventStatus.expired.text }
       };
     default:
       return {
-        backgroundColor: '#f3e5f5',
-        color: '#7b1fa2',
-        '& .MuiChip-icon': { color: '#7b1fa2' }
+        backgroundColor: tokens.color.eventStatus.converted.bg,
+        color: tokens.color.eventStatus.converted.text,
+        '& .MuiChip-icon': { color: tokens.color.eventStatus.converted.text }
       };
   }
 };
@@ -127,6 +129,10 @@ export const EventQuotes: React.FC<EventQuotesProps> = ({ event }) => {
     isLoading,
     refetch,
   } = useQuotesForEvent(event.id);
+
+  const { mutate: duplicateQuote, isPending: _isDuplicating } = useDuplicateQuote();
+  const { mutate: deleteQuote, isPending: _isDeleting } = useDeleteEventQuote();
+  const { confirmDelete } = useConfirmDialog();
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, quote: EventQuote) => {
     setAnchorEl(event.currentTarget);
@@ -162,19 +168,28 @@ export const EventQuotes: React.FC<EventQuotesProps> = ({ event }) => {
 
   const handleDuplicateQuote = () => {
     if (selectedQuote) {
-      // This would trigger the duplicate action through a mutation
-      console.log('Duplicate quote:', selectedQuote.id);
+      duplicateQuote(selectedQuote.id, {
+        onSuccess: () => {
+          refetch();
+        },
+      });
       setAnchorEl(null);
-      setSelectedQuote(null); // Clear quote since no dialog needs it
+      setSelectedQuote(null);
     }
   };
 
-  const handleDeleteQuote = () => {
+  const handleDeleteQuote = async () => {
     if (selectedQuote) {
-      // This would trigger the delete action through a mutation
-      console.log('Delete quote:', selectedQuote.id);
+      const confirmed = await confirmDelete(`Quote Version ${selectedQuote.version}`);
+      if (confirmed) {
+        deleteQuote(selectedQuote.id, {
+          onSuccess: () => {
+            refetch();
+          },
+        });
+      }
       setAnchorEl(null);
-      setSelectedQuote(null); // Clear quote since no dialog needs it
+      setSelectedQuote(null);
     }
   };
 
@@ -233,7 +248,7 @@ export const EventQuotes: React.FC<EventQuotesProps> = ({ event }) => {
 
       {/* Quotes Table */}
       <TableContainer component={Paper}>
-        <Table>
+        <Table size="small">
           <TableHead>
             <TableRow>
               <TableCell>Version</TableCell>

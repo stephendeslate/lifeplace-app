@@ -19,20 +19,28 @@ import {
   Divider,
   InputAdornment,
   CircularProgress,
+  Alert,
+  Chip,
+  OutlinedInput,
+  Checkbox,
+  ListItemText,
 } from '@mui/material';
 import { useProductCategories } from '../../hooks/useProducts';
-import type { 
-  ProductOption, 
-  CreateProductData, 
-  UpdateProductData, 
+import { useEventTypes } from '../../hooks/useEvents';
+import { ImageUploadField, GalleryUploadField } from '../common';
+import type {
+  ProductOption,
+  CreateProductData,
+  UpdateProductData,
   ProductFormData,
 } from '../../types/products.types';
+import { PackageVenuesSection } from './PackageVenuesSection';
 
 interface ProductFormDialogProps {
   open: boolean;
   onClose: () => void;
   editingProduct?: ProductOption | null;
-  onSubmit: (data: CreateProductData | UpdateProductData) => void;
+  onSubmit: (data: CreateProductData | UpdateProductData, formData?: FormData) => void;
   isLoading: boolean;
 }
 
@@ -43,21 +51,24 @@ const defaultFormData: ProductFormData = {
   pricing_model: 'FIXED',
   base_price: '',
   currency: 'PHP',
-  tax_rate: '12.00',
+  is_tax_inclusive: false,
   type: 'PRODUCT',
   is_active: true,
   is_featured: false,
   allow_multiple: false,
   requires_approval: false,
-  has_excess_hours: false,
-  included_hours: '',
-  excess_hour_price: '',
   minimum_hours: '',
   maximum_hours: '',
   advance_booking_days: '7',
   maximum_booking_days: '',
+  event_days: '',
   sku: '',
   sort_order: '0',
+  // Event types - which booking flows this package is available for
+  event_type_ids: [],
+  // Images
+  featured_image: null,
+  gallery_images: [],
 };
 
 export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
@@ -71,6 +82,7 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const { categories, isLoadingCategories } = useProductCategories({ is_active: true });
+  const { eventTypes, isLoadingEventTypes } = useEventTypes({ is_active: true });
 
   useEffect(() => {
     if (open) {
@@ -82,21 +94,24 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
           pricing_model: editingProduct.pricing_model || 'FIXED',
           base_price: editingProduct.base_price || '',
           currency: editingProduct.currency || 'PHP',
-          tax_rate: editingProduct.tax_rate || '12.00',
+          is_tax_inclusive: editingProduct.is_tax_inclusive ?? false,
           type: editingProduct.type || 'PRODUCT',
           is_active: editingProduct.is_active ?? true,
           is_featured: editingProduct.is_featured ?? false,
           allow_multiple: editingProduct.allow_multiple ?? false,
           requires_approval: editingProduct.requires_approval ?? false,
-          has_excess_hours: editingProduct.has_excess_hours ?? false,
-          included_hours: editingProduct.included_hours?.toString() || '',
-          excess_hour_price: editingProduct.excess_hour_price || '',
           minimum_hours: editingProduct.minimum_hours?.toString() || '',
           maximum_hours: editingProduct.maximum_hours?.toString() || '',
           advance_booking_days: editingProduct.advance_booking_days?.toString() || '7',
           maximum_booking_days: editingProduct.maximum_booking_days?.toString() || '',
+          event_days: editingProduct.event_days?.toString() || '',
           sku: editingProduct.sku || '',
           sort_order: editingProduct.sort_order?.toString() || '0',
+          // Event types - which booking flows this package is available for
+          event_type_ids: editingProduct.event_type_ids || [],
+          // Images
+          featured_image: editingProduct.featured_image || null,
+          gallery_images: editingProduct.gallery_images || [],
         });
       } else {
         setFormData(defaultFormData);
@@ -133,6 +148,28 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
     }));
   };
 
+  const handleFeaturedImageChange = (file: File | null) => {
+    setFormData(prev => ({
+      ...prev,
+      featured_image: file,
+    }));
+  };
+
+  const handleGalleryImagesChange = (files: (File | string)[]) => {
+    setFormData(prev => ({
+      ...prev,
+      gallery_images: files,
+    }));
+  };
+
+  const handleEventTypesChange = (event: { target: { value: unknown } }) => {
+    const value = event.target.value as number[];
+    setFormData(prev => ({
+      ...prev,
+      event_type_ids: value,
+    }));
+  };
+
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
 
@@ -150,15 +187,6 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
 
     if (!formData.base_price || parseFloat(formData.base_price) <= 0) {
       newErrors.base_price = 'Valid price is required';
-    }
-
-    if (formData.has_excess_hours) {
-      if (!formData.included_hours || parseInt(formData.included_hours) <= 0) {
-        newErrors.included_hours = 'Included hours required when excess hours enabled';
-      }
-      if (!formData.excess_hour_price || parseFloat(formData.excess_hour_price) <= 0) {
-        newErrors.excess_hour_price = 'Excess hour price required when excess hours enabled';
-      }
     }
 
     if (formData.minimum_hours && formData.maximum_hours) {
@@ -183,24 +211,66 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
       pricing_model: formData.pricing_model,
       base_price: formData.base_price,
       currency: formData.currency,
-      tax_rate: formData.tax_rate,
+      is_tax_inclusive: formData.is_tax_inclusive,
       type: formData.type,
       is_active: formData.is_active,
       is_featured: formData.is_featured,
       allow_multiple: formData.allow_multiple,
       requires_approval: formData.requires_approval,
-      has_excess_hours: formData.has_excess_hours,
-      included_hours: formData.included_hours ? parseInt(formData.included_hours) : null,
-      excess_hour_price: formData.excess_hour_price || null,
       minimum_hours: formData.minimum_hours ? parseInt(formData.minimum_hours) : null,
       maximum_hours: formData.maximum_hours ? parseInt(formData.maximum_hours) : null,
       advance_booking_days: parseInt(formData.advance_booking_days) || 7,
       maximum_booking_days: formData.maximum_booking_days ? parseInt(formData.maximum_booking_days) : null,
+      event_days: formData.event_days ? parseInt(formData.event_days) : null,
       sku: formData.sku || null,
       sort_order: parseInt(formData.sort_order) || 0,
+      // Event types - which booking flows this package is available for
+      event_type_ids: formData.event_type_ids,
     };
 
-    onSubmit(submitData);
+    // Check if we need to send FormData (for image uploads)
+    const hasNewFeaturedImage = formData.featured_image instanceof File;
+    const hasNewGalleryImages = formData.gallery_images.some(img => img instanceof File);
+
+    if (hasNewFeaturedImage || hasNewGalleryImages) {
+      // Build FormData for image uploads
+      const formDataObj = new FormData();
+
+      // Add all text fields
+      Object.entries(submitData).forEach(([key, value]) => {
+        if (value !== null && value !== undefined) {
+          // Handle arrays specially (JSON stringify)
+          if (Array.isArray(value)) {
+            formDataObj.append(key, JSON.stringify(value));
+          } else {
+            formDataObj.append(key, String(value));
+          }
+        }
+      });
+
+      // Add featured image if it's a new file
+      if (hasNewFeaturedImage && formData.featured_image instanceof File) {
+        formDataObj.append('featured_image', formData.featured_image);
+      }
+
+      // Add gallery images - new files get uploaded, existing URLs are preserved
+      const existingUrls = formData.gallery_images
+        .filter((img): img is string => typeof img === 'string');
+      if (existingUrls.length > 0) {
+        formDataObj.append('gallery_images', JSON.stringify(existingUrls));
+      }
+
+      // Add new gallery image files
+      formData.gallery_images
+        .filter((img): img is File => img instanceof File)
+        .forEach((file) => {
+          formDataObj.append('gallery_image_files', file);
+        });
+
+      onSubmit(submitData, formDataObj);
+    } else {
+      onSubmit(submitData);
+    }
   };
 
   const handleClose = () => {
@@ -227,6 +297,12 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
       
           <DialogContent>
             <Box component="form" noValidate sx={{ mt: 1 }}>
+              {/* Info Alert */}
+              <Alert severity="info" sx={{ mb: 3 }}>
+                Hours and excess pricing are now managed at the venue level.
+                Edit venue settings to configure included hours and excess hour rates.
+              </Alert>
+
               {/* Basic Information */}
               <Typography variant="h6" gutterBottom>
                 Basic Information
@@ -350,69 +426,32 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
                     />
                   </Box>
                   
-                  <Box flex={1}>
-                    <TextField
-                      fullWidth
-                      label="Tax Rate (%)"
-                      value={formData.tax_rate}
-                      onChange={handleInputChange('tax_rate')}
-                      type="number"
-                      InputProps={{
-                        endAdornment: <InputAdornment position="end">%</InputAdornment>,
-                      }}
+                  <Box flex={1} display="flex" alignItems="center">
+                    <FormControlLabel
+                      control={
+                        <Switch
+                          checked={formData.is_tax_inclusive}
+                          onChange={handleSwitchChange('is_tax_inclusive')}
+                        />
+                      }
+                      label="Tax Inclusive"
                     />
                   </Box>
                 </Box>
+                <Typography variant="caption" color="text.secondary">
+                  If enabled, the base price already includes tax and no additional tax will be applied.
+                  Tax rate is configured globally in Currency & Taxes settings.
+                </Typography>
               </Box>
 
               <Divider sx={{ my: 3 }} />
 
-              {/* Time Configuration */}
+              {/* Duration Constraints */}
               <Typography variant="h6" gutterBottom>
-                Time Configuration
+                Duration Constraints
               </Typography>
-              
+
               <Box display="flex" flexDirection="column" gap={2}>
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={formData.has_excess_hours}
-                      onChange={handleSwitchChange('has_excess_hours')}
-                    />
-                  }
-                  label="Enable excess hours pricing"
-                />
-                
-                {formData.has_excess_hours && (
-                  <Box display="flex" flexDirection={{ xs: 'column', sm: 'row' }} gap={2}>
-                    <Box flex={1}>
-                      <TextField
-                        fullWidth
-                        label="Included Hours"
-                        value={formData.included_hours}
-                        onChange={handleInputChange('included_hours')}
-                        error={!!errors.included_hours}
-                        helperText={errors.included_hours}
-                        type="number"
-                      />
-                    </Box>
-                    <Box flex={1}>
-                      <TextField
-                        fullWidth
-                        label="Excess Hour Price"
-                        value={formData.excess_hour_price}
-                        onChange={handleInputChange('excess_hour_price')}
-                        error={!!errors.excess_hour_price}
-                        helperText={errors.excess_hour_price}
-                        type="number"
-                        InputProps={{
-                          startAdornment: <InputAdornment position="start">{formData.currency}</InputAdornment>,
-                        }}
-                      />
-                    </Box>
-                  </Box>
-                )}
-                
                 <Box display="flex" flexDirection={{ xs: 'column', sm: 'row' }} gap={2}>
                   <Box flex={1}>
                     <TextField
@@ -421,6 +460,7 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
                       value={formData.minimum_hours}
                       onChange={handleInputChange('minimum_hours')}
                       type="number"
+                      helperText="Minimum booking duration for this product"
                     />
                   </Box>
                   <Box flex={1}>
@@ -430,12 +470,39 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
                       value={formData.maximum_hours}
                       onChange={handleInputChange('maximum_hours')}
                       error={!!errors.maximum_hours}
-                      helperText={errors.maximum_hours}
+                      helperText={errors.maximum_hours || 'Maximum booking duration for this product'}
                       type="number"
                     />
                   </Box>
                 </Box>
               </Box>
+
+              {/* Event Duration - Only show for PACKAGE type */}
+              {formData.type === 'PACKAGE' && (
+                <>
+                  <Divider sx={{ my: 3 }} />
+
+                  <Typography variant="h6" gutterBottom>
+                    Event Duration
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                    For multi-day packages (camps, retreats). Leave blank for hourly packages.
+                  </Typography>
+
+                  <TextField
+                    fullWidth
+                    label="Event Days"
+                    value={formData.event_days}
+                    onChange={handleInputChange('event_days')}
+                    type="number"
+                    helperText="e.g., 2 for 2D1N, 3 for 3D2N, 5 for 5D4N"
+                    InputProps={{
+                      inputProps: { min: 1 }
+                    }}
+                    sx={{ maxWidth: 300 }}
+                  />
+                </>
+              )}
 
               <Divider sx={{ my: 3 }} />
 
@@ -467,13 +534,106 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
                 </Box>
               </Box>
 
+              {/* Event Types */}
+              <Divider sx={{ my: 3 }} />
+
+              <Typography variant="h6" gutterBottom>
+                Available For Event Types
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                Select which booking flows this {formData.type === 'PACKAGE' ? 'package' : 'product'} should appear in. If none selected, it will not appear in any booking flow.
+              </Typography>
+
+              <FormControl fullWidth>
+                <InputLabel id="event-types-label">Event Types</InputLabel>
+                <Select
+                  labelId="event-types-label"
+                  multiple
+                  value={formData.event_type_ids}
+                  onChange={handleEventTypesChange}
+                  input={<OutlinedInput label="Event Types" />}
+                  disabled={isLoadingEventTypes}
+                  renderValue={(selected) => (
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                      {(selected as number[]).map((id) => {
+                        const eventType = eventTypes.find(et => et.id === id);
+                        return (
+                          <Chip
+                            key={id}
+                            label={eventType?.name || `ID: ${id}`}
+                            size="small"
+                          />
+                        );
+                      })}
+                    </Box>
+                  )}
+                >
+                  {eventTypes.map((eventType) => (
+                    <MenuItem key={eventType.id} value={eventType.id}>
+                      <Checkbox checked={formData.event_type_ids.includes(eventType.id)} />
+                      <ListItemText primary={eventType.name} />
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+
+              <Divider sx={{ my: 3 }} />
+
+              {/* Included Venues (only for existing packages) */}
+              {formData.type === 'PACKAGE' && (
+                <>
+                  {editingProduct?.id ? (
+                    <PackageVenuesSection packageId={editingProduct.id} />
+                  ) : (
+                    <Box>
+                      <Typography variant="h6" gutterBottom>
+                        Included Venues
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Save this package first to assign venues.
+                      </Typography>
+                    </Box>
+                  )}
+                  <Divider sx={{ my: 3 }} />
+                </>
+              )}
+
+              {/* Images */}
+              <Typography variant="h6" gutterBottom>
+                Images
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                Upload images for this product/package. If not set, images from assigned venues will be used.
+              </Typography>
+
+              <Box display="flex" flexDirection="column" gap={3}>
+                <ImageUploadField
+                  label="Featured Image"
+                  value={formData.featured_image}
+                  onChange={handleFeaturedImageChange}
+                  helperText="Main image shown in listings and cards. Recommended: 800x600px"
+                  maxSizeMB={5}
+                  aspectRatio={4/3}
+                  previewHeight={180}
+                />
+
+                <GalleryUploadField
+                  label="Gallery Images"
+                  value={formData.gallery_images}
+                  onChange={handleGalleryImagesChange}
+                  helperText="Additional images for product detail page"
+                  maxImages={10}
+                  maxSizeMB={5}
+                />
+              </Box>
+
               <Divider sx={{ my: 3 }} />
 
               {/* Settings */}
               <Typography variant="h6" gutterBottom>
                 Settings
               </Typography>
-              
+
               <Box display="flex" flexDirection="column" gap={2}>
                 <Box display="flex" flexDirection={{ xs: 'column', sm: 'row' }} gap={2}>
                   <Box flex={1}>

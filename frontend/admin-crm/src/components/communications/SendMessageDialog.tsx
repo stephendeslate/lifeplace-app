@@ -36,13 +36,14 @@ import {
 } from '@mui/icons-material';
 import { useCommunications } from '../../hooks/useCommunications';
 import { sanitizeHTML } from '../../utils/security';
-import { VariableInserter } from './VariableInserter';
+import { TemplateVariableInserter } from '../shared';
 import type { Client } from '../../types/clients.types';
 
 interface SendMessageDialogProps {
   open: boolean;
   onClose: () => void;
   client: Client;
+  eventId?: number;
 }
 
 interface MessageFormData {
@@ -56,7 +57,8 @@ interface MessageFormData {
 export const SendMessageDialog: React.FC<SendMessageDialogProps> = ({
   open,
   onClose,
-  client
+  client,
+  eventId
 }) => {
   const [formData, setFormData] = useState<MessageFormData>({
     templateId: '',
@@ -238,16 +240,15 @@ export const SendMessageDialog: React.FC<SendMessageDialogProps> = ({
       template_id: formData.templateId,
       recipient: client.email,
       client_id: client.id,
+      event_id: eventId,
       custom_subject: formData.subject,  // Make sure this field is included
-      custom_body: formData.body,        // Make sure this field is included
+      custom_body: formData.body,
       context_data: {
         ...formData.variables,
         custom_subject: formData.subject,
         custom_body: formData.body
       }
     };
-
-    console.log('Sending message with data:', sendData); // Debug log
 
     sendMessage(sendData, {
       onSuccess: () => {
@@ -274,7 +275,7 @@ export const SendMessageDialog: React.FC<SendMessageDialogProps> = ({
         <Box display="flex" justifyContent="space-between" alignItems="center">
           <Box>
             <Typography variant="h6" component="div">
-              Send Message to {client.first_name} {client.last_name}
+              Send Email to {client.first_name} {client.last_name}
             </Typography>
             <Typography variant="body2" color="text.secondary">
               {client.email}
@@ -383,10 +384,10 @@ export const SendMessageDialog: React.FC<SendMessageDialogProps> = ({
                 </Typography>
               </AccordionSummary>
               <AccordionDetails>
-                <VariableInserter
+                <TemplateVariableInserter
                   variableSchemas={variableSchemas}
                   onVariableInsert={handleVariableInsert}
-                  channel={formData.channel}
+                  showFormattingTips={formData.channel === 'EMAIL'}
                 />
                 
                 <Box mt={2}>

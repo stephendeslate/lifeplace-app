@@ -3,8 +3,6 @@
 import React, { useState, useEffect } from 'react';
 import {
   Box,
-  Card,
-  CardContent,
   Typography,
   TextField,
   Button,
@@ -160,7 +158,7 @@ export const AcceptInvitation: React.FC = () => {
     } catch (error: unknown) {
       console.error('Error accepting invitation:', error);
       const apiError = error as { response?: { data?: { detail?: string; password?: string[]; non_field_errors?: string[] } } };
-      const message = apiError.response?.data?.detail || 
+      const message = apiError.response?.data?.detail ||
                      apiError.response?.data?.password?.[0] ||
                      apiError.response?.data?.non_field_errors?.[0] ||
                      'Failed to accept invitation';
@@ -186,10 +184,19 @@ export const AcceptInvitation: React.FC = () => {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: 'grey.50',
+          bgcolor: 'grey.50',
         }}
       >
-        <Box sx={{ textAlign: 'center' }}>
+        <Box
+          sx={{
+            textAlign: 'center',
+            p: 4,
+            borderRadius: 2,
+            border: '1px solid',
+            borderColor: 'divider',
+            bgcolor: 'background.paper',
+          }}
+        >
           <CircularProgress size={48} sx={{ mb: 2 }} />
           <Typography variant="body1" color="text.secondary">
             Loading invitation details...
@@ -208,29 +215,41 @@ export const AcceptInvitation: React.FC = () => {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: 'grey.50',
+          bgcolor: 'grey.50',
           px: 2,
         }}
       >
-        <Card sx={{ maxWidth: 500, width: '100%' }}>
-          <CardContent sx={{ p: 4, textAlign: 'center' }}>
-            <Alert severity="error" sx={{ mb: 3 }}>
-              <Typography variant="h6" gutterBottom>
-                Invalid Invitation
-              </Typography>
-              <Typography variant="body2">
-                {error}
-              </Typography>
-            </Alert>
-            <Button
-              variant="contained"
-              onClick={() => navigate('/login')}
-              sx={{ mt: 2 }}
-            >
-              Go to Login
-            </Button>
-          </CardContent>
-        </Card>
+        <Box
+          sx={{
+            maxWidth: 500,
+            width: '100%',
+            p: 4,
+            borderRadius: 2,
+            border: '1px solid',
+            borderColor: 'divider',
+            textAlign: 'center',
+            bgcolor: 'background.paper',
+          }}
+        >
+          <Alert
+            severity="error"
+            sx={{ mb: 3 }}
+          >
+            <Typography variant="h6" gutterBottom>
+              Invalid Invitation
+            </Typography>
+            <Typography variant="body2">
+              {error}
+            </Typography>
+          </Alert>
+          <Button
+            variant="contained"
+            onClick={() => navigate('/login')}
+            sx={{ mt: 2 }}
+          >
+            Go to Login
+          </Button>
+        </Box>
       </Box>
     );
   }
@@ -243,17 +262,26 @@ export const AcceptInvitation: React.FC = () => {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: 'grey.50',
+        bgcolor: 'grey.50',
         px: 2,
       }}
     >
-      <Card sx={{ maxWidth: 500, width: '100%' }}>
-        <CardContent sx={{ p: 4 }}>
+      <Box
+        sx={{
+          maxWidth: 500,
+          width: '100%',
+          p: 4,
+          borderRadius: 2,
+          border: '1px solid',
+          borderColor: 'divider',
+          bgcolor: 'background.paper',
+        }}
+      >
           {/* Header */}
           <Box sx={{ textAlign: 'center', mb: 4 }}>
-            <AdminPanelSettings 
-              color="primary" 
-              sx={{ fontSize: 48, mb: 2 }} 
+            <AdminPanelSettings
+              color="primary"
+              sx={{ fontSize: 48, mb: 2 }}
             />
             <Typography variant="h4" component="h1" fontWeight="bold" gutterBottom>
               Welcome to LifePlace Admin
@@ -389,8 +417,7 @@ export const AcceptInvitation: React.FC = () => {
               By creating an account, you agree to our terms of service and privacy policy.
             </Typography>
           </Box>
-        </CardContent>
-      </Card>
+      </Box>
     </Box>
   );
 };

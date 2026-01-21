@@ -29,8 +29,10 @@ import {
   Task as TaskIcon,
   RequestQuote as QuoteIcon,
   Description as ContractIcon,
+  Quiz as QuestionnaireIcon,
   Notifications as NotificationIcon,
   Handyman as ManualIcon,
+  PlayArrow as TriggerIcon,
 } from '@mui/icons-material';
 import type { WorkflowStage, WorkflowStageTableProps } from '../../types/workflows.types';
 
@@ -39,6 +41,7 @@ export const WorkflowStagesTable: React.FC<WorkflowStageTableProps> = ({
   isLoading,
   onEdit,
   onDelete,
+  onTrigger,
   isDeleting,
 }) => {
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
@@ -69,6 +72,12 @@ export const WorkflowStagesTable: React.FC<WorkflowStageTableProps> = ({
     handleMenuClose();
   };
 
+  const handleTrigger = () => {
+    if (selectedStage && onTrigger) {
+      onTrigger(selectedStage as unknown as WorkflowStage);
+    }
+    handleMenuClose();
+  };
 
   const getAutomationIcon = (automationType: string) => {
     const icons = {
@@ -76,6 +85,7 @@ export const WorkflowStagesTable: React.FC<WorkflowStageTableProps> = ({
       TASK: <TaskIcon fontSize="small" />,
       QUOTE: <QuoteIcon fontSize="small" />,
       CONTRACT: <ContractIcon fontSize="small" />,
+      QUESTIONNAIRE: <QuestionnaireIcon fontSize="small" />,
       REMINDER: <ScheduleIcon fontSize="small" />,
       NOTIFICATION: <NotificationIcon fontSize="small" />,
     };
@@ -97,12 +107,14 @@ export const WorkflowStagesTable: React.FC<WorkflowStageTableProps> = ({
     }
 
     let label = automationType || 'Automated';
-    
-    // Add template info for EMAIL and CONTRACT automation
+
+    // Add template info for EMAIL, CONTRACT, and QUESTIONNAIRE automation
     if (automationType === 'EMAIL' && stage?.email_template_name) {
       label = `Email: ${stage.email_template_name}`;
     } else if (automationType === 'CONTRACT' && stage?.contract_template_name) {
       label = `Contract: ${stage.contract_template_name}`;
+    } else if (automationType === 'QUESTIONNAIRE' && stage?.questionnaire_template_name) {
+      label = `Questionnaire: ${stage.questionnaire_template_name}`;
     }
 
     const colors = {
@@ -110,6 +122,7 @@ export const WorkflowStagesTable: React.FC<WorkflowStageTableProps> = ({
       TASK: 'secondary',
       QUOTE: 'warning',
       CONTRACT: 'success',
+      QUESTIONNAIRE: 'info',
       REMINDER: 'info',
       NOTIFICATION: 'default',
     } as const;
@@ -240,7 +253,16 @@ export const WorkflowStagesTable: React.FC<WorkflowStageTableProps> = ({
           </ListItemIcon>
           <ListItemText>Edit Stage</ListItemText>
         </MenuItem>
-        
+
+        {onTrigger && (selectedStage as unknown as WorkflowStage)?.is_automated && (
+          <MenuItem onClick={handleTrigger}>
+            <ListItemIcon>
+              <TriggerIcon fontSize="small" color="primary" />
+            </ListItemIcon>
+            <ListItemText>Trigger Now</ListItemText>
+          </MenuItem>
+        )}
+
         <MenuItem onClick={handleDelete} sx={{ color: 'error.main' }}>
           <ListItemIcon>
             <DeleteIcon fontSize="small" color="error" />

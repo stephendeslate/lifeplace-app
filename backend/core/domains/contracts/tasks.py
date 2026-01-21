@@ -1,0 +1,487 @@
+# backend/core/domains/contracts/tasks.py
+"""
+Celery tasks for the Contracts domain.
+
+Handles contract expiry processing and expiry reminder notifications.
+"""
+
+import logging
+from datetime import datetime, timedelta
+
+from celery import shared_task
+from django.utils import timezone
+
+logger = logging.getLogger(__name__)
+
+
+@shared_task(
+    bind=True,
+    max_retries=1,
+)
+def expire_contracts(self):
+    """
+    Hourly task to mark expired contracts as EXPIRED.
+
+    Finds all contracts with passed valid_until dates that are still
+    in SENT or PARTIALLY_SIGNED status, and updates them to EXPIRED.
+
+    Also triggers:
+    - CONTRACT_EXPIRED workflow event for each expired contract
+    - Expiry notification to client via notify_contract_expired task
+
+    Runs via Celery beat schedule.
+    """
+    from .models import EventContract
+    from core.domains.workflows.engine import WorkflowEngine
+
+    logger.info("Starting contract expiry sweep")
+
+    today = timezone.now().date()
+    expired_count = 0
+    error_count = 0
+
+    # Find contracts past expiry date that are still pending signatures
+    expired_contracts = EventContract.objects.filter(
+        valid_until__lt=today,
+        status__in=['SENT', 'PARTIALLY_SIGNED']
+    ).select_related('event')
+
+    total_count = expired_contracts.count()
+    logger.info(f"Found {total_count} contracts with expired valid_until dates")
+
+    for contract in expired_contracts:
+        try:
+            logger.info(f"Marking contract {contract.id} as EXPIRED (valid_until: {contract.valid_until})")
+            contract.status = 'EXPIRED'
+            contract.save(update_fields=['status', 'updated_at'])
+
+            # Trigger CONTRACT_EXPIRED workflow event
+            try:
+                WorkflowEngine.progress_workflow(
+                    event=contract.event,
+                    trigger_type='CONTRACT_EXPIRED',
+                    data={
+                        'contract_id': contract.id,
+                        'valid_until': str(contract.valid_until) if contract.valid_until else None,
+                    }
+                )
+            except Exception as workflow_error:
+                logger.warning(f"Failed to trigger CONTRACT_EXPIRED workflow for contract {contract.id}: {workflow_error}")
+
+            # Schedule expiry notification to client
+            try:
+                notify_contract_expired.delay(contract.id)
+            except Exception as notification_error:
+                logger.warning(f"Failed to schedule expiry notification for contract {contract.id}: {notification_error}")
+
+            expired_count += 1
+        except Exception as e:
+            logger.error(f"Error expiring contract {contract.id}: {e}")
+            error_count += 1
+
+    logger.info(
+        f"Contract expiry sweep completed: "
+        f"{expired_count} expired, {error_count} errors, {total_count} total"
+    )
+
+    return {
+        'total': total_count,
+        'expired': expired_count,
+        'errors': error_count,
+    }
+
+
+@shared_task(
+    bind=True,
+    max_retries=3,
+    default_retry_delay=60,
+)
+def send_contract_expiry_reminder(self, contract_id: int, days_before_expiry: int = 1):
+    """
+    Send a reminder notification to the client about approaching contract expiry.
+
+    Sends both:
+    - Professional email via CommunicationService using 'Contract Expiry Reminder' template
+    - In-app notification via NotificationService
+
+    Args:
+        contract_id: ID of the contract
+        days_before_expiry: Number of days before expiry this reminder is for
+    """
+    from .models import EventContract
+    from core.domains.notifications.services import NotificationService
+    from core.domains.communications.services import CommunicationService
+    from core.domains.communications.context_service import (
+        CommunicationContextService, ContextType
+    )
+
+    try:
+        contract = EventContract.objects.select_related('event', 'event__client').get(id=contract_id)
+
+        # Skip if already expired, signed, or voided
+        if contract.status in ['EXPIRED', 'SIGNED', 'VOID', 'AMENDED']:
+            logger.info(f"Skipping reminder for contract {contract_id}: status is {contract.status}")
+            return {'status': 'skipped', 'reason': f'status_{contract.status.lower()}'}
+
+        if not contract.valid_until:
+            logger.warning(f"Contract {contract_id} has no valid_until date set")
+            return {'status': 'skipped', 'reason': 'no_expiry_date'}
+
+        # Verify contract is actually expiring soon
+        today = timezone.now().date()
+        days_remaining = (contract.valid_until - today).days
+
+        if days_remaining < 0:
+            logger.info(f"Contract {contract_id} already expired")
+            return {'status': 'skipped', 'reason': 'already_expired'}
+
+        # Get client from the event
+        client = contract.event.client
+        if not client:
+            logger.warning(f"Contract {contract_id} event has no client")
+            return {'status': 'skipped', 'reason': 'no_client'}
+
+        # Determine urgency for notification
+        priority = 'CRITICAL' if days_before_expiry <= 1 else 'HIGH'
+
+        # Format the expiry date nicely
+        expiry_formatted = contract.valid_until.strftime("%B %d, %Y")
+        event_date_formatted = contract.event.start_date.strftime("%B %d, %Y") if contract.event.start_date else "your event"
+
+        # Send professional email via CommunicationService
+        if client.email:
+            try:
+                comm_service = CommunicationService()
+                template_data = CommunicationContextService.generate_context(
+                    context_type=ContextType.CONTRACT,
+                    client=client,
+                    event=contract.event,
+                    contract=contract,
+                )
+                comm_service.send_communication(
+                    template_name='Contract Expiry Reminder',
+                    recipient=client.email,
+                    context_data=template_data,
+                    client=client,
+                    event=contract.event,
+                    use_async=True,
+                )
+                logger.info(f"Sent contract expiry reminder email for contract {contract_id}")
+            except Exception as email_error:
+                logger.error(f"Failed to send contract expiry email for {contract_id}: {email_error}")
+                # Continue to send in-app notification even if email fails
+
+        # Send in-app notification via NotificationService
+        NotificationService.create_notification(
+            recipient=client,
+            notification_type='CONTRACT_EXPIRING_SOON',
+            title=f'Contract Expires in {days_before_expiry} Day(s)',
+            message=(
+                f'Your contract for {event_date_formatted} expires on {expiry_formatted}. '
+                f'Please sign the contract before it expires to secure your booking.'
+            ),
+            related_event=contract.event,
+            priority=priority,
+            channels=['IN_APP'],  # Email handled by CommunicationService above
+            data={
+                'contract_id': contract.id,
+                'days_remaining': days_remaining,
+                'valid_until': str(contract.valid_until),
+            }
+        )
+
+        # Send admin notification about expiring contract
+        try:
+            from core.domains.users.models import User
+            admin_emails = list(User.objects.filter(
+                is_staff=True, is_active=True
+            ).exclude(email='').values_list('email', flat=True))
+
+            if admin_emails:
+                for admin_email in admin_emails:
+                    try:
+                        comm_service.send_communication(
+                            template_name='Contract Expiring Soon Admin Notification',
+                            recipient=admin_email,
+                            context_data=template_data,
+                            use_async=True,
+                        )
+                    except Exception as admin_email_error:
+                        logger.warning(f"Failed to send admin notification to {admin_email}: {admin_email_error}")
+
+                logger.info(f"Sent Contract Expiring Soon Admin Notification for contract {contract_id}")
+        except Exception as admin_notify_error:
+            logger.warning(f"Failed to send admin notifications for expiring contract {contract_id}: {admin_notify_error}")
+
+        logger.info(f"Sent expiry reminder for contract {contract_id} ({days_before_expiry} days remaining)")
+        return {'status': 'sent', 'contract_id': contract_id, 'days_before': days_before_expiry}
+
+    except EventContract.DoesNotExist:
+        logger.warning(f"Contract {contract_id} not found for reminder")
+        return {'status': 'error', 'reason': 'contract_not_found'}
+    except Exception as e:
+        logger.error(f"Error sending reminder for contract {contract_id}: {e}")
+        raise  # Let Celery retry
+
+
+@shared_task(
+    bind=True,
+    max_retries=1,
+)
+def schedule_contract_expiry_reminders(self):
+    """
+    Schedule expiry reminders for contracts with upcoming expiry dates.
+
+    Finds contracts expiring in the next few days and schedules
+    reminder notifications. Called daily via Celery beat.
+    """
+    from .models import EventContract
+
+    logger.info("Scheduling contract expiry reminders")
+
+    today = timezone.now().date()
+    scheduled_count = 0
+
+    # Define reminder intervals (days before expiry)
+    reminder_days = [7, 3, 1]  # 7 days, 3 days, and 1 day before expiry
+
+    for days in reminder_days:
+        # Find contracts expiring in exactly X days
+        target_date = today + timedelta(days=days)
+
+        contracts = EventContract.objects.filter(
+            valid_until=target_date,
+            status__in=['SENT', 'PARTIALLY_SIGNED']
+        ).select_related('event')
+
+        for contract in contracts:
+            try:
+                # Schedule reminder
+                send_contract_expiry_reminder.delay(contract.id, days)
+                scheduled_count += 1
+                logger.info(f"Scheduled {days}-day expiry reminder for contract {contract.id}")
+            except Exception as e:
+                logger.error(f"Error scheduling reminder for contract {contract.id}: {e}")
+
+    logger.info(f"Scheduled {scheduled_count} contract expiry reminders")
+    return {'scheduled': scheduled_count}
+
+
+@shared_task(
+    bind=True,
+    max_retries=3,
+    default_retry_delay=60,
+)
+def send_contract_sent_notification(self, contract_id: int):
+    """
+    Send notification when a contract is sent to the client.
+
+    Sends both:
+    - Professional email via CommunicationService using 'Contract Sent to Client' template
+    - In-app notification via NotificationService
+
+    Args:
+        contract_id: ID of the sent contract
+    """
+    from .models import EventContract
+    from core.domains.notifications.services import NotificationService
+    from core.domains.communications.services import CommunicationService
+    from core.domains.communications.context_service import (
+        CommunicationContextService, ContextType
+    )
+
+    try:
+        contract = EventContract.objects.select_related('event', 'event__client').get(id=contract_id)
+
+        if contract.status != 'SENT':
+            logger.info(f"Contract {contract_id} is not in SENT status (status: {contract.status})")
+            return {'status': 'skipped', 'reason': f'status_{contract.status.lower()}'}
+
+        client = contract.event.client
+        if not client:
+            logger.warning(f"Contract {contract_id} event has no client")
+            return {'status': 'skipped', 'reason': 'no_client'}
+
+        # Format dates
+        event_date_formatted = (
+            contract.event.start_date.strftime("%B %d, %Y")
+            if contract.event.start_date else "your event"
+        )
+        valid_until_formatted = (
+            contract.valid_until.strftime("%B %d, %Y")
+            if contract.valid_until else "the expiration date"
+        )
+
+        # Send professional email via CommunicationService
+        if client.email:
+            try:
+                comm_service = CommunicationService()
+                template_data = CommunicationContextService.generate_context(
+                    context_type=ContextType.CONTRACT,
+                    client=client,
+                    event=contract.event,
+                    contract=contract,
+                )
+                comm_service.send_communication(
+                    template_name='Contract Sent to Client',
+                    recipient=client.email,
+                    context_data=template_data,
+                    client=client,
+                    event=contract.event,
+                    use_async=True,
+                )
+                logger.info(f"Sent contract sent email for contract {contract_id}")
+            except Exception as email_error:
+                logger.error(f"Failed to send contract sent email for {contract_id}: {email_error}")
+                # Continue to send in-app notification even if email fails
+
+        # Send in-app notification via NotificationService
+        NotificationService.create_notification(
+            recipient=client,
+            notification_type='CONTRACT_SENT',
+            title='Your Contract is Ready',
+            message=(
+                f'A new contract for {event_date_formatted} is ready for your review. '
+                f'Please review and sign the contract before {valid_until_formatted}.'
+            ),
+            related_event=contract.event,
+            priority='HIGH',
+            channels=['IN_APP'],  # Email handled by CommunicationService above
+            data={
+                'contract_id': contract.id,
+                'event_id': contract.event.id,
+                'valid_until': str(contract.valid_until) if contract.valid_until else None,
+            }
+        )
+
+        logger.info(f"Sent contract sent notification for contract {contract_id}")
+        return {'status': 'sent', 'contract_id': contract_id}
+
+    except EventContract.DoesNotExist:
+        logger.warning(f"Contract {contract_id} not found for sent notification")
+        return {'status': 'error', 'reason': 'contract_not_found'}
+    except Exception as e:
+        logger.error(f"Error sending contract sent notification for contract {contract_id}: {e}")
+        raise  # Let Celery retry
+
+
+@shared_task(
+    bind=True,
+    max_retries=3,
+    default_retry_delay=60,
+)
+def notify_contract_expired(self, contract_id: int):
+    """
+    Send notification when a contract has expired.
+
+    Sends both:
+    - Professional email via CommunicationService using 'Contract Expired' template
+    - In-app notification via NotificationService
+
+    Args:
+        contract_id: ID of the expired contract
+    """
+    from .models import EventContract
+    from core.domains.notifications.services import NotificationService
+    from core.domains.communications.services import CommunicationService
+    from core.domains.communications.context_service import (
+        CommunicationContextService, ContextType
+    )
+
+    try:
+        contract = EventContract.objects.select_related('event', 'event__client').get(id=contract_id)
+
+        if contract.status != 'EXPIRED':
+            logger.info(f"Contract {contract_id} is not expired (status: {contract.status})")
+            return {'status': 'skipped', 'reason': 'not_expired'}
+
+        client = contract.event.client
+        if not client:
+            logger.warning(f"Contract {contract_id} event has no client")
+            return {'status': 'skipped', 'reason': 'no_client'}
+
+        # Format dates
+        expiry_formatted = contract.valid_until.strftime("%B %d, %Y") if contract.valid_until else "N/A"
+        event_date_formatted = contract.event.start_date.strftime("%B %d, %Y") if contract.event.start_date else "your event"
+
+        # Send professional email via CommunicationService
+        if client.email:
+            try:
+                comm_service = CommunicationService()
+                template_data = CommunicationContextService.generate_context(
+                    context_type=ContextType.CONTRACT,
+                    client=client,
+                    event=contract.event,
+                    contract=contract,
+                )
+                comm_service.send_communication(
+                    template_name='Contract Expired',
+                    recipient=client.email,
+                    context_data=template_data,
+                    client=client,
+                    event=contract.event,
+                    use_async=True,
+                )
+                logger.info(f"Sent contract expired email for contract {contract_id}")
+            except Exception as email_error:
+                logger.error(f"Failed to send contract expired email for {contract_id}: {email_error}")
+                # Continue to send in-app notification even if email fails
+
+        # Send in-app notification via NotificationService
+        NotificationService.create_notification(
+            recipient=client,
+            notification_type='CONTRACT_EXPIRED',
+            title='Contract Has Expired',
+            message=(
+                f'The contract for {event_date_formatted} expired on {expiry_formatted}. '
+                f'Please contact us if you would like to request a new contract.'
+            ),
+            related_event=contract.event,
+            priority='HIGH',
+            channels=['IN_APP'],  # Email handled by CommunicationService above
+            data={
+                'contract_id': contract.id,
+                'valid_until': str(contract.valid_until) if contract.valid_until else None,
+            }
+        )
+
+        # Send admin notification about expired contract
+        try:
+            from core.domains.users.models import User
+            admin_emails = list(User.objects.filter(
+                is_staff=True, is_active=True
+            ).exclude(email='').values_list('email', flat=True))
+
+            if admin_emails:
+                comm_service = CommunicationService()
+                template_data = CommunicationContextService.generate_context(
+                    context_type=ContextType.CONTRACT,
+                    client=client,
+                    event=contract.event,
+                    contract=contract,
+                )
+
+                for admin_email in admin_emails:
+                    try:
+                        comm_service.send_communication(
+                            template_name='Contract Expired Admin Notification',
+                            recipient=admin_email,
+                            context_data=template_data,
+                            use_async=True,
+                        )
+                    except Exception as admin_email_error:
+                        logger.warning(f"Failed to send admin notification to {admin_email}: {admin_email_error}")
+
+                logger.info(f"Sent Contract Expired Admin Notification for contract {contract_id}")
+        except Exception as admin_notify_error:
+            logger.warning(f"Failed to send admin notifications for expired contract {contract_id}: {admin_notify_error}")
+
+        logger.info(f"Sent expiry notification for contract {contract_id}")
+        return {'status': 'sent', 'contract_id': contract_id}
+
+    except EventContract.DoesNotExist:
+        logger.warning(f"Contract {contract_id} not found for expiry notification")
+        return {'status': 'error', 'reason': 'contract_not_found'}
+    except Exception as e:
+        logger.error(f"Error sending expiry notification for contract {contract_id}: {e}")
+        raise

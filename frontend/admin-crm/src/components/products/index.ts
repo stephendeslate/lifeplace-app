@@ -6,3 +6,4 @@ export { DiscountsTable } from './DiscountsTable';
 export { ProductFormDialog } from './ProductFormDialog';
 export { CategoryFormDialog } from './CategoryFormDialog';
 export { DiscountFormDialog } from './DiscountFormDialog';
+export { PackageVenuesSection } from './PackageVenuesSection';

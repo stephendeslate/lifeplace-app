@@ -3,19 +3,38 @@
 from rest_framework import serializers
 from django.template import Template, TemplateSyntaxError
 
-from .models import CommunicationTemplate, CommunicationRecord
+from .models import CommunicationTemplate, CommunicationRecord, EmailLayout, EmailLayoutHistory
+from .template_sandbox import validate_template_for_save
+from .layout_service import LayoutCompositionService
 
 
 class CommunicationTemplateSerializer(serializers.ModelSerializer):
     """Serializer for communication templates"""
+
+    # Include context_type label for display
+    context_type_display = serializers.CharField(
+        source='get_context_type_display', read_only=True
+    )
+
+    # Layout relationship
+    layout = serializers.PrimaryKeyRelatedField(
+        queryset=EmailLayout.objects.filter(is_active=True),
+        required=False,
+        allow_null=True,
+        help_text="Email layout to wrap content"
+    )
+    layout_name = serializers.CharField(source='layout.name', read_only=True)
+
     class Meta:
         model = CommunicationTemplate
         fields = [
-            'id', 'name', 'channel', 'category', 'subject_template', 
-            'body_template', 'is_system', 'variables_schema', 
+            'id', 'name', 'channel', 'category', 'context_type', 'context_type_display',
+            'include_client_context', 'include_event_context',
+            'subject_template', 'body_template', 'is_system',
+            'layout', 'layout_name',
             'created_at', 'updated_at'
         ]
-        read_only_fields = ['id', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'created_at', 'updated_at', 'context_type_display', 'layout_name']
 
     def validate_name(self, value):
         """Check that the template name is unique (case insensitive)"""
@@ -25,25 +44,50 @@ class CommunicationTemplateSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("A template with this name already exists.")
         return value
 
+    def validate_subject_template(self, value):
+        """Validate subject template for security and syntax"""
+        if value:
+            is_valid, errors = validate_template_for_save(value)
+            if not is_valid:
+                raise serializers.ValidationError(errors)
+        return value
+
+    def validate_body_template(self, value):
+        """Validate body template for security and syntax"""
+        if value:
+            is_valid, errors = validate_template_for_save(value)
+            if not is_valid:
+                raise serializers.ValidationError(errors)
+        return value
+
+    def validate_context_type(self, value):
+        """Validate context_type is valid"""
+        from .context_service import ContextType
+        valid_types = [choice[0] for choice in ContextType.CHOICES]
+        if value not in valid_types:
+            raise serializers.ValidationError(
+                f"Invalid context_type. Must be one of: {', '.join(valid_types)}"
+            )
+        return value
+
     def validate(self, data):
-        """Validate template syntax and channel-specific requirements"""
-        # Validate Django template syntax
-        try:
-            if 'subject_template' in data and data['subject_template']:
-                Template(data['subject_template'])
-            if 'body_template' in data:
-                Template(data['body_template'])
-        except TemplateSyntaxError as e:
-            raise serializers.ValidationError(f"Template syntax error: {str(e)}")
-        
+        """Validate channel-specific and context-specific requirements"""
         # Email channel requires subject
         if data.get('channel') == 'EMAIL' and not data.get('subject_template'):
             raise serializers.ValidationError("Email templates must have a subject.")
-        
+
         # SMS channel doesn't need subject
         if data.get('channel') == 'SMS' and data.get('subject_template'):
             data['subject_template'] = None
-        
+
+        # include_client_context and include_event_context only apply to MANUAL context type
+        from .context_service import ContextType
+        context_type = data.get('context_type', ContextType.MANUAL)
+        if context_type != ContextType.MANUAL:
+            # Reset these flags for non-MANUAL templates
+            data['include_client_context'] = False
+            data['include_event_context'] = False
+
         return data
 
 
@@ -58,7 +102,7 @@ class CommunicationRecordSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'template_name', 'channel', 'category', 'recipient',
             'subject', 'body', 'client', 'client_email', 'client_name',
-            'sent_by', 'sent_by_name', 'external_message_id',
+            'sent_by', 'sent_by_name', 'event', 'external_message_id',
             'delivery_status', 'sent_at', 'delivered_at', 'opened_at',
             'is_opened', 'context_data', 'created_at'
         ]
@@ -73,6 +117,7 @@ class SendCommunicationSerializer(serializers.Serializer):
     template_id = serializers.IntegerField()
     recipient = serializers.CharField()  # Email or phone
     client_id = serializers.IntegerField(required=False, allow_null=True)
+    event_id = serializers.IntegerField(required=False, allow_null=True)
     context_data = serializers.JSONField(required=False, default=dict)
     use_async = serializers.BooleanField(required=False, default=False)
     
@@ -125,20 +170,34 @@ class SendCommunicationSerializer(serializers.Serializer):
 
 
 class PreviewCommunicationSerializer(serializers.Serializer):
-    """Serializer for previewing communications - Enhanced for manual messages"""
+    """Serializer for previewing communications - Enhanced for manual messages and live editing"""
     template_id = serializers.IntegerField()
     context_data = serializers.JSONField(required=False, default=dict)
-    
+
     # Fields for manual message preview
     custom_subject = serializers.CharField(required=False, allow_blank=True)
     custom_body = serializers.CharField(required=False, allow_blank=True)
-    
+
+    # Fields for live preview during editing (override saved template content)
+    body_template = serializers.CharField(required=False, allow_blank=True)
+    subject_template = serializers.CharField(required=False, allow_blank=True)
+    layout_id = serializers.IntegerField(required=False, allow_null=True)
+
+    def validate_layout_id(self, value):
+        """Validate layout exists and is active if provided"""
+        if value is not None:
+            try:
+                EmailLayout.objects.get(id=value, is_active=True)
+            except EmailLayout.DoesNotExist:
+                raise serializers.ValidationError("Layout does not exist or is inactive.")
+        return value
+
     def validate(self, data):
         """Enhanced validation for manual message previews"""
         # If custom content is provided, add it to context_data
         custom_subject = data.get('custom_subject')
         custom_body = data.get('custom_body')
-        
+
         if custom_subject or custom_body:
             context_data = data.get('context_data', {})
             if custom_subject:
@@ -150,7 +209,7 @@ class PreviewCommunicationSerializer(serializers.Serializer):
                     'content': custom_body,
                 })
             data['context_data'] = context_data
-        
+
         return data
 
 
@@ -183,3 +242,85 @@ class BulkSendSerializer(serializers.Serializer):
             return value
         except CommunicationTemplate.DoesNotExist:
             raise serializers.ValidationError("Template does not exist.")
+
+
+class EmailLayoutSerializer(serializers.ModelSerializer):
+    """Serializer for email layouts"""
+
+    template_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = EmailLayout
+        fields = [
+            'id', 'name', 'description',
+            'header_template', 'footer_template', 'wrapper_template', 'base_styles',
+            'primary_color', 'secondary_color', 'logo_url',
+            'is_default', 'is_active',
+            'template_count',
+            'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at', 'template_count']
+
+    def get_template_count(self, obj):
+        """Get count of templates using this layout"""
+        return obj.templates.count()
+
+    def validate_wrapper_template(self, value):
+        """Validate wrapper template contains content placeholder"""
+        if value and '{{ content }}' not in value and '{{content}}' not in value:
+            raise serializers.ValidationError(
+                'Must contain {{ content }} placeholder for template content injection.'
+            )
+        return value
+
+    def validate(self, data):
+        """Validate layout templates"""
+        # Build a temporary layout object for validation
+        layout = EmailLayout(
+            header_template=data.get('header_template', ''),
+            footer_template=data.get('footer_template', ''),
+            wrapper_template=data.get('wrapper_template', '<div>{{ content }}</div>'),
+            base_styles=data.get('base_styles', ''),
+            primary_color=data.get('primary_color', '#667eea'),
+            secondary_color=data.get('secondary_color', '#764ba2'),
+        )
+
+        is_valid, errors = LayoutCompositionService.validate_layout_templates(layout)
+        if not is_valid:
+            raise serializers.ValidationError({'templates': errors})
+
+        return data
+
+
+class EmailLayoutHistorySerializer(serializers.ModelSerializer):
+    """Serializer for layout history entries"""
+
+    changed_by_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = EmailLayoutHistory
+        fields = [
+            'id', 'version', 'name', 'description',
+            'header_template', 'footer_template', 'wrapper_template', 'base_styles',
+            'primary_color', 'secondary_color', 'logo_url',
+            'reason', 'notes', 'changed_by', 'changed_by_name',
+            'created_at'
+        ]
+        read_only_fields = fields
+
+    def get_changed_by_name(self, obj):
+        if obj.changed_by:
+            return f"{obj.changed_by.first_name} {obj.changed_by.last_name}".strip() or obj.changed_by.email
+        return None
+
+
+class LayoutPreviewSerializer(serializers.Serializer):
+    """Serializer for layout preview requests"""
+
+    sample_content = serializers.CharField(
+        required=False,
+        default='<p style="color: #333;">This is sample content to preview your layout.</p>'
+    )
+    header_title = serializers.CharField(required=False, allow_blank=True)
+    header_subtitle = serializers.CharField(required=False, allow_blank=True)
+    context_data = serializers.JSONField(required=False, default=dict)

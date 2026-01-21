@@ -91,15 +91,7 @@ export const BookingSummaryCard: React.FC<BookingSummaryCardProps> = ({
                 <Typography variant="body2" sx={{ fontWeight: 500, minWidth: 100 }}>
                   Time:
                 </Typography>
-                <Typography variant="body2">{event.time}</Typography>
-              </Box>
-            )}
-            {event.duration && (
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Typography variant="body2" sx={{ fontWeight: 500, minWidth: 100 }}>
-                  Duration:
-                </Typography>
-                <Typography variant="body2">{event.duration} hours</Typography>
+                <Typography variant="body2">{event.time} (Informational)</Typography>
               </Box>
             )}
             {event.venue && (
@@ -132,41 +124,62 @@ export const BookingSummaryCard: React.FC<BookingSummaryCardProps> = ({
                 </TableRow>
               </TableHead>
               <TableBody>
-                {packages.map((pkg) => (
-                  <TableRow key={pkg.product_id}>
-                    <TableCell>
-                      <Box>
+                {packages.map((pkg) => {
+                  // Check for new venue_details format (preferred) or legacy excess_hours
+                  const venueDetails = pkg.venue_details;
+                  const hasVenueExcess = venueDetails && venueDetails.length > 0 && venueDetails.some(v => v.additional_hours > 0);
+                  const hasLegacyExcess = !hasVenueExcess && pkg.excess_hours && pkg.excess_hours > 0;
+
+                  return (
+                    <TableRow key={pkg.product_id}>
+                      <TableCell>
+                        <Box>
+                          <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                            {pkg.name}
+                          </Typography>
+                          {hasVenueExcess && (
+                            <Box sx={{ mt: 0.5 }}>
+                              <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                                Base: {formatAmount(pkg.base_price)}
+                              </Typography>
+                              {venueDetails?.map(venue => (
+                                venue.additional_hours > 0 && (
+                                  <Typography key={venue.venue_id} variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                                    {venue.venue_name}: +{venue.additional_hours}h @ {formatAmount(venue.excess_hour_price)}/h
+                                  </Typography>
+                                )
+                              ))}
+                            </Box>
+                          )}
+                          {hasLegacyExcess && (
+                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+                              Base: {formatAmount(pkg.base_price)}
+                              {' + '}{pkg.excess_hours}h excess @ {formatAmount(pkg.excess_hour_price || '0')}/h
+                            </Typography>
+                          )}
+                        </Box>
+                      </TableCell>
+                      <TableCell align="center">{pkg.quantity}</TableCell>
+                      <TableCell align="right">
+                        <Box>
+                          <Typography variant="body2">
+                            {formatAmount(pkg.unit_price)}
+                          </Typography>
+                          {pkg.excess_cost && parseFloat(pkg.excess_cost) > 0 && (
+                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                              (+{formatAmount((parseFloat(pkg.excess_cost) / pkg.quantity).toString())} excess)
+                            </Typography>
+                          )}
+                        </Box>
+                      </TableCell>
+                      <TableCell align="right">
                         <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                          {pkg.name}
+                          {formatAmount(pkg.line_total)}
                         </Typography>
-                        {pkg.excess_hours && pkg.excess_hours > 0 && (
-                          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
-                            Base: {formatAmount(pkg.base_price)}
-                            {' + '}{pkg.excess_hours}h excess @ {formatAmount(pkg.excess_hour_price || '0')}/h
-                          </Typography>
-                        )}
-                      </Box>
-                    </TableCell>
-                    <TableCell align="center">{pkg.quantity}</TableCell>
-                    <TableCell align="right">
-                      <Box>
-                        <Typography variant="body2">
-                          {formatAmount(pkg.unit_price)}
-                        </Typography>
-                        {pkg.excess_cost && parseFloat(pkg.excess_cost) > 0 && (
-                          <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
-                            (+{formatAmount((parseFloat(pkg.excess_cost) / pkg.quantity).toString())} excess)
-                          </Typography>
-                        )}
-                      </Box>
-                    </TableCell>
-                    <TableCell align="right">
-                      <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                        {formatAmount(pkg.line_total)}
-                      </Typography>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           </TableContainer>

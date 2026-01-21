@@ -3,7 +3,7 @@
 
 import React from 'react';
 import { LocalOffer as DiscountIcon } from '@mui/icons-material';
-import { SettingsPage, type SettingsPageConfig, type SettingsTableColumn } from '../../../components/common/settings';
+import { PermissionAwareSettingsPage, type SettingsPageConfig, type SettingsTableColumn } from '../../../components/common/settings';
 import { useDiscounts } from '../../../hooks/useProducts';
 import type { Discount, CreateDiscountData, UpdateDiscountData } from '../../../types/products.types';
 import type { ModernFormSection } from '../../../components/common/ModernForm';
@@ -348,9 +348,22 @@ export const Discounts = () => {
     });
   };
 
+  // Fetch fresh discount data before editing to ensure we have the latest values
+  const handleFetchItem = async (id: string | number): Promise<Discount> => {
+    const { productsApi } = await import('../../../apis/products.api');
+    const detail = await productsApi.getDiscount(Number(id));
+    // Convert DiscountDetail back to Discount format (extract IDs from objects)
+    return {
+      ...detail,
+      applicable_products: detail.applicable_products.map(p => p.id),
+      applicable_categories: detail.applicable_categories.map(c => c.id),
+    };
+  };
+
   return (
-    <SettingsPage
+    <PermissionAwareSettingsPage
       config={config}
+      requiredPermissions={['can_manage_financial_settings']}
       data={discounts}
       defaultValues={defaultDiscount}
       isLoading={isLoadingDiscounts}
@@ -359,6 +372,7 @@ export const Discounts = () => {
       onCreate={handleCreate}
       onUpdate={handleUpdate}
       onDelete={handleDelete}
+      onFetchItem={handleFetchItem}
       isCreating={isCreatingDiscount}
       isUpdating={isUpdatingDiscount}
       isDeleting={isDeletingDiscount}

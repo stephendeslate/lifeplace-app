@@ -11,6 +11,7 @@ interface ContractsContextValue {
   contracts: Contract[];
   pendingContracts: Contract[];
   signedContracts: Contract[];
+  expiredContracts: Contract[];
   pendingSignatures: PendingContractsResponse | undefined;
   
   // Loading states
@@ -55,7 +56,7 @@ export const ContractsProvider: React.FC<ContractsProviderProps> = ({ children }
 
   // Debug logging
   useEffect(() => {
-    console.log('ContractsProvider auth state:', { user: !!user, authLoading, isAuthenticated });
+    if (import.meta.env.DEV) console.log('ContractsProvider auth state:', { user: !!user, authLoading, isAuthenticated });
   }, [user, authLoading, isAuthenticated]);
 
   // Query for all contracts
@@ -105,33 +106,41 @@ export const ContractsProvider: React.FC<ContractsProviderProps> = ({ children }
     onSuccess: (signedContract, { contractId }) => {
       // Update the specific contract in cache
       queryClient.setQueryData(['contracts', contractId], signedContract);
-      
+
       // Update the contracts list
       queryClient.setQueryData(['contracts'], (oldData: Contract[] | undefined) => {
         if (!oldData) return [signedContract];
-        return oldData.map(contract => 
+        return oldData.map(contract =>
           contract.id === contractId ? signedContract : contract
         );
       });
-      
+
       // Invalidate related queries
       queryClient.invalidateQueries({ queryKey: ['contracts', 'pending'] });
-      
+
+      // Contract signing (when fully signed) triggers backend workflow automation
+      // that may create tasks, send notifications, progress workflow stages
+      // Invalidate events to reflect any workflow-triggered changes
+      queryClient.invalidateQueries({ queryKey: ['events'] });
+
       // Trigger signature event
       simulateSignatureEvent(contractId, 'signature_added');
     },
     onError: (error) => {
-      console.error('Failed to sign contract:', error);
+      if (import.meta.env.DEV) console.error('Failed to sign contract:', error);
     },
   });
 
   // Derived data
   const contracts = contractsQuery.data || [];
-  const pendingContracts = contracts.filter(contract => 
+  const pendingContracts = contracts.filter(contract =>
     ['SENT', 'PARTIALLY_SIGNED'].includes(contract.status)
   );
-  const signedContracts = contracts.filter(contract => 
+  const signedContracts = contracts.filter(contract =>
     contract.status === 'SIGNED'
+  );
+  const expiredContracts = contracts.filter(contract =>
+    contract.status === 'EXPIRED' || contract.is_expired === true
   );
 
   // Actions
@@ -185,7 +194,7 @@ export const ContractsProvider: React.FC<ContractsProviderProps> = ({ children }
       const staleThreshold = 5 * 60 * 1000; // 5 minutes
 
       if (lastUpdate && now - lastUpdate > staleThreshold) {
-        console.log('Data is stale, refreshing...');
+        if (import.meta.env.DEV) console.log('Data is stale, refreshing...');
         refreshContracts();
       }
     }, 60000); // Check every minute
@@ -200,6 +209,7 @@ export const ContractsProvider: React.FC<ContractsProviderProps> = ({ children }
     contracts,
     pendingContracts,
     signedContracts,
+    expiredContracts,
     pendingSignatures: pendingQuery.data,
     
     // Loading states

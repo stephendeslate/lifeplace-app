@@ -145,10 +145,8 @@ export const EnhancedSettingsNavigation: React.FC<EnhancedSettingsNavigationProp
             '&.Mui-selected': {
               bgcolor: 'primary.main',
               color: 'primary.contrastText',
-              boxShadow: theme.shadows[2],
               '&:hover': {
                 bgcolor: 'primary.dark',
-                transform: 'translateX(4px)',
               },
               '& .MuiListItemIcon-root': {
                 color: 'inherit',

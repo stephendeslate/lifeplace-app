@@ -1,6 +1,6 @@
 // frontend/client-portal/src/components/booking/steps/PricingSummaryStep.tsx
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import {
   Box,
   Typography,
@@ -37,6 +37,7 @@ import type {
   StepData,
   BookingFlow,
   BookingSession,
+  SelectedPackage,
 } from '../../../types/booking';
 
 interface PricingSummaryStepProps {
@@ -71,9 +72,28 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
   const [discountError, setDiscountError] = useState<string | null>(null);
   const [validatingDiscount, setValidatingDiscount] = useState(false);
 
-  // Get selected packages and addons from step data
-  const selectedPackages = state.stepData.package_selection?.selected_packages || [];
-  const selectedAddons = state.stepData.addon_selection?.selected_addons || [];
+  // Get selected packages and addons from step data - memoized to prevent infinite loops
+  // Check package_selection first, then venue_selection (for custom packages), then booking_data
+  const selectedPackages: SelectedPackage[] = useMemo(() =>
+    state.stepData.package_selection?.selected_packages ||
+    (state.stepData.venue_selection as { selected_packages?: SelectedPackage[] })?.selected_packages ||
+    (state.currentSession?.booking_data?.selected_packages as SelectedPackage[] | undefined) ||
+    [],
+    [state.stepData.package_selection?.selected_packages, state.stepData.venue_selection, state.currentSession?.booking_data?.selected_packages]
+  );
+  const selectedAddons = useMemo(() =>
+    state.stepData.addon_selection?.selected_addons || [],
+    [state.stepData.addon_selection?.selected_addons]
+  );
+
+  // Get venue_additional_hours from addon_selection or package_selection step data
+  const venueAdditionalHours = useMemo(() =>
+    state.stepData.addon_selection?.venue_additional_hours ||
+    state.stepData.package_selection?.venue_additional_hours ||
+    (state.currentSession?.booking_data?.venue_additional_hours as Record<string, number> | undefined) ||
+    undefined,
+    [state.stepData.addon_selection?.venue_additional_hours, state.stepData.package_selection?.venue_additional_hours, state.currentSession?.booking_data?.venue_additional_hours]
+  );
 
   // Use simplified unified pricing hook
   const {
@@ -86,7 +106,8 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
   } = useSimplePricing(
     selectedPackages,
     selectedAddons,
-    stepData.applied_discount_code
+    stepData.applied_discount_code,
+    venueAdditionalHours
   );
 
 
@@ -117,9 +138,11 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
         await actions.updateTotalPrice(totalString);
       }
     } catch (error) {
-      console.error('Failed to update pricing data:', error);
+      if (import.meta.env.DEV) console.error('Failed to update pricing data:', error);
     }
-  }, [stepData, onDataChange, pricing.total, state.totalPrice, actions]);
+  // Note: actions methods omitted from deps - actions object is not memoized and would cause loops
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stepData, onDataChange, pricing.total, state.totalPrice]);
 
   // Update pricing data when total changes
   useEffect(() => {
@@ -127,10 +150,25 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
       const timeoutId = setTimeout(() => {
         updatePricingData();
       }, 300);
-      
+
       return () => clearTimeout(timeoutId);
     }
   }, [pricing.total, hasItems, calculatingPricing, updatePricingData]);
+
+  // Sync pricing breakdown to context for footer display
+  useEffect(() => {
+    if (hasItems && !calculatingPricing) {
+      actions.setPricingBreakdown({
+        subtotal: pricing.subtotal.toFixed(2),
+        tax: pricing.tax.toFixed(2),
+        discount: pricing.discount.toFixed(2),
+        formattedSubtotal: pricing.formattedSubtotal,
+        formattedTax: pricing.formattedTax,
+        formattedDiscount: pricing.formattedDiscount,
+      });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pricing, hasItems, calculatingPricing]);
 
   // Handle discount code application
   const handleApplyDiscount = async () => {
@@ -290,10 +328,14 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
                 {selectedPackages.map((pkg) => {
                   // Find matching line item for excess hour details
                   const lineItem = pricing.lineItems?.find(item => item.product_id === pkg.product_id);
-                  const hasExcessHours = lineItem?.excess_hours && lineItem.excess_hours > 0;
                   const basePrice = lineItem?.base_unit_price ? parseFloat(lineItem.base_unit_price) : parseFloat(pkg.price);
                   const unitPrice = basePrice; // Use base price, not total_unit_price
                   const totalPrice = lineItem?.total_unit_price ? parseFloat(lineItem.total_unit_price) : parseFloat(pkg.price);
+
+                  // Check for new venue_details format (preferred) or legacy excess_hours
+                  const venueDetails = lineItem?.venue_details;
+                  const hasVenueExcess = venueDetails && venueDetails.length > 0 && venueDetails.some(v => v.additional_hours > 0);
+                  const hasLegacyExcess = !hasVenueExcess && lineItem?.excess_hours && lineItem.excess_hours > 0;
 
                   return (
                     <TableRow key={pkg.product_id}>
@@ -302,7 +344,21 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
                           <Typography variant="body2" sx={{ fontWeight: 500 }}>
                             {pkg.name}
                           </Typography>
-                          {hasExcessHours && (
+                          {hasVenueExcess && (
+                            <Box sx={{ mt: 0.5 }}>
+                              <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                                Base: {formatAmount(basePrice.toString())}
+                              </Typography>
+                              {venueDetails?.map(venue => (
+                                venue.additional_hours > 0 && (
+                                  <Typography key={venue.venue_id} variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                                    {venue.venue_name}: +{venue.additional_hours}h @ {formatAmount(venue.excess_hour_price)}/h
+                                  </Typography>
+                                )
+                              ))}
+                            </Box>
+                          )}
+                          {hasLegacyExcess && (
                             <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
                               Base: {formatAmount(basePrice.toString())}
                               {lineItem.excess_hours && lineItem.excess_hour_price && (
@@ -322,7 +378,7 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
                               formatAmount(unitPrice.toString())
                             )}
                           </Typography>
-                          {hasExcessHours && (
+                          {(hasVenueExcess || hasLegacyExcess) && (
                             <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
                               (+{formatAmount((totalPrice - basePrice).toString())} excess)
                             </Typography>
@@ -532,20 +588,11 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
                   </Box>
                 )}
 
-                {allStepData?.date_time?.start_time && (
+                {allStepData?.date_time?.end_date && (
                   <Box sx={{ mb: 2 }}>
-                    <Typography variant="body2" color="text.secondary">Event Time</Typography>
+                    <Typography variant="body2" color="text.secondary">Event End Date</Typography>
                     <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                      {allStepData.date_time.start_time}
-                    </Typography>
-                  </Box>
-                )}
-
-                {allStepData?.date_time?.duration && (
-                  <Box sx={{ mb: 2 }}>
-                    <Typography variant="body2" color="text.secondary">Duration</Typography>
-                    <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                      {allStepData.date_time.duration} hours
+                      {formatDate(allStepData.date_time.end_date)}
                     </Typography>
                   </Box>
                 )}
@@ -652,11 +699,21 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
                       {config?.terms_text || (
                         <>
                           I agree to the{' '}
-                          <a href={config?.terms_url || '/terms'} target="_blank" rel="noreferrer" style={{ color: 'blue' }}>
+                          <a
+                            href={config?.effective_terms_url || config?.terms_url || '/terms'}
+                            target="_blank"
+                            rel="noreferrer"
+                            style={{ color: 'inherit', textDecoration: 'underline' }}
+                          >
                             Terms of Service
                           </a>{' '}
                           and{' '}
-                          <a href={config?.privacy_url || '/privacy'} target="_blank" rel="noreferrer" style={{ color: 'blue' }}>
+                          <a
+                            href={config?.effective_privacy_url || config?.privacy_url || '/privacy'}
+                            target="_blank"
+                            rel="noreferrer"
+                            style={{ color: 'inherit', textDecoration: 'underline' }}
+                          >
                             Privacy Policy
                           </a>
                         </>
@@ -679,7 +736,7 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
                   />
                 )}
 
-                {validationErrors.terms_accepted && (
+                {config?.require_terms_acceptance !== false && validationErrors.terms_accepted && (
                   <Alert severity="error" sx={{ mt: 2 }}>
                     {validationErrors.terms_accepted[0]}
                   </Alert>

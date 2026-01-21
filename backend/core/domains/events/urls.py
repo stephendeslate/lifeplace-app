@@ -19,6 +19,7 @@ from .views.availability_views import (
     invalidate_availability_cache,
     PublicEventAvailabilityAPIView,
 )
+from .public_views import create_inquiry
 
 router = DefaultRouter()
 # Admin endpoints
@@ -45,4 +46,7 @@ urlpatterns = [
 
     # Public availability endpoint for booking flow calendars
     path('public/availability/', PublicEventAvailabilityAPIView.as_view(), name='public-event-availability'),
+
+    # Public inquiry endpoint for contact form
+    path('public/inquiries/', create_inquiry, name='public-inquiry'),
 ]

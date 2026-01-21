@@ -7,6 +7,8 @@ from typing import Dict, Any, Optional
 from django.utils import timezone
 from core.domains.events.models import Event
 from core.domains.users.models import User
+from core.utils.url_builder import ClientPortalURLBuilder
+from core.utils.company_context import CompanyContextMixin
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +35,21 @@ class ContractContextService:
             # Get related data
             client = event.client
             event_type = event.event_type
-            
+
+            # Get price source from accepted quote (preferred) or event.total_price (fallback)
+            # This ensures contract shows the accepted quote price, including any discounts
+            if hasattr(event, 'accepted_quote') and event.accepted_quote:
+                quote = event.accepted_quote
+                price_source = quote.total_amount
+                subtotal = quote.subtotal
+                tax_amount = quote.tax_amount
+                discount_amount = quote.discount_amount
+            else:
+                price_source = event.total_price or Decimal('0')
+                subtotal = price_source
+                tax_amount = Decimal('0')
+                discount_amount = Decimal('0')
+
             # Generate standardized context
             context = {
                 # Event Information (standardized naming)
@@ -85,13 +101,17 @@ class ContractContextService:
                 'client_address': ContractContextService._get_client_address(client),
                 
                 # Financial Information (standardized naming)
-                'total_price': str(event.total_price or 0),
-                'total_amount': str(event.total_price or 0),
-                'contract_value': str(event.total_price or 0),
-                'event_price': str(event.total_price or 0),
-                'amount_due': str(event.total_amount_due or event.total_price or 0),
+                # Uses accepted quote pricing when available to ensure contract shows correct price
+                'total_price': str(price_source),
+                'total_amount': str(price_source),
+                'contract_value': str(price_source),
+                'event_price': str(price_source),
+                'subtotal': str(subtotal),
+                'tax_amount': str(tax_amount),
+                'discount_amount': str(discount_amount),
+                'amount_due': str(event.total_amount_due or price_source),
                 'amount_paid': str(event.total_amount_paid or 0),
-                'amount_remaining': str((event.total_amount_due or event.total_price or 0) - (event.total_amount_paid or 0)),
+                'amount_remaining': str((event.total_amount_due or price_source) - (event.total_amount_paid or 0)),
                 
                 # Payment Information
                 'payment_status': event.payment_status,
@@ -124,19 +144,90 @@ class ContractContextService:
 
             # Add payment/deposit information for contract templates
             context.update(ContractContextService._get_payment_deposit_info(event))
-            
+
+            # Add company context from CompanySettings
+            context.update(CompanyContextMixin.get_company_context())
+
+            # Add URL context for links in contracts
+            context.update({
+                'dashboard_url': ClientPortalURLBuilder.dashboard_url(),
+                'login_link': ClientPortalURLBuilder.login_url(),
+                'support_link': ClientPortalURLBuilder.support_url(),
+                'payments_link': ClientPortalURLBuilder.payments_url(),
+                'documents_link': ClientPortalURLBuilder.documents_url(),
+                'profile_link': ClientPortalURLBuilder.profile_url(),
+                'terms_of_service_link': ClientPortalURLBuilder.terms_of_service_url(),
+                'privacy_policy_link': ClientPortalURLBuilder.privacy_policy_url(),
+                'event_link': ClientPortalURLBuilder.event_url(event.id),
+                'event_timeline_link': ClientPortalURLBuilder.event_timeline_url(event.id),
+                'event_questionnaires_link': ClientPortalURLBuilder.event_questionnaires_url(event.id),
+                'event_contracts_link': ClientPortalURLBuilder.event_contracts_url(event.id),
+                'event_documents_link': ClientPortalURLBuilder.event_documents_url(event.id),
+                'event_tasks_link': ClientPortalURLBuilder.event_tasks_url(event.id),
+                'event_quotes_link': ClientPortalURLBuilder.event_quotes_url(event.id),
+                'event_invoices_link': ClientPortalURLBuilder.event_invoices_url(event.id),
+            })
+
             # Merge additional context if provided
             if additional_context:
                 context.update(additional_context)
                 
             logger.info(f"Generated contract context for event {event.id} with {len(context)} variables")
-            
+
             return context
-            
+
         except Exception as e:
             logger.error(f"Error generating contract context for event {event.id}: {e}")
             raise
-    
+
+    @staticmethod
+    def get_contract_specific_context(contract) -> Dict[str, Any]:
+        """
+        Get context variables specific to an existing contract instance.
+        Call this when rendering a contract that already exists (has an ID).
+
+        Args:
+            contract: Contract instance with id and valid_until attributes
+
+        Returns:
+            Dictionary with contract-specific variables
+        """
+        # Get signature deadline if available
+        signature_deadline = ''
+        if hasattr(contract, 'valid_until') and contract.valid_until:
+            signature_deadline = contract.valid_until.strftime('%B %d, %Y')
+
+        return {
+            'contract_link': ClientPortalURLBuilder.contract_url(contract.id),
+            'contract_pdf_link': ClientPortalURLBuilder.contract_pdf_url(contract.id),
+            'signature_deadline': signature_deadline,
+        }
+
+    @staticmethod
+    def generate_full_context(event: Event, contract=None, additional_context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        """
+        Generate complete context including contract-specific variables if contract is provided.
+
+        This is the recommended method when rendering an existing contract, as it includes
+        contract_link, contract_pdf_link, and signature_deadline variables.
+
+        Args:
+            event: Event instance
+            contract: Optional contract instance (for contract-specific URLs)
+            additional_context: Optional additional context data to merge
+
+        Returns:
+            Complete context dictionary
+        """
+        # Get base event context
+        context = ContractContextService.generate_event_context(event, additional_context)
+
+        # Add contract-specific context if contract provided
+        if contract:
+            context.update(ContractContextService.get_contract_specific_context(contract))
+
+        return context
+
     @staticmethod
     def _get_client_full_name(client: Optional[User]) -> str:
         """Get client full name with fallback"""
@@ -206,14 +297,33 @@ class ContractContextService:
     
     @staticmethod
     def _get_payment_terms(event: Event) -> str:
-        """Get payment terms with fallback"""
-        # Check event preferences for custom payment terms
+        """
+        Get payment terms with fallback hierarchy:
+        1. Event preferences (custom override for this specific event)
+        2. Booking flow's PaymentTermsConfiguration (flow-specific)
+        3. Global PaymentSettings defaults
+        """
+        # Check event preferences for custom payment terms (highest priority)
         if event.preferences and isinstance(event.preferences, dict):
             payment_terms = event.preferences.get('payment_terms')
             if payment_terms:
                 return payment_terms
-        
-        # Default payment terms
+
+        # Use PaymentTermsResolver to get structured terms and generate text
+        try:
+            from core.domains.payments.services import PaymentTermsResolver
+
+            # Get payment terms for this event (traces back to booking flow)
+            terms = PaymentTermsResolver.get_terms_for_event(event.id)
+
+            # Generate human-readable payment terms text from structured config
+            return PaymentTermsResolver.generate_terms_text(terms)
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.warning(f"Error generating payment terms for event {event.id}: {e}")
+
+        # Ultimate fallback
         return '50% deposit required upon contract signing, remaining balance due 7 days before event date'
     
     @staticmethod
@@ -267,10 +377,10 @@ class ContractContextService:
     def _get_currency_formatted_amounts(event: Event) -> Dict[str, str]:
         """Get currency-formatted amount fields using system currency settings"""
         from core.domains.settings.models import CurrencySettings
-        
+
         # Get system currency settings
         currency_settings = CurrencySettings.get_system_settings()
-        
+
         # Get currency symbol mapping
         currency_symbols = {
             'PHP': '₱',
@@ -279,31 +389,44 @@ class ContractContextService:
             'SGD': 'S$',
             'HKD': 'HK$',
         }
-        
+
+        # Get price source from accepted quote (preferred) or event.total_price (fallback)
+        if hasattr(event, 'accepted_quote') and event.accepted_quote:
+            quote = event.accepted_quote
+            price_source = quote.total_amount
+            subtotal = quote.subtotal
+            tax_amount = quote.tax_amount
+            discount_amount = quote.discount_amount
+        else:
+            price_source = event.total_price or Decimal('0')
+            subtotal = price_source
+            tax_amount = Decimal('0')
+            discount_amount = Decimal('0')
+
         def format_currency(amount):
             if not amount:
                 amount = 0
-            
+
             try:
                 amount_float = float(amount)
             except (ValueError, TypeError):
                 amount_float = 0
-            
+
             # Get currency symbol
             currency_code = currency_settings.default_currency
             symbol = currency_symbols.get(currency_code, currency_code)
-            
+
             # Format based on decimal places setting
             decimal_places = currency_settings.decimal_places
             thousands_sep = currency_settings.thousands_separator
             decimal_sep = currency_settings.decimal_separator
-            
+
             # Format the number
             if decimal_places == 0:
                 formatted_amount = f"{amount_float:,.0f}".replace(',', '|').replace('.', decimal_sep).replace('|', thousands_sep)
             else:
                 formatted_amount = f"{amount_float:,.{decimal_places}f}".replace(',', '|').replace('.', decimal_sep).replace('|', thousands_sep)
-            
+
             # Apply display format
             display_format = currency_settings.display_format
             if display_format == 'symbol':
@@ -314,15 +437,18 @@ class ContractContextService:
                 return f"{symbol}{formatted_amount} {currency_code}"
             else:
                 return f"{symbol}{formatted_amount}"
-        
+
         return {
-            'total_price_formatted': format_currency(event.total_price),
-            'total_amount_formatted': format_currency(event.total_price),
-            'contract_value_formatted': format_currency(event.total_price),
-            'amount_due_formatted': format_currency(event.total_amount_due or event.total_price),
+            'total_price_formatted': format_currency(price_source),
+            'total_amount_formatted': format_currency(price_source),
+            'contract_value_formatted': format_currency(price_source),
+            'subtotal_formatted': format_currency(subtotal),
+            'tax_amount_formatted': format_currency(tax_amount),
+            'discount_amount_formatted': format_currency(discount_amount),
+            'amount_due_formatted': format_currency(event.total_amount_due or price_source),
             'amount_paid_formatted': format_currency(event.total_amount_paid),
             'amount_remaining_formatted': format_currency(
-                (event.total_amount_due or event.total_price or 0) - (event.total_amount_paid or 0)
+                (event.total_amount_due or price_source or 0) - (event.total_amount_paid or 0)
             ),
         }
     
@@ -393,11 +519,17 @@ class ContractContextService:
             'client_company': 'Client company name',
             'client_address': 'Client address',
             
-            # Financial Information
-            'total_price': 'Total price (numeric)',
-            'total_amount': 'Total amount (alias)',
-            'contract_value': 'Contract value (alias)',
+            # Financial Information (uses accepted quote pricing when available)
+            'total_price': 'Total price from accepted quote (numeric)',
+            'total_amount': 'Total amount from accepted quote (alias)',
+            'contract_value': 'Contract value from accepted quote (alias)',
+            'subtotal': 'Subtotal before tax and discounts (numeric)',
+            'tax_amount': 'Tax amount (numeric)',
+            'discount_amount': 'Discount amount applied (numeric)',
             'total_price_formatted': 'Total price (currency formatted)',
+            'subtotal_formatted': 'Subtotal (currency formatted)',
+            'tax_amount_formatted': 'Tax amount (currency formatted)',
+            'discount_amount_formatted': 'Discount amount (currency formatted)',
             'amount_due': 'Amount due (numeric)',
             'amount_paid': 'Amount paid (numeric)',
             'amount_remaining': 'Remaining balance (numeric)',
@@ -445,6 +577,52 @@ class ContractContextService:
             'guardian_signer_title': 'Title of guardian signer (displays when signed)',
             'partner_signer_title': 'Title of partner signer (displays when signed)',
             'other_signer_title': 'Title of other signer (displays when signed)',
+
+            # Company Information
+            'company_name': 'Official company name',
+            'company_tagline': 'Company tagline/slogan',
+            'company_email': 'Primary company email',
+            'company_phone': 'Company phone number',
+            'company_support_email': 'Support email address',
+            'company_support_phone': 'Support phone number',
+            'company_address': 'Full company address',
+            'company_city': 'Company city',
+            'company_province': 'Company province/state',
+            'company_country': 'Company country',
+            'company_website': 'Company website URL',
+            'company_facebook': 'Facebook page URL',
+            'company_instagram': 'Instagram profile URL',
+            'bank_name': 'Bank name for payments',
+            'bank_account_name': 'Bank account holder name',
+            'bank_account_number': 'Bank account number',
+            'bank_branch': 'Bank branch name',
+            'bank_swift_code': 'SWIFT/BIC code for international transfers',
+            'business_registration_number': 'Business registration/TIN number',
+            'vat_number': 'VAT registration number',
+            'invoice_terms': 'Default invoice payment terms',
+
+            # URL Variables
+            'dashboard_url': 'Client dashboard URL',
+            'login_link': 'Login page URL',
+            'support_link': 'Support/help page URL',
+            'payments_link': 'Payments portal URL',
+            'documents_link': 'Documents page URL',
+            'profile_link': 'Profile settings URL',
+            'terms_of_service_link': 'Terms of Service URL',
+            'privacy_policy_link': 'Privacy Policy URL',
+            'event_link': 'Event detail page URL',
+            'event_timeline_link': 'Event timeline tab URL',
+            'event_questionnaires_link': 'Event questionnaires tab URL',
+            'event_contracts_link': 'Event contracts tab URL',
+            'event_documents_link': 'Event documents tab URL',
+            'event_tasks_link': 'Event tasks tab URL',
+            'event_quotes_link': 'Event quotes tab URL',
+            'event_invoices_link': 'Event invoices tab URL',
+
+            # Contract-Specific URLs (available when rendering existing contract)
+            'contract_link': 'Direct link to this contract',
+            'contract_pdf_link': 'Direct link to download contract PDF',
+            'signature_deadline': 'Deadline date for signing the contract',
         }
 
     @staticmethod
@@ -460,6 +638,12 @@ class ContractContextService:
             payment_settings = PaymentSettings.get_default_settings()
             deposit_percentage = payment_settings.default_deposit_percentage
 
+            # Get price source from accepted quote (preferred) or event.total_price (fallback)
+            if hasattr(event, 'accepted_quote') and event.accepted_quote:
+                price_source = event.accepted_quote.total_amount
+            else:
+                price_source = event.total_price or Decimal('0')
+
             # Calculate deposit and balance amounts
             deposit_amount = Decimal('0')
             balance_amount = Decimal('0')
@@ -467,9 +651,9 @@ class ContractContextService:
             balance_due_days = 0
             late_fee_amount = '0'
 
-            if event.total_price:
-                deposit_amount = event.total_price * (deposit_percentage / Decimal('100'))
-                balance_amount = event.total_price - deposit_amount
+            if price_source:
+                deposit_amount = price_source * (deposit_percentage / Decimal('100'))
+                balance_amount = price_source - deposit_amount
 
             # Get invoice for due date information
             invoice = Invoice.objects.filter(event=event).order_by('-created_at').first()

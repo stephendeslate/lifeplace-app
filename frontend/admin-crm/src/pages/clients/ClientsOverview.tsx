@@ -1,5 +1,4 @@
-// Modern Glassmorphic Clients Overview
-// Enhanced with world-class design patterns while preserving full functionality
+// Clients Overview - Flat design matching Analytics page style
 
 import React, { useEffect, useState } from 'react';
 import {
@@ -28,6 +27,7 @@ import {
   Typography,
   Alert,
   Tooltip,
+  CircularProgress,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -35,11 +35,9 @@ import {
   MoreVert as MoreVertIcon,
   Person as PersonIcon,
   PersonAdd as PersonAddIcon,
-  Email as EmailIcon,
-  Business as BusinessIcon,
-  Phone as PhoneIcon,
   Search as SearchIcon,
   People as PeopleIcon,
+  FileDownload as ExportIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useLayout } from '../../contexts/LayoutContext';
@@ -48,20 +46,7 @@ import { ClientForm } from '../../components/clients/ClientForm';
 import { clientsApi } from '../../apis/clients.api';
 import { getClientRegistrationStatus, getClientActiveStatus } from '../../utils/clientStatus';
 import type { Client, ClientFilters, CreateClientData } from '../../types/clients.types';
-
-// Modern Design System Components
-import {
-  ModernOverviewLayout,
-  ModernOverviewHeader,
-  ModernGlassCard,
-  ModernEmptyState,
-  ModernTableSkeleton,
-  createAddAction,
-  createExportAction,
-} from '../../components/common';
-import { tokens } from '../../design-system';
-import { glassPresets } from '../../design-system/utils/glassmorphism';
-import { createTransition } from '../../design-system/utils/animations';
+import { ModernPageLayout, ModernPageHeader, ModernEmptyState } from '../../components/common';
 
 export const ClientsOverview: React.FC = () => {
   const navigate = useNavigate();
@@ -184,27 +169,20 @@ export const ClientsOverview: React.FC = () => {
       }}
       size="large"
       color="primary"
-      illustration="gradient"
     />
   );
 
   const hasActiveFilters = Object.values(filters).some(value => value !== undefined);
   const filteredCount = totalClients ?? 0;
 
-  // Loading state with modern skeleton
+  // Loading state
   if (isLoadingClients) {
     return (
-      <ModernOverviewLayout>
-        <ModernOverviewHeader
-          title="Clients"
-          subtitle="Loading client data..."
-          icon={<PeopleIcon />}
-        />
-        <ModernTableSkeleton 
-          rows={8} 
-          columns={7}
-        />
-      </ModernOverviewLayout>
+      <ModernPageLayout backgroundPattern="default">
+        <Box display="flex" justifyContent="center" alignItems="center" minHeight={400}>
+          <CircularProgress />
+        </Box>
+      </ModernPageLayout>
     );
   }
 
@@ -219,33 +197,33 @@ export const ClientsOverview: React.FC = () => {
   };
 
   return (
-    <ModernOverviewLayout>
-      {/* Modern Header */}
-      <ModernOverviewHeader
+    <ModernPageLayout backgroundPattern="default">
+      {/* Page Header - flat style */}
+      <ModernPageHeader
         title="Clients"
         subtitle={`${filteredCount} client${filteredCount !== 1 ? 's' : ''} found`}
         icon={<PeopleIcon />}
-        primaryAction={createAddAction('Add Client', () => setCreateDialogOpen(true))}
+        size="medium"
+        primaryAction={{
+          label: 'Add Client',
+          icon: <AddIcon />,
+          onClick: () => setCreateDialogOpen(true),
+          variant: 'contained',
+          color: 'primary',
+        }}
         secondaryActions={[
           {
-            icon: <ImportIcon />,
             label: 'Import',
-            variant: 'outlined',
+            icon: <ImportIcon />,
             onClick: () => setImportDialogOpen(true),
-            color: 'secondary'
+            variant: 'outlined',
           },
-          createExportAction(handleExport)
-        ]}
-        stats={[
-          { label: 'Total Clients', value: filteredCount },
-          { 
-            label: 'Active', 
-            value: clients?.filter(c => getClientActiveStatus(c).label === 'Active').length || 0
+          {
+            label: 'Export',
+            icon: <ExportIcon />,
+            onClick: handleExport,
+            variant: 'outlined',
           },
-          { 
-            label: 'Registered', 
-            value: clients?.filter(c => c.has_account).length || 0
-          }
         ]}
       />
 
@@ -253,550 +231,176 @@ export const ClientsOverview: React.FC = () => {
         renderNoClientsState()
       ) : (
         <>
-          {/* Modern Filters Card */}
-          <ModernGlassCard 
-            size="medium" 
-            sx={{ 
-              mb: 4,
-              position: 'relative',
-              '&::before': {
-                content: '""',
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                background: `linear-gradient(135deg, ${tokens.color.primary[500]}03 0%, ${tokens.color.success[500]}02 100%)`,
-                borderRadius: tokens.spacing.radius.xxl,
-                pointerEvents: 'none',
-              }
-            }}
-          >
-            <Box sx={{ position: 'relative', zIndex: 1 }}>
-              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems="center">
-                <TextField
-                  size="small"
-                  placeholder="Search clients..."
-                  value={searchValue}
-                  onChange={(e) => setSearchValue(e.target.value)}
-                  InputProps={{
-                    startAdornment: <SearchIcon color="action" sx={{ mr: 1 }} />
-                  }}
-                  sx={{ 
-                    flex: 1, 
-                    minWidth: 200,
-                    '& .MuiOutlinedInput-root': {
-                      ...glassPresets.light,
-                      border: `1px solid ${tokens.color.borders.glass}`,
-                      borderRadius: tokens.spacing.radius.full,
-                      transition: createTransition(['border-color', 'box-shadow'], 'fast'),
-                      
-                      '&:hover': {
-                        border: `1px solid ${tokens.color.primary[500]}40`,
-                      },
-                      
-                      '&.Mui-focused': {
-                        ...glassPresets.medium,
-                        border: `1px solid ${tokens.color.primary[500]}60`,
-                        boxShadow: `0 0 0 3px ${tokens.color.primary[500]}10`,
-                      }
-                    }
-                  }}
-                />
-                
-                <FormControl size="small" sx={{ minWidth: 140 }}>
-                  <InputLabel>Status</InputLabel>
-                  <Select
-                    value={filters.is_active === undefined ? 'all' : filters.is_active.toString()}
-                    label="Status"
-                    onChange={(e) => handleFilterChange('is_active', e.target.value)}
-                    sx={{
-                      '& .MuiOutlinedInput-root': {
-                        ...glassPresets.light,
-                        border: `1px solid ${tokens.color.borders.glass}`,
-                        borderRadius: tokens.spacing.radius.lg,
-                      }
-                    }}
-                  >
-                    <MenuItem value="all">All Status</MenuItem>
-                    <MenuItem value="true">Active</MenuItem>
-                    <MenuItem value="false">Inactive</MenuItem>
-                  </Select>
-                </FormControl>
-                
-                <FormControl size="small" sx={{ minWidth: 140 }}>
-                  <InputLabel>Registration</InputLabel>
-                  <Select
-                    value={filters.has_account === undefined ? 'all' : filters.has_account.toString()}
-                    label="Registration"
-                    onChange={(e) => handleFilterChange('has_account', e.target.value)}
-                    sx={{
-                      '& .MuiOutlinedInput-root': {
-                        ...glassPresets.light,
-                        border: `1px solid ${tokens.color.borders.glass}`,
-                        borderRadius: tokens.spacing.radius.lg,
-                      }
-                    }}
-                  >
-                    <MenuItem value="all">All Types</MenuItem>
-                    <MenuItem value="true">Registered</MenuItem>
-                    <MenuItem value="false">Unregistered</MenuItem>
-                  </Select>
-                </FormControl>
-                
-                {hasActiveFilters && (
-                  <Button 
-                    variant="outlined" 
-                    size="small" 
-                    onClick={() => {
-                      setFilters({});
-                      setSearchValue('');
-                    }}
-                    sx={{
-                      ...glassPresets.light,
-                      border: `1px solid ${tokens.color.warning[500]}30`,
-                      color: tokens.color.warning[600],
-                      borderRadius: tokens.spacing.radius.full,
-                      
-                      '&:hover': {
-                        ...glassPresets.medium,
-                        border: `1px solid ${tokens.color.warning[500]}50`,
-                      }
-                    }}
-                  >
-                    Clear Filters
-                  </Button>
-                )}
-              </Stack>
-            </Box>
-          </ModernGlassCard>
+          {/* Filters - flat style */}
+          <Box sx={{ mb: 3, p: 2, borderRadius: 1, bgcolor: 'action.hover' }}>
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems="center">
+              <TextField
+                size="small"
+                placeholder="Search clients..."
+                value={searchValue}
+                onChange={(e) => setSearchValue(e.target.value)}
+                InputProps={{ startAdornment: <SearchIcon color="action" sx={{ mr: 1 }} /> }}
+                sx={{ flex: 1, minWidth: 200 }}
+              />
 
-          {/* Modern Clients Table Card */}
-            <ModernGlassCard 
-              size="medium"
-              sx={{
-                position: 'relative',
-                overflow: 'hidden',
-                
-                '&::before': {
-                  content: '""',
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  background: `linear-gradient(135deg, ${tokens.color.primary[500]}02 0%, ${tokens.color.success[500]}01 100%)`,
-                  borderRadius: tokens.spacing.radius.xxl,
-                  pointerEvents: 'none',
-                }
-              }}
-            >
-              <Box sx={{ position: 'relative', zIndex: 1 }}>
-                <TableContainer 
-                  sx={{
-                    '& .MuiTable-root': {
-                      '& .MuiTableHead-root': {
-                        '& .MuiTableCell-head': {
-                          backgroundColor: 'transparent',
-                          borderBottom: `1px solid ${tokens.color.borders.glass}`,
-                          fontWeight: 600,
-                          color: tokens.color.neutral[700],
-                          fontSize: '0.875rem',
-                          textTransform: 'uppercase',
-                          letterSpacing: '0.05em',
-                          py: 2,
-                        }
-                      },
-                      
-                      '& .MuiTableBody-root': {
-                        '& .MuiTableRow-root': {
-                          transition: createTransition(['background-color', 'transform'], 'fast'),
-                          cursor: 'pointer',
-                          
-                          '&:hover': {
-                            backgroundColor: `${tokens.color.primary[50]}40`,
-                            transform: 'translateY(-1px)',
-                            
-                            '& .action-button': {
-                              opacity: 1,
-                              transform: 'scale(1)',
-                            }
-                          },
-                          
-                          '& .MuiTableCell-body': {
-                            borderBottom: `1px solid ${tokens.color.borders.subtle}`,
-                            py: 2,
-                            fontSize: '0.875rem',
-                          }
-                        }
-                      }
-                    }
-                  }}
+              <FormControl size="small" sx={{ minWidth: 140 }}>
+                <InputLabel>Status</InputLabel>
+                <Select
+                  value={filters.is_active === undefined ? 'all' : filters.is_active.toString()}
+                  label="Status"
+                  onChange={(e) => handleFilterChange('is_active', e.target.value)}
                 >
-                  <Table>
-                    <TableHead>
-                      <TableRow>
-                        <TableCell>Name</TableCell>
-                        <TableCell>Email</TableCell>
-                        <TableCell>Company</TableCell>
-                        <TableCell>Phone</TableCell>
-                        <TableCell>Status</TableCell>
-                        <TableCell>Registration</TableCell>
-                        <TableCell>Joined</TableCell>
-                        <TableCell width="50"></TableCell>
+                  <MenuItem value="all">All Status</MenuItem>
+                  <MenuItem value="true">Active</MenuItem>
+                  <MenuItem value="false">Inactive</MenuItem>
+                </Select>
+              </FormControl>
+
+              <FormControl size="small" sx={{ minWidth: 140 }}>
+                <InputLabel>Registration</InputLabel>
+                <Select
+                  value={filters.has_account === undefined ? 'all' : filters.has_account.toString()}
+                  label="Registration"
+                  onChange={(e) => handleFilterChange('has_account', e.target.value)}
+                >
+                  <MenuItem value="all">All Types</MenuItem>
+                  <MenuItem value="true">Registered</MenuItem>
+                  <MenuItem value="false">Unregistered</MenuItem>
+                </Select>
+              </FormControl>
+
+              {hasActiveFilters && (
+                <Button variant="outlined" color="warning" size="small" onClick={() => { setFilters({}); setSearchValue(''); }}>
+                  Clear Filters
+                </Button>
+              )}
+            </Stack>
+          </Box>
+
+          {/* Clients Table - flat style */}
+          <Box sx={{ borderRadius: 1, bgcolor: 'background.paper', overflow: 'hidden' }}>
+            <TableContainer>
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Name</TableCell>
+                    <TableCell>Email</TableCell>
+                    <TableCell>Company</TableCell>
+                    <TableCell>Phone</TableCell>
+                    <TableCell>Status</TableCell>
+                    <TableCell>Registration</TableCell>
+                    <TableCell>Joined</TableCell>
+                    <TableCell width="50"></TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {Array.isArray(clients) && clients.map((client) => {
+                    const registrationStatus = getClientRegistrationStatus(client);
+                    const activeStatus = getClientActiveStatus(client);
+
+                    return (
+                      <TableRow key={client.id} hover onClick={() => handleRowClick(client)} sx={{ cursor: 'pointer' }}>
+                        <TableCell>
+                          <Typography variant="body2" fontWeight="600">{client.first_name} {client.last_name}</Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2" color="text.secondary">{client.email}</Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2" color="text.secondary">
+                            {client.profile?.company || '-'}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2" color="text.secondary">
+                            {client.profile?.phone || '-'}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Chip
+                            icon={activeStatus.icon}
+                            label={activeStatus.label}
+                            color={activeStatus.color === 'default' ? 'primary' : activeStatus.color}
+                            size="small"
+                            variant="outlined"
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Tooltip title={registrationStatus.tooltip}>
+                            <Chip
+                              icon={registrationStatus.icon}
+                              label={registrationStatus.label}
+                              color={registrationStatus.color === 'default' ? 'primary' : registrationStatus.color}
+                              size="small"
+                              variant="outlined"
+                            />
+                          </Tooltip>
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2" color="text.secondary">
+                            {new Date(client.date_joined).toLocaleDateString()}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <IconButton size="small" onClick={(e) => handleMenuOpen(e, client)}>
+                            <MoreVertIcon sx={{ fontSize: 16 }} />
+                          </IconButton>
+                        </TableCell>
                       </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {Array.isArray(clients) && clients.map((client) => {
-                        const registrationStatus = getClientRegistrationStatus(client);
-                        const activeStatus = getClientActiveStatus(client);
-                        
-                        return (
-                            <TableRow key={client.id} 
-                              hover 
-                              onClick={() => handleRowClick(client)}
-                              sx={{
-                                '&:last-child .MuiTableCell-body': {
-                                  borderBottom: 'none',
-                                }
-                              }}
-                            >
-                              <TableCell>
-                                <Box display="flex" alignItems="center" gap={1.5}>
-                                  <Box
-                                    sx={{
-                                      ...glassPresets.light,
-                                      borderRadius: '50%',
-                                      p: 1,
-                                      border: `1px solid ${tokens.color.primary[500]}20`,
-                                      background: `${tokens.color.primary[50]}60`,
-                                    }}
-                                  >
-                                    <PersonIcon 
-                                      sx={{ 
-                                        fontSize: 18,
-                                        color: tokens.color.primary[600] 
-                                      }} 
-                                    />
-                                  </Box>
-                                  <Typography 
-                                    variant="body2" 
-                                    fontWeight="600"
-                                    sx={{ color: tokens.color.neutral[800] }}
-                                  >
-                                    {client.first_name} {client.last_name}
-                                  </Typography>
-                                </Box>
-                              </TableCell>
-                              <TableCell>
-                                <Box display="flex" alignItems="center" gap={1}>
-                                  <EmailIcon 
-                                    sx={{ 
-                                      fontSize: 16,
-                                      color: tokens.color.neutral[500] 
-                                    }} 
-                                  />
-                                  <Typography 
-                                    variant="body2"
-                                    sx={{ color: tokens.color.neutral[600] }}
-                                  >
-                                    {client.email}
-                                  </Typography>
-                                </Box>
-                              </TableCell>
-                              <TableCell>
-                                {client.profile?.company ? (
-                                  <Box display="flex" alignItems="center" gap={1}>
-                                    <BusinessIcon 
-                                      sx={{ 
-                                        fontSize: 16,
-                                        color: tokens.color.neutral[500] 
-                                      }} 
-                                    />
-                                    <Typography 
-                                      variant="body2"
-                                      sx={{ color: tokens.color.neutral[600] }}
-                                    >
-                                      {client.profile.company}
-                                    </Typography>
-                                  </Box>
-                                ) : (
-                                  <Typography 
-                                    variant="body2" 
-                                    sx={{ color: tokens.color.neutral[400] }}
-                                  >
-                                    -
-                                  </Typography>
-                                )}
-                              </TableCell>
-                              <TableCell>
-                                {client.profile?.phone ? (
-                                  <Box display="flex" alignItems="center" gap={1}>
-                                    <PhoneIcon 
-                                      sx={{ 
-                                        fontSize: 16,
-                                        color: tokens.color.neutral[500] 
-                                      }} 
-                                    />
-                                    <Typography 
-                                      variant="body2"
-                                      sx={{ color: tokens.color.neutral[600] }}
-                                    >
-                                      {client.profile.phone}
-                                    </Typography>
-                                  </Box>
-                                ) : (
-                                  <Typography 
-                                    variant="body2" 
-                                    sx={{ color: tokens.color.neutral[400] }}
-                                  >
-                                    -
-                                  </Typography>
-                                )}
-                              </TableCell>
-                              <TableCell>
-                                <Chip
-                                  icon={activeStatus.icon}
-                                  label={activeStatus.label}
-                                  color={activeStatus.color === 'default' ? 'primary' : activeStatus.color}
-                                  size="small"
-                                  variant="outlined"
-                                  sx={{
-                                    ...glassPresets.light,
-                                    border: `1px solid ${tokens.color[activeStatus.color === 'default' ? 'primary' : activeStatus.color][500]}30`,
-                                    fontWeight: 600,
-                                  }}
-                                />
-                              </TableCell>
-                              <TableCell>
-                                <Tooltip title={registrationStatus.tooltip}>
-                                  <Chip
-                                    icon={registrationStatus.icon}
-                                    label={registrationStatus.label}
-                                    color={registrationStatus.color === 'default' ? 'primary' : registrationStatus.color}
-                                    size="small"
-                                    variant="outlined"
-                                    sx={{
-                                      ...glassPresets.light,
-                                      border: `1px solid ${tokens.color[registrationStatus.color === 'default' ? 'primary' : registrationStatus.color][500]}30`,
-                                      fontWeight: 600,
-                                    }}
-                                  />
-                                </Tooltip>
-                              </TableCell>
-                              <TableCell>
-                                <Typography 
-                                  variant="body2" 
-                                  sx={{ color: tokens.color.neutral[500] }}
-                                >
-                                  {new Date(client.date_joined).toLocaleDateString()}
-                                </Typography>
-                              </TableCell>
-                              <TableCell>
-                                <IconButton
-                                  size="small"
-                                  onClick={(e) => handleMenuOpen(e, client)}
-                                  className="action-button"
-                                  sx={{
-                                    ...glassPresets.light,
-                                    border: `1px solid ${tokens.color.borders.glass}`,
-                                    opacity: 0.7,
-                                    transform: 'scale(0.9)',
-                                    transition: createTransition(['opacity', 'transform', 'background'], 'fast'),
-                                    
-                                    '&:hover': {
-                                      ...glassPresets.medium,
-                                      opacity: 1,
-                                      transform: 'scale(1)',
-                                    }
-                                  }}
-                                >
-                                  <MoreVertIcon sx={{ fontSize: 16 }} />
-                                </IconButton>
-                              </TableCell>
-                            </TableRow>
-                        );
-                      })}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
-                
-                {/* Modern Pagination */}
-                <Box 
-                  sx={{
-                    p: 2,
-                    borderTop: `1px solid ${tokens.color.borders.glass}`,
-                    background: `linear-gradient(135deg, ${tokens.color.neutral[50]}40 0%, ${tokens.color.primary[50]}10 100%)`,
-                    backdropFilter: 'blur(8px)',
-                  }}
-                >
-                  <TablePagination
-                    rowsPerPageOptions={[10, 25, 50, 100]}
-                    component="div"
-                    count={totalClients || 0}
-                    rowsPerPage={rowsPerPage}
-                    page={page}
-                    onPageChange={handleChangePage}
-                    onRowsPerPageChange={handleChangeRowsPerPage}
-                    sx={{
-                      '& .MuiTablePagination-toolbar': {
-                        color: tokens.color.neutral[600],
-                        fontSize: '0.875rem',
-                      },
-                      
-                      '& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows': {
-                        fontWeight: 500,
-                      },
-                      
-                      '& .MuiIconButton-root': {
-                        ...glassPresets.light,
-                        border: `1px solid ${tokens.color.borders.glass}`,
-                        borderRadius: tokens.spacing.radius.sm,
-                        mx: 0.25,
-                        
-                        '&:hover': {
-                          ...glassPresets.medium,
-                        },
-                        
-                        '&.Mui-disabled': {
-                          opacity: 0.4,
-                        }
-                      }
-                    }}
-                  />
-                </Box>
-              </Box>
-            </ModernGlassCard>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </TableContainer>
+
+            {/* Pagination */}
+            <Box sx={{ p: 2, borderTop: 1, borderColor: 'divider' }}>
+              <TablePagination
+                rowsPerPageOptions={[10, 25, 50, 100]}
+                component="div"
+                count={totalClients || 0}
+                rowsPerPage={rowsPerPage}
+                page={page}
+                onPageChange={handleChangePage}
+                onRowsPerPageChange={handleChangeRowsPerPage}
+              />
+            </Box>
+          </Box>
         </>
       )}
 
-      {/* Modern Action Menu */}
-      <Menu
-        anchorEl={menuAnchor}
-        open={Boolean(menuAnchor)}
-        onClose={handleMenuClose}
-        PaperProps={{
-          sx: {
-            ...glassPresets.medium,
-            border: `1px solid ${tokens.color.borders.glass}`,
-            borderRadius: tokens.spacing.radius.lg,
-            mt: 1,
-            minWidth: 180,
-            
-            '& .MuiMenuItem-root': {
-              borderRadius: tokens.spacing.radius.md,
-              mx: 1,
-              my: 0.5,
-              transition: createTransition(['background-color'], 'fast'),
-              
-              '&:hover': {
-                backgroundColor: `${tokens.color.primary[50]}60`,
-              }
-            }
-          }
-        }}
-      >
-        <MenuItem 
-          onClick={() => {
-            if (selectedClient) navigate(`/clients/${selectedClient.id}`);
-            handleMenuClose();
-          }}
-          sx={{ fontWeight: 500 }}
-        >
-          <PersonIcon sx={{ mr: 1.5, color: tokens.color.primary[600] }} />
+      {/* Action Menu */}
+      <Menu anchorEl={menuAnchor} open={Boolean(menuAnchor)} onClose={handleMenuClose}>
+        <MenuItem onClick={() => { if (selectedClient) navigate(`/clients/${selectedClient.id}`); handleMenuClose(); }}>
+          <PersonIcon sx={{ mr: 1.5 }} color="primary" />
           View Profile
         </MenuItem>
         {selectedClient && !selectedClient.has_account && (
-          <MenuItem 
-            onClick={handleSendInvitation} 
-            disabled={isSendingInvitation}
-            sx={{ fontWeight: 500 }}
-          >
-            <PersonAddIcon sx={{ mr: 1.5, color: tokens.color.success[600] }} />
+          <MenuItem onClick={handleSendInvitation} disabled={isSendingInvitation}>
+            <PersonAddIcon sx={{ mr: 1.5 }} color="success" />
             Send Invitation
           </MenuItem>
         )}
       </Menu>
 
       {/* Modern Create Client Dialog */}
-      <Dialog 
-        open={createDialogOpen} 
-        onClose={() => setCreateDialogOpen(false)} 
-        maxWidth="md" 
-        fullWidth
-        PaperProps={{
-          sx: {
-            ...glassPresets.medium,
-            border: `1px solid ${tokens.color.borders.glass}`,
-            borderRadius: tokens.spacing.radius.xxl,
-            background: `linear-gradient(135deg, ${tokens.color.primary[500]}06 0%, ${tokens.color.success[500]}04 100%)`,
-          }
-        }}
-      >
-        <DialogTitle 
-          sx={{ 
-            background: `linear-gradient(135deg, ${tokens.color.primary[600]} 0%, ${tokens.color.primary[500]} 100%)`,
-            backgroundClip: 'text',
-            WebkitBackgroundClip: 'text',
-            color: 'transparent',
-            fontWeight: 700,
-            fontSize: '1.5rem',
-            pb: 2
-          }}
-        >
-          Add New Client
-        </DialogTitle>
+      <Dialog open={createDialogOpen} onClose={() => setCreateDialogOpen(false)} maxWidth="md" fullWidth>
+        <DialogTitle color="primary">Add New Client</DialogTitle>
         <DialogContent sx={{ pt: 2 }}>
           <ClientForm
             onSubmit={(data) => {
-              // Type assertion since we know this is a create operation
-              createClient(data as CreateClientData, {
-                onSuccess: () => setCreateDialogOpen(false)
-              });
+              createClient(data as CreateClientData, { onSuccess: () => setCreateDialogOpen(false) });
             }}
             isLoading={isCreatingClient}
           />
         </DialogContent>
       </Dialog>
 
-      {/* Modern Import Dialog */}
-      <Dialog 
-        open={importDialogOpen} 
-        onClose={() => setImportDialogOpen(false)} 
-        maxWidth="sm" 
-        fullWidth
-        PaperProps={{
-          sx: {
-            ...glassPresets.medium,
-            border: `1px solid ${tokens.color.borders.glass}`,
-            borderRadius: tokens.spacing.radius.xxl,
-            background: `linear-gradient(135deg, ${tokens.color.secondary[500]}06 0%, ${tokens.color.info[500]}04 100%)`,
-          }
-        }}
-      >
-        <DialogTitle 
-          sx={{ 
-            background: `linear-gradient(135deg, ${tokens.color.secondary[600]} 0%, ${tokens.color.secondary[500]} 100%)`,
-            backgroundClip: 'text',
-            WebkitBackgroundClip: 'text',
-            color: 'transparent',
-            fontWeight: 700,
-            fontSize: '1.5rem',
-            pb: 2
-          }}
-        >
-          Import Clients
-        </DialogTitle>
+      {/* Import Dialog */}
+      <Dialog open={importDialogOpen} onClose={() => setImportDialogOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Import Clients</DialogTitle>
         <DialogContent sx={{ pt: 2 }}>
-          <Alert 
-            severity="info" 
-            sx={{ 
-              mb: 3,
-              ...glassPresets.light,
-              border: `1px solid ${tokens.color.info[500]}30`,
-              borderRadius: tokens.spacing.radius.lg,
-            }}
-          >
+          <Alert severity="info" sx={{ mb: 3 }}>
             Upload a CSV file with client data. Required columns: first_name, last_name, email
           </Alert>
           <Box
@@ -810,38 +414,19 @@ export const ClientsOverview: React.FC = () => {
             sx={{
               width: '100%',
               p: 3,
-              border: `2px dashed ${tokens.color.borders.glass}`,
-              borderRadius: tokens.spacing.radius.xl,
-              background: `linear-gradient(135deg, ${tokens.color.neutral[50]}60 0%, ${tokens.color.primary[50]}20 100%)`,
-              backdropFilter: 'blur(10px)',
+              border: '2px dashed',
+              borderColor: 'divider',
+              borderRadius: 2,
+              bgcolor: 'action.hover',
               cursor: 'pointer',
-              transition: createTransition(['border-color', 'background'], 'fast'),
-              
-              '&:hover': {
-                borderColor: tokens.color.primary[500],
-                background: `linear-gradient(135deg, ${tokens.color.primary[50]}40 0%, ${tokens.color.primary[100]}20 100%)`,
-              }
+              '&:hover': { borderColor: 'primary.main' }
             }}
           />
         </DialogContent>
-        <DialogActions sx={{ p: 3, pt: 2 }}>
-          <Button 
-            onClick={() => setImportDialogOpen(false)}
-            sx={{
-              ...glassPresets.light,
-              border: `1px solid ${tokens.color.borders.glass}`,
-              borderRadius: tokens.spacing.radius.full,
-              px: 3,
-              
-              '&:hover': {
-                ...glassPresets.medium,
-              }
-            }}
-          >
-            Cancel
-          </Button>
+        <DialogActions sx={{ p: 2 }}>
+          <Button onClick={() => setImportDialogOpen(false)}>Cancel</Button>
         </DialogActions>
       </Dialog>
-    </ModernOverviewLayout>
+    </ModernPageLayout>
   );
 };

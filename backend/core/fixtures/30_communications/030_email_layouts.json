@@ -1,0 +1,78 @@
+[
+  {
+    "model": "communications.emaillayout",
+    "pk": 1,
+    "fields": {
+      "created_at": "2026-01-01T08:00:00",
+      "updated_at": "2026-01-01T08:00:00",
+      "name": "Standard",
+      "description": "Default layout for system communications, admin messages, and transactional emails.",
+      "header_template": "<div style=\"background-color: {{ primary_color }}; color: white; padding: 24px; text-align: center;\">\n    <h1 style=\"margin: 0; font-size: 24px;\">{{ header_title|default:site_name }}</h1>\n    {% if header_subtitle %}<p style=\"margin: 8px 0 0 0; font-size: 14px; opacity: 0.9;\">{{ header_subtitle }}</p>{% endif %}\n</div>",
+      "footer_template": "<div style=\"padding: 24px; text-align: center; background-color: #f8f9fa; border-top: 1px solid #e0e0e0;\">\n    <p style=\"margin: 5px 0; color: #666; font-size: 14px;\">{{ site_name }}</p>\n    <p style=\"margin: 5px 0; color: #999; font-size: 12px;\">\u00a9 {{ current_year }} {{ site_name }}. All rights reserved.</p>\n    {% if unsubscribe_link %}<p style=\"margin: 15px 0 0 0;\"><a href=\"{{ unsubscribe_link }}\" style=\"color: #999; font-size: 11px;\">Unsubscribe</a></p>{% endif %}\n</div>",
+      "wrapper_template": "<div style=\"padding: 32px; background-color: #f5f5f5;\">\n    <div style=\"background-color: white; padding: 24px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);\">\n        {{ content }}\n    </div>\n</div>",
+      "base_styles": "",
+      "primary_color": "#1976d2",
+      "secondary_color": "#1565c0",
+      "logo_url": "",
+      "is_default": true,
+      "is_active": true
+    }
+  },
+  {
+    "model": "communications.emaillayout",
+    "pk": 2,
+    "fields": {
+      "created_at": "2026-01-01T08:00:00",
+      "updated_at": "2026-01-01T08:00:00",
+      "name": "Premium Client",
+      "description": "Elegant layout for client-facing communications: quotes, invoices, booking confirmations.",
+      "header_template": "<div style=\"background: linear-gradient(135deg, {{ primary_color }} 0%, {{ secondary_color }} 100%); padding: 40px 30px; text-align: center;\">\n    <h1 style=\"color: white; margin: 0; font-size: 32px; font-weight: 300;\">{{ header_title|default:site_name }}</h1>\n    {% if header_subtitle %}<p style=\"color: rgba(255,255,255,0.9); margin-top: 10px; font-size: 16px;\">{{ header_subtitle }}</p>{% endif %}\n</div>",
+      "footer_template": "<div style=\"background: #f8f9fa; padding: 30px; text-align: center; border-top: 1px solid #e0e0e0;\">\n    <p style=\"color: #666; margin: 5px 0; font-size: 14px;\">{{ site_name }}</p>\n    <p style=\"color: #999; margin: 5px 0; font-size: 13px;\">Creating Memorable Moments</p>\n    <p style=\"color: #999; margin: 15px 0 5px 0; font-size: 12px;\">\u00a9 {{ current_year }} {{ site_name }}. All rights reserved.</p>\n</div>",
+      "wrapper_template": "<div style=\"padding: 40px 30px; background: white;\">\n    {{ content }}\n</div>",
+      "base_styles": "",
+      "primary_color": "#667eea",
+      "secondary_color": "#764ba2",
+      "logo_url": "",
+      "is_default": false,
+      "is_active": true
+    }
+  },
+  {
+    "model": "communications.emaillayout",
+    "pk": 3,
+    "fields": {
+      "created_at": "2026-01-01T08:00:00",
+      "updated_at": "2026-01-01T08:00:00",
+      "name": "Success",
+      "description": "Green-themed layout for positive confirmations: payment receipts, booking confirmed, contract signed.",
+      "header_template": "<div style=\"background: linear-gradient(135deg, {{ primary_color }} 0%, {{ secondary_color }} 100%); padding: 40px 30px; text-align: center;\">\n    <h1 style=\"color: white; margin: 0; font-size: 32px; font-weight: 300;\">{{ header_title|default:'Success!' }}</h1>\n    {% if header_subtitle %}<p style=\"color: rgba(255,255,255,0.9); margin-top: 10px; font-size: 16px;\">{{ header_subtitle }}</p>{% endif %}\n</div>",
+      "footer_template": "<div style=\"background: #f8f9fa; padding: 30px; text-align: center; border-top: 1px solid #e0e0e0;\">\n    <p style=\"color: #666; margin: 5px 0; font-size: 14px;\">{{ site_name }}</p>\n    <p style=\"color: #999; margin: 5px 0; font-size: 13px;\">Thank you for your business!</p>\n    <p style=\"color: #999; margin: 15px 0 5px 0; font-size: 12px;\">\u00a9 {{ current_year }} {{ site_name }}. All rights reserved.</p>\n</div>",
+      "wrapper_template": "<div style=\"padding: 40px 30px; background: white;\">\n    {{ content }}\n</div>",
+      "base_styles": "",
+      "primary_color": "#28a745",
+      "secondary_color": "#20c997",
+      "logo_url": "",
+      "is_default": false,
+      "is_active": true
+    }
+  },
+  {
+    "model": "communications.emaillayout",
+    "pk": 4,
+    "fields": {
+      "created_at": "2026-01-01T08:00:00",
+      "updated_at": "2026-01-01T08:00:00",
+      "name": "Urgent Action",
+      "description": "Orange/red layout for time-sensitive communications: contract signing deadlines, overdue payments.",
+      "header_template": "<div style=\"background: linear-gradient(135deg, {{ primary_color }} 0%, {{ secondary_color }} 100%); padding: 40px 30px; text-align: center;\">\n    <h1 style=\"color: white; margin: 0; font-size: 32px; font-weight: 300;\">{{ header_title|default:'Action Required' }}</h1>\n    {% if header_subtitle %}<p style=\"color: rgba(255,255,255,0.9); margin-top: 10px; font-size: 16px;\">{{ header_subtitle }}</p>{% endif %}\n</div>",
+      "footer_template": "<div style=\"background: #f8f9fa; padding: 30px; text-align: center; border-top: 1px solid #e0e0e0;\">\n    <p style=\"color: #666; margin: 5px 0; font-size: 14px;\">{{ site_name }}</p>\n    <p style=\"color: #999; margin: 15px 0 5px 0; font-size: 12px;\">\u00a9 {{ current_year }} {{ site_name }}. All rights reserved.</p>\n</div>",
+      "wrapper_template": "<div style=\"padding: 40px 30px; background: white;\">\n    {{ content }}\n</div>",
+      "base_styles": "",
+      "primary_color": "#fd7e14",
+      "secondary_color": "#dc3545",
+      "logo_url": "",
+      "is_default": false,
+      "is_active": true
+    }
+  }
+]

@@ -21,6 +21,7 @@ urlpatterns = [
     path('logout-all/', views.logout_all_devices, name='logout_all_devices'),
     path('sessions/', views.active_sessions, name='active_sessions'),
     path('me/', views.CurrentUserView.as_view(), name='current_user'),
+    path('me/avatar/', views.AvatarUploadView.as_view(), name='avatar_upload'),
 
     # Client registration endpoint
     path('register/', views.client_register, name='client_register'),
@@ -39,4 +40,22 @@ urlpatterns = [
     path('invitations/', views.AdminInvitationListCreateAPIView.as_view(), name='invitation_list_create'),
     path('invitations/<uuid:pk>/', views.AdminInvitationDetailAPIView.as_view(), name='invitation_detail'),
     path('invitations/<uuid:invitation_id>/accept/', views.accept_invitation, name='accept_invitation'),
+
+    # DPA Compliance - Data Subject Rights
+    path('me/data/', views.DataAccessView.as_view(), name='data-access'),
+    path('me/export/', views.DataExportView.as_view(), name='data-export'),
+    path('me/delete/', views.AccountDeletionView.as_view(), name='account-deletion'),
+    path('me/correct/', views.DataCorrectionView.as_view(), name='data-correction'),
+    path('me/object/', views.ProcessingObjectionView.as_view(), name='processing-objection'),
+
+    # Consent Management
+    path('me/consents/', views.ConsentListView.as_view(), name='consent-list'),
+    path('me/consents/<str:consent_type>/withdraw/', views.ConsentWithdrawView.as_view(), name='consent-withdraw'),
+
+    # Privacy Request Tracking
+    path('me/privacy-requests/', views.PrivacyRequestListView.as_view(), name='privacy-requests'),
+
+    # Admin Permission Management
+    path('permissions/', views.AdminPermissionsPresetsView.as_view(), name='admin-permissions-presets'),
+    path('<int:user_id>/permissions/', views.UpdateAdminPermissionsView.as_view(), name='admin-permissions-update'),
 ]

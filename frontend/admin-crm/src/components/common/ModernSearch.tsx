@@ -24,7 +24,6 @@ import {
   ExpandLess as ExpandLessIcon,
 } from '@mui/icons-material';
 import { tokens } from '../../design-system/tokens';
-import { glassPresets } from '../../design-system/utils/glassmorphism';
 
 export interface ModernSearchFilter {
   key: string;
@@ -64,8 +63,8 @@ export const ModernSearch: React.FC<ModernSearchProps> = ({
 }) => {
   const [filtersExpanded, setFiltersExpanded] = React.useState(defaultExpanded);
 
-  const hasActiveFilters = Object.values(filterValues).some(value => 
-    value !== undefined && value !== '' && value !== null && 
+  const hasActiveFilters = Object.values(filterValues).some(value =>
+    value !== undefined && value !== '' && value !== null &&
     (Array.isArray(value) ? value.length > 0 : true)
   );
 
@@ -91,10 +90,7 @@ export const ModernSearch: React.FC<ModernSearchProps> = ({
               onChange={(e) => handleFilterChange(filter.key, e.target.value)}
               disabled={disabled}
               sx={{
-                '& .MuiOutlinedInput-root': {
-                  ...glassPresets.light,
-                  borderRadius: tokens.spacing.radius.lg,
-                },
+                borderRadius: tokens.spacing.radius.md,
               }}
             >
               <MenuItem value="">All {filter.label}</MenuItem>
@@ -131,10 +127,7 @@ export const ModernSearch: React.FC<ModernSearchProps> = ({
                 </Box>
               )}
               sx={{
-                '& .MuiOutlinedInput-root': {
-                  ...glassPresets.light,
-                  borderRadius: tokens.spacing.radius.lg,
-                },
+                borderRadius: tokens.spacing.radius.md,
               }}
             >
               {filter.options?.map((option) => (
@@ -161,8 +154,7 @@ export const ModernSearch: React.FC<ModernSearchProps> = ({
             sx={{
               minWidth: filter.width || 140,
               '& .MuiOutlinedInput-root': {
-                ...glassPresets.light,
-                borderRadius: tokens.spacing.radius.lg,
+                borderRadius: tokens.spacing.radius.md,
               },
             }}
           />
@@ -186,22 +178,14 @@ export const ModernSearch: React.FC<ModernSearchProps> = ({
           size="small"
           sx={{
             '& .MuiOutlinedInput-root': {
-              ...glassPresets.light,
-              borderRadius: tokens.spacing.radius.lg,
-              border: `1px solid ${tokens.color.borders.glass}`,
-              '&:hover': {
-                border: `1px solid ${tokens.color.primary[300]}`,
-              },
-              '&.Mui-focused': {
-                border: `1px solid ${tokens.color.primary[500]}`,
-                boxShadow: `0 0 0 3px ${tokens.color.primary[500]}15`,
-              },
+              borderRadius: tokens.spacing.radius.md,
+              bgcolor: 'background.paper',
             },
           }}
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">
-                <SearchIcon sx={{ color: tokens.color.primary[600] }} />
+                <SearchIcon sx={{ color: tokens.color.neutral[500] }} />
               </InputAdornment>
             ),
             endAdornment: searchValue && (
@@ -226,8 +210,7 @@ export const ModernSearch: React.FC<ModernSearchProps> = ({
             onClick={() => setFiltersExpanded(!filtersExpanded)}
             disabled={disabled}
             sx={{
-              ...glassPresets.light,
-              borderRadius: tokens.spacing.radius.lg,
+              borderRadius: tokens.spacing.radius.md,
               minWidth: 120,
               position: 'relative',
             }}
@@ -242,7 +225,7 @@ export const ModernSearch: React.FC<ModernSearchProps> = ({
                   width: 8,
                   height: 8,
                   borderRadius: '50%',
-                  backgroundColor: tokens.color.primary[500],
+                  bgcolor: tokens.color.primary[500],
                 }}
               />
             )}
@@ -255,9 +238,9 @@ export const ModernSearch: React.FC<ModernSearchProps> = ({
         <Collapse in={filtersExpanded} timeout={200}>
           <Box
             sx={{
-              ...glassPresets.light,
-              borderRadius: tokens.spacing.radius.lg,
-              border: `1px solid ${tokens.color.borders.glass}`,
+              bgcolor: 'background.paper',
+              borderRadius: tokens.spacing.radius.md,
+              border: `1px solid ${tokens.color.borders.subtle}`,
               p: 2,
               mb: 2,
             }}
@@ -295,18 +278,18 @@ export const ModernSearch: React.FC<ModernSearchProps> = ({
 
             {/* Active Filters Display */}
             {hasActiveFilters && (
-              <Box sx={{ mt: 2, pt: 2, borderTop: `1px solid ${tokens.color.borders.glass}` }}>
+              <Box sx={{ mt: 2, pt: 2, borderTop: `1px solid ${tokens.color.borders.subtle}` }}>
                 <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
                   Active Filters:
                 </Typography>
                 <Stack direction="row" spacing={1} flexWrap="wrap">
                   {Object.entries(filterValues).map(([key, value]) => {
                     if (!value || (Array.isArray(value) && value.length === 0)) return null;
-                    
+
                     const filter = filters.find(f => f.key === key);
                     if (!filter) return null;
 
-                    const displayValue = Array.isArray(value) 
+                    const displayValue = Array.isArray(value)
                       ? `${value.length} selected`
                       : value.toString();
 
@@ -318,7 +301,7 @@ export const ModernSearch: React.FC<ModernSearchProps> = ({
                         onDelete={() => handleFilterChange(key, filter.type === 'multiselect' ? [] : '')}
                         disabled={disabled}
                         sx={{
-                          backgroundColor: tokens.color.primary[100],
+                          bgcolor: tokens.color.primary[50],
                           '& .MuiChip-deleteIcon': {
                             color: tokens.color.primary[700],
                           },

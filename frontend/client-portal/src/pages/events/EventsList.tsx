@@ -18,6 +18,7 @@ import {
   useTheme,
   alpha,
 } from '@mui/material';
+import { SEO } from '../../hooks/useSEO';
 import { GlassCard } from '../../design-system/components/GlassCard';
 import { AnimatedElement } from '../../design-system/components/AnimatedElement';
 import {
@@ -150,9 +151,15 @@ const EventsList: React.FC = () => {
   );
 
   return (
-    <Box>
-      {/* Header */}
-      <AnimatedElement animation="slideDown" delay={100}>
+    <>
+      <SEO
+        title="My Events | LifePlace Alfonso"
+        description="View and manage your events."
+        noIndex={true}
+      />
+      <Box>
+        {/* Header */}
+        <AnimatedElement animation="slideDown" delay={100}>
         <Stack 
           direction="row" 
           justifyContent="space-between" 
@@ -355,15 +362,16 @@ const EventsList: React.FC = () => {
         </AnimatedElement>
       )}
 
-      {/* Results summary */}
-      {!isLoading && !error && filteredEvents.length > 0 && (
-        <Box sx={{ mt: 3, textAlign: 'center' }}>
-          <Typography variant="body2" color="text.secondary">
-            Showing {filteredEvents.length} of {events.length} events
-          </Typography>
-        </Box>
-      )}
-    </Box>
+        {/* Results summary */}
+        {!isLoading && !error && filteredEvents.length > 0 && (
+          <Box sx={{ mt: 3, textAlign: 'center' }}>
+            <Typography variant="body2" color="text.secondary">
+              Showing {filteredEvents.length} of {events.length} events
+            </Typography>
+          </Box>
+        )}
+      </Box>
+    </>
   );
 };
 

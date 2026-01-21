@@ -20,6 +20,8 @@ import {
   Divider,
   Alert,
   InputAdornment,
+  Button,
+  CircularProgress,
 } from '@mui/material';
 import { tokens } from '../../design-system/tokens';
 
@@ -62,6 +64,8 @@ export interface ModernFormProps {
   disabled?: boolean;
   className?: string;
   spacing?: number;
+  isSubmitting?: boolean;
+  submitLabel?: string;
 }
 
 export const ModernForm: React.FC<ModernFormProps> = ({
@@ -72,6 +76,8 @@ export const ModernForm: React.FC<ModernFormProps> = ({
   disabled = false,
   className,
   spacing = 3,
+  isSubmitting = false,
+  submitLabel,
 }) => {
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
@@ -336,6 +342,19 @@ export const ModernForm: React.FC<ModernFormProps> = ({
           )}
         </Box>
       ))}
+
+      {submitLabel && (
+        <Box sx={{ mt: 4, display: 'flex', justifyContent: 'flex-end' }}>
+          <Button
+            type="submit"
+            variant="contained"
+            disabled={disabled || isSubmitting}
+            sx={{ minWidth: 120 }}
+          >
+            {isSubmitting ? <CircularProgress size={20} color="inherit" /> : submitLabel}
+          </Button>
+        </Box>
+      )}
     </Box>
   );
 };

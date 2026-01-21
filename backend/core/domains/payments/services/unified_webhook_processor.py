@@ -2,6 +2,7 @@
 
 import logging
 import json
+from decimal import Decimal
 from typing import Dict, List, Optional, Any, Tuple
 
 import stripe
@@ -152,8 +153,8 @@ class StripeWebhookHandler(BaseWebhookHandler):
             webhook_secret = gateway.config.get('webhook_secret')
 
             if not webhook_secret:
-                logger.warning("No webhook secret configured for Stripe")
-                return True  # Skip verification in development
+                logger.error("No webhook secret configured for Stripe - rejecting webhook")
+                return False  # Fail closed: reject webhooks when no secret is configured
 
             # Get signature from header
             signature = request.META.get('HTTP_STRIPE_SIGNATURE')
@@ -356,17 +357,154 @@ class StripeWebhookHandler(BaseWebhookHandler):
         """Handle chargeback/dispute creation"""
         logger.warning(f"Chargeback created for transaction {transaction_id}")
 
-        # TODO: Implement chargeback handling
-        # - Create dispute record
-        # - Notify admin
-        # - Update payment status if needed
+        try:
+            from ..models import PaymentTransaction, PaymentDispute, PaymentGateway
 
-        return WebhookProcessingResult(
-            success=True,
-            message="Chargeback notification received",
-            transaction_id=transaction_id,
-            action_taken='chargeback_logged'
-        )
+            # Extract dispute data from Stripe webhook
+            data_object = raw_data.get('data', {}).get('object', {})
+            dispute_id = data_object.get('id', '')
+            charge_id = data_object.get('charge', '')
+            amount = data_object.get('amount', 0)
+            currency = data_object.get('currency', 'usd').upper()
+            reason = data_object.get('reason', 'other')
+            status = data_object.get('status', 'needs_response')
+            evidence_details = data_object.get('evidence_details', {})
+            evidence_due_by = evidence_details.get('due_by')
+
+            # Map Stripe reason to our choices
+            reason_mapping = {
+                'duplicate': 'DUPLICATE',
+                'fraudulent': 'FRAUDULENT',
+                'subscription_canceled': 'SUBSCRIPTION_CANCELED',
+                'product_unacceptable': 'PRODUCT_UNACCEPTABLE',
+                'product_not_received': 'PRODUCT_NOT_RECEIVED',
+                'unrecognized': 'UNRECOGNIZED',
+                'credit_not_processed': 'CREDIT_NOT_PROCESSED',
+                'general': 'GENERAL',
+            }
+            mapped_reason = reason_mapping.get(reason, 'OTHER')
+
+            # Find the related payment transaction
+            payment = None
+            transaction = PaymentTransaction.objects.filter(
+                transaction_id__in=[transaction_id, charge_id],
+                gateway__code='stripe'
+            ).first()
+
+            if transaction:
+                payment = transaction.payment
+
+            # Get or create the gateway
+            gateway = PaymentGateway.objects.filter(code='stripe').first()
+            if not gateway:
+                logger.error("Stripe gateway not found in database")
+                return WebhookProcessingResult(
+                    success=False,
+                    message="Stripe gateway not configured",
+                    error_code='gateway_not_found'
+                )
+
+            # Check for duplicate dispute
+            if PaymentDispute.objects.filter(gateway_dispute_id=dispute_id).exists():
+                logger.info(f"Dispute {dispute_id} already exists, skipping")
+                return WebhookProcessingResult(
+                    success=True,
+                    message="Dispute already recorded",
+                    transaction_id=transaction_id,
+                    action_taken='duplicate_ignored'
+                )
+
+            # Create dispute record
+            dispute = PaymentDispute.objects.create(
+                payment=payment,
+                gateway=gateway,
+                gateway_dispute_id=dispute_id,
+                gateway_transaction_id=charge_id or transaction_id,
+                amount=Decimal(amount) / 100,  # Stripe amounts are in cents
+                currency=currency,
+                reason=mapped_reason,
+                reason_description=f"Stripe dispute: {reason}",
+                status='OPEN' if status == 'needs_response' else 'UNDER_REVIEW',
+                evidence_due_by=timezone.datetime.fromtimestamp(evidence_due_by, tz=timezone.utc) if evidence_due_by else None,
+                gateway_data=raw_data
+            )
+
+            logger.info(f"Created dispute record {dispute.id} for transaction {transaction_id}")
+
+            # Send admin notification
+            self._notify_admins_of_dispute(dispute, payment)
+
+            # Update payment status to indicate dispute
+            if payment and payment.status == 'COMPLETED':
+                # Add to event timeline
+                from core.domains.events.models import EventTimeline
+                EventTimeline.objects.create(
+                    event=payment.event,
+                    action_type='SYSTEM_UPDATE',
+                    description=f"Payment dispute opened for {payment.format_amount_with_currency()}",
+                    is_public=False,
+                    action_data={
+                        'payment_id': payment.id,
+                        'dispute_id': dispute.id,
+                        'reason': mapped_reason
+                    }
+                )
+
+            return WebhookProcessingResult(
+                success=True,
+                message="Chargeback/dispute recorded and admin notified",
+                payment_id=payment.id if payment else None,
+                transaction_id=transaction_id,
+                action_taken='dispute_created'
+            )
+
+        except Exception as e:
+            logger.error(f"Error handling chargeback webhook: {e}", exc_info=True)
+            return WebhookProcessingResult(
+                success=False,
+                message=str(e),
+                error_code='chargeback_processing_error'
+            )
+
+    def _notify_admins_of_dispute(self, dispute, payment):
+        """Send notification to admins about new dispute"""
+        try:
+            from core.domains.users.models import User
+            from core.domains.notifications.services import NotificationService
+
+            # Get all admin users
+            admin_users = User.objects.filter(role='ADMIN', is_active=True)
+
+            for admin in admin_users:
+                try:
+                    NotificationService.create_notification(
+                        user=admin,
+                        title="Payment Dispute Alert",
+                        message=f"A chargeback/dispute has been opened for {dispute.currency} {dispute.amount}. "
+                                f"Reason: {dispute.get_reason_display()}. "
+                                f"Evidence due by: {dispute.evidence_due_by.strftime('%Y-%m-%d') if dispute.evidence_due_by else 'N/A'}",
+                        notification_type='ALERT',
+                        priority='HIGH',
+                        action_url=f"/admin/payments/disputes/{dispute.id}/",
+                        metadata={
+                            'dispute_id': dispute.id,
+                            'payment_id': payment.id if payment else None,
+                            'amount': str(dispute.amount),
+                            'currency': dispute.currency
+                        }
+                    )
+                except Exception as e:
+                    logger.warning(f"Failed to notify admin {admin.id} of dispute: {e}")
+
+            # Mark dispute as admin notified
+            dispute.admin_notified = True
+            dispute.admin_notified_at = timezone.now()
+            dispute.save(update_fields=['admin_notified', 'admin_notified_at'])
+
+            logger.info(f"Notified {admin_users.count()} admins of dispute {dispute.id}")
+
+        except Exception as e:
+            logger.error(f"Error notifying admins of dispute: {e}")
 
     def _handle_payment_method_event(self, event_type: str, raw_data: Dict) -> WebhookProcessingResult:
         """Handle payment method events"""

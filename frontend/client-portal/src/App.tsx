@@ -1,6 +1,6 @@
 // frontend/client-portal/src/App.tsx
 
-import React from 'react';
+import React, { Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { Box, CircularProgress, Typography } from '@mui/material';
 import { AppProviders } from './providers/AppProviders';
@@ -9,22 +9,41 @@ import { useToastActions } from './contexts/ToastContext';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { PublicLayout, BookingLayout, ClientLayout } from './components/layout';
 import { ProtectedRoute } from './components/auth';
+
+// Critical path imports - keep static for performance
 import { Home } from './pages/home';
 import { Login, Register, ForgotPassword, ResetPassword } from './pages/auth';
 import { Dashboard } from './pages/dashboard';
-import { EventsList, EventDetail } from './pages/events';
-import { Profile } from './pages/profile';
-import { FinancialPortal } from './pages/payments';
 import AcceptInvitation from './pages/auth/AcceptInvitation';
 import { BookingComplete, BookingPage } from './pages/booking';
-import ContractsPage from './pages/contracts/ContractsPage';
-import { AboutPage } from './pages/about';
-import { FacilitiesPage } from './pages/facilities';
 
-// Messaging and Records imports
-import { ClientMessagesPage } from './pages/messages/ClientMessagesPage';
-import { RecordsPage } from './pages/records/RecordsPage';
+// Lazy-loaded page components for code splitting
+const AboutPage = React.lazy(() => import('./pages/about').then(m => ({ default: m.AboutPage })));
+const ServicesPage = React.lazy(() => import('./pages/services').then(m => ({ default: m.ServicesPage })));
+const RatesPage = React.lazy(() => import('./pages/rates').then(m => ({ default: m.RatesPage })));
+const FacilitiesPage = React.lazy(() => import('./pages/facilities').then(m => ({ default: m.FacilitiesPage })));
+const PartnerPage = React.lazy(() => import('./pages/partner').then(m => ({ default: m.PartnerPage })));
+const ReviewsPage = React.lazy(() => import('./pages/reviews').then(m => ({ default: m.ReviewsPage })));
+const ContactPage = React.lazy(() => import('./pages/contact').then(m => ({ default: m.ContactPage })));
+const PodcastsPage = React.lazy(() => import('./pages/podcasts').then(m => ({ default: m.PodcastsPage })));
 
+// Protected route lazy imports
+const Profile = React.lazy(() => import('./pages/profile').then(m => ({ default: m.Profile })));
+const FinancialPortal = React.lazy(() => import('./pages/payments').then(m => ({ default: m.FinancialPortal })));
+const EventsList = React.lazy(() => import('./pages/events').then(m => ({ default: m.EventsList })));
+const EventDetail = React.lazy(() => import('./pages/events').then(m => ({ default: m.EventDetail })));
+const DocumentsPage = React.lazy(() => import('./pages/documents/DocumentsPage').then(m => ({ default: m.DocumentsPage })));
+const RecordsPage = React.lazy(() => import('./pages/records/RecordsPage').then(m => ({ default: m.RecordsPage })));
+const ActionCenterPage = React.lazy(() => import('./pages/actions/ActionCenterPage').then(m => ({ default: m.ActionCenterPage })));
+const ContractDetail = React.lazy(() => import('./pages/contracts').then(m => ({ default: m.ContractDetail })));
+const SupportPage = React.lazy(() => import('./pages/support').then(m => ({ default: m.SupportPage })));
+
+// Legal pages lazy imports
+const TermsPage = React.lazy(() => import('./pages/legal').then(m => ({ default: m.TermsPage })));
+const PrivacyPage = React.lazy(() => import('./pages/legal').then(m => ({ default: m.PrivacyPage })));
+
+// NotFound page (404) lazy import
+const NotFound = React.lazy(() => import('./pages/NotFound').then(m => ({ default: m.NotFound })));
 
 // Import booking components
 
@@ -56,38 +75,6 @@ const ClientLayoutWrapper: React.FC<{ children: React.ReactNode }> = ({ children
     </ClientLayout>
   );
 };
-
-// Placeholder page component
-interface PlaceholderPageProps {
-  title: string;
-  description: string;
-}
-
-const PlaceholderPage: React.FC<PlaceholderPageProps> = ({ title, description }) => (
-  <Box
-    sx={{
-      minHeight: 'calc(100vh - 160px)',
-      width: '100vw',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      textAlign: 'center',
-      px: { xs: 2, sm: 3, md: 4 },
-    }}
-  >
-    <Box sx={{ maxWidth: 600 }}>
-      <Typography variant="h3" sx={{ fontWeight: 600, mb: 2, color: 'white', textShadow: '0 4px 20px rgba(0,0,0,0.3)' }}>
-        {title}
-      </Typography>
-      <Typography variant="h6" sx={{ mb: 4, color: 'rgba(255, 255, 255, 0.9)', textShadow: '0 2px 10px rgba(0,0,0,0.2)' }}>
-        {description}
-      </Typography>
-      <Typography variant="body1" sx={{ color: 'rgba(255, 255, 255, 0.7)', textShadow: '0 1px 5px rgba(0,0,0,0.2)' }}>
-        This page is coming soon! We're working hard to bring you the best experience.
-      </Typography>
-    </Box>
-  </Box>
-);
 
 // Main app router component
 const AppRouter: React.FC = () => {
@@ -121,11 +108,12 @@ const AppRouter: React.FC = () => {
   }
 
   return (
-    <Routes>
-      {/* Public Routes with PublicLayout */}
-      <Route 
-        path="/" 
-        element={
+    <Suspense fallback={<LoadingSpinner />}>
+      <Routes>
+        {/* Public Routes with PublicLayout */}
+        <Route
+          path="/"
+          element={
           <PublicLayout 
             fullHeight
             onNavigateToLogin={handleNavigateToLogin}
@@ -175,28 +163,22 @@ const AppRouter: React.FC = () => {
         }
       />
       
-      <Route 
-        path="/services" 
+      <Route
+        path="/services"
         element={
-          <PublicLayout>
-            <PlaceholderPage 
-              title="Our Services" 
-              description="Comprehensive packages for weddings, retreats, team building, and camping"
-            />
+          <PublicLayout fullHeight>
+            <ServicesPage onNavigateToBooking={handleNavigateToBooking} />
           </PublicLayout>
-        } 
+        }
       />
       
-      <Route 
-        path="/rates" 
+      <Route
+        path="/rates"
         element={
-          <PublicLayout>
-            <PlaceholderPage 
-              title="Rates" 
-              description="Transparent pricing for all our services"
-            />
+          <PublicLayout fullHeight>
+            <RatesPage onNavigateToBooking={handleNavigateToBooking} />
           </PublicLayout>
-        } 
+        }
       />
       
       <Route
@@ -208,42 +190,42 @@ const AppRouter: React.FC = () => {
         }
       />
       
-      <Route 
-        path="/partner" 
+      <Route
+        path="/partner"
         element={
-          <PublicLayout>
-            <PlaceholderPage 
-              title="Partner With Us" 
-              description="Join our network of trusted event professionals"
-            />
+          <PublicLayout fullHeight>
+            <PartnerPage />
           </PublicLayout>
-        } 
+        }
       />
       
-      <Route 
-        path="/reviews" 
+      <Route
+        path="/reviews"
         element={
-          <PublicLayout>
-            <PlaceholderPage 
-              title="Reviews" 
-              description="See what our clients say about their experiences"
-            />
+          <PublicLayout fullHeight>
+            <ReviewsPage onNavigateToBooking={handleNavigateToBooking} />
           </PublicLayout>
-        } 
+        }
       />
       
-      <Route 
-        path="/contact" 
+      <Route
+        path="/contact"
         element={
-          <PublicLayout>
-            <PlaceholderPage 
-              title="Contact Us" 
-              description="Get in touch to discuss your event needs"
-            />
+          <PublicLayout fullHeight>
+            <ContactPage />
           </PublicLayout>
-        } 
+        }
       />
-      
+
+      <Route
+        path="/podcasts"
+        element={
+          <PublicLayout fullHeight>
+            <PodcastsPage />
+          </PublicLayout>
+        }
+      />
+
       {/* Auth routes - redirect if already authenticated */}
       <Route 
         path="/login" 
@@ -390,14 +372,30 @@ const AppRouter: React.FC = () => {
       />
 
       <Route
-        path="/contracts"
+        path="/documents"
         element={
           <ProtectedRoute>
             <ClientLayoutWrapper>
-              <ContractsPage />
+              <DocumentsPage />
             </ClientLayoutWrapper>
           </ProtectedRoute>
         }
+      />
+      {/* Contract detail page */}
+      <Route
+        path="/contracts/:id"
+        element={
+          <ProtectedRoute>
+            <ClientLayoutWrapper>
+              <ContractDetail />
+            </ClientLayoutWrapper>
+          </ProtectedRoute>
+        }
+      />
+      {/* Redirect old contracts list route to documents for backward compatibility */}
+      <Route
+        path="/contracts"
+        element={<Navigate to="/documents" replace />}
       />
 
       <Route
@@ -411,71 +409,65 @@ const AppRouter: React.FC = () => {
         }
       />
 
-      {/* Messages Routes */}
+      {/* Action Center Route */}
+      <Route
+        path="/actions"
+        element={
+          <ProtectedRoute>
+            <ClientLayoutWrapper>
+              <ActionCenterPage />
+            </ClientLayoutWrapper>
+          </ProtectedRoute>
+        }
+      />
+      {/* Redirect old messages route to actions for backward compatibility */}
       <Route
         path="/messages"
-        element={
-          <ProtectedRoute>
-            <ClientLayoutWrapper>
-              <ClientMessagesPage />
-            </ClientLayoutWrapper>
-          </ProtectedRoute>
-        }
+        element={<Navigate to="/actions" replace />}
       />
       <Route
-        path="/messages/thread/:threadId"
-        element={
-          <ProtectedRoute>
-            <ClientLayoutWrapper>
-              <ClientMessagesPage />
-            </ClientLayoutWrapper>
-          </ProtectedRoute>
-        }
+        path="/messages/*"
+        element={<Navigate to="/actions" replace />}
       />
 
+      {/* Support Route */}
       <Route
-        path="/help" 
+        path="/support"
         element={
           <ProtectedRoute>
             <ClientLayoutWrapper>
-              <PlaceholderPage 
-                title="Help & Support" 
-                description="Support center coming soon!"
-              />
+              <SupportPage />
             </ClientLayoutWrapper>
           </ProtectedRoute>
-        } 
+        }
       />
+      {/* Redirect /help to /support for backward compatibility */}
+      <Route path="/help" element={<Navigate to="/support" replace />} />
 
       {/* Legal pages */}
-      <Route 
-        path="/privacy" 
+      <Route
+        path="/privacy"
         element={
           <PublicLayout>
-            <PlaceholderPage 
-              title="Privacy Policy" 
-              description="Your privacy is important to us"
-            />
+            <PrivacyPage />
           </PublicLayout>
-        } 
+        }
       />
-      
-      <Route 
-        path="/terms" 
+
+      <Route
+        path="/terms"
         element={
           <PublicLayout>
-            <PlaceholderPage 
-              title="Terms of Service" 
-              description="Terms and conditions for using our services"
-            />
+            <TermsPage />
           </PublicLayout>
-        } 
+        }
       />
 
 
-      {/* Catch all route - redirect to home */}
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+        {/* 404 Not Found - Better for SEO than redirect */}
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </Suspense>
   );
 };
 

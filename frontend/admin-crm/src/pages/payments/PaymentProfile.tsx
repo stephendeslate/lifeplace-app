@@ -1,5 +1,5 @@
-// Modern Payment Profile Page
-// Completely modernized with ModernDesignSystem components and no animations
+// Payment Profile Page
+// Flat, simple styling consistent with Analytics page pattern
 
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -28,6 +28,8 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  TextField,
+  CircularProgress,
 } from '@mui/material';
 import {
   ArrowBack as ArrowBackIcon,
@@ -38,7 +40,6 @@ import {
   Send as SendIcon,
   Payment as PaymentIcon,
   Event as EventIcon,
-  Schedule as ScheduleIcon,
   Description as ContractIcon,
   Assignment as QuestionnaireIcon,
   Note as NoteIcon,
@@ -49,7 +50,7 @@ import { useLayout } from '../../contexts/LayoutContext';
 import { usePaymentManagement } from '../../hooks/usePayments';
 import { PaymentForm } from '../../components/payments/PaymentForm';
 import { NotesList } from '../../components/notes';
-import { 
+import {
   ActivityTimeline,
   QuickActions,
   EntityNavigation,
@@ -62,19 +63,14 @@ import { PAYMENT_STATUSES } from '../../types/payments.types';
 import type { PaymentStatus, UpdatePaymentData } from '../../types/payments.types';
 
 // Modern Design System imports
-import { 
+import {
   ModernPageLayout,
-  ModernCard,
   ModernEmptyState,
-  ModernLoadingSpinner,
   ModernPageHeader,
   createRefreshAction,
 } from '../../components/common/ModernDesignSystem';
 import { formatCurrency } from '../../utils/currency';
 import { useCurrencySettings } from '../../hooks/useCurrency';
-import { tokens } from '../../design-system';
-import { glassPresets } from '../../design-system/utils/glassmorphism';
-import { createTransition } from '../../design-system/utils/animations';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -96,13 +92,16 @@ export const PaymentProfile: React.FC = () => {
   const navigate = useNavigate();
   const { setBreadcrumbs } = useLayout();
   const { settings: currencySettings } = useCurrencySettings();
-  
+
   // State
   const [tabValue, setTabValue] = useState(0);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  
+  const [refundDialogOpen, setRefundDialogOpen] = useState(false);
+  const [refundAmount, setRefundAmount] = useState('');
+  const [refundReason, setRefundReason] = useState('');
+
   // Hooks
   const paymentId = parseInt(id || '0');
   const {
@@ -110,14 +109,17 @@ export const PaymentProfile: React.FC = () => {
     isLoadingPayment,
     invoice,
     isLoadingInvoice,
-    paymentPlan,
-    isLoadingPaymentPlan,
     updatePayment,
     isUpdatingPayment,
     processPayment,
     isProcessingPayment,
     sendReceipt,
     isSendingReceipt,
+    sendReminder,
+    deletePayment,
+    isDeletingPayment,
+    createRefund,
+    isCreatingRefund,
     refetchPayment,
   } = usePaymentManagement(paymentId);
 
@@ -150,11 +152,40 @@ export const PaymentProfile: React.FC = () => {
     handleMenuClose();
   }, [sendReceipt, handleMenuClose]);
 
+  const handleSendReminder = useCallback(() => {
+    sendReminder();
+    handleMenuClose();
+  }, [sendReminder, handleMenuClose]);
+
+  const handleOpenRefundDialog = useCallback(() => {
+    if (payment) {
+      setRefundAmount(payment.amount);
+      setRefundReason('');
+    }
+    setRefundDialogOpen(true);
+    handleMenuClose();
+  }, [payment, handleMenuClose]);
+
+  const handleCreateRefund = useCallback(() => {
+    if (!payment || !refundAmount) return;
+    createRefund({
+      payment: payment.id,
+      amount: refundAmount,
+      reason: refundReason || 'Refund requested',
+    }, {
+      onSuccess: () => {
+        setRefundDialogOpen(false);
+        setRefundAmount('');
+        setRefundReason('');
+        refetchPayment();
+      }
+    });
+  }, [payment, refundAmount, refundReason, createRefund, refetchPayment]);
+
   // Enhanced components data
   const quickActions: QuickAction[] = useMemo(() => {
     if (!payment) return [];
-    return createPaymentActions(payment.id, payment.status, (actionType: string, paymentId: number) => {
-      console.log('Quick action:', actionType, 'for payment:', paymentId);
+    return createPaymentActions(payment.id, payment.status, (actionType: string, _paymentId: number) => {
       switch (actionType) {
         case 'process-payment':
           handleProcessPayment();
@@ -163,17 +194,17 @@ export const PaymentProfile: React.FC = () => {
           handleSendReceipt();
           break;
         case 'send-reminder':
-          // Send payment reminder functionality
+          handleSendReminder();
           break;
         case 'create-refund':
-          // Open refund creation dialog
+          handleOpenRefundDialog();
           break;
         case 'add-note':
-          setTabValue(5); // Switch to notes tab
+          setTabValue(4); // Switch to notes tab
           break;
       }
     });
-  }, [payment, handleProcessPayment, handleSendReceipt]);
+  }, [payment, handleProcessPayment, handleSendReceipt, handleSendReminder, handleOpenRefundDialog]);
 
   const relatedEntities = useMemo(() => {
     const entities = [];
@@ -191,7 +222,7 @@ export const PaymentProfile: React.FC = () => {
 
   const activityItems: ActivityItem[] = useMemo(() => {
     const items: ActivityItem[] = [];
-    
+
     if (payment) {
       // Payment creation activity
       items.push({
@@ -235,7 +266,7 @@ export const PaymentProfile: React.FC = () => {
 
     return items.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
   }, [payment, formatPaymentAmount]);
-  
+
 
   useEffect(() => {
     if (payment) {
@@ -268,19 +299,30 @@ export const PaymentProfile: React.FC = () => {
   };
 
   const handleDelete = () => {
-    // Note: Delete functionality would need to be implemented in the hook
-    setDeleteDialogOpen(false);
-    navigate('/payments');
+    deletePayment(undefined, {
+      onSuccess: () => {
+        setDeleteDialogOpen(false);
+        navigate('/payments');
+      }
+    });
   };
 
   const getStatusColor = (status: PaymentStatus): 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning' => {
     switch (status) {
-      case 'COMPLETED':
-        return 'success';
+      case 'CREATED':
+        return 'primary';
       case 'PENDING':
         return 'warning';
+      case 'PROCESSING':
+        return 'info';
+      case 'COMPLETED':
+        return 'success';
       case 'FAILED':
         return 'error';
+      case 'CANCELLED':
+        return 'warning';
+      case 'REFUNDED':
+        return 'secondary';
       default:
         return 'primary';
     }
@@ -292,7 +334,7 @@ export const PaymentProfile: React.FC = () => {
     const today = new Date();
     const diffTime = due.getTime() - today.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
+
     if (diffDays < 0) {
       return {
         text: `${Math.abs(diffDays)} days overdue`,
@@ -324,12 +366,9 @@ export const PaymentProfile: React.FC = () => {
   if (isLoadingPayment) {
     return (
       <ModernPageLayout backgroundPattern="default">
-        <ModernLoadingSpinner
-          size={48}
-          message="Loading payment details..."
-          variant="circular"
-          glass
-        />
+        <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
+          <CircularProgress />
+        </Box>
       </ModernPageLayout>
     );
   }
@@ -360,7 +399,6 @@ export const PaymentProfile: React.FC = () => {
             color: 'primary'
           }}
           size="medium"
-          illustration="minimal"
         />
       </ModernPageLayout>
     );
@@ -376,7 +414,7 @@ export const PaymentProfile: React.FC = () => {
         subtitle={payment.event_details?.name || 'No Event Associated'}
         icon={<PaymentIcon />}
         primaryAction={{
-          label: payment.status === 'PENDING' && payment.payment_method ? 'Process Payment' : 
+          label: payment.status === 'PENDING' && payment.payment_method ? 'Process Payment' :
                  payment.status === 'COMPLETED' ? 'Send Receipt' : 'Edit Payment',
           onClick: payment.status === 'PENDING' && payment.payment_method ? handleProcessPayment :
                    payment.status === 'COMPLETED' ? handleSendReceipt : handleEditPayment,
@@ -396,7 +434,7 @@ export const PaymentProfile: React.FC = () => {
           createRefreshAction(() => refetchPayment()),
           {
             label: 'More Options',
-            onClick: () => {},
+            onClick: (e) => setAnchorEl(e?.currentTarget ?? null),
             icon: <MoreVertIcon />,
             variant: 'icon',
           }
@@ -428,13 +466,6 @@ export const PaymentProfile: React.FC = () => {
         anchorEl={anchorEl}
         open={Boolean(anchorEl)}
         onClose={handleMenuClose}
-        PaperProps={{
-          sx: {
-            ...glassPresets.medium,
-            border: `1px solid ${tokens.color.borders.glass}`,
-            borderRadius: tokens.spacing.radius.lg,
-          }
-        }}
       >
         <MenuItem onClick={handleEditPayment}>
           <ListItemIcon>
@@ -451,9 +482,9 @@ export const PaymentProfile: React.FC = () => {
             <ListItemText>Send Receipt</ListItemText>
           </MenuItem>
         )}
-        
+
         <Divider />
-        
+
         <MenuItem onClick={handleDeletePayment} sx={{ color: 'error.main' }}>
           <ListItemIcon>
             <DeleteIcon color="error" />
@@ -463,8 +494,8 @@ export const PaymentProfile: React.FC = () => {
       </Menu>
 
       {/* Payment Overview Cards */}
-      <Box 
-        sx={{ 
+      <Box
+        sx={{
           display: 'flex',
           flexDirection: { xs: 'column', lg: 'row' },
           gap: 3,
@@ -473,63 +504,25 @@ export const PaymentProfile: React.FC = () => {
       >
         {/* Payment Details */}
         <Box sx={{ flex: 1 }}>
-          <ModernCard
-            variant="glass"
-            size="large"
-            interactive={false}
-            animation="none"
-            title="Payment Information"
-            sx={{
-              '&::before': {
-                background: `linear-gradient(135deg, ${tokens.color.primary[500]}08 0%, ${tokens.color.success[500]}06 100%)`,
-              }
-            }}
-          >
+          <Box sx={{ borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
             <Stack spacing={3}>
               <Box display="flex" alignItems="center" gap={2}>
-                <Box
-                  sx={{
-                    p: 1.5,
-                    borderRadius: tokens.spacing.radius.lg,
-                    backgroundColor: `${tokens.color.primary[500]}15`,
-                    color: tokens.color.primary[600],
-                  }}
-                >
-                  <PaymentIcon />
-                </Box>
-                <Typography 
-                  variant="h6" 
-                  sx={{
-                    background: `linear-gradient(135deg, ${tokens.color.primary[600]}, ${tokens.color.primary[700]})`,
-                    backgroundClip: 'text',
-                    WebkitBackgroundClip: 'text',
-                    color: 'transparent',
-                    fontWeight: 600,
-                  }}
-                >
+                <PaymentIcon color="primary" />
+                <Typography variant="h6" fontWeight={600}>
                   Payment Information
                 </Typography>
               </Box>
-              
+
               <Stack spacing={2}>
                 <Box>
                   <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 0.5 }}>
                     Amount
                   </Typography>
-                  <Typography 
-                    variant="h4" 
-                    sx={{
-                      background: `linear-gradient(135deg, ${tokens.color.primary[600]}, ${tokens.color.success[600]})`,
-                      backgroundClip: 'text',
-                      WebkitBackgroundClip: 'text',
-                      color: 'transparent',
-                      fontWeight: 700,
-                    }}
-                  >
+                  <Typography variant="h4" color="primary.main" fontWeight={700}>
                     {formatPaymentAmount(payment.amount)}
                   </Typography>
                 </Box>
-                
+
                 <Box>
                   <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 0.5 }}>
                     Due Date
@@ -540,16 +533,11 @@ export const PaymentProfile: React.FC = () => {
                   <Chip
                     label={daysRemaining.text}
                     size="small"
-                    sx={{ 
-                      mt: 1,
-                      backgroundColor: daysRemaining.severity === 'overdue' ? tokens.color.error[100] : 
-                                       daysRemaining.severity === 'today' ? tokens.color.warning[100] :
-                                       daysRemaining.severity === 'soon' ? tokens.color.warning[100] : tokens.color.success[100],
-                      color: daysRemaining.severity === 'overdue' ? tokens.color.error[700] :
-                             daysRemaining.severity === 'today' ? tokens.color.warning[700] :
-                             daysRemaining.severity === 'soon' ? tokens.color.warning[700] : tokens.color.success[700],
-                      fontWeight: 600,
-                    }}
+                    color={
+                      daysRemaining.severity === 'overdue' ? 'error' :
+                      daysRemaining.severity === 'today' || daysRemaining.severity === 'soon' ? 'warning' : 'success'
+                    }
+                    sx={{ mt: 1, fontWeight: 600 }}
                   />
                 </Box>
 
@@ -569,15 +557,10 @@ export const PaymentProfile: React.FC = () => {
                     <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 0.5 }}>
                       Reference Number
                     </Typography>
-                    <Typography 
-                      variant="body1" 
+                    <Typography
+                      variant="body1"
                       fontFamily="monospace"
-                      sx={{
-                        p: 1,
-                        backgroundColor: tokens.color.neutral[100],
-                        borderRadius: tokens.spacing.radius.md,
-                        fontSize: '0.9rem',
-                      }}
+                      sx={{ p: 1, bgcolor: 'action.hover', borderRadius: 1, fontSize: '0.9rem' }}
                     >
                       {payment.reference_number}
                     </Typography>
@@ -585,49 +568,20 @@ export const PaymentProfile: React.FC = () => {
                 )}
               </Stack>
             </Stack>
-          </ModernCard>
+          </Box>
         </Box>
 
         {/* Event & Client Info */}
         <Box sx={{ flex: 1 }}>
-          <ModernCard
-            variant="glass"
-            size="large"
-            interactive={false}
-            animation="none"
-            title="Event & Client"
-            sx={{
-              '&::before': {
-                background: `linear-gradient(135deg, ${tokens.color.success[500]}08 0%, ${tokens.color.secondary[500]}06 100%)`,
-              }
-            }}
-          >
+          <Box sx={{ borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
             <Stack spacing={3}>
               <Box display="flex" alignItems="center" gap={2}>
-                <Box
-                  sx={{
-                    p: 1.5,
-                    borderRadius: tokens.spacing.radius.lg,
-                    backgroundColor: `${tokens.color.success[500]}15`,
-                    color: tokens.color.success[600],
-                  }}
-                >
-                  <EventIcon />
-                </Box>
-                <Typography 
-                  variant="h6" 
-                  sx={{
-                    background: `linear-gradient(135deg, ${tokens.color.success[600]}, ${tokens.color.success[700]})`,
-                    backgroundClip: 'text',
-                    WebkitBackgroundClip: 'text',
-                    color: 'transparent',
-                    fontWeight: 600,
-                  }}
-                >
+                <EventIcon color="primary" />
+                <Typography variant="h6" fontWeight={600}>
                   Event & Client
                 </Typography>
               </Box>
-              
+
               <Stack spacing={2}>
                 <Box>
                   <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 0.5 }}>
@@ -642,7 +596,7 @@ export const PaymentProfile: React.FC = () => {
                     </Typography>
                   )}
                 </Box>
-                
+
                 <Box>
                   <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 0.5 }}>
                     Client
@@ -657,14 +611,9 @@ export const PaymentProfile: React.FC = () => {
                     <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 0.5 }}>
                       Description
                     </Typography>
-                    <Typography 
-                      variant="body2" 
-                      sx={{
-                        p: 2,
-                        backgroundColor: tokens.color.neutral[50],
-                        borderRadius: tokens.spacing.radius.md,
-                        border: `1px solid ${tokens.color.neutral[200]}`,
-                      }}
+                    <Typography
+                      variant="body2"
+                      sx={{ p: 2, bgcolor: 'action.hover', borderRadius: 1, border: 1, borderColor: 'divider' }}
                     >
                       {payment.description}
                     </Typography>
@@ -672,49 +621,20 @@ export const PaymentProfile: React.FC = () => {
                 )}
               </Stack>
             </Stack>
-          </ModernCard>
+          </Box>
         </Box>
 
         {/* Payment Method & Status */}
         <Box sx={{ flex: 1 }}>
-          <ModernCard
-            variant="glass"
-            size="large"
-            interactive={false}
-            animation="none"
-            title="Payment Method"
-            sx={{
-              '&::before': {
-                background: `linear-gradient(135deg, ${tokens.color.secondary[500]}08 0%, ${tokens.color.warning[500]}06 100%)`,
-              }
-            }}
-          >
+          <Box sx={{ borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
             <Stack spacing={3}>
               <Box display="flex" alignItems="center" gap={2}>
-                <Box
-                  sx={{
-                    p: 1.5,
-                    borderRadius: tokens.spacing.radius.lg,
-                    backgroundColor: `${tokens.color.secondary[500]}15`,
-                    color: tokens.color.secondary[600],
-                  }}
-                >
-                  <CreditCardIcon />
-                </Box>
-                <Typography 
-                  variant="h6" 
-                  sx={{
-                    background: `linear-gradient(135deg, ${tokens.color.secondary[600]}, ${tokens.color.secondary[700]})`,
-                    backgroundClip: 'text',
-                    WebkitBackgroundClip: 'text',
-                    color: 'transparent',
-                    fontWeight: 600,
-                  }}
-                >
+                <CreditCardIcon color="primary" />
+                <Typography variant="h6" fontWeight={600}>
                   Payment Method
                 </Typography>
               </Box>
-              
+
               <Stack spacing={2}>
                 {payment.payment_method_details ? (
                   <Box>
@@ -725,16 +645,11 @@ export const PaymentProfile: React.FC = () => {
                       {payment.payment_method_details.nickname || payment.payment_method_details.type_display}
                     </Typography>
                     {payment.payment_method_details.last_four && (
-                      <Typography 
-                        variant="body2" 
-                        sx={{
-                          mt: 0.5,
-                          fontFamily: 'monospace',
-                          color: tokens.color.neutral[600],
-                          fontSize: '0.9rem',
-                        }}
+                      <Typography
+                        variant="body2"
+                        sx={{ mt: 0.5, fontFamily: 'monospace', color: 'text.secondary', fontSize: '0.9rem' }}
                       >
-                        •••• •••• •••• {payment.payment_method_details.last_four}
+                        **** **** **** {payment.payment_method_details.last_four}
                       </Typography>
                     )}
                   </Box>
@@ -753,15 +668,12 @@ export const PaymentProfile: React.FC = () => {
                   <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
                     Processing Type
                   </Typography>
-                  <Chip 
-                    label={payment.is_manual ? 'Manual Payment' : 'Automatic Payment'} 
+                  <Chip
+                    label={payment.is_manual ? 'Manual Payment' : 'Automatic Payment'}
                     size="medium"
                     icon={payment.is_manual ? <AccountBalanceIcon /> : <CreditCardIcon />}
-                    sx={{
-                      backgroundColor: payment.is_manual ? tokens.color.warning[100] : tokens.color.primary[100],
-                      color: payment.is_manual ? tokens.color.warning[800] : tokens.color.primary[800],
-                      fontWeight: 600,
-                    }}
+                    color={payment.is_manual ? 'warning' : 'primary'}
+                    sx={{ fontWeight: 600 }}
                   />
                 </Box>
 
@@ -770,15 +682,10 @@ export const PaymentProfile: React.FC = () => {
                     <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 0.5 }}>
                       Receipt Number
                     </Typography>
-                    <Typography 
-                      variant="body1" 
+                    <Typography
+                      variant="body1"
                       fontFamily="monospace"
-                      sx={{
-                        p: 1,
-                        backgroundColor: tokens.color.neutral[100],
-                        borderRadius: tokens.spacing.radius.md,
-                        fontSize: '0.9rem',
-                      }}
+                      sx={{ p: 1, bgcolor: 'action.hover', borderRadius: 1, fontSize: '0.9rem' }}
                     >
                       {payment.receipt_number}
                     </Typography>
@@ -786,15 +693,15 @@ export const PaymentProfile: React.FC = () => {
                 )}
               </Stack>
             </Stack>
-          </ModernCard>
+          </Box>
         </Box>
       </Box>
 
       {/* Enhanced Sections */}
       <Stack spacing={4} sx={{ mb: 4 }}>
         {/* Quick Actions & Related Entities */}
-        <Box 
-          sx={{ 
+        <Box
+          sx={{
             display: 'flex',
             flexDirection: { xs: 'column', lg: 'row' },
             gap: 3,
@@ -802,58 +709,30 @@ export const PaymentProfile: React.FC = () => {
         >
           {/* Quick Actions */}
           <Box sx={{ flex: 1 }}>
-            <ModernCard
-              variant="glass"
-              size="medium"
-              animation="none"
-              sx={{
-                '&::before': {
-                  background: `linear-gradient(135deg, ${tokens.color.primary[500]}04 0%, ${tokens.color.secondary[500]}04 100%)`,
-                }
-              }}
-            >
-              <QuickActions 
+            <Box sx={{ borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
+              <QuickActions
                 actions={quickActions}
                 title="Payment Actions"
                 compactMode={false}
               />
-            </ModernCard>
+            </Box>
           </Box>
 
           {/* Related Entities */}
           <Box sx={{ flex: 1 }}>
-            <ModernCard
-              variant="glass"
-              size="medium"
-              animation="none"
-              sx={{
-                '&::before': {
-                  background: `linear-gradient(135deg, ${tokens.color.success[500]}04 0%, ${tokens.color.warning[500]}04 100%)`,
-                }
-              }}
-            >
+            <Box sx={{ borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
               <EntityNavigation
                 title="Related"
                 entities={relatedEntities}
                 layout="compact"
                 maxVisible={3}
               />
-            </ModernCard>
+            </Box>
           </Box>
         </Box>
 
         {/* Activity Timeline */}
-        <ModernCard
-          variant="glass"
-          size="large"
-          animation="none"
-          title="Activity Timeline"
-          sx={{
-            '&::before': {
-              background: `linear-gradient(135deg, ${tokens.color.neutral[500]}04 0%, ${tokens.color.primary[500]}04 100%)`,
-            }
-          }}
-        >
+        <Box sx={{ borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
           <ActivityTimeline
             activities={activityItems}
             maxHeight="300px"
@@ -862,87 +741,44 @@ export const PaymentProfile: React.FC = () => {
               refetchPayment();
             }}
           />
-        </ModernCard>
+        </Box>
       </Stack>
 
       {/* Tabs */}
-      <ModernCard
-        variant="glass"
-        size="large"
-        animation="none"
-        sx={{
-          '&::before': {
-            background: `linear-gradient(135deg, ${tokens.color.neutral[500]}03 0%, ${tokens.color.primary[500]}03 100%)`,
-          }
-        }}
-      >
-        <Box 
-          sx={{ 
-            borderBottom: `1px solid ${tokens.color.borders.glass}`,
-            backgroundColor: `${tokens.color.neutral[50]}50`,
-            borderRadius: `${tokens.spacing.radius.xxl} ${tokens.spacing.radius.xxl} 0 0`,
-          }}
-        >
-          <Tabs 
-            value={tabValue} 
+      <Box sx={{ borderRadius: 1, bgcolor: 'background.paper' }}>
+        <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+          <Tabs
+            value={tabValue}
             onChange={(_, newValue) => setTabValue(newValue)}
             variant="scrollable"
             scrollButtons="auto"
             allowScrollButtonsMobile
-            sx={{
-              '& .MuiTab-root': {
-                minHeight: 64,
-                fontWeight: 600,
-                fontSize: '0.9rem',
-                color: tokens.color.neutral[600],
-                transition: createTransition(['color', 'background'], 'fast'),
-                
-                '&.Mui-selected': {
-                  color: tokens.color.primary[600],
-                  background: `linear-gradient(135deg, ${tokens.color.primary[500]}08 0%, ${tokens.color.primary[600]}06 100%)`,
-                },
-                
-                '&:hover': {
-                  backgroundColor: `${tokens.color.neutral[500]}10`,
-                }
-              },
-              '& .MuiTabs-indicator': {
-                background: `linear-gradient(135deg, ${tokens.color.primary[500]}, ${tokens.color.primary[600]})`,
-                height: 3,
-                borderRadius: tokens.spacing.radius.full,
-              }
-            }}
           >
-            <Tab 
+            <Tab
               label={`Activity (${activityItems.length})`}
-              icon={<EventIcon />} 
+              icon={<EventIcon />}
               iconPosition="start"
             />
-            <Tab 
-              label="Payment Schedule" 
-              icon={<ScheduleIcon />} 
+            <Tab
+              label="Invoice Details"
+              icon={<ReceiptIcon />}
               iconPosition="start"
             />
-            <Tab 
-              label="Invoice Details" 
-              icon={<ReceiptIcon />} 
-              iconPosition="start"
-            />
-            <Tab 
-              label="Contracts (0)" 
-              icon={<ContractIcon />} 
+            <Tab
+              label="Contracts (0)"
+              icon={<ContractIcon />}
               iconPosition="start"
               disabled
             />
-            <Tab 
-              label="Questionnaires (0)" 
-              icon={<QuestionnaireIcon />} 
+            <Tab
+              label="Questionnaires (0)"
+              icon={<QuestionnaireIcon />}
               iconPosition="start"
               disabled
             />
-            <Tab 
-              label="Notes" 
-              icon={<NoteIcon />} 
+            <Tab
+              label="Notes"
+              icon={<NoteIcon />}
               iconPosition="start"
             />
           </Tabs>
@@ -961,147 +797,11 @@ export const PaymentProfile: React.FC = () => {
             />
           </TabPanel>
 
-          {/* Payment Schedule Tab */}
-          <TabPanel value={tabValue} index={1}>
-            {isLoadingPaymentPlan ? (
-              <Box display="flex" justifyContent="center" p={4}>
-                <ModernLoadingSpinner
-                  size={32}
-                  message="Loading payment plan..."
-                  variant="circular"
-                />
-              </Box>
-            ) : paymentPlan ? (
-              <Box>
-                <Typography variant="h6" gutterBottom>
-                  Payment Plan for {payment.event_details?.name}
-                </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                  Total Amount: {formatPaymentAmount(paymentPlan.total_amount)} • 
-                  Down Payment: {formatPaymentAmount(paymentPlan.down_payment_amount)} • 
-                  {paymentPlan.number_of_installments} installments
-                </Typography>
-
-                <TableContainer 
-                  component={Paper} 
-                  sx={{
-                    ...glassPresets.light,
-                    border: `1px solid ${tokens.color.borders.glass}`,
-                    borderRadius: tokens.spacing.radius.lg,
-                    overflow: 'hidden',
-                  }}
-                >
-                  <Table>
-                    <TableHead>
-                      <TableRow
-                        sx={{
-                          backgroundColor: `${tokens.color.primary[500]}10`,
-                          '& .MuiTableCell-root': {
-                            fontWeight: 600,
-                            color: tokens.color.primary[700],
-                            borderBottom: `1px solid ${tokens.color.borders.glass}`,
-                          }
-                        }}
-                      >
-                        <TableCell>Installment</TableCell>
-                        <TableCell>Amount</TableCell>
-                        <TableCell>Due Date</TableCell>
-                        <TableCell>Status</TableCell>
-                        <TableCell>Description</TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {paymentPlan.installments.map((installment, index) => {
-                        const installmentDaysRemaining = getDaysRemaining(installment.due_date);
-                        return (
-                          <TableRow 
-                            key={installment.id}
-                            sx={{
-                              backgroundColor: index % 2 === 0 ? 'transparent' : `${tokens.color.neutral[500]}05`,
-                              '& .MuiTableCell-root': {
-                                borderBottom: `1px solid ${tokens.color.borders.glass}`,
-                                py: 2,
-                              }
-                            }}
-                          >
-                            <TableCell>
-                              <Typography variant="body1" fontWeight="600">
-                                #{installment.installment_number}
-                              </Typography>
-                            </TableCell>
-                            <TableCell>
-                              <Typography variant="body1" fontWeight="600">
-                                {formatPaymentAmount(installment.amount)}
-                              </Typography>
-                            </TableCell>
-                            <TableCell>
-                              <Box>
-                                <Typography variant="body2" fontWeight="medium">
-                                  {new Date(installment.due_date).toLocaleDateString()}
-                                </Typography>
-                                <Chip
-                                  label={installmentDaysRemaining.text}
-                                  size="small"
-                                  sx={{ 
-                                    mt: 0.5,
-                                    backgroundColor: installmentDaysRemaining.severity === 'overdue' ? tokens.color.error[100] : 
-                                                     installmentDaysRemaining.severity === 'today' ? tokens.color.warning[100] :
-                                                     installmentDaysRemaining.severity === 'soon' ? tokens.color.warning[100] : tokens.color.success[100],
-                                    color: installmentDaysRemaining.severity === 'overdue' ? tokens.color.error[700] :
-                                           installmentDaysRemaining.severity === 'today' ? tokens.color.warning[700] :
-                                           installmentDaysRemaining.severity === 'soon' ? tokens.color.warning[700] : tokens.color.success[700],
-                                    fontSize: '0.75rem',
-                                    fontWeight: 600,
-                                  }}
-                                />
-                              </Box>
-                            </TableCell>
-                            <TableCell>
-                              <Chip
-                                label={installment.status_display}
-                                size="small"
-                                sx={{
-                                  backgroundColor: installment.status === 'PAID' ? tokens.color.success[100] : 
-                                                   installment.status === 'OVERDUE' ? tokens.color.error[100] : tokens.color.warning[100],
-                                  color: installment.status === 'PAID' ? tokens.color.success[800] : 
-                                         installment.status === 'OVERDUE' ? tokens.color.error[800] : tokens.color.warning[800],
-                                  fontWeight: 600,
-                                }}
-                              />
-                            </TableCell>
-                            <TableCell>
-                              <Typography variant="body2" color="text.secondary">
-                                {installment.description}
-                              </Typography>
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
-              </Box>
-            ) : (
-              <ModernEmptyState
-                icon={ScheduleIcon}
-                title="Single Payment"
-                description="This is a standalone payment not part of a payment plan. No installments or payment schedule is configured."
-                size="small"
-                illustration="minimal"
-                sx={{ py: 4 }}
-              />
-            )}
-          </TabPanel>
-
           {/* Invoice Details Tab */}
-          <TabPanel value={tabValue} index={2}>
+          <TabPanel value={tabValue} index={1}>
             {isLoadingInvoice ? (
               <Box display="flex" justifyContent="center" p={4}>
-                <ModernLoadingSpinner
-                  size={32}
-                  message="Loading invoice details..."
-                  variant="circular"
-                />
+                <CircularProgress size={32} />
               </Box>
             ) : invoice ? (
               <Box>
@@ -1111,7 +811,7 @@ export const PaymentProfile: React.FC = () => {
                       Invoice {invoice.invoice_id}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
-                      Issued: {new Date(invoice.issue_date).toLocaleDateString()} • 
+                      Issued: {new Date(invoice.issue_date).toLocaleDateString()} -
                       Due: {new Date(invoice.due_date).toLocaleDateString()}
                     </Typography>
                   </Box>
@@ -1123,49 +823,22 @@ export const PaymentProfile: React.FC = () => {
                 </Box>
 
                 {/* Invoice Summary */}
-                <Box
-                  sx={{
-                    ...glassPresets.light,
-                    border: `1px solid ${tokens.color.borders.glass}`,
-                    borderRadius: tokens.spacing.radius.lg,
-                    p: 3,
-                    mb: 3,
-                    background: `linear-gradient(135deg, ${tokens.color.success[500]}08, ${tokens.color.primary[500]}06)`,
-                  }}
-                >
+                <Box sx={{ borderRadius: 1, p: 3, mb: 3, bgcolor: 'background.paper', border: 1, borderColor: 'divider' }}>
                   <Stack spacing={2}>
                     <Box display="flex" justifyContent="space-between" alignItems="center">
                       <Typography variant="body1" fontWeight="medium">Subtotal:</Typography>
-                      <Typography variant="body1" fontWeight="600">{formatPaymentAmount(invoice.subtotal)}</Typography>
+                      <Typography variant="body1" fontWeight={600}>{formatPaymentAmount(invoice.subtotal)}</Typography>
                     </Box>
                     <Box display="flex" justifyContent="space-between" alignItems="center">
                       <Typography variant="body1" fontWeight="medium">Tax:</Typography>
-                      <Typography variant="body1" fontWeight="600">{formatPaymentAmount(invoice.tax_amount)}</Typography>
+                      <Typography variant="body1" fontWeight={600}>{formatPaymentAmount(invoice.tax_amount)}</Typography>
                     </Box>
-                    <Divider sx={{ borderColor: tokens.color.borders.glass }} />
+                    <Divider />
                     <Box display="flex" justifyContent="space-between" alignItems="center">
-                      <Typography 
-                        variant="h6" 
-                        sx={{
-                          background: `linear-gradient(135deg, ${tokens.color.primary[600]}, ${tokens.color.success[600]})`,
-                          backgroundClip: 'text',
-                          WebkitBackgroundClip: 'text',
-                          color: 'transparent',
-                          fontWeight: 700,
-                        }}
-                      >
+                      <Typography variant="h6" color="primary.main" fontWeight={700}>
                         Total:
                       </Typography>
-                      <Typography 
-                        variant="h6" 
-                        sx={{
-                          background: `linear-gradient(135deg, ${tokens.color.primary[600]}, ${tokens.color.success[600]})`,
-                          backgroundClip: 'text',
-                          WebkitBackgroundClip: 'text',
-                          color: 'transparent',
-                          fontWeight: 700,
-                        }}
-                      >
+                      <Typography variant="h6" color="primary.main" fontWeight={700}>
                         {formatPaymentAmount(invoice.total_amount)}
                       </Typography>
                     </Box>
@@ -1174,46 +847,20 @@ export const PaymentProfile: React.FC = () => {
 
                 {/* Line Items */}
                 {invoice.line_items && invoice.line_items.length > 0 && (
-                  <TableContainer 
-                    component={Paper} 
-                    sx={{
-                      ...glassPresets.light,
-                      border: `1px solid ${tokens.color.borders.glass}`,
-                      borderRadius: tokens.spacing.radius.lg,
-                      overflow: 'hidden',
-                    }}
-                  >
-                    <Table>
+                  <TableContainer component={Paper} sx={{ borderRadius: 1 }}>
+                    <Table size="small">
                       <TableHead>
-                        <TableRow
-                          sx={{
-                            backgroundColor: `${tokens.color.primary[500]}10`,
-                            '& .MuiTableCell-root': {
-                              fontWeight: 600,
-                              color: tokens.color.primary[700],
-                              borderBottom: `1px solid ${tokens.color.borders.glass}`,
-                            }
-                          }}
-                        >
-                          <TableCell>Description</TableCell>
-                          <TableCell align="right">Qty</TableCell>
-                          <TableCell align="right">Unit Price</TableCell>
-                          <TableCell align="right">Tax Rate</TableCell>
-                          <TableCell align="right">Total</TableCell>
+                        <TableRow sx={{ bgcolor: 'action.hover' }}>
+                          <TableCell sx={{ fontWeight: 600 }}>Description</TableCell>
+                          <TableCell align="right" sx={{ fontWeight: 600 }}>Qty</TableCell>
+                          <TableCell align="right" sx={{ fontWeight: 600 }}>Unit Price</TableCell>
+                          <TableCell align="right" sx={{ fontWeight: 600 }}>Tax Rate</TableCell>
+                          <TableCell align="right" sx={{ fontWeight: 600 }}>Total</TableCell>
                         </TableRow>
                       </TableHead>
                       <TableBody>
-                        {invoice.line_items.map((item, index) => (
-                          <TableRow 
-                            key={item.id}
-                            sx={{
-                              backgroundColor: index % 2 === 0 ? 'transparent' : `${tokens.color.neutral[500]}05`,
-                              '& .MuiTableCell-root': {
-                                borderBottom: `1px solid ${tokens.color.borders.glass}`,
-                                fontWeight: 500,
-                              }
-                            }}
-                          >
+                        {invoice.line_items.map((item) => (
+                          <TableRow key={item.id}>
                             <TableCell>{item.description}</TableCell>
                             <TableCell align="right">{item.quantity}</TableCell>
                             <TableCell align="right">{formatPaymentAmount(item.unit_price)}</TableCell>
@@ -1227,20 +874,11 @@ export const PaymentProfile: React.FC = () => {
                 )}
 
                 {invoice.notes && (
-                  <Box
-                    sx={{
-                      mt: 3,
-                      p: 3,
-                      ...glassPresets.light,
-                      border: `1px solid ${tokens.color.info[200]}`,
-                      borderRadius: tokens.spacing.radius.lg,
-                      background: `linear-gradient(135deg, ${tokens.color.info[500]}08, ${tokens.color.primary[500]}06)`,
-                    }}
-                  >
-                    <Typography variant="body1" sx={{ fontWeight: 600, mb: 1, color: tokens.color.info[700] }}>
+                  <Box sx={{ mt: 3, p: 3, borderRadius: 1, bgcolor: 'info.50', border: 1, borderColor: 'info.200' }}>
+                    <Typography variant="body1" fontWeight={600} color="info.main" sx={{ mb: 1 }}>
                       Notes:
                     </Typography>
-                    <Typography variant="body2" sx={{ color: tokens.color.neutral[700], lineHeight: 1.6 }}>
+                    <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6 }}>
                       {invoice.notes}
                     </Typography>
                   </Box>
@@ -1252,20 +890,18 @@ export const PaymentProfile: React.FC = () => {
                 title="No Invoice"
                 description="This payment is not associated with an invoice. It may be a direct payment or part of a different billing structure."
                 size="small"
-                illustration="minimal"
                 sx={{ py: 4 }}
               />
             )}
           </TabPanel>
 
           {/* Contracts Tab - placeholder */}
-          <TabPanel value={tabValue} index={3}>
+          <TabPanel value={tabValue} index={2}>
             <ModernEmptyState
               icon={ContractIcon}
               title="Contracts Coming Soon"
               description="View related contracts for this payment. This feature is currently in development."
               size="small"
-              illustration="minimal"
               tip={{
                 text: 'Contract management features will be available in the next update',
                 type: 'info'
@@ -1273,15 +909,14 @@ export const PaymentProfile: React.FC = () => {
               sx={{ py: 4 }}
             />
           </TabPanel>
-          
+
           {/* Questionnaires Tab - placeholder */}
-          <TabPanel value={tabValue} index={4}>
+          <TabPanel value={tabValue} index={3}>
             <ModernEmptyState
               icon={QuestionnaireIcon}
               title="Questionnaires Coming Soon"
               description="View related questionnaires for this event. Connect customer feedback with payment records."
               size="small"
-              illustration="minimal"
               tip={{
                 text: 'Questionnaire integration features will be available soon',
                 type: 'info'
@@ -1289,9 +924,9 @@ export const PaymentProfile: React.FC = () => {
               sx={{ py: 4 }}
             />
           </TabPanel>
-          
+
           {/* Notes Tab */}
-          <TabPanel value={tabValue} index={5}>
+          <TabPanel value={tabValue} index={4}>
             <NotesList
               contentType="payment"
               objectId={paymentId}
@@ -1302,33 +937,16 @@ export const PaymentProfile: React.FC = () => {
             />
           </TabPanel>
         </Box>
-      </ModernCard>
+      </Box>
 
       {/* Edit Dialog */}
-      <Dialog 
-        open={editDialogOpen} 
-        onClose={() => setEditDialogOpen(false)} 
-        maxWidth="md" 
+      <Dialog
+        open={editDialogOpen}
+        onClose={() => setEditDialogOpen(false)}
+        maxWidth="md"
         fullWidth
-        PaperProps={{
-          sx: {
-            ...glassPresets.medium,
-            border: `1px solid ${tokens.color.borders.glass}`,
-            borderRadius: tokens.spacing.radius.xl,
-            backdropFilter: 'blur(20px)',
-          }
-        }}
       >
-        <DialogTitle
-          sx={{
-            background: `linear-gradient(135deg, ${tokens.color.primary[500]}10, ${tokens.color.secondary[500]}10)`,
-            borderBottom: `1px solid ${tokens.color.borders.glass}`,
-            fontSize: '1.25rem',
-            fontWeight: 600,
-          }}
-        >
-          Edit Payment
-        </DialogTitle>
+        <DialogTitle>Edit Payment</DialogTitle>
         <DialogContent sx={{ p: 3 }}>
           <PaymentForm
             payment={payment}
@@ -1340,69 +958,84 @@ export const PaymentProfile: React.FC = () => {
       </Dialog>
 
       {/* Delete Confirmation Dialog */}
-      <Dialog 
-        open={deleteDialogOpen} 
+      <Dialog
+        open={deleteDialogOpen}
         onClose={() => setDeleteDialogOpen(false)}
-        PaperProps={{
-          sx: {
-            ...glassPresets.medium,
-            border: `1px solid ${tokens.color.borders.glass}`,
-            borderRadius: tokens.spacing.radius.xl,
-            backdropFilter: 'blur(20px)',
-          }
-        }}
       >
-        <DialogTitle
-          sx={{
-            background: `linear-gradient(135deg, ${tokens.color.error[500]}10, ${tokens.color.warning[500]}10)`,
-            borderBottom: `1px solid ${tokens.color.borders.glass}`,
-            fontSize: '1.25rem',
-            fontWeight: 600,
-            color: tokens.color.error[700],
-          }}
-        >
-          Delete Payment
-        </DialogTitle>
+        <DialogTitle color="error">Delete Payment</DialogTitle>
         <DialogContent sx={{ p: 3 }}>
-          <DialogContentText
-            sx={{
-              fontSize: '1rem',
-              color: tokens.color.neutral[600],
-              lineHeight: 1.6,
-            }}
-          >
-            Are you sure you want to delete payment <strong>{payment.payment_number}</strong>? 
+          <DialogContentText>
+            Are you sure you want to delete payment <strong>{payment.payment_number}</strong>?
             This action cannot be undone and will permanently remove all associated data.
           </DialogContentText>
         </DialogContent>
         <DialogActions sx={{ p: 3, pt: 0, gap: 2 }}>
-          <Button 
-            onClick={() => setDeleteDialogOpen(false)}
-            sx={{
-              borderRadius: tokens.spacing.radius.full,
-              fontWeight: 600,
-            }}
-          >
+          <Button onClick={() => setDeleteDialogOpen(false)} disabled={isDeletingPayment}>
             Cancel
           </Button>
-          <Button 
+          <Button
             onClick={handleDelete}
-            color="error" 
+            color="error"
             variant="contained"
-            sx={{
-              borderRadius: tokens.spacing.radius.full,
-              fontWeight: 600,
-              background: `linear-gradient(135deg, ${tokens.color.error[500]}, ${tokens.color.error[600]})`,
-              boxShadow: `0 4px 12px ${tokens.color.error[500]}40`,
-              
-              '&:hover': {
-                background: `linear-gradient(135deg, ${tokens.color.error[600]}, ${tokens.color.error[700]})`,
-                transform: 'translateY(-1px)',
-                boxShadow: `0 6px 16px ${tokens.color.error[500]}50`,
-              }
-            }}
+            disabled={isDeletingPayment}
           >
-            Delete
+            {isDeletingPayment ? <CircularProgress size={20} color="inherit" /> : 'Delete'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Refund Dialog */}
+      <Dialog
+        open={refundDialogOpen}
+        onClose={() => !isCreatingRefund && setRefundDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle color="warning.main">Create Refund</DialogTitle>
+        <DialogContent sx={{ p: 3 }}>
+          <Stack spacing={3} sx={{ mt: 1 }}>
+            <DialogContentText>
+              Create a refund for payment <strong>{payment.payment_number}</strong>.
+              The original payment amount was {formatPaymentAmount(payment.amount)}.
+            </DialogContentText>
+
+            <TextField
+              label="Refund Amount"
+              type="number"
+              value={refundAmount}
+              onChange={(e) => setRefundAmount(e.target.value)}
+              fullWidth
+              required
+              inputProps={{
+                min: 0,
+                max: parseFloat(payment.amount),
+                step: 0.01
+              }}
+              helperText={`Maximum refund amount: ${formatPaymentAmount(payment.amount)}`}
+            />
+
+            <TextField
+              label="Reason for Refund"
+              value={refundReason}
+              onChange={(e) => setRefundReason(e.target.value)}
+              fullWidth
+              multiline
+              rows={3}
+              placeholder="Enter the reason for this refund..."
+            />
+          </Stack>
+        </DialogContent>
+        <DialogActions sx={{ p: 3, pt: 0, gap: 2 }}>
+          <Button onClick={() => setRefundDialogOpen(false)} disabled={isCreatingRefund}>
+            Cancel
+          </Button>
+          <Button
+            onClick={handleCreateRefund}
+            color="warning"
+            variant="contained"
+            disabled={isCreatingRefund || !refundAmount || parseFloat(refundAmount) <= 0}
+          >
+            {isCreatingRefund ? <CircularProgress size={20} color="inherit" /> : 'Create Refund'}
           </Button>
         </DialogActions>
       </Dialog>

@@ -12,6 +12,7 @@ export interface Note {
   content_object_repr?: string;
   created_at: string;
   updated_at: string;
+  is_client_visible: boolean;
 }
 
 export interface CreateNoteData {
@@ -19,11 +20,13 @@ export interface CreateNoteData {
   content: string;
   content_type_model: string; // e.g., 'client', 'event'
   object_id: number;
+  is_client_visible?: boolean;
 }
 
 export interface UpdateNoteData {
   title?: string;
   content?: string;
+  is_client_visible?: boolean;
 }
 
 export interface NoteFilters {
@@ -38,6 +41,7 @@ export interface NoteFilters {
 export interface NoteFormData {
   title: string;
   content: string;
+  is_client_visible: boolean;
 }
 
 // Component prop types

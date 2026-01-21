@@ -64,6 +64,12 @@ export const eventsApi = {
     return response.data;
   },
 
+  // Create a note for an event
+  createEventNote: async (id: number, data: { content: string; title?: string }): Promise<EventNote> => {
+    const response = await api.post<EventNote>(`/client/events/${id}/notes/`, data);
+    return response.data;
+  },
+
   // Download file utility (browser-based download)
   downloadFile: async (url: string, filename: string): Promise<void> => {
     try {
@@ -115,7 +121,7 @@ export const eventsApi = {
         }, 100);
       }
     } catch (error) {
-      console.error('Download failed:', error);
+      if (import.meta.env.DEV) console.error('Download failed:', error);
       throw new Error('Failed to download file. Please try again.');
     }
   },
@@ -245,6 +251,20 @@ export const eventsApi = {
         payment_status: string;
       }>;
     }>(`/events/public/availability/?${queryParams.toString()}`);
+    return response.data;
+  },
+
+  // Self check-in for client on event day
+  selfCheckIn: async (id: number): Promise<EventDetail> => {
+    const response = await api.post<EventDetail>(`/client/events/${id}/self_check_in/`);
+    return response.data;
+  },
+
+  // Get file blob for viewing (used for PDF preview to bypass X-Frame-Options)
+  getDocumentBlob: async (eventId: number, fileId: number): Promise<Blob> => {
+    const response = await api.get<Blob>(`/client/events/${eventId}/documents/${fileId}/download/`, {
+      responseType: 'blob',
+    });
     return response.data;
   },
 };

@@ -1,9 +1,11 @@
 # backend/core/domains/communications/webhooks.py
 import hashlib
 import hmac
+import html
 import json
 import logging
 import os
+import re
 from django.conf import settings
 from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
@@ -16,10 +18,104 @@ from .services import CommunicationService
 
 logger = logging.getLogger(__name__)
 
+# Maximum length for sanitized fields
+MAX_STRING_LENGTH = 1000
+MAX_NESTED_DEPTH = 5
+# Maximum age for webhook timestamps (5 minutes) - prevents replay attacks
+MAX_WEBHOOK_TIMESTAMP_AGE_SECONDS = 300
+
 
 class WebhookThrottle(AnonRateThrottle):
     """Custom throttle for webhook endpoints"""
     rate = '100/hour'  # Allow 100 webhook requests per hour per IP
+
+
+def sanitize_string(value: str, max_length: int = MAX_STRING_LENGTH) -> str:
+    """
+    Sanitize a string value to prevent XSS and limit length.
+    """
+    if not isinstance(value, str):
+        return str(value)[:max_length] if value is not None else ""
+
+    # HTML escape
+    sanitized = html.escape(value)
+
+    # Remove potentially dangerous patterns
+    dangerous_patterns = [
+        r'javascript:',
+        r'data:',
+        r'vbscript:',
+        r'on\w+\s*=',
+        r'<script',
+        r'</script>',
+    ]
+
+    for pattern in dangerous_patterns:
+        sanitized = re.sub(pattern, '', sanitized, flags=re.IGNORECASE)
+
+    # Truncate to max length
+    if len(sanitized) > max_length:
+        sanitized = sanitized[:max_length]
+
+    return sanitized.strip()
+
+
+def sanitize_webhook_data(data: dict, depth: int = 0) -> dict:
+    """
+    Recursively sanitize webhook data to prevent injection attacks.
+
+    Args:
+        data: The webhook payload data
+        depth: Current nesting depth to prevent deep recursion
+
+    Returns:
+        Sanitized dictionary
+    """
+    if depth > MAX_NESTED_DEPTH:
+        return {}
+
+    sanitized = {}
+
+    for key, value in data.items():
+        # Sanitize the key itself
+        safe_key = sanitize_string(str(key), max_length=100)
+
+        if value is None:
+            sanitized[safe_key] = None
+        elif isinstance(value, bool):
+            sanitized[safe_key] = value
+        elif isinstance(value, (int, float)):
+            sanitized[safe_key] = value
+        elif isinstance(value, str):
+            sanitized[safe_key] = sanitize_string(value)
+        elif isinstance(value, list):
+            sanitized[safe_key] = [
+                sanitize_webhook_data(v, depth + 1) if isinstance(v, dict)
+                else sanitize_string(str(v)) if isinstance(v, str)
+                else v
+                for v in value[:100]  # Limit array length
+            ]
+        elif isinstance(value, dict):
+            sanitized[safe_key] = sanitize_webhook_data(value, depth + 1)
+        else:
+            sanitized[safe_key] = sanitize_string(str(value))
+
+    return sanitized
+
+
+def is_signature_verification_required() -> bool:
+    """
+    Check if webhook signature verification is required.
+
+    Returns True in production unless explicitly disabled.
+    """
+    # Get the setting, default to True (require verification)
+    enforce_signature = getattr(
+        settings,
+        'COMMUNICATIONS_ENFORCE_WEBHOOK_SIGNATURE',
+        not settings.DEBUG  # Enforce in production by default
+    )
+    return enforce_signature
 
 
 def verify_brevo_signature(payload_body, received_signature, webhook_secret):
@@ -107,20 +203,33 @@ def brevo_webhook(request):
         
         # Get webhook secret from settings
         webhook_secret = getattr(settings, 'BREVO_WEBHOOK_SECRET', os.getenv('BREVO_WEBHOOK_SECRET'))
-        
-        # Verify webhook signature if secret is configured
+
+        # Check if signature verification is required
+        signature_required = is_signature_verification_required()
+
+        # Verify webhook signature
         if webhook_secret:
             received_signature = request.META.get('HTTP_X_BREVO_SIGNATURE') or request.META.get('HTTP_X_SIGNATURE')
             if not verify_brevo_signature(request.body, received_signature, webhook_secret):
                 logger.error(f"Invalid webhook signature from IP: {client_ip}")
                 return HttpResponse(status=403)
             logger.debug("Webhook signature verified successfully")
+        elif signature_required:
+            # In production, reject webhooks without a configured secret
+            logger.error(
+                f"Webhook secret not configured but signature verification is required. "
+                f"Rejecting request from IP: {client_ip}"
+            )
+            return HttpResponse(status=403)
         else:
-            logger.warning("Webhook secret not configured - skipping signature verification")
+            # Development mode - log warning but allow
+            logger.warning("Webhook secret not configured - skipping signature verification (development mode)")
         
         # Parse the webhook payload
         try:
-            payload = json.loads(request.body.decode('utf-8'))
+            raw_payload = json.loads(request.body.decode('utf-8'))
+            # Sanitize the payload to prevent injection attacks
+            payload = sanitize_webhook_data(raw_payload)
         except (UnicodeDecodeError, json.JSONDecodeError):
             logger.error(f"Invalid webhook payload from IP: {client_ip}")
             return HttpResponse(status=400)
@@ -141,7 +250,7 @@ def brevo_webhook(request):
             logger.warning(f"Unknown event type '{event_type}' from IP: {client_ip}")
             return HttpResponse(status=400)
         
-        # Convert timestamp if provided
+        # Convert timestamp if provided and validate freshness (reject replay attacks)
         occurred_at = None
         if timestamp:
             try:
@@ -151,6 +260,17 @@ def brevo_webhook(request):
                 else:
                     # Handle Unix timestamps
                     occurred_at = timezone.datetime.fromtimestamp(timestamp, tz=timezone.utc)
+
+                # SECURITY: Validate timestamp is not too old (prevent replay attacks)
+                now = timezone.now()
+                age_seconds = abs((now - occurred_at).total_seconds())
+                if age_seconds > MAX_WEBHOOK_TIMESTAMP_AGE_SECONDS:
+                    logger.warning(
+                        f"Brevo webhook timestamp too old ({age_seconds:.0f}s) from IP: {client_ip}, "
+                        f"message_id: {message_id}, rejecting for security"
+                    )
+                    return HttpResponse(status=400)
+
             except (ValueError, TypeError) as e:
                 logger.warning(f"Invalid timestamp format in webhook: {timestamp}")
                 occurred_at = timezone.now()

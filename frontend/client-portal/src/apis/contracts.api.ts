@@ -7,6 +7,9 @@ import type {
   SignatureSubmission,
   PendingContractsResponse,
   ContractStatus,
+  ContractAmendment,
+  ContractDocument,
+  SignatureRole,
 } from '../types/contracts.types';
 
 // Interface for detailed contract status  
@@ -47,6 +50,20 @@ const transformContractResponse = (apiResponse: ContractApiResponse): Contract =
     status: '',
   };
 
+  // Type for extended API response with all optional fields
+  type ExtendedApiResponse = ContractApiResponse & {
+    signatures?: ContractSignature[];
+    content?: string;
+    signature_progress?: { total_required: number; signed_count: number; percentage: number };
+    can_client_sign?: boolean;
+    is_expired?: boolean;
+    is_expiring_soon?: boolean;
+    days_until_expiry?: number | null;
+    expiry_urgency?: 'CRITICAL' | 'HIGH' | 'NORMAL' | null;
+    sign_disabled_reason?: string | null;
+  };
+  const extResponse = apiResponse as ExtendedApiResponse;
+
   return {
     id: apiResponse.id.toString(),
     event: eventData,
@@ -55,10 +72,10 @@ const transformContractResponse = (apiResponse: ContractApiResponse): Contract =
       name: apiResponse.template_name,
       description: '',
       requires_signature: true, // Default assumption
-      signature_requirements: Array.from(new Set((apiResponse as ContractApiResponse & { signatures?: ContractSignature[] }).signatures?.map(s => s.role) || ['CLIENT'])), // Extract actual roles from signatures
+      signature_requirements: Array.from(new Set(extResponse.signatures?.map(s => s.role) || ['CLIENT'])), // Extract actual roles from signatures
     },
     status: apiResponse.status,
-    content: (apiResponse as ContractApiResponse & { content?: string }).content || '', // Content may be missing in list endpoints
+    content: extResponse.content || '', // Content may be missing in list endpoints
     sent_at: apiResponse.sent_at,
     fully_signed_at: apiResponse.fully_signed_at,
     valid_until: apiResponse.valid_until,
@@ -68,17 +85,23 @@ const transformContractResponse = (apiResponse: ContractApiResponse): Contract =
     is_amendment: apiResponse.is_amendment,
     original_contract: apiResponse.original_contract?.toString() || null,
     amendment_number: apiResponse.amendment_number,
-    signatures: (apiResponse as ContractApiResponse & { signatures?: ContractSignature[] }).signatures || [], // May be missing in list endpoints
+    signatures: extResponse.signatures || [], // May be missing in list endpoints
     is_fully_signed: apiResponse.is_fully_signed,
-    signature_progress: (apiResponse as ContractApiResponse & { signature_progress?: { total_required: number; signed_count: number; percentage: number } }).signature_progress ? {
-      total_required: (apiResponse as ContractApiResponse & { signature_progress: { total_required: number; signed_count: number; percentage: number } }).signature_progress.total_required,
-      signed_count: (apiResponse as ContractApiResponse & { signature_progress: { total_required: number; signed_count: number; percentage: number } }).signature_progress.signed_count,
-      percentage: (apiResponse as ContractApiResponse & { signature_progress: { total_required: number; signed_count: number; percentage: number } }).signature_progress.percentage,
-      required_roles: [],
-      signed_roles: [],
-      missing_roles: []
+    signature_progress: extResponse.signature_progress ? {
+      total_required: extResponse.signature_progress.total_required,
+      signed_count: extResponse.signature_progress.signed_count,
+      percentage: extResponse.signature_progress.percentage,
+      required_roles: ((extResponse.signature_progress as { required_roles?: string[] }).required_roles || []) as SignatureRole[],
+      signed_roles: ((extResponse.signature_progress as { signed_roles?: string[] }).signed_roles || []) as SignatureRole[],
+      missing_roles: ((extResponse.signature_progress as { missing_roles?: string[] }).missing_roles || []) as SignatureRole[],
     } : undefined,
-    can_client_sign: (apiResponse as ContractApiResponse & { can_client_sign?: boolean }).can_client_sign ?? (apiResponse.status === 'SENT' && !apiResponse.is_fully_signed),
+    can_client_sign: extResponse.can_client_sign ?? (apiResponse.status === 'SENT' && !apiResponse.is_fully_signed),
+    // Expiry-related fields from backend
+    is_expired: extResponse.is_expired,
+    is_expiring_soon: extResponse.is_expiring_soon,
+    days_until_expiry: extResponse.days_until_expiry,
+    expiry_urgency: extResponse.expiry_urgency,
+    sign_disabled_reason: extResponse.sign_disabled_reason,
     created_at: apiResponse.created_at,
     updated_at: apiResponse.updated_at,
   };
@@ -166,6 +189,18 @@ export const contractsApi = {
   getMySignatures: async (): Promise<{ count: number; signatures: ContractSignature[] }> => {
     const response = await api.get('/contracts/client/signatures/my_signatures/');
     return response.data as { count: number; signatures: ContractSignature[] };
+  },
+
+  // Get amendments for a contract
+  getContractAmendments: async (contractId: string): Promise<ContractAmendment[]> => {
+    const response = await api.get(`/contracts/client/contracts/${contractId}/amendments/`);
+    return response.data as ContractAmendment[];
+  },
+
+  // Get documents for a contract
+  getContractDocuments: async (contractId: string): Promise<ContractDocument[]> => {
+    const response = await api.get(`/contracts/client/contracts/${contractId}/documents/`);
+    return response.data as ContractDocument[];
   },
 };
 
@@ -266,51 +301,57 @@ export const contractUtils = {
 
   // Validate signature data
   validateSignature: (signatureData: string): boolean => {
-    console.log('🔍 VALIDATE SIGNATURE called', {
-      hasData: !!signatureData,
-      dataType: typeof signatureData,
-      dataLength: signatureData?.length || 0,
-      timestamp: Date.now()
-    });
-    
+    if (import.meta.env.DEV) {
+      console.log('🔍 VALIDATE SIGNATURE called', {
+        hasData: !!signatureData,
+        dataType: typeof signatureData,
+        dataLength: signatureData?.length || 0,
+        timestamp: Date.now()
+      });
+    }
+
     // Basic validation - signature should be a non-empty string
     if (!signatureData || signatureData.trim().length === 0) {
-      console.log('🔍 VALIDATE SIGNATURE: FAILED - No data or empty string');
+      if (import.meta.env.DEV) console.log('🔍 VALIDATE SIGNATURE: FAILED - No data or empty string');
       return false;
     }
-    
+
     // Check if it's a valid base64 data URL
     if (signatureData.startsWith('data:image/')) {
-      console.log('🔍 VALIDATE SIGNATURE: Checking base64 data URL');
+      if (import.meta.env.DEV) console.log('🔍 VALIDATE SIGNATURE: Checking base64 data URL');
       const base64Data = signatureData.split(',')[1];
-      
+
       if (!base64Data) {
-        console.log('🔍 VALIDATE SIGNATURE: FAILED - No base64 data after comma');
+        if (import.meta.env.DEV) console.log('🔍 VALIDATE SIGNATURE: FAILED - No base64 data after comma');
         return false;
       }
-      
+
       try {
         atob(base64Data);
         const isValid = base64Data.length > 100; // Minimum complexity check
-        console.log('🔍 VALIDATE SIGNATURE: Base64 validation', {
-          base64Length: base64Data.length,
-          isValid,
-          minLength: 100
-        });
+        if (import.meta.env.DEV) {
+          console.log('🔍 VALIDATE SIGNATURE: Base64 validation', {
+            base64Length: base64Data.length,
+            isValid,
+            minLength: 100
+          });
+        }
         return isValid;
       } catch (error) {
-        console.log('🔍 VALIDATE SIGNATURE: FAILED - Invalid base64 data', error);
+        if (import.meta.env.DEV) console.log('🔍 VALIDATE SIGNATURE: FAILED - Invalid base64 data', error);
         return false;
       }
     }
-    
+
     const isValid = signatureData.length > 50; // Minimum length for other formats
-    console.log('🔍 VALIDATE SIGNATURE: Non-image data validation', {
-      dataLength: signatureData.length,
-      isValid,
-      minLength: 50
-    });
-    
+    if (import.meta.env.DEV) {
+      console.log('🔍 VALIDATE SIGNATURE: Non-image data validation', {
+        dataLength: signatureData.length,
+        isValid,
+        minLength: 50
+      });
+    }
+
     return isValid;
   },
 

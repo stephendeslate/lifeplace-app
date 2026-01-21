@@ -25,7 +25,7 @@ import {
   Chip,
   OutlinedInput,
 } from '@mui/material';
-import type { SelectChangeEvent } from '@mui/material';
+import type { SelectChangeEvent } from '@mui/material/Select';
 import {
   EventNote as FlowIcon,
   Settings as ConfigIcon,
@@ -33,10 +33,7 @@ import {
   Email as EmailIcon,
   Payment as PaymentIcon,
 } from '@mui/icons-material';
-// Modern Design System imports
-import { tokens } from '../../../design-system';
-import { glassPresets } from '../../../design-system/utils/glassmorphism';
-import { 
+import {
   type BookingFlowFormDialogProps,
   type BookingFlowFormData,
   type CreateBookingFlowData,
@@ -47,8 +44,7 @@ import { useWorkflowTemplates } from '../../../hooks/useWorkflows';
 import { useCommunications } from '../../../hooks/useCommunications';
 import { useDiscounts } from '../../../hooks/useProducts';
 import { usePaymentGateways } from '../../../hooks/usePayments';
-
-// Modern Design System imports
+import { getGatewayPaymentMethods } from '../../../types/payments.types';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -364,12 +360,10 @@ export const BookingFlowFormDialog: React.FC<BookingFlowFormDialogProps> = ({
       maxWidth="md"
       fullWidth
       PaperProps={{
-        sx: { 
+        sx: {
           minHeight: '80vh',
-          ...glassPresets.light,
-          borderRadius: tokens.spacing.radius.xxl,
-          border: `1px solid ${tokens.color.borders.glass}`,
-          background: `linear-gradient(135deg, ${tokens.color.neutral[50]} 0%, ${tokens.color.neutral[100]} 100%)`,
+          borderRadius: 1,
+          bgcolor: 'background.paper',
         },
         onKeyDown: handleKeyDown
       }}
@@ -704,6 +698,32 @@ export const BookingFlowFormDialog: React.FC<BookingFlowFormDialogProps> = ({
                       </Typography>
                     </FormControl>
 
+                    {/* Payment Methods Preview */}
+                    {formData.allowed_payment_gateways.length > 0 && (
+                      <Box sx={{ p: 2, bgcolor: 'primary.50', borderRadius: 1, border: '1px solid', borderColor: 'primary.200' }}>
+                        <Typography variant="subtitle2" color="primary.dark" gutterBottom>
+                          Available Payment Methods for Clients
+                        </Typography>
+                        <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                          {Array.from(new Set(
+                            formData.allowed_payment_gateways.flatMap(gatewayId => {
+                              const gateway = paymentGatewaysData.find(g => g.id === gatewayId);
+                              if (!gateway) return [];
+                              return getGatewayPaymentMethods(gateway.code).map(m => m.name);
+                            })
+                          )).map((methodName) => (
+                            <Chip
+                              key={methodName}
+                              label={methodName}
+                              size="small"
+                              variant="outlined"
+                              sx={{ bgcolor: 'white' }}
+                            />
+                          ))}
+                        </Stack>
+                      </Box>
+                    )}
+
                     <FormControl 
                       fullWidth 
                       error={!!errors.default_payment_gateway}
@@ -831,7 +851,7 @@ export const BookingFlowFormDialog: React.FC<BookingFlowFormDialogProps> = ({
                         ))}
                       </Select>
                       <Typography variant="caption" color="text.secondary" sx={{ mt: 1 }}>
-                        Automated reminder emails before the event
+                        Automated reminder emails sent 7, 3, and 1 day(s) before the event
                       </Typography>
                     </FormControl>
                   </Stack>

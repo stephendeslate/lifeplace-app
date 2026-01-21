@@ -30,6 +30,7 @@ import { usePaymentPlanSettings } from '../../../hooks/usePaymentPlanSettings';
 import { BookingSummaryCard } from '../shared/BookingSummaryCard';
 import { PaymentSummaryCard } from '../shared/PaymentSummaryCard';
 import { QuestionnaireSummaryCard } from '../shared/QuestionnaireSummaryCard';
+import { DateUnavailableModal } from '../DateUnavailableModal';
 import type {
   ConfirmationStepConfiguration,
   ConfirmationStepData,
@@ -42,6 +43,7 @@ import type {
   PaymentSummary,
   ContactSummary,
   QuestionnaireResponseSummary,
+  SelectedPackage,
 } from '../../../types/booking';
 
 interface ConfirmationStepProps {
@@ -72,13 +74,19 @@ export const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
   const { data: paymentPlanSettings } = usePaymentPlanSettings();
 
   // Get selected packages and addons from booking state
-  const selectedPackages = state.stepData.package_selection?.selected_packages || [];
+  // Check package_selection first, then venue_selection (for custom packages), then booking_data
+  const selectedPackages: SelectedPackage[] = state.stepData.package_selection?.selected_packages ||
+    (state.stepData.venue_selection as { selected_packages?: SelectedPackage[] })?.selected_packages ||
+    (state.currentSession?.booking_data?.selected_packages as SelectedPackage[] | undefined) ||
+    [];
   const selectedAddons = state.stepData.addon_selection?.selected_addons || [];
 
   // Get payment info from booking state
   const paymentInfo = state.stepData.payment_info;
   const paymentType = paymentInfo?.payment_type || 'FULL';
-  const completionType = paymentInfo?.completion_type || 'payment';
+  // Default to 'quote' when no explicit selection made - aligns with industry best practices
+  // for high-consideration event bookings (captures leads that would otherwise be lost)
+  const completionType = paymentInfo?.completion_type || 'quote';
 
   // Calculate pricing using simplified pricing hook
   const { pricing } = useSimplePricing(
@@ -110,10 +118,37 @@ export const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
     error,
     completionResult,
     bookingReference,
+    // Race condition handling
+    dateUnavailable,
+    unavailableDateError,
+    clearDateUnavailableError,
   } = useConfirmation(
     currentSession?.session_id,
     config
   );
+
+  // Get the selected date from session data for the unavailable modal
+  const selectedDate = useMemo(() => {
+    const dateTimeData = state.stepData.date_time;
+    if (!dateTimeData?.start_date) return null;
+    // Return just the date part in YYYY-MM-DD format
+    return dateTimeData.start_date.split('T')[0];
+  }, [state.stepData.date_time]);
+
+  // Handler for when user wants to select a new date
+  const handleSelectNewDate = useCallback(() => {
+    clearDateUnavailableError();
+    // Navigate back to the date/time step
+    // Find the date_time step ID from the current flow
+    const dateTimeStep = state.currentFlow?.enabled_steps?.find(
+      (step: { step_type: string }) => step.step_type === 'date_time'
+    );
+    if (dateTimeStep) {
+      // This would need to integrate with the navigation system
+      // For now, we'll just reload the page which will restart the flow
+      window.location.reload();
+    }
+  }, [clearDateUnavailableError, state.currentFlow?.enabled_steps]);
 
   // Computed values
   const isCompleted = useMemo(() =>
@@ -160,7 +195,7 @@ export const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
         });
       }
     } catch (error) {
-      console.error('Failed to complete booking:', error);
+      if (import.meta.env.DEV) console.error('Failed to complete booking:', error);
       onDataChange({
         ...confirmationData,
         completion_status: 'failed',
@@ -200,9 +235,7 @@ export const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
     return {
       eventType: state.currentFlow?.event_type_name || 'Event',
       date: new Date(dateTimeData.start_date).toLocaleDateString(),
-      time: dateTimeData.start_time,
-      duration: dateTimeData.duration,
-      venue: dateTimeData.venue_preference,
+      venue: undefined, // Venue is determined by venue selection step
     };
   }, [state.stepData.date_time, state.currentFlow]);
 
@@ -218,9 +251,10 @@ export const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
         unit_price: lineItem?.base_unit_price || pkg.price,
         line_total: lineItem?.line_total || (parseFloat(pkg.price) * pkg.quantity).toString(),
         included_hours: pkg.included_hours,
-        excess_hours: lineItem?.excess_hours || undefined,
+        excess_hours: lineItem?.excess_hours || undefined, // Deprecated: kept for backward compatibility
         excess_hour_price: lineItem?.excess_hour_price || pkg.excess_hour_price,
         excess_cost: lineItem?.excess_cost,
+        venue_details: lineItem?.venue_details, // New: per-venue excess hours breakdown
       };
     });
   }, [selectedPackages, pricing.lineItems]);
@@ -253,23 +287,34 @@ export const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
   }), [pricing]);
 
   // Prepare payment summary
+  // PRIORITY: Use stored deposit values from PaymentStep (calculated from effective_payment_terms)
+  // FALLBACK: Recalculate from global paymentPlanSettings if stored values not available
   const paymentSummary: PaymentSummary = useMemo(() => {
     const totalAmount = pricing.total;
 
     let depositAmount = 0;
-    if (paymentType === 'DEPOSIT' && paymentPlanSettings) {
-      depositAmount = (totalAmount * paymentPlanSettings.default_deposit_percentage) / 100;
+    if (paymentType === 'DEPOSIT') {
+      // Use stored deposit amount from payment step (calculated with effective_payment_terms)
+      // Fall back to recalculating from global settings if not available
+      if (paymentInfo?.deposit_amount !== undefined) {
+        depositAmount = paymentInfo.deposit_amount;
+      } else if (paymentPlanSettings) {
+        depositAmount = (totalAmount * paymentPlanSettings.default_deposit_percentage) / 100;
+      }
     }
 
     const amountPaid = paymentType === 'DEPOSIT' ? depositAmount : totalAmount;
     const remainingBalance = paymentType === 'DEPOSIT' ? totalAmount - depositAmount : 0;
+
+    // Use stored balance_due_days from payment step, fall back to global settings
+    const balanceDueDays = paymentInfo?.balance_due_days ?? paymentPlanSettings?.balance_due_days;
 
     return {
       paymentType,
       totalAmount: totalAmount.toString(),
       amountPaid: amountPaid.toString(),
       remainingBalance: remainingBalance.toString(),
-      balanceDueDays: paymentPlanSettings?.balance_due_days,
+      balanceDueDays,
       paymentMethod: paymentInfo?.payment_method,
       completionType,
       quoteMessage: paymentInfo?.quote_message,
@@ -562,6 +607,15 @@ export const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
           Return Home
         </Button>
       </Box>
+
+      {/* Date Unavailable Modal - shown when race condition occurs */}
+      <DateUnavailableModal
+        open={dateUnavailable}
+        unavailableDate={selectedDate}
+        onSelectNewDate={handleSelectNewDate}
+        onClose={clearDateUnavailableError}
+        message={unavailableDateError || undefined}
+      />
     </Box>
   );
 };

@@ -14,6 +14,21 @@ import {
 import { Close as CloseIcon } from '@mui/icons-material';
 import { tokens } from '../../design-system/tokens';
 
+// Standardized dialog spacing constants
+export const DIALOG_PADDING = {
+  CONTENT: 4,
+  ACTIONS: 4,
+  TITLE: 3,
+  GAP: 2,
+} as const;
+
+export const DIALOG_SIZES = {
+  FORM_SMALL: 'sm' as const,
+  FORM_MEDIUM: 'md' as const,
+  FORM_LARGE: 'lg' as const,
+  CONFIRMATION: 'xs' as const,
+} as const;
+
 export interface ModernDialogAction {
   label: string;
   onClick: () => void;

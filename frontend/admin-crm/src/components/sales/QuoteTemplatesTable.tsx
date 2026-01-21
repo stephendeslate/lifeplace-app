@@ -27,7 +27,6 @@ import {
 } from '@mui/icons-material';
 import { formatDistanceToNow } from 'date-fns';
 import type { QuoteTemplate } from '../../types/sales.types';
-import { tokens } from '../../design-system';
 
 interface QuoteTemplatesTableProps {
   templates: QuoteTemplate[];
@@ -133,9 +132,9 @@ export const QuoteTemplatesTable: React.FC<QuoteTemplatesTableProps> = ({
         <TemplateIcon
           sx={{
             fontSize: 48,
-            color: tokens.color.neutral[400],
             mb: 2,
           }}
+          color="disabled"
         />
         <Typography variant="h6" color="text.secondary" gutterBottom>
           No Quote Templates Found
@@ -149,24 +148,26 @@ export const QuoteTemplatesTable: React.FC<QuoteTemplatesTableProps> = ({
 
   return (
     <>
-      <TableContainer 
-        component={Paper} 
-        sx={{ 
+      <TableContainer
+        component={Paper}
+        sx={{
           boxShadow: 'none',
-          border: `1px solid ${tokens.color.borders.subtle}`,
-          borderRadius: tokens.spacing.radius.lg,
+          border: 1,
+          borderColor: 'divider',
+          borderRadius: 1,
         }}
       >
-        <Table>
+        <Table size="small">
           <TableHead>
             <TableRow
               sx={{
                 '& .MuiTableCell-head': {
-                  backgroundColor: tokens.color.neutral[50],
-                  borderBottom: `1px solid ${tokens.color.borders.subtle}`,
+                  bgcolor: 'grey.50',
+                  borderBottom: 1,
+                  borderColor: 'divider',
                   fontWeight: 600,
                   fontSize: '0.875rem',
-                  color: tokens.color.neutral[700],
+                  color: 'text.secondary',
                 },
               }}
             >
@@ -187,10 +188,11 @@ export const QuoteTemplatesTable: React.FC<QuoteTemplatesTableProps> = ({
                 sx={{
                   cursor: 'pointer',
                   '&:hover': {
-                    backgroundColor: tokens.color.neutral[50],
+                    bgcolor: 'grey.50',
                   },
                   '& .MuiTableCell-root': {
-                    borderBottom: `1px solid ${tokens.color.borders.subtle}`,
+                    borderBottom: 1,
+                    borderColor: 'divider',
                   },
                 }}
               >
@@ -271,9 +273,9 @@ export const QuoteTemplatesTable: React.FC<QuoteTemplatesTableProps> = ({
         PaperProps={{
           sx: {
             mt: 1,
-            border: `1px solid ${tokens.color.borders.subtle}`,
-            borderRadius: tokens.spacing.radius.md,
-            boxShadow: tokens.shadow.elevation.lg,
+            border: 1,
+            borderColor: 'divider',
+            borderRadius: 1,
           },
         }}
       >
@@ -293,13 +295,13 @@ export const QuoteTemplatesTable: React.FC<QuoteTemplatesTableProps> = ({
             Duplicate Template
           </MenuItem>
         )}
-        <MenuItem 
-          onClick={handleDelete} 
-          sx={{ 
+        <MenuItem
+          onClick={handleDelete}
+          sx={{
             fontSize: '0.875rem',
-            color: tokens.color.error[600],
+            color: 'error.main',
             '&:hover': {
-              backgroundColor: tokens.color.error[50],
+              bgcolor: 'error.50',
             },
           }}
         >

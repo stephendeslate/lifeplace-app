@@ -205,12 +205,15 @@ class NotificationService:
             
             if preferences.is_notification_enabled(notification_type, 'in_app'):
                 enabled_methods.append('in_app')
-                
+
             if preferences.is_notification_enabled(notification_type, 'email'):
                 enabled_methods.append('email')
-                
+
             if preferences.is_notification_enabled(notification_type, 'sms'):
                 enabled_methods.append('sms')
+
+            if preferences.is_notification_enabled(notification_type, 'push'):
+                enabled_methods.append('push')
         
         # If no delivery methods are enabled and it's not a system notification, skip
         if not enabled_methods and not notification_type.is_system:
@@ -234,7 +237,7 @@ class NotificationService:
             enhanced_context.update({
                 'event_id': event.id,
                 'event_name': event.name or f"{event.event_type} Event",
-                'event_start_date': event.start_date,
+                'event_start_date': event.start_date.isoformat() if event.start_date else None,
             })
             
         # Add client context if provided
@@ -303,7 +306,12 @@ class NotificationService:
                         NotificationService._send_sms_notification(
                             notification, notification_type, enhanced_context
                         )
-                        
+
+                    elif method == 'push':
+                        NotificationService._send_push_notification(
+                            notification, notification_type, enhanced_context
+                        )
+
                 except Exception as e:
                     logger.error(f"Failed to deliver notification via {method}: {str(e)}")
                     notification.add_delivery_method(method, success=False, error=str(e))
@@ -323,9 +331,12 @@ class NotificationService:
         """Send email notification using the communication service"""
         try:
             from core.domains.communications.services import CommunicationService
-            
+            from core.domains.communications.context_service import (
+                CommunicationContextService, ContextType
+            )
+
             communication_service = CommunicationService()
-            
+
             # Render email template
             if notification_type.default_email_template:
                 email_body = Template(notification_type.default_email_template).render(Context(context))
@@ -340,25 +351,35 @@ class NotificationService:
                     {f'<p><a href="{context.get("action_url", "")}" style="background-color: #1976d2; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px;">View Details</a></p>' if context.get("action_url") else ''}
                 </div>
                 """
-            
+
             # Send via communication service using config
             from core.domains.communications.config import communication_config
-            
+
             try:
                 email_template_name = communication_config.get_template_name('EMAIL_LAYOUT')
             except ValueError:
                 # Fallback to notification-specific template
                 email_template_name = communication_config.get_template_name('NOTIFICATION_EMAIL')
-            
+
+            # Generate base context using the unified context service
+            base_context = CommunicationContextService.generate_context(
+                context_type=ContextType.NOTIFICATION,
+                user=notification.recipient,
+                notification=notification,
+            )
+
+            # Merge with caller context and add custom fields
+            context_data = {
+                **base_context,
+                **context,
+                'custom_subject': notification.title,
+                'custom_body': email_body,
+            }
+
             record = communication_service.send_communication_by_template(
                 template_name=email_template_name,
                 recipient=notification.recipient.email,
-                context_data={
-                    **context,
-                    'custom_subject': notification.title,
-                    'custom_body': email_body,
-                    'site_name': getattr(settings, 'SITE_NAME', 'LifePlace'),
-                },
+                context_data=context_data,
                 sent_by=None  # System notification
             )
             
@@ -380,39 +401,52 @@ class NotificationService:
         """Send SMS notification using the communication service"""
         try:
             from core.domains.communications.services import CommunicationService
-            
+            from core.domains.communications.context_service import (
+                CommunicationContextService, ContextType
+            )
+
             communication_service = CommunicationService()
-            
+
             # Render SMS template (limited to 160 characters)
             if notification_type.default_sms_template:
                 sms_content = Template(notification_type.default_sms_template).render(Context(context))
             else:
                 # Fallback to truncated title
                 sms_content = f"{notification.title[:140]}... - LifePlace"
-            
+
             # Get user's phone number from profile
             phone_number = getattr(notification.recipient.profile, 'phone', None) if hasattr(notification.recipient, 'profile') else None
-            
+
             if not phone_number:
                 raise Exception("Recipient has no phone number configured")
-            
+
             # Send via communication service using config
             from core.domains.communications.config import communication_config
-            
+
             try:
                 sms_template_name = communication_config.get_template_name('SMS_LAYOUT')
             except ValueError:
                 # Fallback to notification-specific template
                 sms_template_name = communication_config.get_template_name('NOTIFICATION_SMS')
-            
+
+            # Generate base context using the unified context service
+            base_context = CommunicationContextService.generate_context(
+                context_type=ContextType.NOTIFICATION,
+                user=notification.recipient,
+                notification=notification,
+            )
+
+            # Merge with caller context and add custom fields
+            context_data = {
+                **base_context,
+                **context,
+                'custom_body': sms_content,
+            }
+
             record = communication_service.send_communication_by_template(
                 template_name=sms_template_name,
                 recipient=phone_number,
-                context_data={
-                    **context,
-                    'custom_body': sms_content,
-                    'site_name': 'LifePlace',
-                },
+                context_data=context_data,
                 sent_by=None  # System notification
             )
             
@@ -428,7 +462,82 @@ class NotificationService:
         except Exception as e:
             logger.error(f"Failed to send SMS notification: {str(e)}")
             raise e
-    
+
+    @staticmethod
+    def _send_push_notification(notification, notification_type, context):
+        """Send push notification via Expo Push service"""
+        try:
+            from .models import DevicePushToken
+
+            # Get active push tokens for the recipient
+            push_tokens = DevicePushToken.objects.filter(
+                user=notification.recipient,
+                is_active=True
+            )
+
+            if not push_tokens.exists():
+                logger.debug(f"No active push tokens for user {notification.recipient.id}")
+                return
+
+            # Prepare push data
+            push_data = {
+                'notification_id': str(notification.id),
+                'notification_type': notification_type.code,
+                'category': notification_type.category,
+            }
+
+            if notification.action_url:
+                push_data['action_url'] = notification.action_url
+            if notification.event_id:
+                push_data['event_id'] = str(notification.event_id)
+            if notification.client_id:
+                push_data['client_id'] = str(notification.client_id)
+
+            # Calculate unread badge count
+            unread_count = notification.recipient.notifications.filter(is_read=False).count()
+
+            # Send to all active devices
+            success_count = 0
+            for token in push_tokens:
+                try:
+                    result = PushNotificationService.send_push_notification(
+                        push_token=token.token,
+                        title=notification.title,
+                        body=notification.content[:200] if len(notification.content) > 200 else notification.content,
+                        data=push_data,
+                        badge=unread_count,
+                        priority=notification_type.priority.lower() if notification_type.priority in ['HIGH', 'URGENT'] else 'default',
+                        category_id=notification_type.category,
+                    )
+
+                    if result.get('success'):
+                        token.record_success()
+                        success_count += 1
+                    else:
+                        error = result.get('error', 'Unknown error')
+                        if result.get('permanent_failure'):
+                            token.record_failure(permanent=True)
+                        else:
+                            token.record_failure(permanent=False)
+                        logger.warning(f"Push failed for token {token.id}: {error}")
+
+                except Exception as e:
+                    logger.error(f"Error sending push to token {token.id}: {str(e)}")
+                    token.record_failure(permanent=False)
+
+            if success_count > 0:
+                notification.add_delivery_method('push', success=True)
+                logger.info(f"Push notification sent to {success_count} devices for user {notification.recipient.id}")
+            else:
+                notification.add_delivery_method('push', success=False, error="Failed to deliver to any device")
+
+        except ImportError as e:
+            logger.warning(f"Push notification dependencies not available: {str(e)}")
+            raise Exception("Push service not available")
+        except Exception as e:
+            logger.error(f"Failed to send push notification: {str(e)}")
+            raise e
+
     @staticmethod
     def bulk_action(user_id: int, notification_ids: List[int], action: str):
         """Perform bulk actions on multiple notifications"""
@@ -516,15 +625,16 @@ class NotificationService:
             
             # Update boolean fields
             boolean_fields = [
-                'email_enabled', 'sms_enabled', 'in_app_enabled',
-                'system_email', 'system_sms', 'system_in_app',
-                'event_email', 'event_sms', 'event_in_app',
-                'task_email', 'task_sms', 'task_in_app',
-                'payment_email', 'payment_sms', 'payment_in_app',
-                'client_email', 'client_sms', 'client_in_app',
-                'contract_email', 'contract_sms', 'contract_in_app',
-                'workflow_email', 'workflow_sms', 'workflow_in_app',
-                'communication_email', 'communication_sms', 'communication_in_app',
+                'email_enabled', 'sms_enabled', 'in_app_enabled', 'push_enabled',
+                'system_email', 'system_sms', 'system_in_app', 'system_push',
+                'event_email', 'event_sms', 'event_in_app', 'event_push',
+                'task_email', 'task_sms', 'task_in_app', 'task_push',
+                'payment_email', 'payment_sms', 'payment_in_app', 'payment_push',
+                'client_email', 'client_sms', 'client_in_app', 'client_push',
+                'contract_email', 'contract_sms', 'contract_in_app', 'contract_push',
+                'workflow_email', 'workflow_sms', 'workflow_in_app', 'workflow_push',
+                'communication_email', 'communication_sms', 'communication_in_app', 'communication_push',
+                'marketing_email', 'marketing_sms', 'marketing_in_app', 'marketing_push',
                 'quiet_hours_enabled'
             ]
             
@@ -644,7 +754,7 @@ class NotificationStatsService:
         
         # Delivery rates by method
         delivery_rates = {}
-        for method in ['email', 'sms', 'in_app']:
+        for method in ['email', 'sms', 'in_app', 'push']:
             successful = notifications.filter(delivered_via__contains=[method]).count()
             attempted = notifications.filter(
                 delivery_attempts__has_key=method
@@ -686,7 +796,7 @@ class NotificationStatsService:
         
         # Stats by delivery method
         delivery_stats = {}
-        for method in ['email', 'sms', 'in_app']:
+        for method in ['email', 'sms', 'in_app', 'push']:
             delivered = notifications.filter(delivered_via__contains=[method]).count()
             delivery_stats[method] = delivered
         
@@ -776,9 +886,12 @@ class NotificationDigestService:
         """Send email digest"""
         try:
             from core.domains.communications.services import CommunicationService
-            
+            from core.domains.communications.context_service import (
+                CommunicationContextService, ContextType
+            )
+
             communication_service = CommunicationService()
-            
+
             # Prepare digest content
             notifications_list = []
             for notification in digest.notifications.all()[:10]:  # Limit to 10 for email
@@ -787,14 +900,14 @@ class NotificationDigestService:
                     'content': notification.content[:100] + '...' if len(notification.content) > 100 else notification.content,
                     'action_url': notification.action_url
                 })
-            
+
             # Create email content
             email_content = f"""
             <h2>Your {digest.get_frequency_display()} Notification Digest</h2>
             <p>You have {digest.notification_count} unread notifications:</p>
             <ul>
             """
-            
+
             for notif in notifications_list:
                 email_content += f"""
                 <li>
@@ -803,37 +916,50 @@ class NotificationDigestService:
                     {f'<br><a href="{notif["action_url"]}">View Details</a>' if notif['action_url'] else ''}
                 </li>
                 """
-            
+
             email_content += "</ul>"
-            
+
             if digest.notification_count > 10:
                 email_content += f"<p>And {digest.notification_count - 10} more notifications...</p>"
-            
+
             # Send via communication service using config
             from core.domains.communications.config import communication_config
-            
+
             try:
                 digest_template_name = communication_config.get_template_name('DIGEST_EMAIL')
             except ValueError:
                 # Fallback to manual layout
                 digest_template_name = communication_config.get_template_name('EMAIL_LAYOUT')
-            
+
+            # Generate base context using the unified context service
+            # For digests, we skip validation since we don't have a single notification object
+            base_context = CommunicationContextService.generate_context(
+                context_type=ContextType.NOTIFICATION,
+                user=digest.user,
+                validate=False,  # No single notification for digest
+            )
+
+            # Merge with digest-specific context
+            context_data = {
+                **base_context,
+                'custom_subject': f'Your {digest.get_frequency_display()} Notification Digest',
+                'custom_body': email_content,
+                'first_name': digest.user.first_name,
+                'last_name': digest.user.last_name,
+                'title': f'Your {digest.get_frequency_display()} Notification Digest',
+                'content': f'You have {digest.notification_count} unread notifications',
+            }
+
             record = communication_service.send_communication_by_template(
                 template_name=digest_template_name,
                 recipient=digest.user.email,
-                context_data={
-                    'custom_subject': f'Your {digest.get_frequency_display()} Notification Digest',
-                    'custom_body': email_content,
-                    'first_name': digest.user.first_name,
-                    'last_name': digest.user.last_name,
-                    'site_name': getattr(settings, 'SITE_NAME', 'LifePlace'),
-                },
+                context_data=context_data,
                 sent_by=None
             )
-            
+
             if not record:
                 raise Exception("Failed to send digest email")
-                
+
         except Exception as e:
             logger.error(f"Failed to send email digest: {str(e)}")
             raise e
@@ -843,39 +969,421 @@ class NotificationDigestService:
         """Send SMS digest summary"""
         try:
             from core.domains.communications.services import CommunicationService
-            
+            from core.domains.communications.context_service import (
+                CommunicationContextService, ContextType
+            )
+            from core.domains.communications.config import communication_config
+
             communication_service = CommunicationService()
-            
+
             # Get user's phone number
             phone_number = getattr(digest.user.profile, 'phone', None) if hasattr(digest.user, 'profile') else None
-            
+
             if not phone_number:
                 raise Exception("User has no phone number configured")
-            
+
             # Create SMS content (limited)
             sms_content = f"You have {digest.notification_count} unread notifications. Check your portal for details. - LifePlace"
-            
+
             # Send via communication service using config
             try:
                 sms_template_name = communication_config.get_template_name('SMS_LAYOUT')
             except ValueError:
                 # Fallback to notification SMS template
                 sms_template_name = communication_config.get_template_name('NOTIFICATION_SMS')
-            
+
+            # Generate base context using the unified context service
+            # For digests, we skip validation since we don't have a single notification object
+            base_context = CommunicationContextService.generate_context(
+                context_type=ContextType.NOTIFICATION,
+                user=digest.user,
+                validate=False,  # No single notification for digest
+            )
+
+            # Merge with digest-specific context
+            context_data = {
+                **base_context,
+                'custom_body': sms_content,
+                'first_name': digest.user.first_name,
+                'title': 'Notification Digest',
+                'content': f'You have {digest.notification_count} unread notifications',
+            }
+
             record = communication_service.send_communication_by_template(
                 template_name=sms_template_name,
                 recipient=phone_number,
-                context_data={
-                    'custom_body': sms_content,
-                    'first_name': digest.user.first_name,
-                    'site_name': 'LifePlace',
-                },
+                context_data=context_data,
                 sent_by=None
             )
-            
+
             if not record:
                 raise Exception("Failed to send digest SMS")
-                
+
         except Exception as e:
             logger.error(f"Failed to send SMS digest: {str(e)}")
             raise e
+
+
+class PushNotificationService:
+    """Service for handling Expo push notifications"""
+
+    _client = None
+
+    @classmethod
+    def get_push_client(cls):
+        """Get or create Expo PushClient (connection pooled)"""
+        if cls._client is None:
+            try:
+                from exponent_server_sdk import PushClient
+                cls._client = PushClient()
+            except ImportError:
+                logger.error("exponent-server-sdk not installed")
+                raise ImportError("exponent-server-sdk package is required for push notifications")
+        return cls._client
+
+    @staticmethod
+    def is_valid_expo_token(token: str) -> bool:
+        """Validate Expo push token format"""
+        if not token or not isinstance(token, str):
+            return False
+        # Expo tokens are in format: ExponentPushToken[xxxx] or ExpoPushToken[xxxx]
+        return (
+            token.startswith('ExponentPushToken[') or
+            token.startswith('ExpoPushToken[')
+        ) and token.endswith(']')
+
+    @staticmethod
+    def get_user_push_tokens(user_id: int):
+        """Get all active push tokens for a user"""
+        from .models import DevicePushToken
+        return DevicePushToken.objects.filter(
+            user_id=user_id,
+            is_active=True
+        ).order_by('-last_used_at')
+
+    @staticmethod
+    def register_token(
+        user,
+        token: str,
+        device_type: str = 'ios',
+        device_id: str = '',
+        device_name: str = '',
+        app_version: str = ''
+    ):
+        """Register or update a push token for a user"""
+        from .models import DevicePushToken
+
+        if not PushNotificationService.is_valid_expo_token(token):
+            raise ValueError(f"Invalid Expo push token format: {token}")
+
+        # Try to find existing token
+        existing = DevicePushToken.objects.filter(user=user, token=token).first()
+
+        if existing:
+            # Reactivate and update existing token
+            existing.is_active = True
+            existing.device_type = device_type
+            existing.device_id = device_id or existing.device_id
+            existing.device_name = device_name or existing.device_name
+            existing.app_version = app_version or existing.app_version
+            existing.failure_count = 0
+            existing.save()
+            logger.info(f"Reactivated push token for user {user.id}")
+            return existing
+
+        # If same device_id exists with different token, deactivate old one
+        if device_id:
+            DevicePushToken.objects.filter(
+                user=user,
+                device_id=device_id
+            ).exclude(token=token).update(is_active=False)
+
+        # Create new token
+        push_token = DevicePushToken.objects.create(
+            user=user,
+            token=token,
+            device_type=device_type,
+            device_id=device_id,
+            device_name=device_name,
+            app_version=app_version,
+        )
+        logger.info(f"Registered new push token for user {user.id}")
+        return push_token
+
+    @staticmethod
+    def unregister_token(user, token: str = None, device_id: str = None):
+        """Unregister a push token by token value or device_id"""
+        from .models import DevicePushToken
+
+        if not token and not device_id:
+            raise ValueError("Either token or device_id must be provided")
+
+        query = DevicePushToken.objects.filter(user=user)
+
+        if token:
+            query = query.filter(token=token)
+        elif device_id:
+            query = query.filter(device_id=device_id)
+
+        count = query.update(is_active=False)
+        logger.info(f"Deactivated {count} push token(s) for user {user.id}")
+        return count
+
+    @classmethod
+    def send_push_notification(
+        cls,
+        push_token: str,
+        title: str,
+        body: str,
+        data: Optional[Dict[str, Any]] = None,
+        badge: Optional[int] = None,
+        sound: str = 'default',
+        priority: str = 'default',
+        channel_id: str = 'default',
+        category_id: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        Send a push notification to a single device
+
+        Args:
+            push_token: Expo push token
+            title: Notification title
+            body: Notification body
+            data: Custom data payload
+            badge: Badge count (iOS)
+            sound: Sound to play
+            priority: 'default', 'normal', or 'high'
+            channel_id: Android notification channel
+            category_id: iOS category identifier
+
+        Returns:
+            Dict with 'success', 'ticket_id', 'error', 'permanent_failure' keys
+        """
+        try:
+            from exponent_server_sdk import (
+                PushClient,
+                PushMessage,
+                PushServerError,
+                DeviceNotRegisteredError,
+            )
+
+            if not cls.is_valid_expo_token(push_token):
+                return {
+                    'success': False,
+                    'error': 'Invalid token format',
+                    'permanent_failure': True
+                }
+
+            client = cls.get_push_client()
+
+            message = PushMessage(
+                to=push_token,
+                title=title,
+                body=body,
+                data=data or {},
+                badge=badge,
+                sound=sound,
+                priority=priority,
+                channel_id=channel_id,
+                category_id=category_id,
+            )
+
+            try:
+                response = client.publish(message)
+                response.validate_response()
+
+                # Cache ticket ID for receipt checking
+                if response.push_message and hasattr(response, 'id'):
+                    cls._cache_ticket(response.id, push_token)
+
+                return {
+                    'success': True,
+                    'ticket_id': getattr(response, 'id', None),
+                    'error': None,
+                    'permanent_failure': False
+                }
+
+            except DeviceNotRegisteredError:
+                logger.warning(f"Device not registered: {push_token[:30]}...")
+                return {
+                    'success': False,
+                    'error': 'Device not registered',
+                    'permanent_failure': True
+                }
+
+            except PushServerError as e:
+                logger.error(f"Push server error: {str(e)}")
+                return {
+                    'success': False,
+                    'error': str(e),
+                    'permanent_failure': False
+                }
+
+        except ImportError:
+            logger.error("exponent-server-sdk not installed")
+            return {
+                'success': False,
+                'error': 'Push service not configured',
+                'permanent_failure': False
+            }
+        except Exception as e:
+            logger.error(f"Unexpected error sending push: {str(e)}")
+            return {
+                'success': False,
+                'error': str(e),
+                'permanent_failure': False
+            }
+
+    @classmethod
+    def send_push_to_user(
+        cls,
+        user_id: int,
+        title: str,
+        body: str,
+        data: Optional[Dict[str, Any]] = None,
+        badge: Optional[int] = None,
+        **kwargs
+    ) -> Dict[str, Any]:
+        """
+        Send push notification to all of a user's active devices
+
+        Returns:
+            Dict with 'total_devices', 'successful', 'failed', 'results' keys
+        """
+        tokens = cls.get_user_push_tokens(user_id)
+
+        results = {
+            'total_devices': tokens.count(),
+            'successful': 0,
+            'failed': 0,
+            'results': []
+        }
+
+        for token in tokens:
+            result = cls.send_push_notification(
+                push_token=token.token,
+                title=title,
+                body=body,
+                data=data,
+                badge=badge,
+                **kwargs
+            )
+
+            results['results'].append({
+                'device_id': token.device_id,
+                'device_type': token.device_type,
+                **result
+            })
+
+            if result['success']:
+                results['successful'] += 1
+                token.record_success()
+            else:
+                results['failed'] += 1
+                token.record_failure(permanent=result.get('permanent_failure', False))
+
+        return results
+
+    @staticmethod
+    def _cache_ticket(ticket_id: str, push_token: str):
+        """Cache push ticket for later receipt checking"""
+        try:
+            from django.core.cache import cache
+            cache_key = f"push_ticket:{ticket_id}"
+            cache.set(cache_key, push_token, timeout=86400)  # 24 hours
+        except Exception as e:
+            logger.warning(f"Failed to cache push ticket: {str(e)}")
+
+    @classmethod
+    def check_receipts(cls, ticket_ids: List[str]) -> Dict[str, Any]:
+        """
+        Check push notification receipts for delivery status
+
+        Args:
+            ticket_ids: List of ticket IDs to check
+
+        Returns:
+            Dict mapping ticket_id to receipt status
+        """
+        try:
+            from exponent_server_sdk import PushClient
+            from django.core.cache import cache
+
+            client = cls.get_push_client()
+            results = {}
+
+            # Batch check receipts
+            try:
+                receipts = client.get_receipts(ticket_ids)
+
+                for ticket_id, receipt in receipts.items():
+                    # Get cached token for this ticket
+                    cache_key = f"push_ticket:{ticket_id}"
+                    push_token = cache.get(cache_key)
+
+                    if receipt.status == 'ok':
+                        results[ticket_id] = {
+                            'status': 'delivered',
+                            'push_token': push_token
+                        }
+                    elif receipt.status == 'error':
+                        results[ticket_id] = {
+                            'status': 'failed',
+                            'error': receipt.message,
+                            'details': getattr(receipt, 'details', None),
+                            'push_token': push_token
+                        }
+
+                        # Handle DeviceNotRegistered error
+                        if receipt.details and receipt.details.get('error') == 'DeviceNotRegistered':
+                            if push_token:
+                                cls._deactivate_token_by_value(push_token)
+
+                    # Clean up cache
+                    cache.delete(cache_key)
+
+            except Exception as e:
+                logger.error(f"Error checking receipts: {str(e)}")
+
+            return results
+
+        except ImportError:
+            logger.error("exponent-server-sdk not installed")
+            return {}
+
+    @staticmethod
+    def _deactivate_token_by_value(token: str):
+        """Deactivate a push token by its value"""
+        from .models import DevicePushToken
+        count = DevicePushToken.objects.filter(
+            token=token,
+            is_active=True
+        ).update(is_active=False)
+        if count > 0:
+            logger.info(f"Deactivated unregistered push token: {token[:30]}...")
+
+    @staticmethod
+    def cleanup_inactive_tokens(days: int = 90) -> int:
+        """
+        Clean up inactive or stale push tokens
+
+        Args:
+            days: Number of days of inactivity before cleanup
+
+        Returns:
+            Number of tokens deleted
+        """
+        from .models import DevicePushToken
+        cutoff_date = timezone.now() - timedelta(days=days)
+
+        # Delete tokens that are:
+        # 1. Inactive (deactivated)
+        # 2. OR haven't been used in X days
+        deleted_count, _ = DevicePushToken.objects.filter(
+            Q(is_active=False, updated_at__lt=cutoff_date) |
+            Q(last_used_at__lt=cutoff_date) |
+            Q(last_used_at__isnull=True, created_at__lt=cutoff_date)
+        ).delete()
+
+        logger.info(f"Cleaned up {deleted_count} stale push tokens")
+        return deleted_count

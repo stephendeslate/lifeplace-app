@@ -1,7 +1,28 @@
 # Ignore files and directories that should not be tracked by Git
 .env
 .env.production
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Celery Beat
+celerybeat-schedule*
+
+# Media uploads (test artifacts)
+backend/media/
+
+# Mobile app environment files (contains API keys)
+mobile-app/.env
+mobile-app/.env.local
+mobile-app/.env.production
 export_files.py
 export_concatenated_files.py
 export/
 export-concatenated/
+
+# Test coverage
+coverage/
+*.lcov

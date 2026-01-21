@@ -2,3 +2,4 @@
 
 export { ClientsOverview } from './ClientsOverview';
 export { ClientProfile } from './ClientProfile';
+export { NewClient } from './NewClient';

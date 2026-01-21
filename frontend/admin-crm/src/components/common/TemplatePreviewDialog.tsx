@@ -1,6 +1,7 @@
 // frontend/admin-crm/src/components/common/TemplatePreviewDialog.tsx
 
 import React, { useState, useEffect, useCallback } from 'react';
+import DOMPurify from 'dompurify';
 import {
   Dialog,
   DialogTitle,
@@ -82,9 +83,9 @@ export const TemplatePreviewDialog: React.FC<TemplatePreviewDialogProps> = ({
 
   // Initialize context data with sample values when dialog opens
   useEffect(() => {
-    if (open && variables.length > 0) {
+    if (open) {
       const sampleData: Record<string, unknown> = {};
-      
+
       variables.forEach(variable => {
         // Provide sample values based on variable names
         if (variable.includes('name')) {
@@ -107,15 +108,38 @@ export const TemplatePreviewDialog: React.FC<TemplatePreviewDialogProps> = ({
           sampleData[variable] = `Sample ${variable}`;
         }
       });
-      
+
       setContextData(sampleData);
     }
   }, [open, variables]);
 
+  // Generate preview when dialog opens
+  useEffect(() => {
+    if (open) {
+      const doPreview = async () => {
+        setIsLoading(true);
+        setError(null);
+
+        try {
+          const result = await onPreview(contextData);
+          setPreviewData(result);
+        } catch (err) {
+          setError(err instanceof Error ? err.message : 'Failed to generate preview');
+        } finally {
+          setIsLoading(false);
+        }
+      };
+
+      // Small delay to ensure contextData is populated
+      const timer = setTimeout(doPreview, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [open, onPreview, contextData]);
+
   const handlePreview = useCallback(async () => {
     setIsLoading(true);
     setError(null);
-    
+
     try {
       const result = await onPreview(contextData);
       setPreviewData(result);
@@ -125,13 +149,6 @@ export const TemplatePreviewDialog: React.FC<TemplatePreviewDialogProps> = ({
       setIsLoading(false);
     }
   }, [contextData, onPreview]);
-
-  // Generate preview when context data changes
-  useEffect(() => {
-    if (open && Object.keys(contextData).length > 0) {
-      handlePreview();
-    }
-  }, [open, contextData, handlePreview]);
 
   const handleContextChange = (variable: string, value: string) => {
     setContextData(prev => ({
@@ -268,15 +285,15 @@ export const TemplatePreviewDialog: React.FC<TemplatePreviewDialogProps> = ({
               {templateType === 'communication' ? (
                 <Box>
                   <Typography variant="body1" component="div">
-                    <div dangerouslySetInnerHTML={{ 
-                      __html: previewData.rendered_content.replace(/\n/g, '<br />') 
+                    <div dangerouslySetInnerHTML={{
+                      __html: DOMPurify.sanitize(previewData.rendered_content.replace(/\n/g, '<br />'))
                     }} />
                   </Typography>
                 </Box>
               ) : (
                 <Box>
-                  <div dangerouslySetInnerHTML={{ 
-                    __html: previewData.rendered_content 
+                  <div dangerouslySetInnerHTML={{
+                    __html: DOMPurify.sanitize(previewData.rendered_content)
                   }} />
                 </Box>
               )}

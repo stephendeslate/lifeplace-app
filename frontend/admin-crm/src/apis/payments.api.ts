@@ -66,6 +66,16 @@ export const paymentsApi = {
   },
 
   /**
+   * Gateway Health Status
+   */
+  getGatewayHealth: async (): Promise<Record<number, import('../types/payments.types').GatewayHealth>> => {
+    const response = await api.get<Record<number, import('../types/payments.types').GatewayHealth>>(
+      '/payments/gateways/health/'
+    );
+    return response.data;
+  },
+
+  /**
    * Tax Rates
    */
   getTaxRates: async (): Promise<TaxRate[]> => {
@@ -152,6 +162,11 @@ export const paymentsApi = {
 
   sendReceipt: async (id: number): Promise<{ detail: string }> => {
     const response = await api.post<{ detail: string }>(`/payments/payments/${id}/send_receipt/`);
+    return response.data;
+  },
+
+  sendReminder: async (id: number): Promise<{ detail: string }> => {
+    const response = await api.post<{ detail: string }>(`/payments/payments/${id}/send_reminder/`);
     return response.data;
   },
 
@@ -309,6 +324,18 @@ export const paymentsApi = {
   getInvoicesForClient: async (clientId: number) : Promise<Invoice[]> =>  {
     const response = await api.get<PaginatedResponse<Invoice>>(`/payments/invoices/?client_id=${clientId}`);
     return response.data.results;
+  },
+
+  sendInvoice: async (invoiceId: number): Promise<{ detail: string; status: string }> => {
+    const response = await api.post<{ detail: string; status: string }>(`/payments/invoices/${invoiceId}/send_invoice/`);
+    return response.data;
+  },
+
+  downloadInvoicePdf: async (invoiceId: number): Promise<Blob> => {
+    const response = await api.get(`/payments/invoices/${invoiceId}/download_pdf/`, {
+      responseType: 'blob',
+    });
+    return response.data as Blob;
   },
 
   /**

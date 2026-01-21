@@ -1,6 +1,7 @@
 // frontend/client-portal/src/pages/profile/Profile.tsx
 
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Typography,
@@ -21,16 +22,18 @@ import {
   Cancel as CancelIcon,
   PhotoCamera as PhotoCameraIcon,
   Person as PersonIcon,
-  Email as EmailIcon,
   CalendarToday as CalendarIcon,
   Security as SecurityIcon,
   Notifications as NotificationsIcon,
+  Support as SupportIcon,
 } from '@mui/icons-material';
+import { SEO } from '../../hooks/useSEO';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToastActions } from '../../contexts/ToastContext';
 import { GlassCard } from '../../design-system/components/GlassCard';
 import { AnimatedElement } from '../../design-system/components/AnimatedElement';
 import ChangePasswordDialog from '../../components/profile/ChangePasswordDialog';
+import { NotificationPreferencesDialog } from '../../components/notifications';
 import { useChangePassword } from '../../hooks/useChangePassword';
 
 interface ProfileFormData {
@@ -43,6 +46,7 @@ interface ProfileFormData {
 
 const Profile: React.FC = () => {
   const theme = useTheme();
+  const navigate = useNavigate();
   const { user, updateUser } = useAuth();
   const { showSuccess, showError } = useToastActions();
 
@@ -56,6 +60,7 @@ const Profile: React.FC = () => {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
+  const [notificationPreferencesOpen, setNotificationPreferencesOpen] = useState(false);
 
   // Password change mutation
   const changePasswordMutation = useChangePassword();
@@ -110,7 +115,7 @@ const Profile: React.FC = () => {
       showSuccess('Profile updated successfully!');
       setIsEditing(false);
     } catch (error) {
-      console.error('Error updating profile:', error);
+      if (import.meta.env.DEV) console.error('Error updating profile:', error);
       showError('Failed to update profile. Please try again.');
     } finally {
       setIsLoading(false);
@@ -128,18 +133,31 @@ const Profile: React.FC = () => {
 
   if (!user) {
     return (
-      <AnimatedElement animation="fadeIn">
-        <GlassCard variant="light" intensity="subtle" sx={{ p: 4, textAlign: 'center' }}>
-          <Typography variant="h6" color="text.secondary">
-            Loading profile...
-          </Typography>
-        </GlassCard>
-      </AnimatedElement>
+      <>
+        <SEO
+          title="Profile | LifePlace Alfonso"
+          description="Your LifePlace Alfonso profile."
+          noIndex={true}
+        />
+        <AnimatedElement animation="fadeIn">
+          <GlassCard variant="light" intensity="subtle" sx={{ p: 4, textAlign: 'center' }}>
+            <Typography variant="h6" color="text.secondary">
+              Loading profile...
+            </Typography>
+          </GlassCard>
+        </AnimatedElement>
+      </>
     );
   }
 
   return (
-    <Box>
+    <>
+      <SEO
+        title="Profile | LifePlace Alfonso"
+        description="Your LifePlace Alfonso profile."
+        noIndex={true}
+      />
+      <Box>
       {/* Header */}
       <AnimatedElement animation="slideDown" delay={100}>
         <Box sx={{ mb: 4 }}>
@@ -421,6 +439,7 @@ const Profile: React.FC = () => {
                     variant="outlined"
                     startIcon={<NotificationsIcon />}
                     fullWidth
+                    onClick={() => setNotificationPreferencesOpen(true)}
                     sx={{
                       backgroundColor: alpha('#fff', 0.1),
                       backdropFilter: 'blur(10px)',
@@ -436,8 +455,9 @@ const Profile: React.FC = () => {
                   </Button>
                   <Button
                     variant="outlined"
-                    startIcon={<EmailIcon />}
+                    startIcon={<SupportIcon />}
                     fullWidth
+                    onClick={() => navigate('/support')}
                     sx={{
                       backgroundColor: alpha('#fff', 0.1),
                       backdropFilter: 'blur(10px)',
@@ -480,7 +500,14 @@ const Profile: React.FC = () => {
         onSubmit={handleChangePassword}
         isLoading={changePasswordMutation.isPending}
       />
-    </Box>
+
+      {/* Notification Preferences Dialog */}
+      <NotificationPreferencesDialog
+        open={notificationPreferencesOpen}
+        onClose={() => setNotificationPreferencesOpen(false)}
+      />
+      </Box>
+    </>
   );
 };
 

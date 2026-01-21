@@ -1,11 +1,61 @@
 # backend/core/domains/sales/signals.py
 import logging
+from decimal import Decimal
 from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 from django.utils import timezone
 from .models import EventQuote, QuoteLineItem
 
 logger = logging.getLogger(__name__)
+
+
+def _format_currency_for_contract(amount, currency_settings=None):
+    """Format amount using system currency settings for contract templates"""
+    if not amount:
+        return '₱0.00'
+
+    try:
+        amount_float = float(amount)
+    except (ValueError, TypeError):
+        amount_float = 0
+
+    # Get currency settings if not provided
+    if currency_settings is None:
+        from core.domains.settings.models import CurrencySettings
+        currency_settings = CurrencySettings.get_system_settings()
+
+    # Currency symbol mapping
+    currency_symbols = {
+        'PHP': '₱',
+        'USD': '$',
+        'EUR': '€',
+        'SGD': 'S$',
+        'HKD': 'HK$',
+    }
+
+    currency_code = currency_settings.default_currency
+    symbol = currency_symbols.get(currency_code, currency_code)
+    decimal_places = currency_settings.decimal_places
+    thousands_sep = currency_settings.thousands_separator
+    decimal_sep = currency_settings.decimal_separator
+
+    # Format the number
+    if decimal_places == 0:
+        formatted = f"{amount_float:,.0f}"
+    else:
+        formatted = f"{amount_float:,.{decimal_places}f}"
+
+    # Replace separators
+    formatted = formatted.replace(',', '|').replace('.', decimal_sep).replace('|', thousands_sep)
+
+    # Apply display format
+    display_format = currency_settings.display_format
+    if display_format == 'code':
+        return f"{formatted} {currency_code}"
+    elif display_format == 'both':
+        return f"{symbol}{formatted} {currency_code}"
+    else:
+        return f"{symbol}{formatted}"
 
 
 @receiver(post_save, sender=EventQuote)
@@ -41,12 +91,61 @@ def handle_quote_acceptance(sender, instance, created, **kwargs):
                     ).first()
 
                     if not existing_contract:
+                        # Calculate contract valid_until based on event date
+                        # Contract should expire at least 1 day before the event
+                        from datetime import timedelta
+                        event_date = instance.event.start_date.date() if hasattr(instance.event.start_date, 'date') else instance.event.start_date
+                        contract_valid_until = event_date - timedelta(days=1)
+
                         # Create contract from template
                         logger.info(f"Creating contract for event {instance.event.id} using template {contract_template.id}")
+
+                        # Build context_data with ALL quote pricing variables
+                        # This ensures correct pricing in contract content regardless of DB query timing
+                        from core.domains.settings.models import CurrencySettings
+                        from core.domains.payments.models import PaymentSettings
+
+                        currency_settings = CurrencySettings.get_system_settings()
+                        payment_settings = PaymentSettings.get_default_settings()
+
+                        # Calculate deposit and balance from quote total
+                        deposit_pct = payment_settings.default_deposit_percentage
+                        deposit_amount = instance.total_amount * (deposit_pct / Decimal('100'))
+                        balance_amount = instance.total_amount - deposit_amount
+
+                        # Build pricing context with all variables needed for contract templates
+                        quote_pricing_context = {
+                            # Base pricing (numeric strings)
+                            'total_price': str(instance.total_amount),
+                            'total_amount': str(instance.total_amount),
+                            'contract_value': str(instance.total_amount),
+                            'event_price': str(instance.total_amount),
+                            'subtotal': str(instance.subtotal),
+                            'tax_amount': str(instance.tax_amount),
+                            'service_charge_amount': str(instance.service_charge_amount),
+                            'discount_amount': str(instance.discount_amount),
+
+                            # Formatted pricing (currency)
+                            'total_price_formatted': _format_currency_for_contract(instance.total_amount, currency_settings),
+                            'total_amount_formatted': _format_currency_for_contract(instance.total_amount, currency_settings),
+                            'contract_value_formatted': _format_currency_for_contract(instance.total_amount, currency_settings),
+                            'subtotal_formatted': _format_currency_for_contract(instance.subtotal, currency_settings),
+                            'tax_amount_formatted': _format_currency_for_contract(instance.tax_amount, currency_settings),
+                            'service_charge_formatted': _format_currency_for_contract(instance.service_charge_amount, currency_settings),
+                            'discount_amount_formatted': _format_currency_for_contract(instance.discount_amount, currency_settings),
+
+                            # Deposit calculations
+                            'deposit_percentage': str(deposit_pct),
+                            'deposit_amount': str(deposit_amount),
+                            'balance_amount': str(balance_amount),
+                        }
+
                         contract = EventContractService.create_contract_from_template(
                             event_id=instance.event.id,
                             template_id=contract_template.id,
-                            contract_value=instance.total_amount
+                            valid_until=contract_valid_until,
+                            contract_value=instance.total_amount,
+                            context_data=quote_pricing_context
                         )
 
                         # Set contract to SENT status (ready for client signature)
@@ -79,10 +178,16 @@ def handle_quote_acceptance(sender, instance, created, **kwargs):
                 logger.info(f"Invoice already exists for quote {instance.id}")
                 return
 
+            # Get booking flow ID from the event's booking session (if exists)
+            # This allows invoice due date to use flow-specific payment terms
+            from core.domains.bookingflow.models import BookingSession
+            booking_session = BookingSession.objects.filter(created_event=instance.event).first()
+            booking_flow_id = booking_session.booking_flow_id if booking_session else None
+
             # Create invoice from accepted quote
-            logger.info(f"Creating invoice for accepted quote {instance.id}")
+            logger.info(f"Creating invoice for accepted quote {instance.id} (booking_flow_id={booking_flow_id})")
             from core.domains.payments.services.invoice_service import InvoiceService
-            invoice = InvoiceService.create_from_quote(instance)
+            invoice = InvoiceService.create_from_quote(instance, booking_flow_id=booking_flow_id)
 
             # Issue the invoice so it can be paid by the client
             invoice.issue()
@@ -119,8 +224,9 @@ def recalculate_quote_totals_on_line_item_delete(sender, instance, **kwargs):
 
 
 def _recalculate_quote_totals(quote):
-    """Helper function to recalculate quote subtotal, tax, and total from line items"""
+    """Helper function to recalculate quote subtotal, tax, service charge, and total from line items"""
     from decimal import Decimal
+    from core.domains.payments.models import PaymentSettings
 
     # Calculate totals from line items
     subtotal = Decimal('0.00')
@@ -133,17 +239,29 @@ def _recalculate_quote_totals(quote):
         subtotal += item_subtotal
         tax_amount += item_tax
 
-    total_amount = subtotal + tax_amount
+    # Get discount amount (preserve existing discount)
+    discount_amount = quote.discount_amount or Decimal('0.00')
 
-    # Apply discount if present
-    if quote.discount_amount:
-        total_amount -= quote.discount_amount
+    # Calculate service charge based on (subtotal - discount)
+    service_charge_amount = Decimal('0.00')
+    try:
+        settings = PaymentSettings.get_default_settings()
+        if settings.service_charge_enabled:
+            chargeable_amount = subtotal - discount_amount
+            service_charge_rate = settings.service_charge_percentage / Decimal('100')
+            service_charge_amount = (chargeable_amount * service_charge_rate).quantize(Decimal('0.01'))
+    except Exception as e:
+        logger.warning(f"Error calculating service charge: {e}")
+
+    # Calculate total: subtotal - discount + service_charge + tax
+    total_amount = subtotal - discount_amount + service_charge_amount + tax_amount
 
     # Update quote (avoid triggering signals again)
     EventQuote.objects.filter(pk=quote.pk).update(
         subtotal=subtotal,
         tax_amount=tax_amount,
+        service_charge_amount=service_charge_amount,
         total_amount=total_amount
     )
 
-    logger.info(f"Recalculated quote {quote.id} totals: subtotal=₱{subtotal}, tax=₱{tax_amount}, total=₱{total_amount}")
+    logger.info(f"Recalculated quote {quote.id} totals: subtotal=₱{subtotal}, service_charge=₱{service_charge_amount}, tax=₱{tax_amount}, total=₱{total_amount}")

@@ -25,6 +25,7 @@ import {
   useMediaQuery,
   alpha,
   Divider,
+  CircularProgress,
 } from '@mui/material';
 import {
   Close as CloseIcon,
@@ -35,11 +36,13 @@ import {
   Download as DownloadIcon,
   Timeline as TimelineIcon,
   TrendingUp as TrendingIcon,
+  Description as DocumentIcon,
 } from '@mui/icons-material';
 import { GlassCard } from '../../design-system/components/GlassCard';
 import { AnimatedElement } from '../../design-system/components/AnimatedElement';
 import ContractActivityTimeline from './ContractActivityTimeline';
-import type { Contract, ContractAmendment } from '../../types/contracts.types';
+import { useContractHistoryData } from '../../hooks/useContractHistory';
+import type { Contract } from '../../types/contracts.types';
 
 interface ContractHistoryDialogProps {
   open: boolean;
@@ -67,6 +70,9 @@ export const ContractHistoryDialog: React.FC<ContractHistoryDialogProps> = ({
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [activeTab, setActiveTab] = useState(0);
+
+  // Fetch amendments and documents from API
+  const { amendments, documents, isLoading } = useContractHistoryData(contract?.id);
 
   if (!contract) return null;
 
@@ -103,20 +109,19 @@ export const ContractHistoryDialog: React.FC<ContractHistoryDialogProps> = ({
         return 'info';
       case 'DRAFT':
       case 'PENDING':
+      case 'REQUESTED':
         return 'warning';
       case 'VOIDED':
       case 'EXPIRED':
       case 'REJECTED':
+      case 'CANCELLED':
         return 'error';
       default:
         return 'primary';
     }
   };
 
-  // Mock amendments data (in real implementation, this would come from the contract data)
-  const amendments: ContractAmendment[] = contract.is_amendment ? [] : [];
-
-  // Mock value changes data
+  // Value changes data
   const valueChanges = contract.contract_value ? [
     {
       id: '1',
@@ -134,6 +139,7 @@ export const ContractHistoryDialog: React.FC<ContractHistoryDialogProps> = ({
     lastModified: contract.updated_at,
     signatures: contract.signatures?.length || 0,
     amendments: amendments.length,
+    documents: documents.length,
     status: contract.status,
     value: contract.contract_value,
     currency: contract.currency,
@@ -302,25 +308,29 @@ export const ContractHistoryDialog: React.FC<ContractHistoryDialogProps> = ({
               },
             }}
           >
-            <Tab 
-              label="Timeline" 
-              icon={<TimelineIcon />} 
+            <Tab
+              label="Timeline"
+              icon={<TimelineIcon />}
               iconPosition="start"
             />
-            <Tab 
-              label="Signatures" 
-              icon={<SignatureIcon />} 
+            <Tab
+              label="Signatures"
+              icon={<SignatureIcon />}
               iconPosition="start"
             />
-            <Tab 
-              label="Amendments" 
-              icon={<AmendmentIcon />} 
+            <Tab
+              label={`Amendments${amendments.length > 0 ? ` (${amendments.length})` : ''}`}
+              icon={<AmendmentIcon />}
               iconPosition="start"
-              disabled={amendments.length === 0}
             />
-            <Tab 
-              label="Value Changes" 
-              icon={<ValueIcon />} 
+            <Tab
+              label={`Documents${documents.length > 0 ? ` (${documents.length})` : ''}`}
+              icon={<DocumentIcon />}
+              iconPosition="start"
+            />
+            <Tab
+              label="Value Changes"
+              icon={<ValueIcon />}
               iconPosition="start"
               disabled={valueChanges.length === 0}
             />
@@ -442,20 +452,171 @@ export const ContractHistoryDialog: React.FC<ContractHistoryDialogProps> = ({
           {/* Amendments Tab */}
           <TabPanel value={activeTab} index={2}>
             <AnimatedElement animation="fadeIn">
-              <GlassCard variant="light" intensity="subtle" sx={{ p: 4, textAlign: 'center' }}>
-                <AmendmentIcon sx={{ fontSize: 48, color: 'grey.400', mb: 2 }} />
-                <Typography variant="h6" gutterBottom>
-                  No Amendments
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  This contract has not been amended.
-                </Typography>
-              </GlassCard>
+              {isLoading ? (
+                <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+                  <CircularProgress />
+                </Box>
+              ) : amendments.length > 0 ? (
+                <Box>
+                  <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
+                    Contract Amendments
+                  </Typography>
+                  <Stack spacing={2}>
+                    {amendments.map((amendment) => (
+                      <GlassCard
+                        key={amendment.id}
+                        variant="light"
+                        intensity="medium"
+                        sx={{
+                          p: 3,
+                          border: `1px solid ${alpha(theme.palette.info.main, 0.2)}`,
+                          backgroundColor: alpha(theme.palette.info.main, 0.05),
+                        }}
+                      >
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+                          <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                            {amendment.amendment_reason}
+                          </Typography>
+                          <Chip
+                            label={amendment.status.replace('_', ' ')}
+                            size="small"
+                            color={getStatusColor(amendment.status)}
+                          />
+                        </Box>
+                        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                          {amendment.changes_description}
+                        </Typography>
+                        <Stack direction="row" spacing={3} flexWrap="wrap">
+                          <Box>
+                            <Typography variant="caption" color="text.secondary">Requested:</Typography>
+                            <Typography variant="body2">{formatDate(amendment.requested_at)}</Typography>
+                          </Box>
+                          {amendment.requested_by && (
+                            <Box>
+                              <Typography variant="caption" color="text.secondary">Requested By:</Typography>
+                              <Typography variant="body2">
+                                {amendment.requested_by.first_name} {amendment.requested_by.last_name}
+                              </Typography>
+                            </Box>
+                          )}
+                          {amendment.reviewed_at && (
+                            <Box>
+                              <Typography variant="caption" color="text.secondary">Reviewed:</Typography>
+                              <Typography variant="body2">{formatDate(amendment.reviewed_at)}</Typography>
+                            </Box>
+                          )}
+                          {amendment.value_change && (
+                            <Box>
+                              <Typography variant="caption" color="text.secondary">Value Change:</Typography>
+                              <Typography
+                                variant="body2"
+                                sx={{
+                                  color: parseFloat(amendment.value_change) >= 0
+                                    ? theme.palette.success.main
+                                    : theme.palette.error.main,
+                                  fontWeight: 600,
+                                }}
+                              >
+                                {parseFloat(amendment.value_change) >= 0 ? '+' : ''}
+                                {formatCurrency(amendment.value_change, contract.currency)}
+                              </Typography>
+                            </Box>
+                          )}
+                        </Stack>
+                        {amendment.review_notes && (
+                          <Box sx={{ mt: 2, p: 2, bgcolor: alpha(theme.palette.grey[500], 0.1), borderRadius: 1 }}>
+                            <Typography variant="caption" color="text.secondary">Review Notes:</Typography>
+                            <Typography variant="body2">{amendment.review_notes}</Typography>
+                          </Box>
+                        )}
+                      </GlassCard>
+                    ))}
+                  </Stack>
+                </Box>
+              ) : (
+                <GlassCard variant="light" intensity="subtle" sx={{ p: 4, textAlign: 'center' }}>
+                  <AmendmentIcon sx={{ fontSize: 48, color: 'grey.400', mb: 2 }} />
+                  <Typography variant="h6" gutterBottom>
+                    No Amendments
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    This contract has not been amended.
+                  </Typography>
+                </GlassCard>
+              )}
+            </AnimatedElement>
+          </TabPanel>
+
+          {/* Documents Tab */}
+          <TabPanel value={activeTab} index={3}>
+            <AnimatedElement animation="fadeIn">
+              {isLoading ? (
+                <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+                  <CircularProgress />
+                </Box>
+              ) : documents.length > 0 ? (
+                <Box>
+                  <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
+                    Contract Documents
+                  </Typography>
+                  <Stack spacing={2}>
+                    {documents.map((doc) => (
+                      <GlassCard
+                        key={doc.id}
+                        variant="light"
+                        intensity="medium"
+                        sx={{ p: 2 }}
+                      >
+                        <Stack direction="row" justifyContent="space-between" alignItems="center">
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                            <Avatar sx={{ bgcolor: theme.palette.primary.main }}>
+                              <DocumentIcon />
+                            </Avatar>
+                            <Box>
+                              <Typography variant="subtitle1" sx={{ fontWeight: 500 }}>
+                                {doc.name}
+                              </Typography>
+                              <Typography variant="caption" color="text.secondary">
+                                {doc.document_type_display} - v{doc.version}
+                              </Typography>
+                              {doc.description && (
+                                <Typography variant="body2" color="text.secondary">
+                                  {doc.description}
+                                </Typography>
+                              )}
+                            </Box>
+                          </Box>
+                          <Button
+                            variant="outlined"
+                            size="small"
+                            startIcon={<DownloadIcon />}
+                            href={doc.file}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            Download
+                          </Button>
+                        </Stack>
+                      </GlassCard>
+                    ))}
+                  </Stack>
+                </Box>
+              ) : (
+                <GlassCard variant="light" intensity="subtle" sx={{ p: 4, textAlign: 'center' }}>
+                  <DocumentIcon sx={{ fontSize: 48, color: 'grey.400', mb: 2 }} />
+                  <Typography variant="h6" gutterBottom>
+                    No Documents
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    No additional documents attached to this contract.
+                  </Typography>
+                </GlassCard>
+              )}
             </AnimatedElement>
           </TabPanel>
 
           {/* Value Changes Tab */}
-          <TabPanel value={activeTab} index={3}>
+          <TabPanel value={activeTab} index={4}>
             <AnimatedElement animation="fadeIn">
               {valueChanges.length > 0 ? (
                 <Box>
@@ -531,7 +692,7 @@ export const ContractHistoryDialog: React.FC<ContractHistoryDialogProps> = ({
             startIcon={<DownloadIcon />}
             onClick={() => {
               // Handle export functionality
-              console.log('Export contract history');
+              if (import.meta.env.DEV) console.log('Export contract history');
             }}
             sx={{ textTransform: 'none' }}
           >

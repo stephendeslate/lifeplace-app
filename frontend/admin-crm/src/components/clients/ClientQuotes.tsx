@@ -21,6 +21,14 @@ import {
   ListItemText,
   Stack,
   Tooltip,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  List,
+  ListItemButton,
+  ListItemAvatar,
+  Avatar,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -30,27 +38,47 @@ import {
   Edit as EditIcon,
   Send as SendIcon,
   FileCopy as DuplicateIcon,
+  Event as EventIcon,
 } from '@mui/icons-material';
-import { useNavigate } from 'react-router-dom';
-import { useQuotesForClient } from '../../hooks/useSales';
+import { useQuotesForClient, useDuplicateQuote } from '../../hooks/useSales';
+import { useEvents } from '../../hooks/useEvents';
 import type { EventQuote } from '../../types/sales.types';
 import type { Client } from '../../types/clients.types';
+import type { Event } from '../../types/events.types';
 import { formatCurrency } from '../../utils/currency';
 import { useCurrencySettings } from '../../hooks/useCurrency';
 import { QuoteDetailsDialog } from '../sales/QuoteDetailsDialog';
+import QuoteEditDialog from '../sales/QuoteEditDialog';
+import QuoteSendConfirmDialog from '../sales/QuoteSendConfirmDialog';
+import { QuoteCreateDialog } from '../events/QuoteCreateDialog';
+import { useToast } from '../../contexts/ToastContext';
+import { format } from 'date-fns';
 
 interface ClientQuotesProps {
   client: Client;
 }
 
 export const ClientQuotes: React.FC<ClientQuotesProps> = ({ client }) => {
-  const navigate = useNavigate();
+  const { showToast } = useToast();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedQuote, setSelectedQuote] = useState<EventQuote | null>(null);
+
+  // Dialog states
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [sendDialogOpen, setSendDialogOpen] = useState(false);
+  const [eventSelectDialogOpen, setEventSelectDialogOpen] = useState(false);
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
+
   const { settings: currencySettings } = useCurrencySettings();
 
-  const { data: quotes = [], isLoading } = useQuotesForClient(client.id);
+  // Data hooks
+  const { data: quotes = [], isLoading, refetch: refetchQuotes } = useQuotesForClient(client.id);
+  const { events: clientEvents = [], isLoadingEvents: eventsLoading } = useEvents({ client: client.id });
+
+  // Mutation hooks
+  const duplicateQuoteMutation = useDuplicateQuote();
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, quote: EventQuote) => {
     setAnchorEl(event.currentTarget);
@@ -59,20 +87,68 @@ export const ClientQuotes: React.FC<ClientQuotesProps> = ({ client }) => {
 
   const handleMenuClose = () => {
     setAnchorEl(null);
-    setSelectedQuote(null);
   };
 
   const handleViewQuote = (quote: EventQuote) => {
     setSelectedQuote(quote);
     setDetailDialogOpen(true);
+    handleMenuClose();
   };
 
   const handleEditQuote = (quote: EventQuote) => {
-    navigate(`/quotes/${quote.id}/edit`);
+    setSelectedQuote(quote);
+    setEditDialogOpen(true);
+    handleMenuClose();
   };
 
-  const handleCreateQuote = () => {
-    navigate(`/quotes/new?client=${client.id}`);
+  const handleSendQuote = (quote: EventQuote) => {
+    setSelectedQuote(quote);
+    setSendDialogOpen(true);
+    handleMenuClose();
+  };
+
+  const handleDuplicateQuote = async (quote: EventQuote) => {
+    handleMenuClose();
+    try {
+      await duplicateQuoteMutation.mutateAsync(quote.id);
+      showToast({ type: 'success', title: 'Quote Duplicated', message: 'Quote duplicated successfully' });
+      refetchQuotes();
+    } catch {
+      showToast({ type: 'error', title: 'Error', message: 'Failed to duplicate quote' });
+    }
+  };
+
+  // Create quote flow: first select an event, then open create dialog
+  const handleCreateQuoteClick = () => {
+    setEventSelectDialogOpen(true);
+  };
+
+  const handleEventSelect = (event: Event) => {
+    setSelectedEvent(event);
+    setEventSelectDialogOpen(false);
+    setCreateDialogOpen(true);
+  };
+
+  const handleCreateDialogClose = () => {
+    setCreateDialogOpen(false);
+    setSelectedEvent(null);
+  };
+
+  const handleQuoteCreated = () => {
+    refetchQuotes();
+    handleCreateDialogClose();
+  };
+
+  const handleEditSuccess = () => {
+    setEditDialogOpen(false);
+    setSelectedQuote(null);
+    refetchQuotes();
+  };
+
+  const handleSendSuccess = () => {
+    setSendDialogOpen(false);
+    setSelectedQuote(null);
+    refetchQuotes();
   };
 
   const formatQuoteAmount = (amount: string | number, quoteCurrency?: string) => {
@@ -123,10 +199,16 @@ export const ClientQuotes: React.FC<ClientQuotesProps> = ({ client }) => {
         <Button
           variant="contained"
           startIcon={<AddIcon />}
-          onClick={handleCreateQuote}
+          onClick={handleCreateQuoteClick}
+          disabled={clientEvents.length === 0}
         >
           Create Quote
         </Button>
+        {clientEvents.length === 0 && (
+          <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+            This client has no events. Create an event first to generate a quote.
+          </Typography>
+        )}
       </Paper>
     );
   }
@@ -138,15 +220,16 @@ export const ClientQuotes: React.FC<ClientQuotesProps> = ({ client }) => {
         <Button
           variant="contained"
           startIcon={<AddIcon />}
-          onClick={handleCreateQuote}
+          onClick={handleCreateQuoteClick}
           size="small"
+          disabled={clientEvents.length === 0}
         >
           Create Quote
         </Button>
       </Box>
 
       <TableContainer component={Paper}>
-        <Table>
+        <Table size="small">
           <TableHead>
             <TableRow>
               <TableCell>Event</TableCell>
@@ -229,14 +312,14 @@ export const ClientQuotes: React.FC<ClientQuotesProps> = ({ client }) => {
           </MenuItem>
         )}
         {selectedQuote?.status === 'DRAFT' && (
-          <MenuItem onClick={handleMenuClose}>
+          <MenuItem onClick={() => selectedQuote && handleSendQuote(selectedQuote)}>
             <ListItemIcon>
               <SendIcon fontSize="small" />
             </ListItemIcon>
             <ListItemText>Send</ListItemText>
           </MenuItem>
         )}
-        <MenuItem onClick={handleMenuClose}>
+        <MenuItem onClick={() => selectedQuote && handleDuplicateQuote(selectedQuote)}>
           <ListItemIcon>
             <DuplicateIcon fontSize="small" />
           </ListItemIcon>
@@ -250,6 +333,92 @@ export const ClientQuotes: React.FC<ClientQuotesProps> = ({ client }) => {
         onClose={() => setDetailDialogOpen(false)}
         quote={selectedQuote}
       />
+
+      {/* Quote Edit Dialog */}
+      {selectedQuote && (
+        <QuoteEditDialog
+          open={editDialogOpen}
+          onClose={() => setEditDialogOpen(false)}
+          quote={selectedQuote}
+          onSuccess={handleEditSuccess}
+        />
+      )}
+
+      {/* Quote Send Confirmation Dialog */}
+      {selectedQuote && (
+        <QuoteSendConfirmDialog
+          open={sendDialogOpen}
+          onClose={() => setSendDialogOpen(false)}
+          quote={selectedQuote}
+          onSuccess={handleSendSuccess}
+        />
+      )}
+
+      {/* Event Selection Dialog for Creating Quote */}
+      <Dialog
+        open={eventSelectDialogOpen}
+        onClose={() => setEventSelectDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Select Event for Quote</DialogTitle>
+        <DialogContent>
+          {eventsLoading ? (
+            <Box display="flex" justifyContent="center" p={3}>
+              <CircularProgress />
+            </Box>
+          ) : clientEvents.length === 0 ? (
+            <Typography color="text.secondary" textAlign="center" py={3}>
+              This client has no events. Create an event first to generate a quote.
+            </Typography>
+          ) : (
+            <List>
+              {clientEvents.map((event: Event) => (
+                <ListItemButton
+                  key={event.id}
+                  onClick={() => handleEventSelect(event)}
+                  sx={{ borderRadius: 1, mb: 0.5 }}
+                >
+                  <ListItemAvatar>
+                    <Avatar sx={{ bgcolor: 'primary.main' }}>
+                      <EventIcon />
+                    </Avatar>
+                  </ListItemAvatar>
+                  <ListItemText
+                    primary={event.name || `Event #${event.id}`}
+                    secondary={
+                      <>
+                        {event.start_date && format(new Date(event.start_date), 'PPP')}
+                        {event.status && (
+                          <Chip
+                            label={event.status}
+                            size="small"
+                            sx={{ ml: 1 }}
+                            color={event.status === 'CONFIRMED' ? 'success' : 'default'}
+                          />
+                        )}
+                      </>
+                    }
+                  />
+                </ListItemButton>
+              ))}
+            </List>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setEventSelectDialogOpen(false)}>Cancel</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Quote Create Dialog */}
+      {selectedEvent && (
+        <QuoteCreateDialog
+          open={createDialogOpen}
+          onClose={handleCreateDialogClose}
+          event={selectedEvent}
+          onSuccess={handleQuoteCreated}
+        />
+      )}
     </Box>
   );
 };

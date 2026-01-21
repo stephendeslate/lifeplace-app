@@ -13,25 +13,23 @@ import {
   IconButton,
   Tooltip,
 } from '@mui/material';
-import { ModernCard } from '../../common/ModernCard';
 import {
   Settings as ConfigIcon,
   Preview as PreviewIcon,
   Refresh as RefreshIcon,
   ContentCopy as CopyIcon,
 } from '@mui/icons-material';
-// Modern Design System imports
-import { tokens } from '../../../design-system';
-import { glassPresets } from '../../../design-system/utils/glassmorphism';
-import type { 
+import type {
   BookingFlowStep,
   QuestionnaireStepConfiguration,
   AddonSelectionStepConfiguration,
-  PaymentInfoStepConfiguration
+  PaymentInfoStepConfiguration,
+  PaymentTermsConfiguration,
 } from '../../../types/bookingflows.types';
 import { useBookingFlowStepConfiguration } from '../../../hooks/useBookingFlows';
 import {
   IntroductionStepConfig,
+  VenueSelectionStepConfig,
   DateTimeStepConfig,
   QuestionnaireStepConfig,
   PackageSelectionStepConfig,
@@ -76,14 +74,23 @@ export const StepConfigurationPanel: React.FC<StepConfigurationPanelProps> = ({
     updateConfiguration,
     isUpdatingConfiguration,
     updateConfigurationError,
+    usePaymentTermsConfiguration,
+    updatePaymentTerms,
+    isUpdatingPaymentTerms,
   } = useBookingFlowStepConfiguration();
 
-  const { 
-    data: currentConfig, 
+  const {
+    data: currentConfig,
     isLoading: isLoadingConfig,
     refetch: refetchConfig,
     error: configError,
   } = useStepConfiguration(step.id);
+
+  // Only fetch payment terms configuration for payment_info steps
+  const {
+    data: paymentTermsConfig,
+    refetch: refetchPaymentTerms,
+  } = usePaymentTermsConfiguration(step.id, { enabled: step.step_type === 'payment_info' });
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
@@ -134,7 +141,15 @@ export const StepConfigurationPanel: React.FC<StepConfigurationPanelProps> = ({
             onConfigurationChange={() => refetchConfig()}
           />
         );
-      
+
+      case 'venue_selection':
+        return (
+          <VenueSelectionStepConfig
+            step={step}
+            onConfigurationChange={() => refetchConfig()}
+          />
+        );
+
       case 'date_time':
         return (
           <DateTimeStepConfig
@@ -198,8 +213,13 @@ export const StepConfigurationPanel: React.FC<StepConfigurationPanelProps> = ({
           <PaymentInfoStepConfig
             step={step}
             config={currentConfig as import('../../../types/bookingflows.types').PaymentInfoStepConfiguration | null | undefined}
+            paymentTermsConfig={paymentTermsConfig as PaymentTermsConfiguration | null | undefined}
             onUpdate={(data: Partial<PaymentInfoStepConfiguration>) => handleConfigurationUpdate(data as unknown as Record<string, unknown>)}
-            isLoading={isUpdatingConfiguration}
+            onUpdatePaymentTerms={(data: Partial<PaymentTermsConfiguration>) => {
+              updatePaymentTerms({ stepId: step.id, data });
+              refetchPaymentTerms();
+            }}
+            isLoading={isUpdatingConfiguration || isUpdatingPaymentTerms}
           />
         );
 
@@ -233,13 +253,13 @@ export const StepConfigurationPanel: React.FC<StepConfigurationPanelProps> = ({
   // Error handling
   if (configError) {
     return (
-      <ModernCard variant="glass" size="medium" color="error">
-        <Alert 
-          severity="error" 
+      <Box sx={{ borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
+        <Alert
+          severity="error"
           action={
-            <IconButton 
-              color="inherit" 
-              size="small" 
+            <IconButton
+              color="inherit"
+              size="small"
               onClick={() => refetchConfig()}
             >
               <RefreshIcon />
@@ -248,22 +268,22 @@ export const StepConfigurationPanel: React.FC<StepConfigurationPanelProps> = ({
         >
           Failed to load step configuration: {configError instanceof Error ? configError.message : String(configError)}
         </Alert>
-      </ModernCard>
+      </Box>
     );
   }
 
   if (isLoadingConfig) {
     return (
-      <ModernCard variant="glass" size="medium" loading={true}>
+      <Box sx={{ borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
         <Box display="flex" justifyContent="center" py={4}>
           <CircularProgress />
         </Box>
-      </ModernCard>
+      </Box>
     );
   }
 
   return (
-    <ModernCard variant="glass" size="large" color="primary">
+    <Box sx={{ borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
         <Box display="flex" alignItems="center" gap={1}>
           <ConfigIcon color="primary" />
@@ -328,7 +348,7 @@ export const StepConfigurationPanel: React.FC<StepConfigurationPanelProps> = ({
       <TabPanel value={activeTab} index={1}>
         {renderPreview()}
       </TabPanel>
-    </ModernCard>
+    </Box>
   );
 };
 
@@ -348,12 +368,13 @@ const GenericConfigForm: React.FC<{ step: BookingFlowStep; config: unknown }> = 
         <Typography variant="subtitle2" gutterBottom>
           Current Configuration (Raw Data)
         </Typography>
-        <Box 
-          sx={{ 
-            p: 2, 
-            ...glassPresets.light,
-            border: `1px solid ${tokens.color.borders.glass}`,
-            borderRadius: tokens.spacing.radius.lg,
+        <Box
+          sx={{
+            p: 2,
+            borderRadius: 1,
+            bgcolor: 'grey.50',
+            border: 1,
+            borderColor: 'divider',
             overflow: 'auto'
           }}
         >

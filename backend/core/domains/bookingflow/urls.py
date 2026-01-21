@@ -14,14 +14,14 @@ app_name = 'bookingflow'
 
 # Admin router for authenticated/admin endpoints
 router = DefaultRouter()
-router.register(r'flows', BookingFlowViewSet, basename='booking-flow')
-router.register(r'steps', BookingFlowStepViewSet, basename='booking-step')
-router.register(r'sessions', BookingSessionViewSet, basename='booking-session')
-router.register(r'analytics', BookingFlowAnalyticsViewSet, basename='booking-analytics')
+router.register(r'flows', BookingFlowViewSet, basename='bookingflow')
+router.register(r'steps', BookingFlowStepViewSet, basename='bookingflowstep')
+router.register(r'sessions', BookingSessionViewSet, basename='bookingsession')
+router.register(r'analytics', BookingFlowAnalyticsViewSet, basename='bookinganalytics')
 
 # Public router for client-facing endpoints
 public_router = DefaultRouter()
-public_router.register(r'public/flows', PublicBookingFlowViewSet, basename='public-booking-flow')
+public_router.register(r'public/flows', PublicBookingFlowViewSet, basename='publicbookingflow')
 
 urlpatterns = [
     # Admin endpoints

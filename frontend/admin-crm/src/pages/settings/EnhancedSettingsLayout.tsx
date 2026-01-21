@@ -135,7 +135,7 @@ export const EnhancedSettingsLayout: React.FC<EnhancedSettingsLayoutProps> = ({ 
             maxWidth={false}
             sx={{
               flex: 1,
-              px: { xs: 3, sm: 4, md: 6 }, // 8px grid system
+              px: { xs: 2, sm: 3, md: 4 }, // 8px grid system
               py: { xs: 3, sm: 4, md: 5 },  // 8px grid system  
               maxWidth: '1200px', // Professional max-width for settings
               mx: 'auto',

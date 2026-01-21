@@ -1,0 +1,94 @@
+# Complete Booking Flow E2E Test
+# Tests the entire booking flow from start to confirmation
+
+appId: com.lifeplace.app
+name: Complete Booking Flow
+tags:
+  - booking
+  - critical
+---
+# Login first
+- runFlow: ../auth/login.yaml
+
+# Navigate to booking
+- tapOn: "Book Event"
+- waitForAnimationToEnd
+
+# Step 1: Introduction
+- assertVisible: "Welcome"
+- tapOn:
+    id: "introduction-terms-checkbox"
+- tapOn:
+    id: "booking-next-button"
+- waitForAnimationToEnd
+
+# Step 2: Venue Selection
+- assertVisible: "Select Venue"
+- tapOn:
+    id: "venue-card-0"
+- tapOn:
+    id: "booking-next-button"
+- waitForAnimationToEnd
+
+# Step 3: DateTime Selection
+- assertVisible: "Select Date"
+- scrollUntilVisible:
+    element:
+      text: "June 2025"
+    direction: RIGHT
+    timeout: 10000
+- tapOn:
+    text: "15"
+- tapOn:
+    id: "booking-next-button"
+- waitForAnimationToEnd
+
+# Step 4: Package Selection
+- assertVisible: "Select Package"
+- tapOn:
+    id: "package-card-0"
+- tapOn:
+    id: "booking-next-button"
+- waitForAnimationToEnd
+
+# Step 5: Addons (optional - skip)
+- assertVisible: "Add-ons"
+- tapOn:
+    id: "booking-next-button"
+- waitForAnimationToEnd
+
+# Step 6: Questionnaire
+- assertVisible: "Event Details"
+# Fill any required fields
+- tapOn:
+    id: "booking-next-button"
+- waitForAnimationToEnd
+
+# Step 7: Summary/Pricing
+- assertVisible: "Review"
+- scrollUntilVisible:
+    element:
+      id: "pricing-terms-checkbox"
+    direction: DOWN
+- tapOn:
+    id: "pricing-terms-checkbox"
+- tapOn:
+    id: "booking-next-button"
+- waitForAnimationToEnd
+
+# Step 8: Contact Info (should be pre-filled for logged-in user)
+- assertVisible: "Contact"
+- tapOn:
+    id: "booking-next-button"
+- waitForAnimationToEnd
+
+# Step 9: Payment
+- assertVisible: "Payment"
+- takeScreenshot: booking_payment_step
+
+# Note: Payment step would require test Stripe integration
+# For E2E testing, we may skip actual payment or use test mode
+
+# Step 10: Confirmation (if payment succeeds)
+# - assertVisible: "Booking Confirmed"
+# - takeScreenshot: booking_success

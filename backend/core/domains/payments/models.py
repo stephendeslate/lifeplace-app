@@ -5,7 +5,7 @@ import logging
 
 from core.utils.models import BaseModel
 from core.utils.encryption import EncryptedJSONField
-from django.db import models
+from django.db import models, transaction
 from django.utils import timezone
 from django.core.exceptions import ValidationError
 
@@ -25,23 +25,6 @@ class PaymentSettings(BaseModel):
     grace_period_days = models.PositiveIntegerField(
         default=7,
         help_text="Default grace period days before marking payments overdue"
-    )
-
-    # INSTALLMENT DEFAULTS
-    default_installments = models.PositiveIntegerField(
-        default=2,
-        help_text="Default number of installments for payment plans"
-    )
-
-    default_installment_frequency = models.CharField(
-        max_length=20,
-        choices=[
-            ('WEEKLY', 'Weekly'),
-            ('BIWEEKLY', 'Bi-weekly'),
-            ('MONTHLY', 'Monthly')
-        ],
-        default='MONTHLY',
-        help_text="Default frequency for payment installments"
     )
 
     # LATE FEE SETTINGS
@@ -65,12 +48,115 @@ class PaymentSettings(BaseModel):
         help_text="Default deposit percentage (0-100)"
     )
 
-    # CURRENCY SETTINGS
-    default_currency = models.CharField(
-        max_length=3,
-        default='PHP',
-        help_text="Default currency (ISO 4217 code)"
+    deposit_type = models.CharField(
+        max_length=20,
+        choices=[
+            ('PERCENTAGE', 'Percentage of Total'),
+            ('FIXED', 'Fixed Amount')
+        ],
+        default='PERCENTAGE',
+        help_text="Type of deposit calculation"
     )
+
+    deposit_fixed_amount = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text="Fixed deposit amount (used when deposit_type is FIXED)"
+    )
+
+    deposit_is_refundable = models.BooleanField(
+        default=False,
+        help_text="Whether the deposit is refundable on cancellation"
+    )
+
+    deposit_is_deductible = models.BooleanField(
+        default=True,
+        help_text="Whether the deposit is deducted from the total contract price"
+    )
+
+    deposit_waived_on_full_payment = models.BooleanField(
+        default=True,
+        help_text="Whether the deposit is waived if client pays in full upfront"
+    )
+
+    # LATE FEE SETTINGS (Enhanced)
+    late_fee_type = models.CharField(
+        max_length=20,
+        choices=[
+            ('FIXED', 'Fixed Amount'),
+            ('PERCENTAGE', 'Percentage of Invoice')
+        ],
+        default='FIXED',
+        help_text="Type of late fee calculation"
+    )
+
+    late_fee_percentage = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        default=Decimal('0.00'),
+        help_text="Late fee as percentage of invoice amount (used when late_fee_type is PERCENTAGE)"
+    )
+
+    # SECURITY DEPOSIT SETTINGS
+    security_deposit_enabled = models.BooleanField(
+        default=False,
+        help_text="Enable security deposit requirement"
+    )
+
+    security_deposit_amount = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=Decimal('0.00'),
+        help_text="Security deposit amount (e.g., for keys, damages)"
+    )
+
+    security_deposit_is_refundable = models.BooleanField(
+        default=True,
+        help_text="Whether security deposit is refundable after event/inspection"
+    )
+
+    security_deposit_description = models.CharField(
+        max_length=255,
+        blank=True,
+        help_text="Description of what security deposit covers (e.g., 'for keys upon check-in')"
+    )
+
+    # CANCELLATION SETTINGS
+    cancellation_admin_fee_percentage = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        default=Decimal('0.00'),
+        help_text="Administrative processing fee percentage on cancellations"
+    )
+
+    # PAYMENT SCHEDULE SETTINGS
+    downpayment_percentage = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        default=Decimal('30.00'),
+        help_text="Downpayment percentage of total contract price (0-100)"
+    )
+
+    downpayment_due_days = models.PositiveIntegerField(
+        default=7,
+        help_text="Days after booking to pay downpayment (to block date)"
+    )
+
+    balance_due_type = models.CharField(
+        max_length=20,
+        choices=[
+            ('DAYS_BEFORE', 'Specific Days Before Event'),
+            ('DAY_BEFORE', 'Day Before Event')
+        ],
+        default='DAYS_BEFORE',
+        help_text="When remaining balance is due"
+    )
+
+    # NOTE: default_currency has been removed from this model.
+    # Currency is now managed by CurrencySettings in the settings domain.
+    # Use CurrencySettings.get_system_settings().default_currency instead.
 
     # AUTO PAYMENT RETRY SETTINGS
     auto_payment_retry_attempts = models.PositiveIntegerField(
@@ -121,6 +207,146 @@ class PaymentSettings(BaseModel):
         help_text="Primary payment gateway (pre-selected by default)"
     )
 
+    # DATE BLOCKING POLICY SETTINGS
+    DATE_BLOCKING_POLICY_CHOICES = [
+        ('IMMEDIATE', 'Block Immediately on Booking'),
+        ('ON_DOWNPAYMENT', 'Block When Downpayment Received'),
+    ]
+
+    DOWNPAYMENT_DUE_REFERENCE_CHOICES = [
+        ('DAYS_AFTER_BOOKING', 'Days After Booking'),
+        ('DAYS_BEFORE_EVENT', 'Days Before Event'),
+    ]
+
+    date_blocking_policy = models.CharField(
+        max_length=20,
+        choices=DATE_BLOCKING_POLICY_CHOICES,
+        default='IMMEDIATE',
+        help_text="When to block dates for new bookings"
+    )
+
+    downpayment_due_reference = models.CharField(
+        max_length=20,
+        choices=DOWNPAYMENT_DUE_REFERENCE_CHOICES,
+        default='DAYS_AFTER_BOOKING',
+        help_text="Reference point for downpayment due date calculation"
+    )
+
+    downpayment_deadline_days = models.PositiveIntegerField(
+        default=7,
+        help_text="Days after booking before event is auto-cancelled if downpayment not received (for ON_DOWNPAYMENT policy)"
+    )
+
+    # CHILD/YOUTH PRICING SETTINGS
+    child_pricing_enabled = models.BooleanField(
+        default=False,
+        help_text="Enable age-based pricing tiers"
+    )
+
+    child_pricing_tiers = models.JSONField(
+        default=list,
+        blank=True,
+        help_text="Age-based pricing tiers: [{min_age, max_age, discount_percentage, label}]"
+    )
+
+    # SERVICE CHARGE SETTINGS
+    service_charge_enabled = models.BooleanField(
+        default=False,
+        help_text="Enable service charge on bookings"
+    )
+    service_charge_percentage = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        default=Decimal('10.00'),
+        help_text="Service charge percentage (0-100)"
+    )
+
+    # RESCHEDULING FEE SETTINGS
+    rescheduling_fee_enabled = models.BooleanField(
+        default=False,
+        help_text="Enable rescheduling fee when client changes event date"
+    )
+    rescheduling_fee_type = models.CharField(
+        max_length=20,
+        choices=[
+            ('PERCENTAGE', 'Percentage of Total'),
+            ('FIXED', 'Fixed Amount')
+        ],
+        default='PERCENTAGE',
+        help_text="Type of rescheduling fee calculation"
+    )
+    rescheduling_fee_percentage = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        default=Decimal('10.00'),
+        help_text="Rescheduling fee as percentage of contract total"
+    )
+    rescheduling_fee_fixed_amount = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text="Fixed rescheduling fee amount"
+    )
+    rescheduling_grace_period_hours = models.PositiveIntegerField(
+        default=24,
+        help_text="Hours after booking during which rescheduling is free"
+    )
+
+    # LATE CHECKOUT FEE SETTINGS
+    late_checkout_fee_enabled = models.BooleanField(
+        default=False,
+        help_text="Enable late checkout fee"
+    )
+    late_checkout_fee_type = models.CharField(
+        max_length=20,
+        choices=[
+            ('FIXED', 'Fixed Amount'),
+            ('HOURLY', 'Per Hour'),
+            ('PERCENTAGE', 'Percentage of Contract')
+        ],
+        default='HOURLY',
+        help_text="Type of late checkout fee calculation"
+    )
+    late_checkout_fee_amount = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=Decimal('300.00'),
+        help_text="Late checkout fee amount (fixed or per hour)"
+    )
+    late_checkout_fee_percentage = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        default=Decimal('10.00'),
+        help_text="Late checkout fee as percentage (if type is PERCENTAGE)"
+    )
+    late_checkout_grace_minutes = models.PositiveIntegerField(
+        default=15,
+        help_text="Minutes after scheduled checkout before late fee applies"
+    )
+    late_checkout_max_hours = models.PositiveIntegerField(
+        default=4,
+        help_text="Maximum hours for late checkout billing"
+    )
+
+    # DATE HOLDING SETTINGS
+    date_hold_enabled = models.BooleanField(
+        default=True,
+        help_text="Enable temporary date holding"
+    )
+    date_hold_duration_days = models.PositiveIntegerField(
+        default=7,
+        help_text="Default duration for temporary date holds in days"
+    )
+    date_hold_max_extensions = models.PositiveIntegerField(
+        default=1,
+        help_text="Maximum number of hold extensions allowed"
+    )
+    date_hold_extension_days = models.PositiveIntegerField(
+        default=3,
+        help_text="Duration of each hold extension in days"
+    )
+
     class Meta:
         verbose_name = "Payment Settings"
         verbose_name_plural = "Payment Settings"
@@ -137,6 +363,37 @@ class PaymentSettings(BaseModel):
         if not (0 <= self.refund_percentage <= 100):
             raise ValidationError("Refund percentage must be between 0 and 100.")
 
+        if not (0 <= self.downpayment_percentage <= 100):
+            raise ValidationError("Downpayment percentage must be between 0 and 100.")
+
+        if not (0 <= self.late_fee_percentage <= 100):
+            raise ValidationError("Late fee percentage must be between 0 and 100.")
+
+        if not (0 <= self.cancellation_admin_fee_percentage <= 100):
+            raise ValidationError("Cancellation admin fee percentage must be between 0 and 100.")
+
+        # Validate new fee percentages
+        if not (0 <= self.service_charge_percentage <= 100):
+            raise ValidationError("Service charge percentage must be between 0 and 100.")
+
+        if not (0 <= self.rescheduling_fee_percentage <= 100):
+            raise ValidationError("Rescheduling fee percentage must be between 0 and 100.")
+
+        if not (0 <= self.late_checkout_fee_percentage <= 100):
+            raise ValidationError("Late checkout fee percentage must be between 0 and 100.")
+
+        # Validate rescheduling fee type requirements
+        if self.rescheduling_fee_type == 'FIXED' and self.rescheduling_fee_fixed_amount is None:
+            raise ValidationError("Fixed rescheduling fee amount is required when fee type is FIXED.")
+
+        # Validate deposit type requirements
+        if self.deposit_type == 'FIXED' and self.deposit_fixed_amount is None:
+            raise ValidationError("Fixed deposit amount is required when deposit type is FIXED.")
+
+        # Validate security deposit
+        if self.security_deposit_enabled and self.security_deposit_amount <= 0:
+            raise ValidationError("Security deposit amount must be greater than 0 when enabled.")
+
     def save(self, *args, **kwargs):
         """Ensure singleton pattern"""
         self.full_clean()
@@ -149,12 +406,10 @@ class PaymentSettings(BaseModel):
             defaults={
                 'balance_due_days': 30,
                 'grace_period_days': 7,
-                'default_installments': 2,
-                'default_installment_frequency': 'MONTHLY',
                 'late_fee_enabled': True,
                 'default_late_fee_amount': Decimal('25.00'),
                 'default_deposit_percentage': Decimal('50.00'),
-                'default_currency': 'PHP',
+                # NOTE: default_currency removed - use CurrencySettings instead
                 'auto_payment_retry_attempts': 3,
                 'auto_payment_retry_delay_days': 2,
                 # CONSOLIDATED: Refund policy defaults
@@ -162,6 +417,33 @@ class PaymentSettings(BaseModel):
                 'refund_deadline_hours': 48,
                 'refund_percentage': 100,
                 'refund_policy_text': '',
+                # NEW: Enhanced deposit settings
+                'deposit_type': 'PERCENTAGE',
+                'deposit_fixed_amount': None,
+                'deposit_is_refundable': False,
+                'deposit_is_deductible': True,
+                'deposit_waived_on_full_payment': True,
+                # NEW: Enhanced late fee settings
+                'late_fee_type': 'FIXED',
+                'late_fee_percentage': Decimal('0.00'),
+                # NEW: Security deposit settings
+                'security_deposit_enabled': False,
+                'security_deposit_amount': Decimal('0.00'),
+                'security_deposit_is_refundable': True,
+                'security_deposit_description': '',
+                # NEW: Cancellation settings
+                'cancellation_admin_fee_percentage': Decimal('0.00'),
+                # NEW: Payment schedule settings
+                'downpayment_percentage': Decimal('30.00'),
+                'downpayment_due_days': 7,
+                'balance_due_type': 'DAYS_BEFORE',
+                # NEW: Date blocking policy settings
+                'date_blocking_policy': 'IMMEDIATE',
+                'downpayment_due_reference': 'DAYS_AFTER_BOOKING',
+                'downpayment_deadline_days': 7,
+                # NEW: Child pricing settings
+                'child_pricing_enabled': False,
+                'child_pricing_tiers': [],
                 # Note: ManyToMany and ForeignKey fields set after creation
             }
         )
@@ -206,12 +488,9 @@ class Payment(BaseModel):
     receipt_sent_on = models.DateTimeField(null=True, blank=True)
     receipt_pdf = models.FileField(upload_to='receipts/', null=True, blank=True)
     
-    # Link to quote and invoice 
+    # Link to quote and invoice
     quote = models.ForeignKey('sales.EventQuote', on_delete=models.SET_NULL, null=True, blank=True, related_name='payments')
     invoice = models.ForeignKey('Invoice', on_delete=models.SET_NULL, null=True, blank=True, related_name='related_payments')
-    
-    # For installment payments
-    installment = models.ForeignKey('PaymentInstallment', on_delete=models.SET_NULL, null=True, blank=True, related_name='payment')
 
     def save(self, *args, **kwargs):
         # Use the new atomic payment number service for generation
@@ -261,14 +540,20 @@ class Payment(BaseModel):
 
     def complete_payment(self):
         """Mark payment as complete and handle related processes"""
+        # Idempotency check: refresh from database and check if already completed
+        self.refresh_from_db()
+        if self.status == 'COMPLETED' and self.paid_on:
+            # Already completed, skip to avoid duplicate timeline entries
+            return
+
         self.status = 'COMPLETED'
         self.paid_on = timezone.now().date()
         self.save()
-        
+
         # Generate receipt if payment completed
         if not self.receipt_number:
             self.generate_receipt()
-        
+
         # Record in event timeline
         from core.domains.events.models import EventTimeline
         EventTimeline.objects.create(
@@ -283,55 +568,151 @@ class Payment(BaseModel):
             }
         )
         
-        # If this is an installment payment, update installment
-        if self.installment:
-            self.installment.status = 'PAID'
-            self.installment.save()
-
         # Send payment notification
         self.send_receipt_notification()
 
-        # AUTO-COMPLETION: Check if event is fully paid and complete payment plan if exists
-        if self.event.payment_status == 'PAID':
-            # Check if there's an active payment plan
-            if hasattr(self.event, 'payment_plan') and self.event.payment_plan:
-                payment_plan = self.event.payment_plan
-                if payment_plan.status == 'ACTIVE':
-                    from .services.payment_plan_service import PaymentPlanService
-                    PaymentPlanService.complete_plan_if_balance_paid(payment_plan.id)
-
     def generate_receipt(self):
-        """Generate receipt number and update receipt fields"""
-        if not self.receipt_number and self.status == 'COMPLETED':
-            self.receipt_number = f"REC-{timezone.now().strftime('%Y%m%d')}-{self.id}"
-            self.receipt_generated_on = timezone.now()
-            self.save(update_fields=['receipt_number', 'receipt_generated_on'])
-            
-            # Create PDF receipt (implementation depends on your PDF generation solution)
-            # self.generate_receipt_pdf()
-            
+        """Generate receipt number and update receipt fields with row-level locking"""
+        with transaction.atomic():
+            # Re-fetch with lock to prevent concurrent receipt number generation
+            locked_payment = Payment.objects.select_for_update().get(pk=self.pk)
+
+            if not locked_payment.receipt_number and locked_payment.status == 'COMPLETED':
+                locked_payment.receipt_number = f"REC-{timezone.now().strftime('%Y%m%d')}-{locked_payment.id}"
+                locked_payment.receipt_generated_on = timezone.now()
+                locked_payment.save(update_fields=['receipt_number', 'receipt_generated_on'])
+
+                # Sync self with locked instance
+                self.receipt_number = locked_payment.receipt_number
+                self.receipt_generated_on = locked_payment.receipt_generated_on
+
+                # Create PDF receipt (implementation depends on your PDF generation solution)
+                # self.generate_receipt_pdf()
+
         return self.receipt_number
     
     def send_receipt_notification(self):
-        """Send receipt notification to the client"""
+        """Send receipt notification to the client via email"""
         if self.status == 'COMPLETED' and not self.receipt_sent:
+            client = self.event.client
+            is_successful = False
+            template_used = None
+
+            try:
+                # Send receipt email via CommunicationService
+                from core.domains.communications.services import CommunicationService
+
+                comm_service = CommunicationService()
+                record = comm_service.send_communication(
+                    template_name='Payment Receipt',
+                    recipient=client.email,
+                    client=client,
+                    event=self.event,
+                    payment=self,
+                    skip_preference_check=True  # Receipts are transactional, always send
+                )
+
+                is_successful = record is not None and record.delivery_status == 'SENT'
+
+                if record and record.id:
+                    # Get the template used
+                    from core.domains.communications.models import CommunicationTemplate
+                    try:
+                        template_used = CommunicationTemplate.objects.get(name='Payment Receipt')
+                    except CommunicationTemplate.DoesNotExist:
+                        pass
+
+                logger.info(f"Payment receipt email sent for payment {self.payment_number}")
+
+                # Also send SMS receipt if client has phone number
+                if client.phone:
+                    try:
+                        comm_service.send_communication(
+                            template_name='Payment Receipt SMS',
+                            recipient=client.phone,
+                            client=client,
+                            event=self.event,
+                            payment=self,
+                            skip_preference_check=True  # Receipts are transactional
+                        )
+                        logger.info(f"Payment receipt SMS sent for payment {self.payment_number}")
+                    except Exception as sms_error:
+                        logger.warning(f"Failed to send payment receipt SMS for {self.payment_number}: {sms_error}")
+                        # Don't fail the overall process if SMS fails
+
+            except Exception as e:
+                logger.error(f"Failed to send payment receipt email for {self.payment_number}: {e}")
+                is_successful = False
+
             # Create notification record
             PaymentNotification.objects.create(
                 payment=self,
                 notification_type='PAYMENT_RECEIVED',
                 sent_at=timezone.now(),
-                sent_to=self.event.client.email,
-                is_successful=True
+                sent_to=client.email,
+                is_successful=is_successful,
+                template_used=template_used
             )
-            
+
             # Update receipt sent status
             self.receipt_sent = True
             self.receipt_sent_on = timezone.now()
             self.save(update_fields=['receipt_sent', 'receipt_sent_on'])
-            
-            return True
+
+            return is_successful
         return False
-    
+
+    def send_reminder_notification(self):
+        """Send payment reminder notification to the client via email"""
+        if self.status not in ['PENDING', 'CREATED']:
+            return False
+
+        client = self.event.client
+        is_successful = False
+        template_used = None
+
+        try:
+            # Send reminder email via CommunicationService
+            from core.domains.communications.services import CommunicationService
+
+            comm_service = CommunicationService()
+            record = comm_service.send_communication(
+                template_name='Payment Reminder',
+                recipient=client.email,
+                client=client,
+                event=self.event,
+                payment=self,
+                skip_preference_check=False
+            )
+
+            is_successful = record is not None and record.delivery_status == 'SENT'
+
+            if record and record.id:
+                # Get the template used
+                from core.domains.communications.models import CommunicationTemplate
+                try:
+                    template_used = CommunicationTemplate.objects.get(name='Payment Reminder')
+                except CommunicationTemplate.DoesNotExist:
+                    pass
+
+            logger.info(f"Payment reminder email sent for payment {self.payment_number}")
+
+        except Exception as e:
+            logger.error(f"Failed to send payment reminder email for {self.payment_number}: {e}")
+            is_successful = False
+
+        # Create notification record
+        PaymentNotification.objects.create(
+            payment=self,
+            notification_type='PAYMENT_REMINDER',
+            sent_at=timezone.now(),
+            sent_to=client.email,
+            is_successful=is_successful,
+            template_used=template_used
+        )
+
+        return is_successful
+
     def format_amount_with_currency(self, user=None):
         """
         Format the payment amount with appropriate currency symbol and formatting
@@ -438,6 +819,11 @@ class Payment(BaseModel):
 
     class Meta:
         ordering = ['-due_date']
+        indexes = [
+            models.Index(fields=['status']),
+            models.Index(fields=['due_date']),
+            models.Index(fields=['event', 'status']),
+        ]
 
 
 class PaymentGateway(BaseModel):
@@ -507,13 +893,17 @@ class PaymentMethod(BaseModel):
     
     def save(self, *args, **kwargs):
         # If this method is set as default, unset other defaults for this user
+        # Use atomic transaction to prevent race conditions when setting defaults
         if self.is_default:
-            PaymentMethod.objects.filter(
-                user=self.user,
-                is_default=True
-            ).exclude(pk=self.pk).update(is_default=False)
-        super().save(*args, **kwargs)
-    
+            with transaction.atomic():
+                PaymentMethod.objects.filter(
+                    user=self.user,
+                    is_default=True
+                ).exclude(pk=self.pk).update(is_default=False)
+                super().save(*args, **kwargs)
+        else:
+            super().save(*args, **kwargs)
+
     class Meta:
         ordering = ['-is_default', '-created_at']
 
@@ -555,384 +945,10 @@ class PaymentTransaction(BaseModel):
     
     class Meta:
         ordering = ['-created_at']
-
-
-class PaymentPlan(BaseModel):
-    """Payment plan with installments for an event"""
-    event = models.OneToOneField('events.Event', on_delete=models.CASCADE, related_name='payment_plan')
-    total_amount = models.DecimalField(max_digits=10, decimal_places=2)
-    down_payment_amount = models.DecimalField(max_digits=10, decimal_places=2)
-    currency = models.CharField(max_length=3, default='PHP', help_text="Payment plan currency (ISO 4217 code)")
-    down_payment_due_date = models.DateField()
-    number_of_installments = models.PositiveIntegerField()
-    frequency = models.CharField(max_length=20, choices=[
-        ('WEEKLY', 'Weekly'),
-        ('BIWEEKLY', 'Bi-weekly'),
-        ('MONTHLY', 'Monthly')
-    ])
-    notes = models.TextField(blank=True)
-
-    # Link to quote that originated the plan
-    quote = models.ForeignKey('sales.EventQuote', on_delete=models.SET_NULL, null=True, blank=True, related_name='payment_plans')
-
-    # STATUS TRACKING - DRY compliant with existing patterns
-    status = models.CharField(
-        max_length=20,
-        choices=[
-            ('PENDING', 'Pending Setup'),
-            ('ACTIVE', 'Active'),
-            ('COMPLETED', 'Completed'),
-            ('SUSPENDED', 'Suspended'),
-            ('DEFAULTED', 'Defaulted'),
-            ('CANCELLED', 'Cancelled')
-        ],
-        default='PENDING',
-        help_text="Current status of the payment plan"
-    )
-
-    # SCHEDULE MANAGEMENT
-    next_payment_date = models.DateField(
-        null=True,
-        blank=True,
-        help_text="Date of next scheduled payment"
-    )
-
-    final_payment_date = models.DateField(
-        null=True,
-        blank=True,
-        help_text="Date of final installment"
-    )
-
-    # GRACE PERIOD AND DEFAULT HANDLING
-    grace_period_days = models.PositiveIntegerField(
-        default=7,
-        help_text="Days after due date before marking overdue"
-    )
-
-    # TERMS AND CONDITIONS
-    terms_accepted = models.BooleanField(
-        default=False,
-        help_text="Client accepted payment plan terms"
-    )
-
-    terms_accepted_at = models.DateTimeField(
-        null=True,
-        blank=True
-    )
-
-    terms_accepted_ip = models.GenericIPAddressField(
-        null=True,
-        blank=True
-    )
-
-    # AUTOMATIC PAYMENT SETTINGS
-    auto_payment_enabled = models.BooleanField(
-        default=False,
-        help_text="Automatically charge saved payment method"
-    )
-
-    auto_payment_method = models.ForeignKey(
-        'PaymentMethod',
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name='auto_payment_plans'
-    )
-
-    # INTEGRATION FIELDS
-    created_from_booking_session = models.ForeignKey(
-        'bookingflow.BookingSession',
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        help_text="Booking session that created this plan"
-    )
-    
-    def __str__(self):
-        return f"Payment Plan for Event {self.event.id}"
-    
-    def save(self, *args, **kwargs):
-        is_new = self.pk is None
-        super().save(*args, **kwargs)
-        
-        # Create installments if this is a new payment plan
-        if is_new:
-            self.create_installments()
-    
-    def create_installments(self):
-        """Generate installment records based on plan configuration"""
-        # First create down payment
-        PaymentInstallment.objects.create(
-            payment_plan=self,
-            amount=self.down_payment_amount,
-            due_date=self.down_payment_due_date,
-            status='PENDING',
-            installment_number=0,
-            description="Down payment"
-        )
-        
-        # Calculate remaining amount
-        remaining_amount = self.total_amount - self.down_payment_amount
-        installment_amount = remaining_amount / self.number_of_installments
-        
-        # Set frequency in days
-        if self.frequency == 'WEEKLY':
-            days = 7
-        elif self.frequency == 'BIWEEKLY':
-            days = 14
-        else:  # MONTHLY
-            days = 30
-        
-        # Create regular installments
-        last_date = self.down_payment_due_date
-        for i in range(1, self.number_of_installments + 1):
-            last_date = last_date + timedelta(days=days)
-            
-            PaymentInstallment.objects.create(
-                payment_plan=self,
-                amount=installment_amount.quantize(Decimal('0.01')),
-                due_date=last_date,
-                status='PENDING',
-                installment_number=i,
-                description=f"Installment {i} of {self.number_of_installments}"
-            )
-
-    @property
-    def paid_amount(self):
-        """Calculate total paid from related payments - NO DB FIELD"""
-        from django.db.models import Sum
-        total = self.event.payments.filter(
-            status='COMPLETED'
-        ).aggregate(
-            total=Sum('amount')
-        )['total']
-        return total or Decimal('0.00')
-
-    @property
-    def remaining_balance(self):
-        """Calculate remaining balance - NO DB FIELD"""
-        return self.total_amount - self.paid_amount
-
-    @property
-    def is_overdue(self):
-        """Check if any installments are overdue - NO DB FIELD"""
-        return self.installments.filter(status='OVERDUE').exists()
-
-    @property
-    def completion_percentage(self):
-        """Calculate completion percentage"""
-        if self.total_amount == 0:
-            return 0
-        return (self.paid_amount / self.total_amount) * 100
-
-    def calculate_remaining_balance(self):
-        """Calculate and update remaining balance"""
-        return self.remaining_balance
-
-    def update_next_payment_date(self):
-        """Update next payment date based on pending installments"""
-        next_installment = self.installments.filter(
-            status='PENDING'
-        ).order_by('due_date').first()
-
-        self.next_payment_date = next_installment.due_date if next_installment else None
-        return self.next_payment_date
-
-    def update_status(self):
-        """Update payment plan status based on installment statuses"""
-        installments = self.installments.all()
-
-        if not installments.exists():
-            return
-
-        paid_installments = installments.filter(status='PAID').count()
-        total_installments = installments.count()
-        overdue_installments = installments.filter(status='OVERDUE').exists()
-
-        if paid_installments == total_installments:
-            self.status = 'COMPLETED'
-        elif overdue_installments:
-            # Check if overdue for more than grace period
-            from django.utils import timezone
-            overdue_beyond_grace = installments.filter(
-                status='OVERDUE',
-                due_date__lt=timezone.now().date() - timedelta(days=self.grace_period_days)
-            ).exists()
-
-            if overdue_beyond_grace:
-                self.status = 'DEFAULTED'
-            else:
-                self.status = 'ACTIVE'  # Still within grace period
-        elif paid_installments > 0:
-            self.status = 'ACTIVE'
-        else:
-            self.status = 'PENDING'
-
-        self.save(update_fields=['status'])
-
-
-class PaymentInstallment(BaseModel):
-    """Individual installment for a payment plan"""
-    payment_plan = models.ForeignKey(PaymentPlan, on_delete=models.CASCADE, related_name='installments')
-    amount = models.DecimalField(max_digits=10, decimal_places=2)
-    due_date = models.DateField()
-    status = models.CharField(
-        max_length=20,
-        choices=[
-            ('PENDING', 'Pending'),
-            ('PAID', 'Paid'),
-            ('OVERDUE', 'Overdue'),
-            ('PARTIAL', 'Partially Paid'),
-            ('WAIVED', 'Waived'),
-            ('CANCELLED', 'Cancelled')
-        ],
-        default='PENDING'
-    )
-    installment_number = models.PositiveIntegerField()
-    description = models.CharField(max_length=255, blank=True)
-
-    # REMINDER AND NOTIFICATION TRACKING
-    last_reminder_sent = models.DateTimeField(
-        null=True,
-        blank=True,
-        help_text="Date when last reminder was sent"
-    )
-
-    reminder_count = models.PositiveIntegerField(
-        default=0,
-        help_text="Number of reminders sent for this installment"
-    )
-
-    # LATE FEES AND PENALTIES
-    late_fee_amount = models.DecimalField(
-        max_digits=10,
-        decimal_places=2,
-        default=Decimal('0.00'),
-        help_text="Late fee amount applied to this installment"
-    )
-
-    late_fee_applied_date = models.DateField(
-        null=True,
-        blank=True,
-        help_text="Date when late fee was applied"
-    )
-    
-    def __str__(self):
-        return f"Installment {self.installment_number} - {self.status}"
-    
-    def check_status(self):
-        """Check if installment is overdue and update status"""
-        if self.status == 'PENDING' and self.due_date < timezone.now().date():
-            self.status = 'OVERDUE'
-            self.save(update_fields=['status'])
-            
-            # Create a notification
-            PaymentNotification.objects.create(
-                payment=None,  # No direct payment yet
-                notification_type='PAYMENT_OVERDUE',
-                sent_at=timezone.now(),
-                sent_to=self.payment_plan.event.client.email,
-                is_successful=True,
-                reference=f"installment_{self.id}"
-            )
-            
-            return True
-        return False
-    
-    def create_payment(self):
-        """Create a payment record for this installment"""
-        # Check if payment already exists
-        if hasattr(self, 'payment') and self.payment.exists():
-            return self.payment.first()
-
-        # Create payment for this installment using PaymentOrchestrator
-        from .services.payment_orchestrator import PaymentOrchestrator, PaymentRequest
-
-        request = PaymentRequest(
-            event_id=self.payment_plan.event.id,
-            amount=self.amount,
-            currency=getattr(self.payment_plan, 'currency', 'PHP'),
-            due_date=self.due_date,
-            description=f"Payment for {self.description}",
-            payment_type='INSTALLMENT',
-            installment_id=self.id,
-            created_by='installment_model'
-        )
-
-        response = PaymentOrchestrator.create_payment(request)
-        if not response.success:
-            raise ValueError(f"Failed to create payment for installment: {response.message}")
-
-        return Payment.objects.get(id=response.payment_id)
-
-    @property
-    def paid_amount(self):
-        """Get paid amount from related payment - NO DB FIELD"""
-        if hasattr(self, 'payment') and self.payment.exists():
-            payment = self.payment.first()
-            if payment.status == 'COMPLETED':
-                return payment.amount
-        return Decimal('0.00')
-
-    @property
-    def remaining_amount(self):
-        """Calculate remaining amount for this installment"""
-        return self.amount + self.late_fee_amount - self.paid_amount
-
-    @property
-    def is_fully_paid(self):
-        """Check if installment is fully paid"""
-        return self.paid_amount >= (self.amount + self.late_fee_amount)
-
-    @property
-    def days_overdue_count(self):
-        """Calculate days overdue"""
-        if self.status != 'OVERDUE':
-            return 0
-        return (timezone.now().date() - self.due_date).days
-
-    def apply_late_fee(self, fee_amount):
-        """Apply late fee to this installment"""
-        if self.late_fee_amount == 0:  # Only apply once
-            self.late_fee_amount = fee_amount
-            self.late_fee_applied_date = timezone.now().date()
-            self.save(update_fields=['late_fee_amount', 'late_fee_applied_date'])
-
-    def mark_as_paid(self, payment_amount=None):
-        """Mark installment as paid and update status"""
-        if payment_amount is None:
-            payment_amount = self.amount + self.late_fee_amount
-
-        if payment_amount >= (self.amount + self.late_fee_amount):
-            self.status = 'PAID'
-        elif payment_amount > 0:
-            self.status = 'PARTIAL'
-
-        self.save(update_fields=['status'])
-
-        # Update parent payment plan status
-        self.payment_plan.update_status()
-        self.payment_plan.update_next_payment_date()
-        self.payment_plan.save(update_fields=['next_payment_date'])
-
-    def send_reminder(self):
-        """Send payment reminder and update tracking"""
-        self.reminder_count += 1
-        self.last_reminder_sent = timezone.now()
-        self.save(update_fields=['reminder_count', 'last_reminder_sent'])
-
-        # Create notification record
-        PaymentNotification.objects.create(
-            payment=None,
-            notification_type='PAYMENT_REMINDER',
-            sent_at=timezone.now(),
-            sent_to=self.payment_plan.event.client.email,
-            is_successful=True,
-            reference=f"installment_{self.id}"
-        )
-
-    class Meta:
-        ordering = ['installment_number']
+        indexes = [
+            models.Index(fields=['transaction_id']),
+            models.Index(fields=['gateway', 'status']),
+        ]
 
 
 class TaxRate(BaseModel):
@@ -947,9 +963,13 @@ class TaxRate(BaseModel):
     
     def save(self, *args, **kwargs):
         # If this rate is set as default, unset other defaults
+        # Use atomic transaction to prevent race conditions when setting defaults
         if self.is_default:
-            TaxRate.objects.filter(is_default=True).exclude(pk=self.pk).update(is_default=False)
-        super().save(*args, **kwargs)
+            with transaction.atomic():
+                TaxRate.objects.filter(is_default=True).exclude(pk=self.pk).update(is_default=False)
+                super().save(*args, **kwargs)
+        else:
+            super().save(*args, **kwargs)
 
 
 class Refund(BaseModel):
@@ -1055,7 +1075,10 @@ class Invoice(BaseModel):
         return Decimal('0.00') < paid < self.total_amount
 
     def mark_as_paid(self):
-        """Mark invoice as paid or partially paid based on actual payments
+        """Mark invoice as paid or partially paid based on actual payments.
+
+        Uses atomic transaction with row locking to prevent race conditions
+        when multiple payments complete concurrently.
 
         This method intelligently determines the correct invoice status by:
         1. Calculating total paid amount from related completed payments
@@ -1063,24 +1086,32 @@ class Invoice(BaseModel):
         3. Setting status to PARTIALLY_PAID if partially paid
         4. Keeping status as ISSUED if no payments made
         """
-        paid = self.paid_amount
+        with transaction.atomic():
+            # Re-fetch with lock to prevent concurrent status updates
+            locked_invoice = Invoice.objects.select_for_update().get(pk=self.pk)
 
-        # Determine correct status based on payment amount
-        if paid >= self.total_amount:
-            # Fully paid
-            self.status = 'PAID'
-        elif paid > Decimal('0.00'):
-            # Partially paid
-            self.status = 'PARTIALLY_PAID'
-        elif self.status != 'ISSUED':
-            # No payment, but not yet issued
-            # Keep current status (DRAFT, VOID, CANCELLED, etc.)
-            pass
+            # Calculate paid amount from locked invoice
+            paid = locked_invoice.paid_amount
 
-        self.save(update_fields=['status'])
+            # Determine correct status based on payment amount
+            if paid >= locked_invoice.total_amount:
+                # Fully paid
+                locked_invoice.status = 'PAID'
+            elif paid > Decimal('0.00'):
+                # Partially paid
+                locked_invoice.status = 'PARTIALLY_PAID'
+            elif locked_invoice.status != 'ISSUED':
+                # No payment, but not yet issued
+                # Keep current status (DRAFT, VOID, CANCELLED, etc.)
+                pass
 
-        # Update event's payment status
-        self.event.update_payment_status()
+            locked_invoice.save(update_fields=['status'])
+
+            # Sync self with locked instance
+            self.status = locked_invoice.status
+
+            # Update event's payment status
+            locked_invoice.event.update_payment_status()
     
     def issue(self):
         """Issue the invoice to the client"""
@@ -1109,8 +1140,15 @@ class Invoice(BaseModel):
             is_public=True,
             action_data={'invoice_id': self.id}
         )
-    
 
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['status']),
+            models.Index(fields=['due_date']),
+            models.Index(fields=['event', 'status']),
+            models.Index(fields=['client', 'status']),
+        ]
 
 
 class InvoiceLineItem(BaseModel):
@@ -1414,6 +1452,163 @@ class PaymentEventStore(BaseModel):
         ]
 
 
+class PaymentDispute(BaseModel):
+    """
+    Track payment disputes/chargebacks from payment gateways.
+
+    Chargebacks occur when a customer disputes a charge with their bank.
+    This model records dispute details and status for tracking and resolution.
+    """
+    DISPUTE_STATUS_CHOICES = [
+        ('OPEN', 'Open'),
+        ('UNDER_REVIEW', 'Under Review'),
+        ('WON', 'Won'),
+        ('LOST', 'Lost'),
+        ('CLOSED', 'Closed'),
+    ]
+
+    DISPUTE_REASON_CHOICES = [
+        ('DUPLICATE', 'Duplicate Charge'),
+        ('FRAUDULENT', 'Fraudulent'),
+        ('SUBSCRIPTION_CANCELED', 'Subscription Canceled'),
+        ('PRODUCT_UNACCEPTABLE', 'Product Unacceptable'),
+        ('PRODUCT_NOT_RECEIVED', 'Product Not Received'),
+        ('UNRECOGNIZED', 'Unrecognized'),
+        ('CREDIT_NOT_PROCESSED', 'Credit Not Processed'),
+        ('GENERAL', 'General'),
+        ('OTHER', 'Other'),
+    ]
+
+    # Link to payment
+    payment = models.ForeignKey(
+        Payment,
+        on_delete=models.CASCADE,
+        related_name='disputes',
+        null=True,
+        blank=True,
+        help_text="Related payment (may be null if payment not found)"
+    )
+
+    # Gateway identifiers
+    gateway = models.ForeignKey(
+        PaymentGateway,
+        on_delete=models.PROTECT,
+        help_text="Payment gateway that reported the dispute"
+    )
+    gateway_dispute_id = models.CharField(
+        max_length=255,
+        unique=True,
+        help_text="Dispute ID from the payment gateway"
+    )
+    gateway_transaction_id = models.CharField(
+        max_length=255,
+        help_text="Original transaction ID from gateway"
+    )
+
+    # Dispute details
+    amount = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        help_text="Disputed amount"
+    )
+    currency = models.CharField(
+        max_length=3,
+        default='PHP',
+        help_text="Currency of the disputed amount"
+    )
+    reason = models.CharField(
+        max_length=50,
+        choices=DISPUTE_REASON_CHOICES,
+        default='OTHER',
+        help_text="Reason for the dispute"
+    )
+    reason_description = models.TextField(
+        blank=True,
+        help_text="Detailed description of the dispute reason"
+    )
+
+    # Status tracking
+    status = models.CharField(
+        max_length=20,
+        choices=DISPUTE_STATUS_CHOICES,
+        default='OPEN',
+        help_text="Current status of the dispute"
+    )
+    evidence_due_by = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="Deadline to submit evidence"
+    )
+
+    # Resolution
+    resolved_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="When the dispute was resolved"
+    )
+    resolution_notes = models.TextField(
+        blank=True,
+        help_text="Notes about the resolution"
+    )
+
+    # Raw gateway data
+    gateway_data = models.JSONField(
+        default=dict,
+        help_text="Raw dispute data from gateway webhook"
+    )
+
+    # Admin tracking
+    assigned_to = models.ForeignKey(
+        'users.User',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='assigned_disputes',
+        help_text="Admin user assigned to handle this dispute"
+    )
+    admin_notified = models.BooleanField(
+        default=False,
+        help_text="Whether admin has been notified"
+    )
+    admin_notified_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="When admin was notified"
+    )
+
+    def __str__(self):
+        return f"Dispute {self.gateway_dispute_id} - {self.status}"
+
+    def mark_won(self, notes: str = ''):
+        """Mark dispute as won"""
+        self.status = 'WON'
+        self.resolved_at = timezone.now()
+        self.resolution_notes = notes
+        self.save()
+
+    def mark_lost(self, notes: str = ''):
+        """Mark dispute as lost"""
+        self.status = 'LOST'
+        self.resolved_at = timezone.now()
+        self.resolution_notes = notes
+        self.save()
+
+        # Update payment status if dispute was lost
+        if self.payment:
+            self.payment.status = 'REFUNDED'
+            self.payment.save(update_fields=['status'])
+
+    class Meta:
+        verbose_name = "Payment Dispute"
+        verbose_name_plural = "Payment Disputes"
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['status', '-created_at']),
+            models.Index(fields=['gateway', '-created_at']),
+            models.Index(fields=['payment', '-created_at']),
+        ]
+
+
 class PaymentWebhookLog(BaseModel):
     """
     Log of payment webhook events received from gateways.
@@ -1506,4 +1701,107 @@ class PaymentWebhookLog(BaseModel):
             models.Index(fields=['event_type', '-received_at']),
             models.Index(fields=['processed_successfully', '-received_at']),
             models.Index(fields=['transaction_id']),
+        ]
+
+
+class WebhookDeadLetter(BaseModel):
+    """
+    Dead letter queue for permanently failed webhook events.
+
+    Webhooks that exceed the maximum retry attempts are moved here
+    for manual review and remediation.
+    """
+    # Reference to original webhook log
+    original_webhook = models.ForeignKey(
+        PaymentWebhookLog,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='dead_letters',
+        help_text="Reference to the original webhook log"
+    )
+
+    # Duplicate webhook data (in case original is deleted)
+    gateway_code = models.CharField(
+        max_length=50,
+        help_text="Payment gateway code (stripe, paypal, etc.)"
+    )
+    event_type = models.CharField(
+        max_length=100,
+        help_text="Gateway-specific event type"
+    )
+    event_id = models.CharField(
+        max_length=255,
+        help_text="Unique event identifier from gateway"
+    )
+    transaction_id = models.CharField(
+        max_length=255,
+        help_text="Gateway transaction identifier"
+    )
+    raw_data = models.JSONField(
+        help_text="Complete webhook payload from gateway"
+    )
+
+    # Timeline
+    original_received_at = models.DateTimeField(
+        help_text="When the webhook was originally received"
+    )
+    moved_to_dead_letter_at = models.DateTimeField(
+        default=timezone.now,
+        help_text="When the webhook was moved to dead letter queue"
+    )
+
+    # Failure information
+    retry_count = models.PositiveIntegerField(
+        default=0,
+        help_text="Number of retry attempts before failure"
+    )
+    final_error = models.TextField(
+        blank=True,
+        help_text="Final error message that caused permanent failure"
+    )
+
+    # Resolution tracking
+    resolved = models.BooleanField(
+        default=False,
+        help_text="Whether this dead letter has been resolved"
+    )
+    resolved_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="When the dead letter was resolved"
+    )
+    resolved_by = models.ForeignKey(
+        'users.User',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='resolved_dead_letters',
+        help_text="Admin user who resolved the dead letter"
+    )
+    resolution_notes = models.TextField(
+        blank=True,
+        help_text="Notes about how the dead letter was resolved"
+    )
+
+    def __str__(self):
+        return f"Dead Letter: {self.gateway_code} {self.event_type} - {self.event_id}"
+
+    def mark_resolved(self, user, notes: str = None):
+        """Mark this dead letter as resolved"""
+        self.resolved = True
+        self.resolved_at = timezone.now()
+        self.resolved_by = user
+        if notes:
+            self.resolution_notes = notes
+        self.save()
+
+    class Meta:
+        verbose_name = "Webhook Dead Letter"
+        verbose_name_plural = "Webhook Dead Letters"
+        ordering = ['-moved_to_dead_letter_at']
+        indexes = [
+            models.Index(fields=['resolved', '-moved_to_dead_letter_at']),
+            models.Index(fields=['gateway_code', '-moved_to_dead_letter_at']),
+            models.Index(fields=['event_id']),
         ]

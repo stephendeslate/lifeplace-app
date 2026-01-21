@@ -12,14 +12,14 @@ These serializers should be kept simple and only include essential fields.
 
 class ContractTemplateSerializer(serializers.ModelSerializer):
     """Basic serializer for the ContractTemplate model"""
-    
+
     class Meta:
         model = ContractTemplate
         fields = [
-            'id', 'name', 'description', 'event_type', 'content', 'variables', 
+            'id', 'name', 'description', 'event_type', 'content', 'variables',
             'sections', 'signature_requirements', 'requires_signature',
             'requires_witness', 'requires_company_signature', 'allows_amendments',
-            'amendment_requires_signature', 'created_at', 'updated_at'
+            'amendment_requires_signature', 'is_active', 'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
 
@@ -28,13 +28,28 @@ class ContractSignatureBasicSerializer(serializers.ModelSerializer):
     """Basic serializer for the ContractSignature model"""
     role_display = serializers.CharField(source='get_role_display', read_only=True)
     signer_name = serializers.CharField(read_only=True)
-    
+
+    # Mobile app compatibility fields
+    signer_role = serializers.CharField(source='role', read_only=True)
+    is_signed = serializers.SerializerMethodField()
+    is_client_signature = serializers.SerializerMethodField()
+
     class Meta:
         model = ContractSignature
         fields = [
-            'id', 'role', 'role_display', 'signer_name', 'signed_at', 'is_verified'
+            'id', 'role', 'role_display', 'signer_name', 'signer_email', 'signed_at', 'is_verified',
+            # Mobile app compatibility fields
+            'signer_role', 'is_signed', 'is_client_signature',
         ]
         read_only_fields = ['id', 'signed_at']
+
+    def get_is_signed(self, obj):
+        """Check if signature has been completed"""
+        return obj.signed_at is not None
+
+    def get_is_client_signature(self, obj):
+        """Check if this is a client signature"""
+        return obj.role == 'CLIENT'
 
 
 class EventContractSerializer(serializers.ModelSerializer):
@@ -44,6 +59,14 @@ class EventContractSerializer(serializers.ModelSerializer):
     is_fully_signed = serializers.SerializerMethodField()
     contract_type = serializers.SerializerMethodField()
     is_expired = serializers.SerializerMethodField()
+    is_expiring_soon = serializers.SerializerMethodField()
+    days_until_expiry = serializers.SerializerMethodField()
+    expiry_urgency = serializers.SerializerMethodField()
+    sign_disabled_reason = serializers.SerializerMethodField()
+
+    # Mobile app compatibility fields
+    expires_at = serializers.DateField(source='valid_until', read_only=True)
+    signed_at = serializers.DateTimeField(source='fully_signed_at', read_only=True)
 
     class Meta:
         model = EventContract
@@ -51,7 +74,11 @@ class EventContractSerializer(serializers.ModelSerializer):
             'id', 'event', 'template', 'template_name', 'status',
             'sent_at', 'fully_signed_at', 'valid_until', 'contract_value',
             'currency', 'is_amendment', 'amendment_number', 'signature_count',
-            'is_fully_signed', 'contract_type', 'is_expired', 'created_at', 'updated_at'
+            'is_fully_signed', 'contract_type', 'is_expired', 'is_expiring_soon',
+            'days_until_expiry', 'expiry_urgency', 'sign_disabled_reason',
+            'created_at', 'updated_at',
+            # Mobile app compatibility fields
+            'expires_at', 'signed_at',
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
 
@@ -84,3 +111,81 @@ class EventContractSerializer(serializers.ModelSerializer):
             return date.today() > obj.valid_until
 
         return False
+
+    def get_is_expiring_soon(self, obj):
+        """
+        Check if contract is expiring within 7 days.
+        Returns False for signed contracts or contracts without expiry date.
+        """
+        if obj.status == 'SIGNED' or not obj.valid_until:
+            return False
+
+        from datetime import date
+        days = (obj.valid_until - date.today()).days
+        return 0 < days <= 7
+
+    def get_days_until_expiry(self, obj):
+        """
+        Get number of days until contract expires.
+        Returns None if no valid_until date or if contract is signed.
+        Negative values indicate already expired.
+        """
+        if obj.status == 'SIGNED' or not obj.valid_until:
+            return None
+
+        from datetime import date
+        return (obj.valid_until - date.today()).days
+
+    def get_expiry_urgency(self, obj):
+        """
+        Get expiry urgency level.
+        Returns 'CRITICAL' (1 day or less), 'HIGH' (2-3 days), 'NORMAL' (4-7 days), or None.
+        """
+        if obj.status == 'SIGNED' or not obj.valid_until:
+            return None
+
+        from datetime import date
+        days = (obj.valid_until - date.today()).days
+
+        if days <= 0:
+            return 'CRITICAL'  # Already expired
+        elif days <= 1:
+            return 'CRITICAL'
+        elif days <= 3:
+            return 'HIGH'
+        elif days <= 7:
+            return 'NORMAL'
+        return None
+
+    def get_sign_disabled_reason(self, obj):
+        """
+        Get reason why signing is disabled, if applicable.
+        Returns None if signing is allowed.
+        """
+        # Already signed
+        if obj.status == 'SIGNED':
+            return 'Contract is already fully signed'
+
+        # Voided
+        if obj.status == 'VOID':
+            return 'Contract has been voided'
+
+        # Amended
+        if obj.status == 'AMENDED':
+            return 'Contract has been amended - please sign the new version'
+
+        # Expired
+        if obj.status == 'EXPIRED':
+            return 'Contract has expired'
+
+        # Check expiry date even if status not yet updated to EXPIRED
+        if obj.valid_until:
+            from datetime import date
+            if date.today() > obj.valid_until:
+                return 'Contract validity period has passed'
+
+        # Draft - not yet sent
+        if obj.status == 'DRAFT':
+            return 'Contract has not been sent yet'
+
+        return None

@@ -1,14 +1,24 @@
 // frontend/admin-crm/src/types/communications.types.ts
 
+import type { ContextType, VariableSchemas } from './templates.types';
+
+// Re-export for convenience
+export type { VariableSchemas };
+
 export interface CommunicationTemplate {
   id: number;
   name: string;
   channel: 'EMAIL' | 'SMS';
   category: 'SYSTEM' | 'MANUAL' | 'AUTO';
+  context_type: ContextType;
+  context_type_display: string;
+  include_client_context: boolean;
+  include_event_context: boolean;
   subject_template?: string;
   body_template: string;
   is_system: boolean;
-  variables_schema: Record<string, unknown>;
+  layout: number | null;
+  layout_name?: string;
   created_at: string;
   updated_at: string;
 }
@@ -26,6 +36,11 @@ export interface CommunicationRecord {
   client_name?: string;
   sent_by?: number;
   sent_by_name?: string;
+  event?: number;
+  event_details?: {
+    id: number;
+    name: string;
+  };
   external_message_id?: string;
   delivery_status: 'PENDING' | 'SENT' | 'DELIVERED' | 'FAILED' | 'BOUNCED';
   sent_at?: string;
@@ -40,9 +55,12 @@ export interface CreateTemplateData {
   name: string;
   channel: 'EMAIL' | 'SMS';
   category: 'SYSTEM' | 'MANUAL' | 'AUTO';
+  context_type: ContextType;
+  include_client_context?: boolean;
+  include_event_context?: boolean;
   subject_template?: string;
   body_template: string;
-  variables_schema?: Record<string, unknown>;
+  layout?: number | null;
 }
 
 export type UpdateTemplateData = Partial<CreateTemplateData>;
@@ -58,6 +76,7 @@ export interface ManualSendData {
   template_id: number;
   recipient: string;
   client_id?: number;
+  event_id?: number;
   context_data?: Record<string, unknown>;
   custom_subject?: string;
   custom_body?: string;
@@ -75,6 +94,10 @@ export interface BulkSendData {
 export interface PreviewData {
   template_id: number;
   context_data?: Record<string, unknown>;
+  // Override parameters for live editing preview
+  body_template?: string;
+  subject_template?: string;
+  layout_id?: number | null;
 }
 
 export interface ManualPreviewData extends PreviewData {
@@ -97,18 +120,12 @@ export interface AnalyticsData {
   failure_rate: number;
 }
 
-export interface VariableSchemas {
-  client_variables: Record<string, string>;
-  system_variables: Record<string, string>;
-  admin_invitation_variables: Record<string, string>;
-  manual_template_variables?: Record<string, string>;
-}
-
 export interface CommunicationFilters {
   category?: string;
   channel?: string;
   search?: string;
   client_id?: number;
+  event_id?: number;
   template_name?: string;
   status?: string;
 }

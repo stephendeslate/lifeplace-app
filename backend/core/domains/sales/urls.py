@@ -5,6 +5,7 @@ from rest_framework.routers import DefaultRouter
 from .views import (
     EventQuoteViewSet,
     QuoteLineItemViewSet,
+    QuoteOptionViewSet,
     QuoteTemplateProductViewSet,
     QuoteTemplateViewSet,
     ClientEventQuoteViewSet,
@@ -16,6 +17,7 @@ admin_router.register(r'templates', QuoteTemplateViewSet, basename='quote-templa
 admin_router.register(r'template-products', QuoteTemplateProductViewSet, basename='template-products')
 admin_router.register(r'quotes', EventQuoteViewSet, basename='quotes')
 admin_router.register(r'line-items', QuoteLineItemViewSet, basename='line-items')
+admin_router.register(r'options', QuoteOptionViewSet, basename='quote-options')
 
 # Client router for client-accessible endpoints
 client_router = DefaultRouter()
