@@ -47,6 +47,9 @@ class EventTaskDetailSerializer(EventTaskSerializer):
     workflow_stage = WorkflowStageSerializer(read_only=True)
     dependencies = EventTaskSerializer(many=True, read_only=True)
 
+    class Meta(EventTaskSerializer.Meta):
+        fields = EventTaskSerializer.Meta.fields + ['dependencies']
+
 
 class EventProductOptionSerializer(serializers.ModelSerializer):
     product_name = serializers.CharField(source='product_option.name', read_only=True)
