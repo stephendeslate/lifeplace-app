@@ -76,38 +76,6 @@ const ClientLayoutWrapper: React.FC<{ children: React.ReactNode }> = ({ children
   );
 };
 
-// Placeholder page component
-interface PlaceholderPageProps {
-  title: string;
-  description: string;
-}
-
-const PlaceholderPage: React.FC<PlaceholderPageProps> = ({ title, description }) => (
-  <Box
-    sx={{
-      minHeight: 'calc(100vh - 160px)',
-      width: '100%',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      textAlign: 'center',
-      px: { xs: 2, sm: 3, md: 4 },
-    }}
-  >
-    <Box sx={{ maxWidth: 600 }}>
-      <Typography variant="h3" sx={{ fontWeight: 600, mb: 2, color: 'white', textShadow: '0 4px 20px rgba(0,0,0,0.3)' }}>
-        {title}
-      </Typography>
-      <Typography variant="h6" sx={{ mb: 4, color: 'rgba(255, 255, 255, 0.9)', textShadow: '0 2px 10px rgba(0,0,0,0.2)' }}>
-        {description}
-      </Typography>
-      <Typography variant="body1" sx={{ color: 'rgba(255, 255, 255, 0.7)', textShadow: '0 1px 5px rgba(0,0,0,0.2)' }}>
-        This page is coming soon! We're working hard to bring you the best experience.
-      </Typography>
-    </Box>
-  </Box>
-);
-
 // Main app router component
 const AppRouter: React.FC = () => {
   const { isLoading, isAuthenticated } = useAuth();

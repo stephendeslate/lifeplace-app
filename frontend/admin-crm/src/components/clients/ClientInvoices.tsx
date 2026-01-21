@@ -69,17 +69,6 @@ export const ClientInvoices: React.FC<ClientInvoicesProps> = ({ client }) => {
     setDetailDialogOpen(true);
   };
 
-  const handleEditInvoice = (_invoice: Invoice) => {
-    // Invoice editing is done through the details dialog
-    // No dedicated edit route exists
-  };
-
-  const handleCreateInvoice = () => {
-    // Invoices are created from the event page, not from client page
-    // Navigate to payments page as the closest relevant page
-    navigate(`/payments`);
-  };
-
   const handleRecordPayment = (invoice: Invoice) => {
     navigate(`/payments/new?invoice=${invoice.id}`);
   };

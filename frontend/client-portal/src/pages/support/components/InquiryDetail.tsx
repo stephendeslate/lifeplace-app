@@ -175,7 +175,7 @@ export const InquiryDetail: React.FC<InquiryDetailProps> = ({ inquiryId, onBack 
               }}
             >
               <Stack spacing={2}>
-                {inquiry.messages.map((message, index) => {
+                {inquiry.messages.map((message, _index) => {
                   const fromClient = isFromClient(message);
 
                   return (

@@ -22,7 +22,6 @@ import {
   Cancel as CancelIcon,
   PhotoCamera as PhotoCameraIcon,
   Person as PersonIcon,
-  Email as EmailIcon,
   CalendarToday as CalendarIcon,
   Security as SecurityIcon,
   Notifications as NotificationsIcon,

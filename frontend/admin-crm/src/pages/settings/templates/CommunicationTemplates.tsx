@@ -139,6 +139,7 @@ const defaultCommunicationTemplate: CommunicationTemplate = {
   subject_template: '',
   body_template: '',
   is_system: false,
+  layout: null,
   created_at: '',
   updated_at: '',
 };
