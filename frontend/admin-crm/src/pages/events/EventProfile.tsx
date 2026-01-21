@@ -49,8 +49,6 @@ import {
   Folder as FilesIcon,
   Note as NoteIcon,
   Schedule as ScheduleIcon,
-  ContentCopy as ContentCopyIcon,
-  Download as DownloadIcon,
   Login as CheckInIcon,
   Logout as CheckOutIcon,
   Warning as WarningIcon,
@@ -556,22 +554,6 @@ export const EventProfile: React.FC = () => {
             <DeleteIcon color="error" />
           </ListItemIcon>
           <ListItemText>Delete Event</ListItemText>
-        </MenuItem>
-
-        <Divider />
-
-        <MenuItem onClick={() => navigate(`/events/${event.id}/duplicate`)}>
-          <ListItemIcon>
-            <ContentCopyIcon color="primary" />
-          </ListItemIcon>
-          <ListItemText>Duplicate Event</ListItemText>
-        </MenuItem>
-
-        <MenuItem onClick={() => navigate(`/events/${event.id}/export`)}>
-          <ListItemIcon>
-            <DownloadIcon color="primary" />
-          </ListItemIcon>
-          <ListItemText>Export Details</ListItemText>
         </MenuItem>
       </Menu>
 

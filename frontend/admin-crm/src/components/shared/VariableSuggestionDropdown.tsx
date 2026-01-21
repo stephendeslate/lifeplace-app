@@ -25,6 +25,10 @@ import {
   Settings as SystemIcon,
   CheckCircle as RequiredIcon,
   RadioButtonUnchecked as OptionalIcon,
+  Business as CompanyIcon,
+  Link as LinkIcon,
+  Receipt as InvoiceIcon,
+  CreditCard as PaymentIcon,
 } from '@mui/icons-material';
 import type { VariableForInsertion } from '../../types/templates.types';
 import { getVariableGroupColor } from '../../hooks/useTemplateVariables';
@@ -51,6 +55,10 @@ const getGroupIcon = (groupKey: string): React.ReactNode => {
     admin: <AdminIcon {...iconProps} />,
     notification: <NotificationIcon {...iconProps} />,
     system: <SystemIcon {...iconProps} />,
+    company: <CompanyIcon {...iconProps} />,
+    urls: <LinkIcon {...iconProps} />,
+    invoice: <InvoiceIcon {...iconProps} />,
+    payment: <PaymentIcon {...iconProps} />,
   };
   return icons[groupKey] || <SystemIcon {...iconProps} />;
 };

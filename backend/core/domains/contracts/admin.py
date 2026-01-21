@@ -4,14 +4,14 @@ from .models import ContractTemplate, EventContract, ContractSignature, Contract
 
 @admin.register(ContractTemplate)
 class ContractTemplateAdmin(admin.ModelAdmin):
-    list_display = ('name', 'event_type', 'requires_signature', 'requires_witness', 'requires_company_signature', 'allows_amendments', 'created_at')
-    list_filter = ('requires_signature', 'requires_witness', 'requires_company_signature', 'allows_amendments', 'event_type')
+    list_display = ('name', 'event_type', 'is_active', 'requires_signature', 'requires_witness', 'requires_company_signature', 'allows_amendments', 'created_at')
+    list_filter = ('is_active', 'requires_signature', 'requires_witness', 'requires_company_signature', 'allows_amendments', 'event_type')
     search_fields = ('name', 'description', 'content')
-    list_editable = ('requires_signature', 'requires_witness', 'requires_company_signature', 'allows_amendments')
+    list_editable = ('is_active', 'requires_signature', 'requires_witness', 'requires_company_signature', 'allows_amendments')
     readonly_fields = ('created_at', 'updated_at')
     fieldsets = (
         (None, {
-            'fields': ('name', 'description', 'event_type')
+            'fields': ('name', 'description', 'event_type', 'is_active')
         }),
         ('Content', {
             'fields': ('content', 'variables', 'sections')

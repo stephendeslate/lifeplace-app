@@ -384,6 +384,14 @@ class CommunicationsCacheService:
         self._invalidate_cache_patterns(patterns_to_invalidate)
         logger.info(f"Invalidated analytics caches for template: {template_name}, client: {client_id}")
     
+    def invalidate_variable_schemas_cache(self):
+        """
+        Invalidate variable schemas cache.
+        Call this when CompanySettings or other context-affecting settings change.
+        """
+        self.cache.delete(self.TEMPLATE_SCHEMAS_KEY)
+        logger.info("Invalidated variable schemas cache")
+
     def invalidate_all_communication_caches(self):
         """Invalidate all communication-related caches"""
         patterns_to_invalidate = [f"communications:*"]

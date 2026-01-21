@@ -15,6 +15,7 @@ class ContractTemplate(BaseModel):
     variables = models.JSONField(default=list)
     requires_signature = models.BooleanField(default=True)
     sections = models.JSONField(default=list, help_text="JSON structure of contract sections")
+    is_active = models.BooleanField(default=True, help_text="Inactive templates are hidden from selection but preserved for historical records")
     
     # Multi-party signature configuration
     signature_requirements = models.JSONField(

@@ -304,27 +304,43 @@ class CommunicationTemplateViewSet(viewsets.ModelViewSet):
         """Preview a template with sample data - available to both admins and clients"""
         serializer = PreviewCommunicationSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        
+
         context_data = serializer.validated_data.get('context_data', {})
-        
-        # Try to get from cache first
-        cached_preview = communications_cache_service.get_cached_template_preview(
-            int(pk), context_data
+
+        # Extract override parameters for live editing preview
+        body_template_override = serializer.validated_data.get('body_template')
+        subject_template_override = serializer.validated_data.get('subject_template')
+        layout_id_override = serializer.validated_data.get('layout_id')
+
+        # Check if this is a live editing preview (has overrides) - skip cache for these
+        has_overrides = body_template_override or subject_template_override or layout_id_override is not None
+
+        if not has_overrides:
+            # Try to get from cache first (only for non-override requests)
+            cached_preview = communications_cache_service.get_cached_template_preview(
+                int(pk), context_data
+            )
+
+            if cached_preview is not None:
+                logger.debug(f"Template preview for {pk} served from cache")
+                return Response(cached_preview)
+
+        # Cache miss or live editing preview - generate preview
+        preview_data = CommunicationTemplateService.preview_template(
+            pk,
+            context_data,
+            body_template_override=body_template_override,
+            subject_template_override=subject_template_override,
+            layout_id_override=layout_id_override
         )
-        
-        if cached_preview is not None:
-            logger.debug(f"Template preview for {pk} served from cache")
-            return Response(cached_preview)
-        
-        # Cache miss - generate preview
-        preview_data = CommunicationTemplateService.preview_template(pk, context_data)
-        
-        # Cache the preview result
-        communications_cache_service.cache_template_preview(
-            int(pk), context_data, preview_data
-        )
-        logger.info(f"Template preview for {pk} cached after generation")
-        
+
+        # Only cache non-override requests
+        if not has_overrides:
+            communications_cache_service.cache_template_preview(
+                int(pk), context_data, preview_data
+            )
+            logger.info(f"Template preview for {pk} cached after generation")
+
         return Response(preview_data)
     
     @action(detail=True, methods=['get'])

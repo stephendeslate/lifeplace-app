@@ -15,6 +15,7 @@ export interface ContractTemplate {
   requires_company_signature: boolean;
   allows_amendments: boolean;
   amendment_requires_signature: boolean;
+  is_active: boolean;
   created_at: string;
   updated_at: string;
 }

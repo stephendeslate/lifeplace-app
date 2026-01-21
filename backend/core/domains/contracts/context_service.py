@@ -7,6 +7,8 @@ from typing import Dict, Any, Optional
 from django.utils import timezone
 from core.domains.events.models import Event
 from core.domains.users.models import User
+from core.utils.url_builder import ClientPortalURLBuilder
+from core.utils.company_context import CompanyContextMixin
 
 logger = logging.getLogger(__name__)
 
@@ -142,19 +144,90 @@ class ContractContextService:
 
             # Add payment/deposit information for contract templates
             context.update(ContractContextService._get_payment_deposit_info(event))
-            
+
+            # Add company context from CompanySettings
+            context.update(CompanyContextMixin.get_company_context())
+
+            # Add URL context for links in contracts
+            context.update({
+                'dashboard_url': ClientPortalURLBuilder.dashboard_url(),
+                'login_link': ClientPortalURLBuilder.login_url(),
+                'support_link': ClientPortalURLBuilder.support_url(),
+                'payments_link': ClientPortalURLBuilder.payments_url(),
+                'documents_link': ClientPortalURLBuilder.documents_url(),
+                'profile_link': ClientPortalURLBuilder.profile_url(),
+                'terms_of_service_link': ClientPortalURLBuilder.terms_of_service_url(),
+                'privacy_policy_link': ClientPortalURLBuilder.privacy_policy_url(),
+                'event_link': ClientPortalURLBuilder.event_url(event.id),
+                'event_timeline_link': ClientPortalURLBuilder.event_timeline_url(event.id),
+                'event_questionnaires_link': ClientPortalURLBuilder.event_questionnaires_url(event.id),
+                'event_contracts_link': ClientPortalURLBuilder.event_contracts_url(event.id),
+                'event_documents_link': ClientPortalURLBuilder.event_documents_url(event.id),
+                'event_tasks_link': ClientPortalURLBuilder.event_tasks_url(event.id),
+                'event_quotes_link': ClientPortalURLBuilder.event_quotes_url(event.id),
+                'event_invoices_link': ClientPortalURLBuilder.event_invoices_url(event.id),
+            })
+
             # Merge additional context if provided
             if additional_context:
                 context.update(additional_context)
                 
             logger.info(f"Generated contract context for event {event.id} with {len(context)} variables")
-            
+
             return context
-            
+
         except Exception as e:
             logger.error(f"Error generating contract context for event {event.id}: {e}")
             raise
-    
+
+    @staticmethod
+    def get_contract_specific_context(contract) -> Dict[str, Any]:
+        """
+        Get context variables specific to an existing contract instance.
+        Call this when rendering a contract that already exists (has an ID).
+
+        Args:
+            contract: Contract instance with id and valid_until attributes
+
+        Returns:
+            Dictionary with contract-specific variables
+        """
+        # Get signature deadline if available
+        signature_deadline = ''
+        if hasattr(contract, 'valid_until') and contract.valid_until:
+            signature_deadline = contract.valid_until.strftime('%B %d, %Y')
+
+        return {
+            'contract_link': ClientPortalURLBuilder.contract_url(contract.id),
+            'contract_pdf_link': ClientPortalURLBuilder.contract_pdf_url(contract.id),
+            'signature_deadline': signature_deadline,
+        }
+
+    @staticmethod
+    def generate_full_context(event: Event, contract=None, additional_context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        """
+        Generate complete context including contract-specific variables if contract is provided.
+
+        This is the recommended method when rendering an existing contract, as it includes
+        contract_link, contract_pdf_link, and signature_deadline variables.
+
+        Args:
+            event: Event instance
+            contract: Optional contract instance (for contract-specific URLs)
+            additional_context: Optional additional context data to merge
+
+        Returns:
+            Complete context dictionary
+        """
+        # Get base event context
+        context = ContractContextService.generate_event_context(event, additional_context)
+
+        # Add contract-specific context if contract provided
+        if contract:
+            context.update(ContractContextService.get_contract_specific_context(contract))
+
+        return context
+
     @staticmethod
     def _get_client_full_name(client: Optional[User]) -> str:
         """Get client full name with fallback"""
@@ -504,6 +577,52 @@ class ContractContextService:
             'guardian_signer_title': 'Title of guardian signer (displays when signed)',
             'partner_signer_title': 'Title of partner signer (displays when signed)',
             'other_signer_title': 'Title of other signer (displays when signed)',
+
+            # Company Information
+            'company_name': 'Official company name',
+            'company_tagline': 'Company tagline/slogan',
+            'company_email': 'Primary company email',
+            'company_phone': 'Company phone number',
+            'company_support_email': 'Support email address',
+            'company_support_phone': 'Support phone number',
+            'company_address': 'Full company address',
+            'company_city': 'Company city',
+            'company_province': 'Company province/state',
+            'company_country': 'Company country',
+            'company_website': 'Company website URL',
+            'company_facebook': 'Facebook page URL',
+            'company_instagram': 'Instagram profile URL',
+            'bank_name': 'Bank name for payments',
+            'bank_account_name': 'Bank account holder name',
+            'bank_account_number': 'Bank account number',
+            'bank_branch': 'Bank branch name',
+            'bank_swift_code': 'SWIFT/BIC code for international transfers',
+            'business_registration_number': 'Business registration/TIN number',
+            'vat_number': 'VAT registration number',
+            'invoice_terms': 'Default invoice payment terms',
+
+            # URL Variables
+            'dashboard_url': 'Client dashboard URL',
+            'login_link': 'Login page URL',
+            'support_link': 'Support/help page URL',
+            'payments_link': 'Payments portal URL',
+            'documents_link': 'Documents page URL',
+            'profile_link': 'Profile settings URL',
+            'terms_of_service_link': 'Terms of Service URL',
+            'privacy_policy_link': 'Privacy Policy URL',
+            'event_link': 'Event detail page URL',
+            'event_timeline_link': 'Event timeline tab URL',
+            'event_questionnaires_link': 'Event questionnaires tab URL',
+            'event_contracts_link': 'Event contracts tab URL',
+            'event_documents_link': 'Event documents tab URL',
+            'event_tasks_link': 'Event tasks tab URL',
+            'event_quotes_link': 'Event quotes tab URL',
+            'event_invoices_link': 'Event invoices tab URL',
+
+            # Contract-Specific URLs (available when rendering existing contract)
+            'contract_link': 'Direct link to this contract',
+            'contract_pdf_link': 'Direct link to download contract PDF',
+            'signature_deadline': 'Deadline date for signing the contract',
         }
 
     @staticmethod

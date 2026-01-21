@@ -27,7 +27,6 @@ import {
   Payment as InvoiceIcon,
   MoreVert as MoreVertIcon,
   Visibility as ViewIcon,
-  Edit as EditIcon,
   Send as SendIcon,
   GetApp as DownloadIcon,
   Receipt as ReceiptIcon,
@@ -70,12 +69,15 @@ export const ClientInvoices: React.FC<ClientInvoicesProps> = ({ client }) => {
     setDetailDialogOpen(true);
   };
 
-  const handleEditInvoice = (invoice: Invoice) => {
-    navigate(`/invoices/${invoice.id}/edit`);
+  const handleEditInvoice = (_invoice: Invoice) => {
+    // Invoice editing is done through the details dialog
+    // No dedicated edit route exists
   };
 
   const handleCreateInvoice = () => {
-    navigate(`/invoices/new?client=${client.id}`);
+    // Invoices are created from the event page, not from client page
+    // Navigate to payments page as the closest relevant page
+    navigate(`/payments`);
   };
 
   const handleRecordPayment = (invoice: Invoice) => {
@@ -137,14 +139,14 @@ export const ClientInvoices: React.FC<ClientInvoicesProps> = ({ client }) => {
           No Invoices Yet
         </Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-          Create an invoice to bill this client for services.
+          Invoices are created from event pages. View an event to create an invoice.
         </Typography>
         <Button
-          variant="contained"
+          variant="outlined"
           startIcon={<AddIcon />}
-          onClick={handleCreateInvoice}
+          onClick={() => navigate(`/events?client=${client.id}`)}
         >
-          Create Invoice
+          View Events
         </Button>
       </Paper>
     );
@@ -155,12 +157,12 @@ export const ClientInvoices: React.FC<ClientInvoicesProps> = ({ client }) => {
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
         <Typography variant="h6">Invoices</Typography>
         <Button
-          variant="contained"
+          variant="outlined"
           startIcon={<AddIcon />}
-          onClick={handleCreateInvoice}
+          onClick={() => navigate(`/events?client=${client.id}`)}
           size="small"
         >
-          Create Invoice
+          View Events
         </Button>
       </Box>
 
@@ -244,14 +246,12 @@ export const ClientInvoices: React.FC<ClientInvoicesProps> = ({ client }) => {
         open={Boolean(anchorEl)}
         onClose={handleMenuClose}
       >
-        {selectedInvoice?.status === 'DRAFT' && (
-          <MenuItem onClick={() => selectedInvoice && handleEditInvoice(selectedInvoice)}>
-            <ListItemIcon>
-              <EditIcon fontSize="small" />
-            </ListItemIcon>
-            <ListItemText>Edit</ListItemText>
-          </MenuItem>
-        )}
+        <MenuItem onClick={() => selectedInvoice && handleViewInvoice(selectedInvoice)}>
+          <ListItemIcon>
+            <ViewIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>View Details</ListItemText>
+        </MenuItem>
         {selectedInvoice?.status === 'DRAFT' && (
           <MenuItem
             onClick={() => selectedInvoice && handleSendInvoice(selectedInvoice)}

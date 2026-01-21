@@ -126,6 +126,7 @@ const defaultContractTemplate: ContractTemplate = {
   amendment_requires_signature: true,
   sections: [],
   signature_requirements: [],
+  is_active: true,
   created_at: '',
   updated_at: '',
 };

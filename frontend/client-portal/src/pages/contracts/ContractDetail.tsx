@@ -29,6 +29,7 @@ import {
 import { contractsApi, contractUtils } from '../../apis/contracts.api';
 import { ContractViewer } from '../../components/contracts/ContractViewer';
 import ContractSigningDialog from '../../components/contracts/ContractSigningDialog';
+import { EVENT_TAB_INDICES } from '../events/EventDetail';
 
 const ContractDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -71,7 +72,7 @@ const ContractDetail: React.FC = () => {
 
   const handleGoToEvent = () => {
     if (contract?.event?.id) {
-      navigate(`/events/${contract.event.id}`, { state: { activeTab: 8 } });
+      navigate(`/events/${contract.event.id}`, { state: { activeTab: EVENT_TAB_INDICES.CONTRACTS } });
     }
   };
 
