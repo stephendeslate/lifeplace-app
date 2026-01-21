@@ -8,41 +8,81 @@ logger = logging.getLogger(__name__)
 
 @shared_task
 def schedule_stage_actions(event_id, stage_id):
-    """Schedule actions for a workflow stage based on trigger time"""
-    from core.domains.events.models import Event
+    """
+    Schedule actions for a workflow stage based on trigger time.
+
+    Supports two modes:
+    1. Normal: trigger_time delay from NOW (when stage is reached)
+    2. After Stage: trigger_time delay from when trigger_after_stage was completed
+    """
+    from core.domains.events.models import Event, EventTimeline
     from core.domains.workflows.engine import WorkflowEngine
     from core.domains.workflows.models import WorkflowStage
-    
+
     try:
         event = Event.objects.get(id=event_id)
         stage = WorkflowStage.objects.get(id=stage_id)
-        
+
         # Parse trigger time (e.g., "AFTER_3_DAYS")
         trigger_parts = stage.trigger_time.split('_')
-        
+
         if len(trigger_parts) >= 3 and trigger_parts[0] == 'AFTER':
             try:
                 # Extract the number and unit
                 number = int(trigger_parts[1])
                 unit = trigger_parts[2].lower()
-                
+
+                # Determine the base time for the delay
+                base_time = timezone.now()
+
+                # If trigger_after_stage is set, calculate from when that stage was reached
+                if stage.trigger_after_stage:
+                    # Find when the referenced stage was reached in EventTimeline
+                    stage_reached_entry = EventTimeline.objects.filter(
+                        event=event,
+                        action_type='STAGE_CHANGE',
+                        description__icontains=stage.trigger_after_stage.name
+                    ).order_by('-created_at').first()
+
+                    if stage_reached_entry:
+                        base_time = stage_reached_entry.created_at
+                        logger.info(
+                            f"Using trigger_after_stage '{stage.trigger_after_stage.name}' "
+                            f"completed at {base_time} as base time for stage '{stage.name}'"
+                        )
+                    else:
+                        # Stage hasn't been reached yet - schedule for later checking
+                        logger.info(
+                            f"trigger_after_stage '{stage.trigger_after_stage.name}' not yet reached "
+                            f"for event {event_id}. Will be caught by periodic sweep."
+                        )
+                        return
+
                 # Calculate the delay based on unit
                 if unit.startswith('day'):
-                    execute_at = timezone.now() + timezone.timedelta(days=number)
+                    execute_at = base_time + timezone.timedelta(days=number)
                 elif unit.startswith('hour'):
-                    execute_at = timezone.now() + timezone.timedelta(hours=number)
+                    execute_at = base_time + timezone.timedelta(hours=number)
                 elif unit.startswith('week'):
-                    execute_at = timezone.now() + timezone.timedelta(weeks=number)
+                    execute_at = base_time + timezone.timedelta(weeks=number)
                 else:
                     # Default to days if unit not recognized
-                    execute_at = timezone.now() + timezone.timedelta(days=number)
-                
-                # Schedule the task
-                execute_delayed_stage_action.apply_async(
-                    args=[event_id, stage_id],
-                    eta=execute_at
-                )
-                
+                    execute_at = base_time + timezone.timedelta(days=number)
+
+                # If execution time is in the past, execute immediately
+                if execute_at <= timezone.now():
+                    logger.info(
+                        f"Trigger time for stage '{stage.name}' is in past ({execute_at}), "
+                        f"executing immediately"
+                    )
+                    execute_delayed_stage_action.apply_async(args=[event_id, stage_id])
+                else:
+                    # Schedule the task
+                    execute_delayed_stage_action.apply_async(
+                        args=[event_id, stage_id],
+                        eta=execute_at
+                    )
+
                 logger.info(f"Scheduled delayed action for event {event_id}, stage {stage_id} at {execute_at}")
             except (ValueError, IndexError):
                 logger.error(f"Invalid trigger time format: {stage.trigger_time}")
@@ -302,6 +342,135 @@ def process_time_elapsed_triggers(self):
         f"{processed_count} progressions, {error_count} errors"
     )
     return {'processed': processed_count, 'errors': error_count}
+
+
+@shared_task(
+    bind=True,
+    max_retries=1,
+)
+def process_after_stage_triggers(self):
+    """
+    Hourly sweep to process stages with trigger_after_stage dependencies.
+
+    Finds workflow stages that have a trigger_after_stage set and checks if:
+    1. The referenced stage has been completed for the event
+    2. The required delay time (trigger_time) has elapsed since that stage
+
+    This catches stages that depend on another stage being completed first.
+
+    Called hourly via Celery beat.
+    """
+    import re
+    from datetime import timedelta
+    from core.domains.events.models import Event, EventTimeline
+    from core.domains.workflows.models import WorkflowStage
+
+    logger.info("Starting AFTER_STAGE trigger sweep")
+
+    now = timezone.now()
+    scheduled_count = 0
+    error_count = 0
+
+    # Find all stages with trigger_after_stage set
+    after_stage_stages = WorkflowStage.objects.filter(
+        trigger_after_stage__isnull=False,
+        is_automated=True,
+    ).select_related('template', 'trigger_after_stage')
+
+    for stage in after_stage_stages:
+        # Find events using this workflow template that haven't executed this stage yet
+        events = Event.objects.filter(
+            workflow_template=stage.template,
+        ).exclude(status='CANCELLED')
+
+        for event in events:
+            try:
+                # Check if this automation has already been executed for this event
+                # by looking for a timeline entry indicating the stage was triggered
+                already_triggered = EventTimeline.objects.filter(
+                    event=event,
+                    action_type__in=['STAGE_CHANGE', 'SYSTEM_UPDATE'],
+                    description__icontains=stage.name
+                ).exists()
+
+                if already_triggered:
+                    continue
+
+                # Find when the referenced stage (trigger_after_stage) was reached
+                stage_reached_entry = EventTimeline.objects.filter(
+                    event=event,
+                    action_type='STAGE_CHANGE',
+                    description__icontains=stage.trigger_after_stage.name
+                ).order_by('-created_at').first()
+
+                if not stage_reached_entry:
+                    # Referenced stage hasn't been reached yet
+                    continue
+
+                # Parse the delay from trigger_time
+                if not stage.trigger_time:
+                    continue
+
+                trigger_time_upper = stage.trigger_time.upper()
+                match = re.match(r'AFTER_(\d+)_(DAYS?|HOURS?|WEEKS?)', trigger_time_upper)
+
+                if not match:
+                    continue
+
+                amount = int(match.group(1))
+                unit = match.group(2).upper()
+
+                # Calculate required elapsed time
+                if unit.startswith('DAY'):
+                    required_delta = timedelta(days=amount)
+                elif unit.startswith('HOUR'):
+                    required_delta = timedelta(hours=amount)
+                elif unit.startswith('WEEK'):
+                    required_delta = timedelta(weeks=amount)
+                else:
+                    continue
+
+                # Check if enough time has elapsed since the referenced stage
+                execute_at = stage_reached_entry.created_at + required_delta
+
+                if execute_at <= now:
+                    # Time has elapsed - execute the automation
+                    logger.info(
+                        f"AFTER_STAGE trigger: Executing stage '{stage.name}' for event {event.id} "
+                        f"({amount} {unit.lower()} after '{stage.trigger_after_stage.name}')"
+                    )
+
+                    # Execute the stage automation
+                    if stage.is_automated:
+                        stage._execute_automation(event)
+
+                    # Log the execution
+                    EventTimeline.objects.create(
+                        event=event,
+                        action_type='SYSTEM_UPDATE',
+                        description=f"Executed delayed automation '{stage.name}' (trigger: {amount} {unit.lower()} after '{stage.trigger_after_stage.name}')",
+                        action_data={
+                            'stage_id': stage.id,
+                            'trigger_after_stage_id': stage.trigger_after_stage.id,
+                            'trigger_type': 'AFTER_STAGE'
+                        },
+                        is_public=False
+                    )
+
+                    scheduled_count += 1
+
+            except Exception as e:
+                logger.error(
+                    f"Error processing AFTER_STAGE trigger for event {event.id}, "
+                    f"stage '{stage.name}': {e}"
+                )
+                error_count += 1
+
+    logger.info(
+        f"AFTER_STAGE trigger sweep completed: "
+        f"{scheduled_count} executed, {error_count} errors"
+    )
+    return {'executed': scheduled_count, 'errors': error_count}
 
 
 @shared_task(

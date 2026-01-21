@@ -35,12 +35,21 @@ class WorkflowTemplateSerializer(serializers.ModelSerializer):
 class WorkflowStageSerializer(serializers.ModelSerializer):
     """Basic serializer for the WorkflowStage model"""
     stage_display = serializers.CharField(source='get_stage_display', read_only=True)
+    trigger_after_stage_name = serializers.CharField(
+        source='trigger_after_stage.name',
+        read_only=True,
+        allow_null=True
+    )
+    # Make order optional for create - service will auto-assign if not provided
+    order = serializers.IntegerField(required=False)
 
     class Meta:
         model = WorkflowStage
         fields = [
             'id', 'template', 'name', 'stage', 'stage_display', 'order',
-            'is_automated', 'automation_type', 'trigger_time', 'email_template',
+            'is_automated', 'automation_type', 'trigger_time',
+            'trigger_after_stage', 'trigger_after_stage_name',  # New field for delayed execution after another stage
+            'email_template',
             'contract_template', 'questionnaire_template', 'task_description',
             'progression_condition', 'required_tasks_completed',
             # Trigger-on flags for conditional automation

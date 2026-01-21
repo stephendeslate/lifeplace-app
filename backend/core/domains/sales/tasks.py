@@ -18,9 +18,12 @@ def expire_sent_quotes():
 
     Both conditions are checked to handle edge cases where a quote's valid_until
     might still be in the future but the event has already occurred.
+
+    Also triggers the QUOTE_EXPIRED workflow event for each expired quote.
     """
     from django.db.models import Q
     from .models import EventQuote, QuoteActivity
+    from core.domains.workflows.engine import WorkflowEngine
 
     today = timezone.now().date()
 
@@ -29,7 +32,7 @@ def expire_sent_quotes():
         status='SENT'
     ).filter(
         Q(valid_until__lt=today) | Q(event__start_date__date__lt=today)
-    )
+    ).select_related('event')
 
     count = 0
     for quote in expired_quotes:
@@ -50,6 +53,57 @@ def expire_sent_quotes():
                 action='EXPIRED',
                 notes=f"Quote automatically expired: {expiry_reason}"
             )
+
+            # Trigger QUOTE_EXPIRED workflow event
+            try:
+                WorkflowEngine.progress_workflow(
+                    event=quote.event,
+                    trigger_type='QUOTE_EXPIRED',
+                    data={
+                        'quote_id': quote.id,
+                        'expiry_reason': expiry_reason,
+                        'valid_until': str(quote.valid_until) if quote.valid_until else None,
+                    }
+                )
+            except Exception as workflow_error:
+                logger.warning(f"Failed to trigger QUOTE_EXPIRED workflow for quote {quote.id}: {workflow_error}")
+
+            # Send admin notification about expired quote
+            try:
+                from core.domains.communications.services import CommunicationService
+                from core.domains.communications.context_service import (
+                    CommunicationContextService, ContextType
+                )
+                from core.domains.users.models import User
+
+                client = quote.event.client
+                admin_emails = list(User.objects.filter(
+                    is_staff=True, is_active=True
+                ).exclude(email='').values_list('email', flat=True))
+
+                if admin_emails:
+                    comm_service = CommunicationService()
+                    template_data = CommunicationContextService.generate_context(
+                        context_type=ContextType.QUOTE,
+                        client=client,
+                        event=quote.event,
+                        quote=quote,
+                    )
+
+                    for admin_email in admin_emails:
+                        try:
+                            comm_service.send_communication(
+                                template_name='Quote Expired Admin Notification',
+                                recipient=admin_email,
+                                context_data=template_data,
+                                use_async=True,
+                            )
+                        except Exception as email_error:
+                            logger.warning(f"Failed to send admin notification to {admin_email}: {email_error}")
+
+                    logger.info(f"Sent Quote Expired Admin Notification for quote {quote.id}")
+            except Exception as admin_notify_error:
+                logger.warning(f"Failed to send admin notifications for expired quote {quote.id}: {admin_notify_error}")
 
             logger.info(f"Expired quote {quote.id} for event {quote.event_id}: {expiry_reason}")
             count += 1
@@ -120,7 +174,7 @@ def send_quote_expiry_reminders():
                     )
 
                     comm_service.send_communication(
-                        template_name='quote_expiry_reminder',
+                        template_name='Quote Expiry Reminder',
                         recipient=client.email,
                         context_data=template_data,
                         client=client,
@@ -128,6 +182,26 @@ def send_quote_expiry_reminders():
                         use_async=True,
                         event=quote.event
                     )
+
+                    # Also send admin notification about expiring quote
+                    try:
+                        from core.domains.users.models import User
+                        admin_emails = list(User.objects.filter(
+                            is_staff=True, is_active=True
+                        ).exclude(email='').values_list('email', flat=True))
+
+                        for admin_email in admin_emails:
+                            try:
+                                comm_service.send_communication(
+                                    template_name='Quote Expiring Soon Admin Notification',
+                                    recipient=admin_email,
+                                    context_data=template_data,
+                                    use_async=True,
+                                )
+                            except Exception as admin_email_error:
+                                logger.warning(f"Failed to send admin notification to {admin_email}: {admin_email_error}")
+                    except Exception as admin_notify_error:
+                        logger.warning(f"Failed to send admin notifications for expiring quote {quote.id}: {admin_notify_error}")
 
                 logger.info(f"Sent expiry reminder for quote {quote.id}")
                 count += 1

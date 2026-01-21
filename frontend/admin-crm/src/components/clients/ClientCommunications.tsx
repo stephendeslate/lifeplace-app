@@ -150,7 +150,7 @@ export const ClientCommunications: React.FC<ClientCommunicationsProps> = ({
             startIcon={<SendIcon />}
             onClick={() => setSendDialogOpen(true)}
           >
-            Send Message
+            Send Email
           </Button>
           <IconButton onClick={() => refetch()} size="small">
             <RefreshIcon />
@@ -315,7 +315,7 @@ export const ClientCommunications: React.FC<ClientCommunicationsProps> = ({
         </TableContainer>
       )}
 
-      {/* Send Message Dialog */}
+      {/* Send Email Dialog */}
       <SendMessageDialog
         open={sendDialogOpen}
         onClose={() => setSendDialogOpen(false)}

@@ -64,8 +64,12 @@ import { ClientForm } from '../../components/clients/ClientForm';
 import { ClientQuotes } from '../../components/clients/ClientQuotes';
 import { ClientContracts } from '../../components/clients/ClientContracts';
 import { ClientInvoices } from '../../components/clients/ClientInvoices';
-import { NotesList } from '../../components/notes';
+import { NotesList, NoteFormDialog } from '../../components/notes';
 import { ClientCommunications } from '../../components/clients/ClientCommunications';
+import { SendMessageDialog } from '../../components/communications/SendMessageDialog';
+import { EventFormDialog } from '../../components/events';
+import { useNotes } from '../../hooks/useNotes';
+import { useEvents } from '../../hooks/useEvents';
 import {
   ActivityTimeline,
   FinancialSummary,
@@ -111,6 +115,9 @@ export const ClientProfile: React.FC = () => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [sendMessageDialogOpen, setSendMessageDialogOpen] = useState(false);
+  const [addNoteDialogOpen, setAddNoteDialogOpen] = useState(false);
+  const [createEventDialogOpen, setCreateEventDialogOpen] = useState(false);
 
   // Hooks
   const {
@@ -133,6 +140,8 @@ export const ClientProfile: React.FC = () => {
   const { data: quotes = [] } = useQuotesForClient(clientId);
   const { data: contracts = [] } = useContractsForClient(clientId);
   const { data: invoices = [] } = useInvoicesForClient(clientId);
+  const { createNote, isCreatingNote } = useNotes();
+  const { createEvent, isCreatingEvent } = useEvents();
 
   // Currency formatting
   const formatClientAmount = useCallback((amount: string | number) => {
@@ -178,10 +187,10 @@ export const ClientProfile: React.FC = () => {
     return createClientActions(client.id, (actionType: string, _clientId: number) => {
       switch (actionType) {
         case 'create-event':
-          navigate(`/events/new?client=${clientId}`);
+          setCreateEventDialogOpen(true);
           break;
         case 'send-message':
-          setTabValue(2); // Switch to communications tab
+          setSendMessageDialogOpen(true);
           break;
         case 'create-quote':
           setTabValue(3); // Switch to quotes tab where quotes can be created
@@ -190,7 +199,7 @@ export const ClientProfile: React.FC = () => {
           handleSendInvitation();
           break;
         case 'add-note':
-          setTabValue(6); // Switch to notes tab
+          setAddNoteDialogOpen(true);
           break;
         case 'call-client':
           if (clientPhone) {
@@ -430,7 +439,7 @@ export const ClientProfile: React.FC = () => {
           createRefreshAction(() => refetchClient()),
           {
             label: 'Message',
-            onClick: () => setTabValue(2),
+            onClick: () => setSendMessageDialogOpen(true),
             icon: <MessageIcon />,
             variant: 'outlined',
           },
@@ -931,6 +940,44 @@ export const ClientProfile: React.FC = () => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Send Email Dialog */}
+      <SendMessageDialog
+        open={sendMessageDialogOpen}
+        onClose={() => setSendMessageDialogOpen(false)}
+        client={client}
+      />
+
+      {/* Add Note Dialog */}
+      <NoteFormDialog
+        open={addNoteDialogOpen}
+        onClose={() => setAddNoteDialogOpen(false)}
+        contentType="client"
+        objectId={clientId}
+        onSubmit={(data) => {
+          createNote(data as Parameters<typeof createNote>[0], {
+            onSuccess: () => setAddNoteDialogOpen(false),
+          });
+        }}
+        isLoading={isCreatingNote}
+      />
+
+      {/* Create Event Dialog */}
+      <EventFormDialog
+        open={createEventDialogOpen}
+        onClose={() => setCreateEventDialogOpen(false)}
+        defaultClientId={clientId}
+        title={`Create Event for ${client?.first_name} ${client?.last_name}`}
+        onSubmit={(data) => {
+          createEvent(data as Parameters<typeof createEvent>[0], {
+            onSuccess: (newEvent) => {
+              setCreateEventDialogOpen(false);
+              navigate(`/events/${newEvent.id}`);
+            },
+          });
+        }}
+        isLoading={isCreatingEvent}
+      />
     </ModernPageLayout>
   );
 };

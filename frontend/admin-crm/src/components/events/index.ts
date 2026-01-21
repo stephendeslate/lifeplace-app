@@ -3,6 +3,7 @@
 export { EventTypeFormDialog } from './EventTypeFormDialog';
 export { EventTypesTable } from './EventTypesTable';
 export { EventForm } from './EventForm';
+export { EventFormDialog } from './EventFormDialog';
 export { WorkflowProgress } from './WorkflowProgress';
 export { EventCommunications } from './EventCommunications';
 export { EventQuestionnaires } from './EventQuestionnaires';

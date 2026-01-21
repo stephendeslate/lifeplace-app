@@ -1,0 +1,467 @@
+[
+  {
+    "model": "venues.venueoperatingrules",
+    "pk": 1,
+    "fields": {
+      "created_at": "2025-12-18T06:10:08.468",
+      "updated_at": "2026-01-07T09:16:31.030",
+      "venue": 1,
+      "default_check_in_time": "14:00:00",
+      "default_checkout_time": "12:00:00",
+      "checkout_next_day": true,
+      "minimum_program_hours": "1.0",
+      "maximum_program_hours": "22.0",
+      "default_program_hours": "22.0",
+      "is_fixed_duration": true,
+      "ingress_hours": "1.0",
+      "egress_hours": "1.0",
+      "allow_custom_ingress": false,
+      "allow_custom_egress": false,
+      "min_ingress_hours": "0.5",
+      "max_ingress_hours": "6.0",
+      "min_egress_hours": "0.5",
+      "max_egress_hours": "3.0",
+      "earliest_start_time": "06:00:00",
+      "latest_end_time": "22:00:00",
+      "hard_cutoff_time": "02:00:00",
+      "hard_cutoff_next_day": true,
+      "early_access_minutes": 60,
+      "early_checkin_allowed": false,
+      "early_checkin_fee_per_hour": null,
+      "earliest_checkin_time": null,
+      "late_checkout_allowed": false,
+      "late_checkout_fee_per_hour": null,
+      "late_checkout_max_hours": 4,
+      "latest_checkout_time": null,
+      "custom_rules": {
+        "notes": "Guest should notify management upon noticing any damage",
+        "policies": [
+          {
+            "code": "NO_COOKING",
+            "description": "Cooking or bringing electric appliances is prohibited"
+          },
+          {
+            "code": "NO_MOVING_ITEMS",
+            "description": "Removing items from the cabana/Havilah or moving them to another place is prohibited"
+          },
+          {
+            "code": "PET_ALLOWED",
+            "description": "Only one pet is allowed per cabana for an extra charge. Cleaning fee of PHP 1,000 upon checkout"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "model": "venues.venueoperatingrules",
+    "pk": 2,
+    "fields": {
+      "created_at": "2025-12-18T06:10:08.470",
+      "updated_at": "2025-12-20T00:33:45.921",
+      "venue": 2,
+      "default_check_in_time": "14:00:00",
+      "default_checkout_time": "12:00:00",
+      "checkout_next_day": false,
+      "minimum_program_hours": "1.0",
+      "maximum_program_hours": "8.0",
+      "default_program_hours": "3.0",
+      "is_fixed_duration": false,
+      "ingress_hours": "1.0",
+      "egress_hours": "1.0",
+      "allow_custom_ingress": false,
+      "allow_custom_egress": false,
+      "min_ingress_hours": "0.5",
+      "max_ingress_hours": "6.0",
+      "min_egress_hours": "0.5",
+      "max_egress_hours": "3.0",
+      "earliest_start_time": "06:00:00",
+      "latest_end_time": "22:00:00",
+      "hard_cutoff_time": "02:00:00",
+      "hard_cutoff_next_day": true,
+      "early_access_minutes": 60,
+      "early_checkin_allowed": false,
+      "early_checkin_fee_per_hour": null,
+      "earliest_checkin_time": null,
+      "late_checkout_allowed": false,
+      "late_checkout_fee_per_hour": null,
+      "late_checkout_max_hours": 4,
+      "latest_checkout_time": null,
+      "custom_rules": {
+        "notes": "Use of tape, wires, tacks, nails, and glue for decorations requires management approval",
+        "policies": [
+          {
+            "code": "CLEAN_AS_YOU_GO",
+            "description": "Clean-as-you-go policy will be implemented"
+          },
+          {
+            "code": "SUPPLIER_CLEANUP",
+            "description": "Suppliers required to maintain cleanliness and bring their own trash bags"
+          },
+          {
+            "code": "MUSIC_CURFEW",
+            "description": "Sound/music must be turned off by 9:00 PM"
+          },
+          {
+            "code": "NO_GLITTER",
+            "description": "No glitter, rice, or confetti may be used indoors or outdoors"
+          },
+          {
+            "code": "CHILD_SUPERVISION",
+            "description": "Children not permitted to wander without adult supervision"
+          }
+        ],
+        "music_curfew": "21:00"
+      }
+    }
+  },
+  {
+    "model": "venues.venueoperatingrules",
+    "pk": 3,
+    "fields": {
+      "created_at": "2025-12-18T06:10:08.471",
+      "updated_at": "2025-12-20T00:34:57.084",
+      "venue": 3,
+      "default_check_in_time": "14:00:00",
+      "default_checkout_time": "12:00:00",
+      "checkout_next_day": false,
+      "minimum_program_hours": "1.0",
+      "maximum_program_hours": "8.0",
+      "default_program_hours": "3.0",
+      "is_fixed_duration": false,
+      "ingress_hours": "1.0",
+      "egress_hours": "1.0",
+      "allow_custom_ingress": false,
+      "allow_custom_egress": false,
+      "min_ingress_hours": "0.5",
+      "max_ingress_hours": "6.0",
+      "min_egress_hours": "0.5",
+      "max_egress_hours": "3.0",
+      "earliest_start_time": "06:00:00",
+      "latest_end_time": "22:00:00",
+      "hard_cutoff_time": "02:00:00",
+      "hard_cutoff_next_day": true,
+      "early_access_minutes": 60,
+      "early_checkin_allowed": false,
+      "early_checkin_fee_per_hour": null,
+      "earliest_checkin_time": null,
+      "late_checkout_allowed": false,
+      "late_checkout_fee_per_hour": null,
+      "late_checkout_max_hours": 4,
+      "latest_checkout_time": null,
+      "custom_rules": {
+        "policies": [
+          {
+            "code": "CLEAN_AS_YOU_GO",
+            "description": "Clean-as-you-go policy will be implemented"
+          },
+          {
+            "code": "SUPPLIER_CLEANUP",
+            "description": "Suppliers required to maintain cleanliness"
+          },
+          {
+            "code": "MUSIC_CURFEW",
+            "description": "Sound/music must be turned off by 9:00 PM"
+          },
+          {
+            "code": "NO_GLITTER",
+            "description": "No glitter, rice, or confetti"
+          }
+        ],
+        "music_curfew": "21:00"
+      }
+    }
+  },
+  {
+    "model": "venues.venueoperatingrules",
+    "pk": 4,
+    "fields": {
+      "created_at": "2025-12-18T06:10:08.471",
+      "updated_at": "2025-12-20T00:36:10.258",
+      "venue": 4,
+      "default_check_in_time": "14:00:00",
+      "default_checkout_time": "12:00:00",
+      "checkout_next_day": false,
+      "minimum_program_hours": "1.0",
+      "maximum_program_hours": "8.0",
+      "default_program_hours": "3.0",
+      "is_fixed_duration": false,
+      "ingress_hours": "1.0",
+      "egress_hours": "1.0",
+      "allow_custom_ingress": false,
+      "allow_custom_egress": false,
+      "min_ingress_hours": "0.5",
+      "max_ingress_hours": "6.0",
+      "min_egress_hours": "0.5",
+      "max_egress_hours": "3.0",
+      "earliest_start_time": "06:00:00",
+      "latest_end_time": "22:00:00",
+      "hard_cutoff_time": "02:00:00",
+      "hard_cutoff_next_day": true,
+      "early_access_minutes": 60,
+      "early_checkin_allowed": false,
+      "early_checkin_fee_per_hour": null,
+      "earliest_checkin_time": null,
+      "late_checkout_allowed": false,
+      "late_checkout_fee_per_hour": null,
+      "late_checkout_max_hours": 4,
+      "latest_checkout_time": null,
+      "custom_rules": {
+        "notes": "Maximum 3-hour usage for Sanctuary",
+        "policies": [
+          {
+            "code": "NO_CONFETTI",
+            "description": "Party poppers, rice, and confetti are strictly prohibited"
+          },
+          {
+            "code": "CLIENT_LAPTOP",
+            "description": "Client must provide laptop for music/video playback"
+          },
+          {
+            "code": "FLORIST_CLEANUP",
+            "description": "Styling/florists required to bring their trash/disposals upon egress"
+          }
+        ],
+        "violation_fees": [
+          {
+            "fee": 1500,
+            "code": "CONFETTI",
+            "description": "Party poppers, rice, and confetti strictly prohibited"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "model": "venues.venueoperatingrules",
+    "pk": 6,
+    "fields": {
+      "created_at": "2026-01-08T03:39:40.153",
+      "updated_at": "2026-01-08T03:39:40.153",
+      "venue": 6,
+      "default_check_in_time": "06:00:00",
+      "default_checkout_time": "22:00:00",
+      "checkout_next_day": false,
+      "minimum_program_hours": "2.0",
+      "maximum_program_hours": "6.0",
+      "default_program_hours": "3.0",
+      "is_fixed_duration": false,
+      "ingress_hours": "5.5",
+      "egress_hours": "1.5",
+      "allow_custom_ingress": true,
+      "allow_custom_egress": true,
+      "min_ingress_hours": "4.0",
+      "max_ingress_hours": "6.0",
+      "min_egress_hours": "1.0",
+      "max_egress_hours": "2.0",
+      "earliest_start_time": "08:00:00",
+      "latest_end_time": "21:00:00",
+      "hard_cutoff_time": "02:00:00",
+      "hard_cutoff_next_day": true,
+      "early_access_minutes": 60,
+      "early_checkin_allowed": false,
+      "early_checkin_fee_per_hour": null,
+      "earliest_checkin_time": null,
+      "late_checkout_allowed": false,
+      "late_checkout_fee_per_hour": null,
+      "late_checkout_max_hours": 4,
+      "latest_checkout_time": null,
+      "custom_rules": {
+        "policies": [
+          {
+            "code": "CLEAN_AS_YOU_GO",
+            "description": "Clean-as-you-go policy will be implemented"
+          },
+          {
+            "code": "MUSIC_CURFEW",
+            "description": "Sound/music must be turned off by 9:00 PM"
+          }
+        ],
+        "music_curfew": "21:00"
+      }
+    }
+  },
+  {
+    "model": "venues.venueoperatingrules",
+    "pk": 7,
+    "fields": {
+      "created_at": "2026-01-08T03:39:40.155",
+      "updated_at": "2026-01-08T03:39:40.155",
+      "venue": 7,
+      "default_check_in_time": "08:00:00",
+      "default_checkout_time": "21:00:00",
+      "checkout_next_day": false,
+      "minimum_program_hours": "2.0",
+      "maximum_program_hours": "6.0",
+      "default_program_hours": "3.0",
+      "is_fixed_duration": false,
+      "ingress_hours": "1.0",
+      "egress_hours": "1.0",
+      "allow_custom_ingress": false,
+      "allow_custom_egress": false,
+      "min_ingress_hours": "0.0",
+      "max_ingress_hours": "6.0",
+      "min_egress_hours": "0.0",
+      "max_egress_hours": "2.0",
+      "earliest_start_time": "08:00:00",
+      "latest_end_time": "21:00:00",
+      "hard_cutoff_time": "22:00:00",
+      "hard_cutoff_next_day": false,
+      "early_access_minutes": 30,
+      "early_checkin_allowed": false,
+      "early_checkin_fee_per_hour": null,
+      "earliest_checkin_time": null,
+      "late_checkout_allowed": false,
+      "late_checkout_fee_per_hour": null,
+      "late_checkout_max_hours": 4,
+      "latest_checkout_time": null,
+      "custom_rules": {
+        "policies": [
+          {
+            "code": "INTIMATE_EVENTS",
+            "description": "Best suited for dining or intimate gatherings"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "model": "venues.venueoperatingrules",
+    "pk": 8,
+    "fields": {
+      "created_at": "2026-01-08T03:39:40.156",
+      "updated_at": "2026-01-08T03:39:40.156",
+      "venue": 8,
+      "default_check_in_time": "14:00:00",
+      "default_checkout_time": "12:00:00",
+      "checkout_next_day": true,
+      "minimum_program_hours": "22.0",
+      "maximum_program_hours": "22.0",
+      "default_program_hours": "22.0",
+      "is_fixed_duration": true,
+      "ingress_hours": "0.0",
+      "egress_hours": "0.0",
+      "allow_custom_ingress": false,
+      "allow_custom_egress": false,
+      "min_ingress_hours": "0.0",
+      "max_ingress_hours": "6.0",
+      "min_egress_hours": "0.0",
+      "max_egress_hours": "2.0",
+      "earliest_start_time": null,
+      "latest_end_time": null,
+      "hard_cutoff_time": "02:00:00",
+      "hard_cutoff_next_day": true,
+      "early_access_minutes": 60,
+      "early_checkin_allowed": true,
+      "early_checkin_fee_per_hour": "300.00",
+      "earliest_checkin_time": "10:00:00",
+      "late_checkout_allowed": true,
+      "late_checkout_fee_per_hour": "300.00",
+      "late_checkout_max_hours": 4,
+      "latest_checkout_time": "16:00:00",
+      "custom_rules": {
+        "policies": [
+          {
+            "code": "NO_COOKING",
+            "description": "Cooking or bringing electric appliances is prohibited"
+          },
+          {
+            "code": "PET_ALLOWED",
+            "description": "Only one pet is allowed per cabana for extra charge. Cleaning fee of PHP 1,000 upon checkout"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "model": "venues.venueoperatingrules",
+    "pk": 10,
+    "fields": {
+      "created_at": "2026-01-08T04:32:08.073",
+      "updated_at": "2026-01-08T04:32:08.073",
+      "venue": 10,
+      "default_check_in_time": "14:00:00",
+      "default_checkout_time": "12:00:00",
+      "checkout_next_day": true,
+      "minimum_program_hours": "22.0",
+      "maximum_program_hours": "72.0",
+      "default_program_hours": "22.0",
+      "is_fixed_duration": false,
+      "ingress_hours": "0.0",
+      "egress_hours": "0.0",
+      "allow_custom_ingress": false,
+      "allow_custom_egress": false,
+      "min_ingress_hours": "0.0",
+      "max_ingress_hours": "6.0",
+      "min_egress_hours": "0.0",
+      "max_egress_hours": "2.0",
+      "earliest_start_time": null,
+      "latest_end_time": null,
+      "hard_cutoff_time": null,
+      "hard_cutoff_next_day": true,
+      "early_access_minutes": 60,
+      "early_checkin_allowed": false,
+      "early_checkin_fee_per_hour": null,
+      "earliest_checkin_time": null,
+      "late_checkout_allowed": false,
+      "late_checkout_fee_per_hour": null,
+      "late_checkout_max_hours": 4,
+      "latest_checkout_time": null,
+      "custom_rules": {
+        "policies": [
+          {
+            "code": "GROUP_ONLY",
+            "description": "Available for group bookings only (minimum 80 pax)"
+          },
+          {
+            "code": "DORMITORY",
+            "description": "Dormitory-style shared accommodation"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "model": "venues.venueoperatingrules",
+    "pk": 11,
+    "fields": {
+      "created_at": "2026-01-08T04:32:08.075",
+      "updated_at": "2026-01-08T04:32:08.075",
+      "venue": 11,
+      "default_check_in_time": "08:00:00",
+      "default_checkout_time": "21:00:00",
+      "checkout_next_day": false,
+      "minimum_program_hours": "2.0",
+      "maximum_program_hours": "6.0",
+      "default_program_hours": "3.0",
+      "is_fixed_duration": false,
+      "ingress_hours": "2.0",
+      "egress_hours": "1.0",
+      "allow_custom_ingress": true,
+      "allow_custom_egress": true,
+      "min_ingress_hours": "0.0",
+      "max_ingress_hours": "6.0",
+      "min_egress_hours": "0.0",
+      "max_egress_hours": "2.0",
+      "earliest_start_time": "10:00:00",
+      "latest_end_time": "21:00:00",
+      "hard_cutoff_time": null,
+      "hard_cutoff_next_day": true,
+      "early_access_minutes": 60,
+      "early_checkin_allowed": false,
+      "early_checkin_fee_per_hour": null,
+      "earliest_checkin_time": null,
+      "late_checkout_allowed": false,
+      "late_checkout_fee_per_hour": null,
+      "late_checkout_max_hours": 4,
+      "latest_checkout_time": null,
+      "custom_rules": {
+        "policies": [
+          {
+            "code": "POOL_RULES",
+            "description": "Standard pool safety rules apply"
+          }
+        ]
+      }
+    }
+  }
+]

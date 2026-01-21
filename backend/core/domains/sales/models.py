@@ -184,7 +184,7 @@ class EventQuote(BaseModel):
                 )
 
                 comm_service.send_communication(
-                    template_name='quote_sent_to_client',
+                    template_name='Quote Sent to Client',
                     recipient=client.email,
                     context_data=template_data,
                     client=client,

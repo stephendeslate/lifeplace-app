@@ -58,8 +58,21 @@ class WorkflowStage(BaseModel):
         help_text=(
             "When to trigger automation. Supported formats: "
             "ON_CREATION (immediate), "
-            "AFTER_X_DAYS/AFTER_X_HOURS/AFTER_X_WEEKS (delay after stage start), "
+            "AFTER_X_DAYS/AFTER_X_HOURS/AFTER_X_WEEKS (delay after stage start or after trigger_after_stage if set), "
             "X_DAYS_BEFORE_EVENT (e.g., 30_DAYS_BEFORE_EVENT, 7_DAYS_BEFORE_EVENT)"
+        )
+    )
+    trigger_after_stage = models.ForeignKey(
+        'self',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='dependent_stages',
+        help_text=(
+            "Optional: Stage to wait for before applying trigger_time delay. "
+            "When set, trigger_time is interpreted as delay AFTER this stage completes. "
+            "E.g., trigger_after_stage='Job Accepted' + trigger_time='AFTER_5_DAYS' = "
+            "5 days after Job Accepted stage is reached."
         )
     )
     email_template = models.ForeignKey('communications.CommunicationTemplate', on_delete=models.SET_NULL, null=True, blank=True)
@@ -652,13 +665,26 @@ class WorkflowStage(BaseModel):
 class WorkflowTrigger(BaseModel):
     """Records of workflow trigger events for automation"""
     TRIGGER_TYPE_CHOICES = [
+        # Payment triggers
         ('PAYMENT_RECEIVED', 'Payment Received'),
         ('PAYMENT_PLAN_CREATED', 'Payment Plan Created'),
         ('PAYMENT_OVERDUE', 'Payment Overdue'),
+        # Quote triggers
+        ('QUOTE_SENT', 'Quote Sent'),
         ('QUOTE_ACCEPTED', 'Quote Accepted'),
+        ('QUOTE_REJECTED', 'Quote Rejected'),
+        ('QUOTE_EXPIRED', 'Quote Expired'),
+        # Contract triggers
+        ('CONTRACT_SENT', 'Contract Sent'),
         ('CONTRACT_SIGNED', 'Contract Signed'),
+        ('CONTRACT_EXPIRED', 'Contract Expired'),
+        # Invoice triggers
+        ('INVOICE_SENT', 'Invoice Sent'),
+        ('INVOICE_OVERDUE', 'Invoice Overdue'),
+        # Event triggers
         ('EVENT_CREATED', 'Event Created'),
         ('EVENT_COMPLETED', 'Event Completed'),
+        # Other triggers
         ('TASK_COMPLETED', 'Task Completed'),
         ('DATE_TRIGGER', 'Date/Time Trigger'),
         ('MANUAL_TRIGGER', 'Manual Trigger'),

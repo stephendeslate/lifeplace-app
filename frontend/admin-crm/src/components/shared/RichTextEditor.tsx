@@ -26,6 +26,8 @@ import {
   MenuButtonIndent,
   MenuButtonUnindent,
   MenuButtonHorizontalRule,
+  LinkBubbleMenu,
+  LinkBubbleMenuHandler,
   type RichTextEditorRef,
 } from 'mui-tiptap';
 import StarterKit from '@tiptap/starter-kit';
@@ -107,6 +109,7 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
       autolink: true,
       defaultProtocol: 'https',
     }),
+    LinkBubbleMenuHandler,
     Placeholder.configure({
       placeholder,
     }),
@@ -386,7 +389,11 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
           }}
           renderControls={renderControls}
           editable={!disabled}
-        />
+        >
+          {() => (
+            <LinkBubbleMenu />
+          )}
+        </MUITiptapEditor>
       </Box>
       
       {helperText && (

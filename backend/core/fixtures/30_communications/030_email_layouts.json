@@ -3,8 +3,8 @@
     "model": "communications.emaillayout",
     "pk": 1,
     "fields": {
-      "created_at": "2026-01-01T00:00:00Z",
-      "updated_at": "2026-01-01T00:00:00Z",
+      "created_at": "2026-01-01T08:00:00",
+      "updated_at": "2026-01-01T08:00:00",
       "name": "Standard",
       "description": "Default layout for system communications, admin messages, and transactional emails.",
       "header_template": "<div style=\"background-color: {{ primary_color }}; color: white; padding: 24px; text-align: center;\">\n    <h1 style=\"margin: 0; font-size: 24px;\">{{ header_title|default:site_name }}</h1>\n    {% if header_subtitle %}<p style=\"margin: 8px 0 0 0; font-size: 14px; opacity: 0.9;\">{{ header_subtitle }}</p>{% endif %}\n</div>",
@@ -22,8 +22,8 @@
     "model": "communications.emaillayout",
     "pk": 2,
     "fields": {
-      "created_at": "2026-01-01T00:00:00Z",
-      "updated_at": "2026-01-01T00:00:00Z",
+      "created_at": "2026-01-01T08:00:00",
+      "updated_at": "2026-01-01T08:00:00",
       "name": "Premium Client",
       "description": "Elegant layout for client-facing communications: quotes, invoices, booking confirmations.",
       "header_template": "<div style=\"background: linear-gradient(135deg, {{ primary_color }} 0%, {{ secondary_color }} 100%); padding: 40px 30px; text-align: center;\">\n    <h1 style=\"color: white; margin: 0; font-size: 32px; font-weight: 300;\">{{ header_title|default:site_name }}</h1>\n    {% if header_subtitle %}<p style=\"color: rgba(255,255,255,0.9); margin-top: 10px; font-size: 16px;\">{{ header_subtitle }}</p>{% endif %}\n</div>",
@@ -41,8 +41,8 @@
     "model": "communications.emaillayout",
     "pk": 3,
     "fields": {
-      "created_at": "2026-01-01T00:00:00Z",
-      "updated_at": "2026-01-01T00:00:00Z",
+      "created_at": "2026-01-01T08:00:00",
+      "updated_at": "2026-01-01T08:00:00",
       "name": "Success",
       "description": "Green-themed layout for positive confirmations: payment receipts, booking confirmed, contract signed.",
       "header_template": "<div style=\"background: linear-gradient(135deg, {{ primary_color }} 0%, {{ secondary_color }} 100%); padding: 40px 30px; text-align: center;\">\n    <h1 style=\"color: white; margin: 0; font-size: 32px; font-weight: 300;\">{{ header_title|default:'Success!' }}</h1>\n    {% if header_subtitle %}<p style=\"color: rgba(255,255,255,0.9); margin-top: 10px; font-size: 16px;\">{{ header_subtitle }}</p>{% endif %}\n</div>",
@@ -60,8 +60,8 @@
     "model": "communications.emaillayout",
     "pk": 4,
     "fields": {
-      "created_at": "2026-01-01T00:00:00Z",
-      "updated_at": "2026-01-01T00:00:00Z",
+      "created_at": "2026-01-01T08:00:00",
+      "updated_at": "2026-01-01T08:00:00",
       "name": "Urgent Action",
       "description": "Orange/red layout for time-sensitive communications: contract signing deadlines, overdue payments.",
       "header_template": "<div style=\"background: linear-gradient(135deg, {{ primary_color }} 0%, {{ secondary_color }} 100%); padding: 40px 30px; text-align: center;\">\n    <h1 style=\"color: white; margin: 0; font-size: 32px; font-weight: 300;\">{{ header_title|default:'Action Required' }}</h1>\n    {% if header_subtitle %}<p style=\"color: rgba(255,255,255,0.9); margin-top: 10px; font-size: 16px;\">{{ header_subtitle }}</p>{% endif %}\n</div>",
