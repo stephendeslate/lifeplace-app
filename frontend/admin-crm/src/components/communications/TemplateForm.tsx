@@ -441,7 +441,7 @@ The {{ site_name }} Team</p>`
                   <Select
                     value={formData.layout ?? ''}
                     label="Email Layout"
-                    onChange={(e) => handleInputChange('layout', e.target.value === '' ? null : Number(e.target.value))}
+                    onChange={(e) => handleInputChange('layout', String(e.target.value) === '' ? null : Number(e.target.value))}
                     disabled={layoutsLoading}
                   >
                     <MenuItem value="">

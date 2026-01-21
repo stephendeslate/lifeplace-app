@@ -23,7 +23,7 @@ import { Close as CloseIcon } from '@mui/icons-material';
 import { useSupport } from '../../../hooks/useSupport';
 import { useEvents } from '../../../hooks/useEvents';
 import { SUPPORT_CATEGORIES } from '../../../constants/support.constants';
-import type { SupportCategory, SupportInquiryCreate } from '../../../types/support.types';
+import type { SupportInquiryCreate } from '../../../types/support.types';
 
 interface NewInquiryDialogProps {
   open: boolean;
@@ -133,7 +133,7 @@ export const NewInquiryDialog: React.FC<NewInquiryDialogProps> = ({ open, onClos
               <Select
                 value={formData.event || ''}
                 label="Related Event (Optional)"
-                onChange={(e) => handleChange('event')(e as { target: { value: string } })}
+                onChange={(e) => handleChange('event')(e as unknown as { target: { value: string } })}
               >
                 <MenuItem value="">
                   <em>None</em>

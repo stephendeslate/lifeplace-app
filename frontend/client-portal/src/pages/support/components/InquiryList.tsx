@@ -6,7 +6,6 @@ import {
   Typography,
   Chip,
   Stack,
-  useTheme,
   alpha,
 } from '@mui/material';
 import {
@@ -23,8 +22,6 @@ interface InquiryListProps {
 }
 
 export const InquiryList: React.FC<InquiryListProps> = ({ inquiries, onSelect }) => {
-  const theme = useTheme();
-
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();
