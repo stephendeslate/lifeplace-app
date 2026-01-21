@@ -1,0 +1,71 @@
+[
+  {
+    "model": "bookingflow.packageselectionstepconfiguration",
+    "pk": 4,
+    "fields": {
+      "created_at": "2026-01-08T08:54:54.539",
+      "updated_at": "2026-01-09T11:05:16.391",
+      "step": 45,
+      "selection_type": "SINGLE",
+      "min_selection": 1,
+      "max_selection": 1,
+      "show_pricing": true,
+      "show_descriptions": true,
+      "show_images": true,
+      "enable_comparison": true,
+      "filter_by_event_type": true,
+      "enable_dynamic_pricing": false,
+      "pricing_factors": {},
+      "available_categories": [
+        54
+      ],
+      "available_packages": []
+    }
+  },
+  {
+    "model": "bookingflow.packageselectionstepconfiguration",
+    "pk": 5,
+    "fields": {
+      "created_at": "2026-01-08T08:54:54.559",
+      "updated_at": "2026-01-10T02:45:43.356",
+      "step": 53,
+      "selection_type": "SINGLE",
+      "min_selection": 1,
+      "max_selection": 1,
+      "show_pricing": true,
+      "show_descriptions": true,
+      "show_images": true,
+      "enable_comparison": true,
+      "filter_by_event_type": true,
+      "enable_dynamic_pricing": true,
+      "pricing_factors": {},
+      "available_categories": [
+        53
+      ],
+      "available_packages": []
+    }
+  },
+  {
+    "model": "bookingflow.packageselectionstepconfiguration",
+    "pk": 6,
+    "fields": {
+      "created_at": "2026-01-08T08:54:54.566",
+      "updated_at": "2026-01-10T02:46:48.988",
+      "step": 61,
+      "selection_type": "SINGLE",
+      "min_selection": 1,
+      "max_selection": 1,
+      "show_pricing": true,
+      "show_descriptions": true,
+      "show_images": true,
+      "enable_comparison": true,
+      "filter_by_event_type": true,
+      "enable_dynamic_pricing": false,
+      "pricing_factors": {},
+      "available_categories": [
+        59
+      ],
+      "available_packages": []
+    }
+  }
+]

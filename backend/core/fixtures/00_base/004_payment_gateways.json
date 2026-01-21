@@ -1,0 +1,41 @@
+[
+  {
+    "model": "payments.paymentgateway",
+    "pk": 1,
+    "fields": {
+      "created_at": "2025-06-22T05:13:45.837",
+      "updated_at": "2025-09-24T05:44:21.504",
+      "name": "Stripe",
+      "code": "stripe",
+      "is_active": true,
+      "config": "Z0FBQUFBQnBjR0FrR2pPQUdzNmpSSnROTTV5aVhqRnhVY2JBVkJMdHFic2dLdVlJVnFlTXZVOXZEeFpwRkUtVW1rYzN2Um5kRjZaUmpkUE1ZMFJUN0F3TUpQUHpCSnV1dndSaGE2ajRaRmo4SXRWdWlaR3U5SlRMdW5ocjhrSTBSVWpKQ1FiQ3FUSjBZX29CZzhoelNHQlU1Q0JGMDRFR1pBTmRxSHlUTDRLcWhVQTlKVFZBWTNXUVNqVXEtMmRCZVF0T2VVZ0E4cDMwQXo5SmhCVjlMcFdmbWcxTzJvQmlnekFWc2tFd0dza2ZBVm4tQWN0ZnFoajQ2MGxhVTVMbWNIX1A0dGpwdUxsNWJQRHBzNzJSWlVrM3R1MFFmQ2doeE1JblFUeDJEaFA2cC1XcDhfRWRGWldudjNiT2JNbXprNTVUdEpqZzJrNjlTcGpaWnRqUzRwU3BUMlhGUkU1N2hIbjJ4bmExc2hVOHRhOERyOC03UHNWQVM4dGstUkdQdC14ZG9NbFZCRkR1UjR4d20wamFWTDNBTFVFSVdSSEJGQ2M4QTVkZmNmMy1YVjhIUmt6TGxfOElmb25FVGxoOFQ4akx4WkgwS0hQUTRCZEVaNXFocldBTWVvRk01b1IyVjRQYkRnUHNaZmd0NkdlcnhLOTBBMmpNaWl4QTZERGJCSXlLZkJqZ2pNRGI=",
+      "description": "Updated description"
+    }
+  },
+  {
+    "model": "payments.paymentgateway",
+    "pk": 3,
+    "fields": {
+      "created_at": "2025-09-21T04:46:27.698",
+      "updated_at": "2025-09-21T08:09:16.349",
+      "name": "Test Gateway",
+      "code": "test",
+      "is_active": false,
+      "config": "Z0FBQUFBQnBjR0FrOFh1b19nQnpMVGRNX1R0UGREYjJBOU1OZHN5TzB6LWxiNlBqTkR6XzJTWE5qNWh2ZGlCNVFxbUlpaEdfSjR5aDZjdUw1YjdIQW5zQ3dCVl9URjBRRkhQakwxb2RHeE1kVWlJVlNjRU9DWTBmVzhlWUlzb0JSUzZINy1QOEhrS3I5b3dpdU0zYkdGZE02SGNna0hNVVZBPT0=",
+      "description": "Test payment gateway"
+    }
+  },
+  {
+    "model": "payments.paymentgateway",
+    "pk": 4,
+    "fields": {
+      "created_at": "2025-09-24T02:02:46.978",
+      "updated_at": "2025-09-24T02:02:46.978",
+      "name": "Inactive Gateway",
+      "code": "inactive",
+      "is_active": false,
+      "config": "Z0FBQUFBQnBjR0FrWDVocTZjb0ZZZ3EtTHlBNHhESzZHT3IxTVJ1TE1YdFd0aVM2cnlWbXRFcjJROFpEa21feWNIN1oySjR1cGlrOE5OMmd6NWluLW9QSXNoUFVCazB2Z0lOdXJtdHpnUmdhSnpMb1MzNU9CSi1UeG5OckMzVUdZN0toMWNOWDh2SXY=",
+      "description": "This should not appear in public endpoint"
+    }
+  }
+]

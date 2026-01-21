@@ -1,0 +1,304 @@
+[
+  {
+    "model": "venues.venue",
+    "pk": 1,
+    "fields": {
+      "created_at": "2025-12-18T06:10:08.465",
+      "updated_at": "2026-01-09T09:08:01.240",
+      "name": "Cabana 1&2",
+      "code": "CABANA_1_2",
+      "description": "Accommodation or Preparation. 2-6 pax per Cabana. 2 units included.",
+      "is_overnight": true,
+      "minimum_capacity": 2,
+      "maximum_capacity": 6,
+      "recommended_capacity": null,
+      "is_active": true,
+      "is_bookable": true,
+      "is_featured": true,
+      "location_description": "",
+      "featured_image": "venues/images/featured-cabana.jpg",
+      "gallery_images": [
+        "http://localhost:8000/media/venues/gallery/1/ecb866609bb34063b661b0b427de1b39.jpg",
+        "http://localhost:8000/media/venues/gallery/1/fae57ed1f8294fdea2ec809273938f0a.jpg",
+        "http://localhost:8000/media/venues/gallery/1/ba44a2ffbef846cfaef525635c4e4b49.jpg",
+        "http://localhost:8000/media/venues/gallery/1/715df375cecb44efbecf42748fda12e0.jpg"
+      ],
+      "amenities": [
+        "Aircon",
+        "Hot Shower",
+        "Attic"
+      ],
+      "sort_order": 1,
+      "is_rentable_standalone": true,
+      "standalone_base_price": "3300.00",
+      "standalone_included_hours": "22.0",
+      "standalone_excess_hour_price": null
+    }
+  },
+  {
+    "model": "venues.venue",
+    "pk": 2,
+    "fields": {
+      "created_at": "2025-12-18T06:10:08.469",
+      "updated_at": "2026-01-08T06:07:34.449",
+      "name": "The Open Field",
+      "code": "OPEN_FIELD",
+      "description": "Large outdoor venue for 200-220 pax. Optional ceiling treatment available (+\u20b140,000).",
+      "is_overnight": false,
+      "minimum_capacity": 200,
+      "maximum_capacity": 220,
+      "recommended_capacity": null,
+      "is_active": true,
+      "is_bookable": true,
+      "is_featured": false,
+      "location_description": "",
+      "featured_image": "venues/images/The-Open-Field-3-1.jpg",
+      "gallery_images": [
+        "http://localhost:8000/media/venues/gallery/2/3ef56416a7dd467dad81efc94e806308.jpg",
+        "http://localhost:8000/media/venues/gallery/2/1873130a005c43788292c2f5d3435124.jpg"
+      ],
+      "amenities": [
+        "FREE Prenup Venue"
+      ],
+      "sort_order": 2,
+      "is_rentable_standalone": true,
+      "standalone_base_price": "70000.00",
+      "standalone_included_hours": "3.0",
+      "standalone_excess_hour_price": "10000.00"
+    }
+  },
+  {
+    "model": "venues.venue",
+    "pk": 3,
+    "fields": {
+      "created_at": "2025-12-18T06:10:08.470",
+      "updated_at": "2026-01-08T06:07:48.566",
+      "name": "The Pavilion",
+      "code": "PAVILION",
+      "description": "Reception Venue Good for 100-130 pax",
+      "is_overnight": false,
+      "minimum_capacity": 100,
+      "maximum_capacity": 130,
+      "recommended_capacity": null,
+      "is_active": true,
+      "is_bookable": true,
+      "is_featured": false,
+      "location_description": "",
+      "featured_image": "venues/images/The-Pavilion.jpg",
+      "gallery_images": [
+        "http://localhost:8000/media/venues/gallery/3/01851ed61d5a4bdbb5ea1b3609a826bd.jpg"
+      ],
+      "amenities": [
+        "FREE Prenup Venue"
+      ],
+      "sort_order": 3,
+      "is_rentable_standalone": true,
+      "standalone_base_price": "23200.00",
+      "standalone_included_hours": "3.0",
+      "standalone_excess_hour_price": "7000.00"
+    }
+  },
+  {
+    "model": "venues.venue",
+    "pk": 4,
+    "fields": {
+      "created_at": "2025-12-18T06:10:08.471",
+      "updated_at": "2026-01-08T06:08:19.829",
+      "name": "The Sanctuary",
+      "code": "SANCTUARY",
+      "description": "Christian Ceremony Roman Catholic Renewal Vows. Inclusive of white Draping and basic styling.",
+      "is_overnight": false,
+      "minimum_capacity": 1,
+      "maximum_capacity": 300,
+      "recommended_capacity": null,
+      "is_active": true,
+      "is_bookable": true,
+      "is_featured": false,
+      "location_description": "",
+      "featured_image": "venues/images/The-Sanctuary-2.jpg",
+      "gallery_images": [
+        "http://localhost:8000/media/venues/gallery/4/0e0175a638af44c6a6f5c66a37747272.jpg",
+        "http://localhost:8000/media/venues/gallery/4/34bc0873817846d79520288657ef0565.jpg",
+        "http://localhost:8000/media/venues/gallery/4/763c6b411b614afda9d3710c94943c3a.jpg"
+      ],
+      "amenities": [
+        "Basic Sound System",
+        "White Draping",
+        "Basic Styling"
+      ],
+      "sort_order": 4,
+      "is_rentable_standalone": true,
+      "standalone_base_price": "36000.00",
+      "standalone_included_hours": "3.0",
+      "standalone_excess_hour_price": "13000.00"
+    }
+  },
+  {
+    "model": "venues.venue",
+    "pk": 6,
+    "fields": {
+      "created_at": "2026-01-08T03:39:40.149",
+      "updated_at": "2026-01-08T06:08:44.350",
+      "name": "The Angelic Field",
+      "code": "ANGELIC_FIELD",
+      "description": "Reception or Garden Ceremony venue for 150-200 pax",
+      "is_overnight": false,
+      "minimum_capacity": 150,
+      "maximum_capacity": 200,
+      "recommended_capacity": 175,
+      "is_active": true,
+      "is_bookable": true,
+      "is_featured": false,
+      "location_description": "",
+      "featured_image": "venues/images/The-Angelic-Field-1-1.jpg",
+      "gallery_images": [
+        "http://localhost:8000/media/venues/gallery/6/4443c73f2ba445b88a1a027b4c48fd6e.jpg",
+        "http://localhost:8000/media/venues/gallery/6/6d2163b3a5ea44b896c81fda6e17a5dd.jpg",
+        "http://localhost:8000/media/venues/gallery/6/75dce949680548738185c60cb89ccb9d.jpg",
+        "http://localhost:8000/media/venues/gallery/6/5f2ef63da96d4888bdb9d6c34fe6291a.jpg",
+        "http://localhost:8000/media/venues/gallery/6/206462adf79f4438a7c3df04b9d65802.jpg",
+        "http://localhost:8000/media/venues/gallery/6/d4dc4ee7caf94c2a88358892202a550d.jpg"
+      ],
+      "amenities": [
+        "FREE Prenup Venue"
+      ],
+      "sort_order": 5,
+      "is_rentable_standalone": true,
+      "standalone_base_price": "26400.00",
+      "standalone_included_hours": "3.0",
+      "standalone_excess_hour_price": "5000.00"
+    }
+  },
+  {
+    "model": "venues.venue",
+    "pk": 7,
+    "fields": {
+      "created_at": "2026-01-08T03:39:40.155",
+      "updated_at": "2026-01-08T03:39:40.155",
+      "name": "The Al Fresco",
+      "code": "AL_FRESCO",
+      "description": "For Dining or Intimate Events",
+      "is_overnight": false,
+      "minimum_capacity": 10,
+      "maximum_capacity": 50,
+      "recommended_capacity": 30,
+      "is_active": true,
+      "is_bookable": true,
+      "is_featured": false,
+      "location_description": "",
+      "featured_image": "",
+      "gallery_images": [],
+      "amenities": [
+        "FREE Prenup Venue"
+      ],
+      "sort_order": 6,
+      "is_rentable_standalone": true,
+      "standalone_base_price": "7000.00",
+      "standalone_included_hours": "3.0",
+      "standalone_excess_hour_price": "2000.00"
+    }
+  },
+  {
+    "model": "venues.venue",
+    "pk": 8,
+    "fields": {
+      "created_at": "2026-01-08T03:39:40.156",
+      "updated_at": "2026-01-08T06:06:34.739",
+      "name": "Cabana 3&4",
+      "code": "CABANA_3_4",
+      "description": "Accommodation or Preparation. 2-6 pax per Cabana. 2 units included.",
+      "is_overnight": true,
+      "minimum_capacity": 2,
+      "maximum_capacity": 6,
+      "recommended_capacity": 4,
+      "is_active": true,
+      "is_bookable": true,
+      "is_featured": false,
+      "location_description": "",
+      "featured_image": "venues/images/The-Cabanas-2-1.jpg",
+      "gallery_images": [
+        "http://localhost:8000/media/venues/gallery/8/6ea7a129e93248159cb901d53bb1c85c.jpg",
+        "http://localhost:8000/media/venues/gallery/8/e36ee9399c56490692378eb4f52ebf4c.jpg",
+        "http://localhost:8000/media/venues/gallery/8/0e1c0cfac0694f949d6438d486a603e2.jpg",
+        "http://localhost:8000/media/venues/gallery/8/ff742d4b445c4266914f14f26c119519.jpg"
+      ],
+      "amenities": [
+        "Aircon",
+        "Hot Shower",
+        "Attic"
+      ],
+      "sort_order": 7,
+      "is_rentable_standalone": true,
+      "standalone_base_price": "3500.00",
+      "standalone_included_hours": "22.0",
+      "standalone_excess_hour_price": null
+    }
+  },
+  {
+    "model": "venues.venue",
+    "pk": 10,
+    "fields": {
+      "created_at": "2026-01-08T04:32:08.071",
+      "updated_at": "2026-01-08T04:32:08.071",
+      "name": "Havilah Hostel",
+      "code": "HAVILAH",
+      "description": "Hostel accommodation for camps and retreats. Accommodates 150-300 guests for overnight stays.",
+      "is_overnight": true,
+      "minimum_capacity": 80,
+      "maximum_capacity": 300,
+      "recommended_capacity": 150,
+      "is_active": true,
+      "is_bookable": true,
+      "is_featured": false,
+      "location_description": "",
+      "featured_image": "",
+      "gallery_images": [],
+      "amenities": [
+        "Dormitory-style accommodation",
+        "Shared facilities",
+        "Large group capacity"
+      ],
+      "sort_order": 8,
+      "is_rentable_standalone": false,
+      "standalone_base_price": null,
+      "standalone_included_hours": null,
+      "standalone_excess_hour_price": null
+    }
+  },
+  {
+    "model": "venues.venue",
+    "pk": 11,
+    "fields": {
+      "created_at": "2026-01-08T04:32:08.075",
+      "updated_at": "2026-01-08T06:09:53.440",
+      "name": "The Pool",
+      "code": "POOL",
+      "description": "Pool venue for intimate celebrations. Includes string lights.",
+      "is_overnight": false,
+      "minimum_capacity": 50,
+      "maximum_capacity": 80,
+      "recommended_capacity": 70,
+      "is_active": true,
+      "is_bookable": true,
+      "is_featured": false,
+      "location_description": "",
+      "featured_image": "venues/images/The-Pool.jpg",
+      "gallery_images": [
+        "http://localhost:8000/media/venues/gallery/11/9cc4acd9f8f446549f7f8a680d4ad959.jpg",
+        "http://localhost:8000/media/venues/gallery/11/05bc9b80857b4ce1b13b093fe963b09b.jpg",
+        "http://localhost:8000/media/venues/gallery/11/fab86d2b042e42c7acb11d540e0cb345.jpg",
+        "http://localhost:8000/media/venues/gallery/11/88b5d595c98949cfbd77ab382f14108b.jpg"
+      ],
+      "amenities": [
+        "String Lights",
+        "FREE Prenup Venue",
+        "Pool Access"
+      ],
+      "sort_order": 9,
+      "is_rentable_standalone": true,
+      "standalone_base_price": "45000.00",
+      "standalone_included_hours": "3.0",
+      "standalone_excess_hour_price": "10000.00"
+    }
+  }
+]

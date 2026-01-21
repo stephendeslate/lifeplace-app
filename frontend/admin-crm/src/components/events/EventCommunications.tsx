@@ -148,7 +148,7 @@ export const EventCommunications: React.FC<EventCommunicationsProps> = ({
             startIcon={<SendIcon />}
             onClick={() => setSendDialogOpen(true)}
           >
-            Send Message
+            Send Email
           </Button>
           <IconButton onClick={() => refetch()} size="small">
             <RefreshIcon />
@@ -296,7 +296,7 @@ export const EventCommunications: React.FC<EventCommunicationsProps> = ({
         </TableContainer>
       )}
 
-      {/* Send Message Dialog */}
+      {/* Send Email Dialog */}
       <SendMessageDialog
         open={sendDialogOpen}
         onClose={() => setSendDialogOpen(false)}

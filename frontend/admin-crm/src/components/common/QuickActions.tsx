@@ -297,11 +297,11 @@ export const createEventActions = (eventId: number, onAction: (actionType: strin
   },
   {
     id: 'send-message',
-    label: 'Send Message',
+    label: 'Send Email',
     icon: <EmailIcon />,
     category: 'primary',
     onClick: () => onAction('send-message', eventId),
-    tooltip: 'Send email or SMS to client',
+    tooltip: 'Send email to client',
   },
   {
     id: 'create-quote',
@@ -350,11 +350,11 @@ export const createClientActions = (
     },
     {
       id: 'send-message',
-      label: 'Send Message',
+      label: 'Send Email',
       icon: <EmailIcon />,
       category: 'primary',
       onClick: () => onAction('send-message', clientId),
-      tooltip: 'Send email or SMS',
+      tooltip: 'Send email to client',
     },
   ];
 

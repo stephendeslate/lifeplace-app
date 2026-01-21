@@ -1,0 +1,26 @@
+[
+  {
+    "model": "payments.taxrate",
+    "pk": 1,
+    "fields": {
+      "created_at": "2025-09-01T04:03:25.315",
+      "updated_at": "2025-09-01T04:03:25.315",
+      "name": "Philippines VAT",
+      "rate": "12.00",
+      "region": "Philippines",
+      "is_default": true
+    }
+  },
+  {
+    "model": "payments.taxrate",
+    "pk": 2,
+    "fields": {
+      "created_at": "2025-09-01T04:12:24.643",
+      "updated_at": "2025-09-01T04:12:24.643",
+      "name": "Test Service Tax",
+      "rate": "8.25",
+      "region": "Metro Manila",
+      "is_default": false
+    }
+  }
+]

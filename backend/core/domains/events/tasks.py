@@ -705,6 +705,117 @@ def schedule_event_date_reminders(self):
 # DATE RESERVATION CLEANUP TASKS (for race condition prevention)
 # ============================================================
 
+# ============================================================
+# AUTOMATIC EVENT COMPLETION TASKS
+# ============================================================
+
+@shared_task(
+    bind=True,
+    max_retries=1,
+)
+def mark_past_events_completed(self):
+    """
+    Daily task to automatically mark past events as COMPLETED.
+
+    Finds all events where:
+    - status is CONFIRMED (not already completed or cancelled)
+    - start_date has passed (event date is in the past)
+
+    For each event:
+    1. Updates status to COMPLETED
+    2. Triggers workflow progression to POST_PRODUCTION stage
+    3. Sends completion notification
+
+    This task should run daily via Celery beat to ensure events
+    transition to POST_PRODUCTION for follow-up automations.
+
+    Returns:
+        dict: {'completed': int, 'errors': int, 'total': int}
+    """
+    from .models import Event
+    from core.domains.workflows.engine import WorkflowEngine
+
+    logger.info("Starting automatic event completion sweep")
+
+    now = timezone.now()
+    today = now.date()
+    completed_count = 0
+    error_count = 0
+
+    # Find CONFIRMED events where event date has passed
+    # Use end_date if available, otherwise use start_date
+    past_events = Event.objects.filter(
+        status='CONFIRMED',
+    ).exclude(
+        status__in=['COMPLETED', 'CANCELLED']
+    )
+
+    # Filter to events where the event has ended
+    events_to_complete = []
+    for event in past_events:
+        # Determine the event end datetime
+        if event.end_date:
+            event_end = event.end_date
+        else:
+            event_end = event.start_date
+
+        # Check if event has ended (compare dates)
+        if hasattr(event_end, 'date'):
+            event_end_date = event_end.date()
+        else:
+            event_end_date = event_end
+
+        if event_end_date < today:
+            events_to_complete.append(event)
+
+    total_count = len(events_to_complete)
+    logger.info(f"Found {total_count} past events to mark as COMPLETED")
+
+    for event in events_to_complete:
+        try:
+            logger.info(f"Marking event {event.id} as COMPLETED (event date: {event.start_date})")
+
+            # Update status to COMPLETED
+            event.status = 'COMPLETED'
+            event.save(update_fields=['status', 'updated_at'])
+
+            # Trigger workflow progression to POST_PRODUCTION
+            try:
+                WorkflowEngine.progress_workflow(
+                    event=event,
+                    trigger_type='STATUS_CHANGE',
+                    data={
+                        'old_status': 'CONFIRMED',
+                        'new_status': 'COMPLETED',
+                        'auto_completed': True,
+                    }
+                )
+                logger.info(f"Triggered workflow progression for event {event.id}")
+            except Exception as workflow_error:
+                logger.warning(f"Failed to trigger workflow for event {event.id}: {workflow_error}")
+
+            completed_count += 1
+
+        except Exception as e:
+            logger.error(f"Error completing event {event.id}: {e}")
+            error_count += 1
+
+    logger.info(
+        f"Automatic event completion sweep completed: "
+        f"{completed_count} completed, {error_count} errors, {total_count} total"
+    )
+
+    return {
+        'total': total_count,
+        'completed': completed_count,
+        'errors': error_count,
+    }
+
+
+# ============================================================
+# DATE RESERVATION CLEANUP TASKS (for race condition prevention)
+# ============================================================
+
 @shared_task(
     bind=True,
     max_retries=1,

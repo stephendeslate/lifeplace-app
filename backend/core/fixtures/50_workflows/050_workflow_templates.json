@@ -1,0 +1,41 @@
+[
+  {
+    "model": "workflows.workflowtemplate",
+    "pk": 9,
+    "fields": {
+      "created_at": "2026-01-18T05:08:46.179",
+      "updated_at": "2026-01-21T12:53:32.886",
+      "name": "LifePlace Events 2026",
+      "description": "Standard workflow for event management from lead to completion",
+      "event_type": null,
+      "is_active": true,
+      "lead_stage_auto_stop": true
+    }
+  },
+  {
+    "model": "workflows.workflowtemplate",
+    "pk": 10,
+    "fields": {
+      "created_at": "2026-01-21T12:41:54.148",
+      "updated_at": "2026-01-21T12:41:54.148",
+      "name": "Default Event Workflow (Copy)",
+      "description": "Standard workflow for event management from lead to completion",
+      "event_type": null,
+      "is_active": false,
+      "lead_stage_auto_stop": true
+    }
+  },
+  {
+    "model": "workflows.workflowtemplate",
+    "pk": 11,
+    "fields": {
+      "created_at": "2026-01-21T12:53:36.586",
+      "updated_at": "2026-01-21T12:53:49.582",
+      "name": "LifePlace Weddings 2026",
+      "description": "Standard workflow for event management from lead to completion",
+      "event_type": null,
+      "is_active": true,
+      "lead_stage_auto_stop": true
+    }
+  }
+]

@@ -158,6 +158,10 @@ class EventContract(BaseModel):
                         }
                     )
 
+                # Send contract signed email notifications
+                if not was_signed:
+                    self._send_contract_signed_notifications()
+
         elif self.signatures.exists() and self.status in ['SENT', 'DRAFT']:
             self.status = 'PARTIALLY_SIGNED'
             self.save(update_fields=['status'])
@@ -165,10 +169,72 @@ class EventContract(BaseModel):
     def can_be_amended(self):
         """Check if contract can be amended"""
         return (
-            self.template.allows_amendments and 
-            self.status == 'SIGNED' and 
+            self.template.allows_amendments and
+            self.status == 'SIGNED' and
             not self.is_amendment
         )
+
+    def _send_contract_signed_notifications(self):
+        """Send email notifications when contract is fully signed."""
+        import logging
+        logger = logging.getLogger(__name__)
+
+        try:
+            from core.domains.communications.services import CommunicationService
+            from core.domains.communications.context_service import (
+                CommunicationContextService, ContextType
+            )
+            from core.domains.users.models import User
+
+            client = self.event.client
+            if not client:
+                logger.warning(f"Contract {self.id} event has no client for signed notifications")
+                return
+
+            comm_service = CommunicationService()
+            template_data = CommunicationContextService.generate_context(
+                context_type=ContextType.CONTRACT,
+                client=client,
+                event=self.event,
+                contract=self,
+            )
+
+            # Send client confirmation email
+            if client.email:
+                try:
+                    comm_service.send_communication(
+                        template_name='Contract Signed Client Confirmation',
+                        recipient=client.email,
+                        context_data=template_data,
+                        client=client,
+                        event=self.event,
+                        use_async=True,
+                    )
+                    logger.info(f"Sent Contract Signed Client Confirmation for contract {self.id}")
+                except Exception as client_email_error:
+                    logger.warning(f"Failed to send client confirmation for contract {self.id}: {client_email_error}")
+
+            # Send admin notification emails
+            admin_emails = list(User.objects.filter(
+                is_staff=True, is_active=True
+            ).exclude(email='').values_list('email', flat=True))
+
+            for admin_email in admin_emails:
+                try:
+                    comm_service.send_communication(
+                        template_name='Contract Signed Admin Notification',
+                        recipient=admin_email,
+                        context_data=template_data,
+                        use_async=True,
+                    )
+                except Exception as admin_email_error:
+                    logger.warning(f"Failed to send admin notification to {admin_email}: {admin_email_error}")
+
+            if admin_emails:
+                logger.info(f"Sent Contract Signed Admin Notification for contract {self.id}")
+
+        except Exception as e:
+            logger.error(f"Failed to send contract signed notifications for contract {self.id}: {e}")
 
 
 class ContractSignature(BaseModel):

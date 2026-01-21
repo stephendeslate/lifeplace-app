@@ -124,6 +124,24 @@ app.conf.update(
             'schedule': 60 * 60,  # Hourly
             'options': {'queue': 'events'}
         },
+        # Workflow AFTER_STAGE trigger sweep (delay after another stage completes)
+        'process-after-stage-triggers': {
+            'task': 'core.domains.workflows.tasks.process_after_stage_triggers',
+            'schedule': 60 * 60,  # Hourly
+            'options': {'queue': 'events'}
+        },
+        # Workflow webhook retry processing
+        'process-workflow-webhook-retries': {
+            'task': 'core.domains.workflows.tasks.process_webhook_retries',
+            'schedule': 60,  # Every minute
+            'options': {'queue': 'events'}
+        },
+        # Automatic event completion (mark past events as COMPLETED)
+        'mark-past-events-completed': {
+            'task': 'core.domains.events.tasks.mark_past_events_completed',
+            'schedule': 24 * 60 * 60,  # Daily
+            'options': {'queue': 'events'}
+        },
         # Contract expiry tasks
         'expire-contracts': {
             'task': 'core.domains.contracts.tasks.expire_contracts',
@@ -195,6 +213,12 @@ app.conf.update(
         # Payment reconciliation with Stripe (Section 11.2)
         'reconcile-payments-with-stripe': {
             'task': 'core.domains.payments.tasks.reconcile_payments_with_stripe',
+            'schedule': 24 * 60 * 60,  # Daily
+            'options': {'queue': 'payments'}
+        },
+        # Payment overdue notices
+        'send-overdue-payment-notices': {
+            'task': 'payments.send_overdue_payment_notices',
             'schedule': 24 * 60 * 60,  # Daily
             'options': {'queue': 'payments'}
         },

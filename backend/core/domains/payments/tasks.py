@@ -630,3 +630,89 @@ def payments_health_check():
     except Exception as e:
         logger.error(f"Payments health check failed: {e}")
         return {'status': 'unhealthy', 'message': str(e)}
+
+
+@shared_task(name='payments.send_overdue_payment_notices')
+def send_overdue_payment_notices():
+    """
+    Send Payment Overdue Notice for invoices past their due date.
+
+    This task runs daily to notify clients about overdue invoices.
+    """
+    from .models import Invoice
+    from core.domains.communications.services import CommunicationService
+    from core.domains.communications.context_service import (
+        CommunicationContextService, ContextType
+    )
+
+    try:
+        today = timezone.now().date()
+
+        # Find unpaid invoices past their due date
+        overdue_invoices = Invoice.objects.filter(
+            status__in=['PENDING', 'PARTIALLY_PAID'],
+            due_date__lt=today
+        ).select_related('event', 'event__client')
+
+        count = 0
+        for invoice in overdue_invoices:
+            try:
+                client = invoice.event.client if invoice.event else None
+                if not client or not client.email:
+                    logger.warning(f"Invoice {invoice.id} has no client email for overdue notice")
+                    continue
+
+                # Check if we already sent an overdue notice recently (within 7 days)
+                from .models import PaymentNotificationHistory
+                recent_notice = PaymentNotificationHistory.objects.filter(
+                    invoice=invoice,
+                    notification_type='PAYMENT_OVERDUE',
+                    sent_at__gte=timezone.now() - timedelta(days=7)
+                ).exists()
+
+                if recent_notice:
+                    logger.debug(f"Skipping invoice {invoice.id} - recent overdue notice already sent")
+                    continue
+
+                comm_service = CommunicationService()
+                template_data = CommunicationContextService.generate_context(
+                    context_type=ContextType.INVOICE,
+                    client=client,
+                    event=invoice.event,
+                    invoice=invoice,
+                )
+
+                # Add overdue-specific context
+                days_overdue = (today - invoice.due_date).days
+                template_data['days_overdue'] = days_overdue
+                template_data['due_date_formatted'] = invoice.due_date.strftime("%B %d, %Y")
+
+                comm_service.send_communication(
+                    template_name='Payment Overdue Notice',
+                    recipient=client.email,
+                    context_data=template_data,
+                    client=client,
+                    event=invoice.event,
+                    use_async=True,
+                )
+
+                # Record the notification
+                PaymentNotificationHistory.objects.create(
+                    invoice=invoice,
+                    notification_type='PAYMENT_OVERDUE',
+                    recipient_email=client.email,
+                    sent_at=timezone.now(),
+                )
+
+                logger.info(f"Sent Payment Overdue Notice for invoice {invoice.id} ({days_overdue} days overdue)")
+                count += 1
+
+            except Exception as e:
+                logger.error(f"Failed to send overdue notice for invoice {invoice.id}: {e}")
+
+        logger.info(f"Payment overdue task completed: sent {count} notices")
+        return {'status': 'success', 'notices_sent': count}
+
+    except Exception as e:
+        logger.error(f"Error in send_overdue_payment_notices task: {e}")
+        return {'status': 'error', 'message': str(e)}

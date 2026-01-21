@@ -1,0 +1,78 @@
+[
+  {
+    "model": "bookingflow.addonselectionstepconfiguration",
+    "pk": 2,
+    "fields": {
+      "created_at": "2026-01-08T08:54:54.544",
+      "updated_at": "2026-01-08T08:54:54.544",
+      "step": 46,
+      "min_selection": 0,
+      "max_selection": 0,
+      "filter_by_event_type": true,
+      "group_by_category": true,
+      "show_recommendations": true,
+      "recommendation_logic": {},
+      "available_categories": [
+        55
+      ],
+      "available_addons": []
+    }
+  },
+  {
+    "model": "bookingflow.addonselectionstepconfiguration",
+    "pk": 3,
+    "fields": {
+      "created_at": "2026-01-08T08:54:54.560",
+      "updated_at": "2026-01-08T08:54:54.560",
+      "step": 54,
+      "min_selection": 0,
+      "max_selection": 0,
+      "filter_by_event_type": true,
+      "group_by_category": true,
+      "show_recommendations": true,
+      "recommendation_logic": {},
+      "available_categories": [
+        63
+      ],
+      "available_addons": []
+    }
+  },
+  {
+    "model": "bookingflow.addonselectionstepconfiguration",
+    "pk": 4,
+    "fields": {
+      "created_at": "2026-01-08T08:54:54.567",
+      "updated_at": "2026-01-08T08:54:54.567",
+      "step": 62,
+      "min_selection": 0,
+      "max_selection": 0,
+      "filter_by_event_type": true,
+      "group_by_category": true,
+      "show_recommendations": true,
+      "recommendation_logic": {},
+      "available_categories": [
+        63
+      ],
+      "available_addons": []
+    }
+  },
+  {
+    "model": "bookingflow.addonselectionstepconfiguration",
+    "pk": 5,
+    "fields": {
+      "created_at": "2026-01-08T08:54:54.578",
+      "updated_at": "2026-01-08T08:54:54.578",
+      "step": 75,
+      "min_selection": 0,
+      "max_selection": 0,
+      "filter_by_event_type": true,
+      "group_by_category": true,
+      "show_recommendations": true,
+      "recommendation_logic": {},
+      "available_categories": [
+        63
+      ],
+      "available_addons": []
+    }
+  }
+]

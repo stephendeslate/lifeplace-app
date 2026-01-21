@@ -275,7 +275,7 @@ export const SendMessageDialog: React.FC<SendMessageDialogProps> = ({
         <Box display="flex" justifyContent="space-between" alignItems="center">
           <Box>
             <Typography variant="h6" component="div">
-              Send Message to {client.first_name} {client.last_name}
+              Send Email to {client.first_name} {client.last_name}
             </Typography>
             <Typography variant="body2" color="text.secondary">
               {client.email}

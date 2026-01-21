@@ -25,6 +25,9 @@ export interface WorkflowStage {
   is_automated: boolean;
   automation_type: AutomationType;
   trigger_time: string;
+  // Delay after another stage completes (optional)
+  trigger_after_stage: number | null;
+  trigger_after_stage_name?: string;
   email_template: number | null;
   email_template_name?: string;
   contract_template: number | null;
@@ -122,6 +125,7 @@ export interface CreateWorkflowStageData {
   is_automated?: boolean;
   automation_type?: AutomationType;
   trigger_time?: string;
+  trigger_after_stage?: number | null; // Delay after another stage completes
   email_template?: number | null;
   contract_template?: number | null;
   questionnaire_template?: number | null;

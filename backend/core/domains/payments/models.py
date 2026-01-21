@@ -624,6 +624,22 @@ class Payment(BaseModel):
 
                 logger.info(f"Payment receipt email sent for payment {self.payment_number}")
 
+                # Also send SMS receipt if client has phone number
+                if client.phone:
+                    try:
+                        comm_service.send_communication(
+                            template_name='Payment Receipt SMS',
+                            recipient=client.phone,
+                            client=client,
+                            event=self.event,
+                            payment=self,
+                            skip_preference_check=True  # Receipts are transactional
+                        )
+                        logger.info(f"Payment receipt SMS sent for payment {self.payment_number}")
+                    except Exception as sms_error:
+                        logger.warning(f"Failed to send payment receipt SMS for {self.payment_number}: {sms_error}")
+                        # Don't fail the overall process if SMS fails
+
             except Exception as e:
                 logger.error(f"Failed to send payment receipt email for {self.payment_number}: {e}")
                 is_successful = False

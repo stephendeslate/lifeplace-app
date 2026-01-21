@@ -427,7 +427,7 @@ class TestSendQuoteExpiryRemindersTask:
         # Verify send_communication was called with correct template
         mock_comm_instance.send_communication.assert_called()
         call_kwargs = mock_comm_instance.send_communication.call_args
-        assert call_kwargs[1]['template_name'] == 'quote_expiry_reminder'
+        assert call_kwargs[1]['template_name'] == 'Quote Expiry Reminder'
 
     @patch('core.domains.sales.tasks.CommunicationService')
     @patch('core.domains.sales.tasks.CommunicationContextService')
