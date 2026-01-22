@@ -73,19 +73,23 @@ describe('EventAvailabilityCalendar', () => {
 
   it('calls onDateSelect when bookable date is clicked', async () => {
     const mockOnDateSelect = vi.fn();
-    
+
     renderWithTheme(
-      <EventAvailabilityCalendar 
-        events={mockEvents}
+      <EventAvailabilityCalendar
+        events={[]} // No events to interfere
         onDateSelect={mockOnDateSelect}
         minAdvanceBookingDays={0} // Allow immediate booking for testing
       />
     );
-    
-    // Click on a date (assuming we're testing February 2024)
-    const availableDate = screen.getByText('20'); // A date without events
+
+    // Navigate to next month to ensure we're clicking on future dates
+    const nextButton = screen.getAllByRole('button')[1];
+    fireEvent.click(nextButton);
+
+    // Click on a date in the future month (15th should always exist and be available)
+    const availableDate = screen.getByText('15');
     fireEvent.click(availableDate);
-    
+
     await waitFor(() => {
       expect(mockOnDateSelect).toHaveBeenCalled();
     });

@@ -214,7 +214,6 @@ export const ModernLoginForm: React.FC<ModernLoginFormProps> = ({ onSuccess }) =
         helperText={errors.email}
         disabled={isLoading}
         autoComplete="email"
-        autoFocus
         InputProps={{
           startAdornment: (
             <InputAdornment position="start">

@@ -1,6 +1,6 @@
 // frontend/client-portal/src/components/accessibility/AccessibilityProvider.tsx
 
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Box, IconButton, Tooltip, useTheme } from '@mui/material';
 import {
   Accessibility as AccessibilityIcon,
@@ -13,45 +13,15 @@ import {
 } from '@mui/icons-material';
 import { GlassCard } from '../../design-system/components/GlassCard';
 import { alpha } from '@mui/material/styles';
+import {
+  AccessibilityContext,
+  defaultSettings,
+  type AccessibilitySettings,
+  type AccessibilityContextType,
+} from './useAccessibility';
 
-interface AccessibilitySettings {
-  fontSize: number;
-  highContrast: boolean;
-  reducedMotion: boolean;
-  screenReader: boolean;
-  keyboardNavigation: boolean;
-  focusRing: boolean;
-}
-
-interface AccessibilityContextType {
-  settings: AccessibilitySettings;
-  updateSetting: <K extends keyof AccessibilitySettings>(
-    key: K,
-    value: AccessibilitySettings[K]
-  ) => void;
-  announceToScreenReader: (message: string) => void;
-  isAccessibilityPanelOpen: boolean;
-  toggleAccessibilityPanel: () => void;
-}
-
-const defaultSettings: AccessibilitySettings = {
-  fontSize: 1,
-  highContrast: false,
-  reducedMotion: false,
-  screenReader: false,
-  keyboardNavigation: true,
-  focusRing: true,
-};
-
-const AccessibilityContext = createContext<AccessibilityContextType | undefined>(undefined);
-
-export const useAccessibility = () => {
-  const context = useContext(AccessibilityContext);
-  if (context === undefined) {
-    throw new Error('useAccessibility must be used within an AccessibilityProvider');
-  }
-  return context;
-};
+// Re-export hook for backwards compatibility
+export { useAccessibility } from './useAccessibility';
 
 interface AccessibilityProviderProps {
   children: React.ReactNode;

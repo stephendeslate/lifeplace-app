@@ -54,7 +54,7 @@ export const StepRenderer: React.FC = () => {
     } catch (error) {
       if (import.meta.env.DEV) console.error('Failed to update step data:', error);
     }
-  }, [currentStep, actions.updateStepData]);
+  }, [currentStep, actions]);
 
   const handleValidation = useCallback(async (data: unknown): Promise<StepValidationResult> => {
     if (!currentStep) {

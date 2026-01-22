@@ -136,32 +136,7 @@ export const DateUnavailableModal: React.FC<DateUnavailableModalProps> = ({
   );
 };
 
-/**
- * Hook to manage DateUnavailableModal state
- */
-export const useDateUnavailableModal = () => {
-  const [isOpen, setIsOpen] = React.useState(false);
-  const [unavailableDate, setUnavailableDate] = React.useState<string | null>(
-    null
-  );
-
-  const showModal = React.useCallback((date: string) => {
-    setUnavailableDate(date);
-    setIsOpen(true);
-  }, []);
-
-  const hideModal = React.useCallback(() => {
-    setIsOpen(false);
-    // Don't clear the date immediately to allow for animation
-    setTimeout(() => setUnavailableDate(null), 300);
-  }, []);
-
-  return {
-    isOpen,
-    unavailableDate,
-    showModal,
-    hideModal,
-  };
-};
+// Re-export hook from separate file for backwards compatibility
+export { useDateUnavailableModal } from './useDateUnavailableModal';
 
 export default DateUnavailableModal;

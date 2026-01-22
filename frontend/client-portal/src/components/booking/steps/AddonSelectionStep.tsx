@@ -175,7 +175,8 @@ export const AddonSelectionStep: React.FC<AddonSelectionStepProps> = ({
     if (selectedVenues.length > 0) {
       onDataChange(buildCompleteData(selectedAddons));
     }
-  }, [venueAdditionalHours]); // Only depend on venueAdditionalHours to avoid loops
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- Other deps intentionally excluded to avoid infinite loops
+  }, [venueAdditionalHours]);
 
   // Validation status
   const validationStatus = useMemo(() => {

@@ -209,7 +209,6 @@ export const ForgotPasswordForm: React.FC = () => {
         error={Boolean(emailError)}
         helperText={emailError}
         disabled={isSubmitting}
-        autoFocus
         InputProps={{
           startAdornment: (
             <InputAdornment position="start">

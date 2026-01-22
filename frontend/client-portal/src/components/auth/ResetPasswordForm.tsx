@@ -51,32 +51,32 @@ export const ResetPasswordForm: React.FC<ResetPasswordFormProps> = ({ tokenId })
   const [isSuccess, setIsSuccess] = useState(false);
 
   useEffect(() => {
+    const validateToken = async () => {
+      setIsValidating(true);
+      try {
+        const response = await authApi.validateResetToken(tokenId);
+        if (response.valid) {
+          setIsTokenValid(true);
+          setEmail(response.email || '');
+        } else {
+          setIsTokenValid(false);
+          const errorMessages = {
+            already_used: 'This password reset link has already been used.',
+            expired: 'This password reset link has expired.',
+            not_found: 'Invalid password reset link.',
+          };
+          setTokenError(errorMessages[response.reason || 'not_found']);
+        }
+      } catch (_error) {
+        setIsTokenValid(false);
+        setTokenError('Unable to validate reset link. Please try again.');
+      } finally {
+        setIsValidating(false);
+      }
+    };
+
     validateToken();
   }, [tokenId]);
-
-  const validateToken = async () => {
-    setIsValidating(true);
-    try {
-      const response = await authApi.validateResetToken(tokenId);
-      if (response.valid) {
-        setIsTokenValid(true);
-        setEmail(response.email || '');
-      } else {
-        setIsTokenValid(false);
-        const errorMessages = {
-          already_used: 'This password reset link has already been used.',
-          expired: 'This password reset link has expired.',
-          not_found: 'Invalid password reset link.',
-        };
-        setTokenError(errorMessages[response.reason || 'not_found']);
-      }
-    } catch (_error) {
-      setIsTokenValid(false);
-      setTokenError('Unable to validate reset link. Please try again.');
-    } finally {
-      setIsValidating(false);
-    }
-  };
 
   const validateForm = (): boolean => {
     let isValid = true;
@@ -343,7 +343,6 @@ export const ResetPasswordForm: React.FC<ResetPasswordFormProps> = ({ tokenId })
         error={Boolean(passwordError)}
         helperText={passwordError || 'Minimum 8 characters'}
         disabled={isSubmitting}
-        autoFocus
         InputProps={{
           startAdornment: (
             <InputAdornment position="start">

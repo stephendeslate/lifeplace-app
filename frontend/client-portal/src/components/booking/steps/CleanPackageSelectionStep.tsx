@@ -581,6 +581,7 @@ const CleanPackageSelectionStep: React.FC<CleanPackageSelectionStepProps> = ({
         setVenueAdditionalHours(hoursFromStep);
       }
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- venueAdditionalHours is intentionally excluded to prevent infinite loops
   }, [stepData.venue_additional_hours]);
 
   // Apply event_days filtering to available packages

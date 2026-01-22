@@ -1,6 +1,6 @@
 // frontend/client-portal/src/components/contracts/__tests__/ContractSigningDialog.test.tsx
 import { render, screen, waitFor as _waitFor } from '../../../test/utils';
-import _userEvent from '@testing-library/user-event';
+import userEvent from '@testing-library/user-event';
 import ContractSigningDialog from '../ContractSigningDialog';
 import type { Contract } from '../../../types/contracts.types';
 

@@ -405,7 +405,6 @@ export const ResetPasswordForm: React.FC<ResetPasswordFormProps> = ({ tokenId })
         error={Boolean(passwordError)}
         helperText={passwordError || 'Minimum 8 characters'}
         disabled={isSubmitting}
-        autoFocus
         InputProps={{
           startAdornment: (
             <InputAdornment position="start">
