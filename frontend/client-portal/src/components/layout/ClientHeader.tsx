@@ -40,6 +40,7 @@ export const ClientHeader: React.FC<ClientHeaderProps> = ({
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [logoError, setLogoError] = useState(false);
   
   const handleProfileMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
@@ -100,30 +101,46 @@ export const ClientHeader: React.FC<ClientHeaderProps> = ({
 
         {/* Logo/Brand */}
         <AnimatedElement animation="slideRight" delay={200}>
-          <Typography 
-            variant="h5" 
-            component="div" 
-            sx={{ 
-              fontWeight: 600,
-              color: theme.palette.primary.main,
-              textShadow: '0 2px 10px rgba(0,0,0,0.1)',
-              cursor: 'pointer',
-            }}
-            onClick={() => navigate('/dashboard')}
-          >
-            LifePlace
-            <Typography 
-              component="span" 
-              variant="body2" 
-              sx={{ 
-                ml: 1,
-                color: alpha(theme.palette.primary.main, 0.7),
-                fontWeight: 400,
+          {!logoError ? (
+            <Box
+              component="img"
+              src="/logo.png"
+              alt="LifePlace Alfonso"
+              onError={() => setLogoError(true)}
+              sx={{
+                height: { xs: 36, md: 40 },
+                width: 'auto',
+                objectFit: 'contain',
+                cursor: 'pointer',
               }}
+              onClick={() => navigate('/dashboard')}
+            />
+          ) : (
+            <Typography
+              variant="h5"
+              component="div"
+              sx={{
+                fontWeight: 600,
+                color: theme.palette.primary.main,
+                textShadow: '0 2px 10px rgba(0,0,0,0.1)',
+                cursor: 'pointer',
+              }}
+              onClick={() => navigate('/dashboard')}
             >
-              Client Portal
+              LifePlace
+              <Typography
+                component="span"
+                variant="body2"
+                sx={{
+                  ml: 1,
+                  color: alpha(theme.palette.primary.main, 0.7),
+                  fontWeight: 400,
+                }}
+              >
+                Client Portal
+              </Typography>
             </Typography>
-          </Typography>
+          )}
         </AnimatedElement>
 
         {/* Action Icons - Right Aligned */}

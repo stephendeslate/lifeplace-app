@@ -54,9 +54,10 @@ export const PublicHeader: React.FC<PublicHeaderProps> = ({
   const { isAuthenticated } = useAuth();
   // Toast actions available but not used in this component
   // const { showInfo } = useToastActions();
-  
+
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [logoError, setLogoError] = useState(false);
 
   // Handle scroll effect
   useEffect(() => {
@@ -117,34 +118,50 @@ export const PublicHeader: React.FC<PublicHeaderProps> = ({
           <Box
             display="flex"
             alignItems="center"
-            sx={{ 
+            sx={{
               cursor: 'pointer',
               mr: { xs: 2, md: 6 },
             }}
             onClick={() => handleNavigation('/')}
           >
-            <Typography
-              variant="h5"
-              component="div"
-              sx={{
-                fontWeight: 700,
-                color: 'inherit',
-                letterSpacing: '-0.02em',
-              }}
-            >
-              LifePlace
-            </Typography>
-            <Typography
-              variant="body2"
-              sx={{
-                ml: 1,
-                opacity: 0.8,
-                fontWeight: 500,
-                display: { xs: 'none', sm: 'block' },
-              }}
-            >
-              Alfonso
-            </Typography>
+            {!logoError ? (
+              <Box
+                component="img"
+                src="/logo.png"
+                alt="LifePlace Alfonso"
+                onError={() => setLogoError(true)}
+                sx={{
+                  height: { xs: 40, md: 48 },
+                  width: 'auto',
+                  objectFit: 'contain',
+                }}
+              />
+            ) : (
+              <>
+                <Typography
+                  variant="h5"
+                  component="div"
+                  sx={{
+                    fontWeight: 700,
+                    color: 'inherit',
+                    letterSpacing: '-0.02em',
+                  }}
+                >
+                  LifePlace
+                </Typography>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    ml: 1,
+                    opacity: 0.8,
+                    fontWeight: 500,
+                    display: { xs: 'none', sm: 'block' },
+                  }}
+                >
+                  Alfonso
+                </Typography>
+              </>
+            )}
           </Box>
 
           {/* Center Section: Navigation (Desktop) */}
@@ -292,9 +309,23 @@ export const PublicHeader: React.FC<PublicHeaderProps> = ({
               borderColor: 'divider',
             }}
           >
-            <Typography variant="h6" sx={{ fontWeight: 600 }}>
-              LifePlace Alfonso
-            </Typography>
+            {!logoError ? (
+              <Box
+                component="img"
+                src="/logo.png"
+                alt="LifePlace Alfonso"
+                onError={() => setLogoError(true)}
+                sx={{
+                  height: 32,
+                  width: 'auto',
+                  objectFit: 'contain',
+                }}
+              />
+            ) : (
+              <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                LifePlace Alfonso
+              </Typography>
+            )}
             <IconButton onClick={() => setMobileMenuOpen(false)}>
               <CloseIcon />
             </IconButton>
