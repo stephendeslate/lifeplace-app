@@ -72,6 +72,13 @@ export const CompanySettings: React.FC = () => {
   const [logoDarkPreview, setLogoDarkPreview] = useState<string | null>(null);
   const [faviconPreview, setFaviconPreview] = useState<string | null>(null);
 
+  // Track files marked for removal (to update UI before save)
+  const [removedFiles, setRemovedFiles] = useState<{
+    logo: boolean;
+    logo_dark: boolean;
+    favicon: boolean;
+  }>({ logo: false, logo_dark: false, favicon: false });
+
   // Set breadcrumbs
   useEffect(() => {
     setBreadcrumbs([
@@ -154,6 +161,8 @@ export const CompanySettings: React.FC = () => {
         ...prev,
         [field]: file,
       }));
+      // Clear removed state when new file is uploaded
+      setRemovedFiles(prev => ({ ...prev, [field]: false }));
       setHasChanges(true);
     }
   };
@@ -167,6 +176,8 @@ export const CompanySettings: React.FC = () => {
       ...prev,
       [field]: null,
     }));
+    // Mark file as removed to update UI immediately
+    setRemovedFiles(prev => ({ ...prev, [field]: true }));
     setHasChanges(true);
   };
 
@@ -174,6 +185,8 @@ export const CompanySettings: React.FC = () => {
     event.preventDefault();
     updateCompanySettings(formData);
     setHasChanges(false);
+    // Reset removed state after save
+    setRemovedFiles({ logo: false, logo_dark: false, favicon: false });
   };
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
@@ -355,7 +368,7 @@ export const CompanySettings: React.FC = () => {
                       justifyContent: 'center',
                     }}
                   >
-                    {logoPreview || companySettings?.logo_url ? (
+                    {(logoPreview || companySettings?.logo_url) && !removedFiles.logo ? (
                       <>
                         <Box
                           component="img"
@@ -427,7 +440,7 @@ export const CompanySettings: React.FC = () => {
                       justifyContent: 'center',
                     }}
                   >
-                    {logoDarkPreview || companySettings?.logo_dark ? (
+                    {(logoDarkPreview || companySettings?.logo_dark) && !removedFiles.logo_dark ? (
                       <>
                         <Box
                           component="img"
@@ -500,7 +513,7 @@ export const CompanySettings: React.FC = () => {
                       justifyContent: 'center',
                     }}
                   >
-                    {faviconPreview || companySettings?.favicon ? (
+                    {(faviconPreview || companySettings?.favicon) && !removedFiles.favicon ? (
                       <>
                         <Box
                           component="img"
