@@ -324,10 +324,18 @@ export const WalkthroughProvider: React.FC<WalkthroughProviderProps> = ({ childr
     setState(prev => ({ ...prev, isPaused: false }));
   }, []);
 
-  // Check if tour is completed
+  // Check if tour is completed (finished all steps)
   const isTourCompleted = useCallback(
     (tourId: TourId): boolean => {
       return preferences.completedTours.some(t => t.tourId === tourId && t.completed);
+    },
+    [preferences.completedTours]
+  );
+
+  // Check if tour has been seen (completed or skipped)
+  const isTourSeen = useCallback(
+    (tourId: TourId): boolean => {
+      return preferences.completedTours.some(t => t.tourId === tourId);
     },
     [preferences.completedTours]
   );
@@ -348,13 +356,13 @@ export const WalkthroughProvider: React.FC<WalkthroughProviderProps> = ({ childr
       const tour = tourRegistry.get(tourId);
       if (!tour?.autoTrigger) return false;
 
-      // Check if already completed or dismissed
-      if (isTourCompleted(tourId)) return false;
+      // Check if already seen (completed or skipped) or dismissed
+      if (isTourSeen(tourId)) return false;
       if (isTourDismissed(tourId)) return false;
 
       return true;
     },
-    [preferences.autoShowTours, isTourCompleted, isTourDismissed]
+    [preferences.autoShowTours, isTourSeen, isTourDismissed]
   );
 
   // Get all available tours
