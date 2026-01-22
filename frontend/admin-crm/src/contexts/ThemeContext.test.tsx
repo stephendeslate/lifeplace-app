@@ -43,12 +43,12 @@ describe('ThemeContext', () => {
   })
 
   describe('Theme Mode', () => {
-    it('defaults to system mode', () => {
+    it('defaults to light mode', () => {
       const { result } = renderHook(() => useTheme(), {
         wrapper: createWrapper(),
       })
 
-      expect(result.current.mode).toBe('system')
+      expect(result.current.mode).toBe('light')
     })
 
     it('reads mode from localStorage', () => {
@@ -206,14 +206,14 @@ describe('ThemeContext', () => {
   })
 
   describe('Invalid localStorage values', () => {
-    it('falls back to system for invalid stored value', () => {
+    it('falls back to light for invalid stored value', () => {
       localStorage.setItem('lifeplace-theme-mode', 'invalid-mode')
 
       const { result } = renderHook(() => useTheme(), {
         wrapper: createWrapper(),
       })
 
-      expect(result.current.mode).toBe('system')
+      expect(result.current.mode).toBe('light')
     })
   })
 })
