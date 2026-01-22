@@ -17,6 +17,7 @@ import { TasksPage } from './pages/tasks';
 import { CommunicationRecords } from './pages/records';
 import { NotificationsPage } from './pages/notifications';
 import { AppLayout } from './components/layout';
+import { WalkthroughProvider } from './contexts/WalkthroughContext';
 
 // Analytics imports - New simplified dashboard
 import { AnalyticsDashboard } from './pages/analytics';
@@ -24,7 +25,7 @@ import { AnalyticsDashboard } from './pages/analytics';
 // Enhanced Settings imports
 import { EnhancedSettingsLayout } from './pages/settings/EnhancedSettingsLayout';
 import { EnhancedSettings } from './pages/settings/EnhancedSettings';
-import { AccountSettings, AdminUsers, CompanySettings } from './pages/settings/account';
+import { AccountSettings, AdminUsers, CompanySettings, GuidedTours } from './pages/settings/account';
 import { Notifications } from './pages/settings/account/Notifications';
 import { BookingFlows, BookingFlowDetails, EventTypes, BookingFlowPreviewPage } from './pages/settings/booking';
 import { ContractTemplates, QuestionnaireTemplates, WorkflowTemplates, WorkflowTemplateDetails, WorkflowWebhooks } from './pages/settings/templates';
@@ -374,6 +375,14 @@ const AppRouter: React.FC = () => {
           </SettingsRoute>
         }
       />
+      <Route
+        path="/settings/account/guided-tours"
+        element={
+          <SettingsRoute>
+            <GuidedTours />
+          </SettingsRoute>
+        }
+      />
 
       {/* Booking Configuration */}
       <Route
@@ -604,7 +613,9 @@ const App: React.FC = () => {
     <AppProviders>
       <ErrorBoundary>
         <Router>
-          <AppRouter />
+          <WalkthroughProvider>
+            <AppRouter />
+          </WalkthroughProvider>
         </Router>
       </ErrorBoundary>
     </AppProviders>

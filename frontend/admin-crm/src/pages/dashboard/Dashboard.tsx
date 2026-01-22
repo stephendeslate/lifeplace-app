@@ -120,6 +120,7 @@ export const Dashboard: React.FC = () => {
 
         {/* Key Performance Metrics - flat grid like Analytics */}
         <Box
+          data-tour="dashboard-stats"
           display="flex"
           gap={2}
           mb={4}
@@ -187,10 +188,12 @@ export const Dashboard: React.FC = () => {
           {/* Left Column */}
           <Stack spacing={3}>
             {/* Tasks Summary Widget */}
-            <TasksSummaryWidget />
+            <Box data-tour="dashboard-tasks">
+              <TasksSummaryWidget />
+            </Box>
 
             {/* Activity & Alerts Section */}
-            <Box>
+            <Box data-tour="dashboard-activity">
               <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
                 <Box display="flex" alignItems="center" gap={1}>
                   <Notifications color="action" />
@@ -232,7 +235,7 @@ export const Dashboard: React.FC = () => {
           {/* Right Column */}
           <Stack spacing={3}>
             {/* Quick Actions */}
-            <Box>
+            <Box data-tour="quick-actions">
               <Box display="flex" alignItems="center" gap={1} mb={2}>
                 <DashboardIcon color="action" />
                 <Typography variant="h6" fontWeight="bold">Quick Actions</Typography>

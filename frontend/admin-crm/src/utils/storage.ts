@@ -1,6 +1,7 @@
 // frontend/admin-crm/src/utils/storage.ts
 
 import type { User, AuthTokens } from '../types/auth.types';
+import type { WalkthroughPreferences } from '../types/walkthrough.types';
 
 // Storage keys
 const STORAGE_KEYS = {
@@ -10,6 +11,7 @@ const STORAGE_KEYS = {
   THEME_MODE: 'lifeplace_admin_theme_mode',
   SIDEBAR_COLLAPSED: 'lifeplace_admin_sidebar_collapsed',
   TABLE_SETTINGS: 'lifeplace_admin_table_settings',
+  WALKTHROUGH_PREFERENCES: 'lifeplace_admin_walkthrough_preferences',
 } as const;
 
 // User preferences interface
@@ -149,6 +151,25 @@ class Storage {
     this.safeJsonStringify(STORAGE_KEYS.TABLE_SETTINGS, settings);
   }
 
+  // Walkthrough preferences management
+  getWalkthroughPreferences(): WalkthroughPreferences {
+    const preferences = localStorage.getItem(STORAGE_KEYS.WALKTHROUGH_PREFERENCES);
+    return this.safeJsonParse(preferences, {
+      autoShowTours: true,
+      showWelcomeTour: true,
+      completedTours: [],
+      dismissedTours: [],
+    });
+  }
+
+  setWalkthroughPreferences(preferences: WalkthroughPreferences): void {
+    this.safeJsonStringify(STORAGE_KEYS.WALKTHROUGH_PREFERENCES, preferences);
+  }
+
+  resetWalkthroughPreferences(): void {
+    localStorage.removeItem(STORAGE_KEYS.WALKTHROUGH_PREFERENCES);
+  }
+
   // Clear all app data
   clearAll(): void {
     Object.values(STORAGE_KEYS).forEach(key => {
@@ -179,7 +200,7 @@ class Storage {
   // Import data from backup (excluding sensitive auth data)
   importData(data: Record<string, unknown>): void {
     // Don't import tokens for security reasons
-    const allowedKeys = ['PREFERENCES', 'THEME_MODE', 'SIDEBAR_COLLAPSED', 'TABLE_SETTINGS'];
+    const allowedKeys = ['PREFERENCES', 'THEME_MODE', 'SIDEBAR_COLLAPSED', 'TABLE_SETTINGS', 'WALKTHROUGH_PREFERENCES'];
     
     allowedKeys.forEach(key => {
       if (data[key] && STORAGE_KEYS[key as keyof typeof STORAGE_KEYS]) {

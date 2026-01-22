@@ -41,6 +41,7 @@ import {
   Settings,
   Close,
   CalendarMonth,
+  School as TourIcon,
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useLayout } from '../../../contexts/LayoutContext';
@@ -48,6 +49,7 @@ import { useAuth } from '../../../contexts/AuthContext';
 import { useToastActions } from '../../../contexts/ToastContext';
 import { useTheme as useAppTheme } from '../../../contexts/ThemeContext';
 import { NotificationBadge } from '../../notifications/NotificationBadge';
+import { useWalkthrough } from '../../../contexts/WalkthroughContext';
 import { tokens } from '../../../design-system';
 import { createTransition } from '../../../design-system/utils/animations';
 
@@ -75,6 +77,7 @@ export const ModernHeader: React.FC = () => {
   const authContext = useAuth();
   const toastContext = useToastActions();
   const appTheme = useAppTheme();
+  const { startTour } = useWalkthrough();
 
   const {
     headerHeight = 64
@@ -203,6 +206,7 @@ export const ModernHeader: React.FC = () => {
 
             {/* Brand */}
             <Box
+              data-tour="brand-logo"
               display="flex"
               alignItems="center"
               sx={{
@@ -231,7 +235,7 @@ export const ModernHeader: React.FC = () => {
 
             {/* Desktop Navigation */}
             {!isMobile && (
-              <Box sx={{ display: 'flex', gap: 1, ml: 4 }}>
+              <Box data-tour="main-navigation" sx={{ display: 'flex', gap: 1, ml: 4 }}>
                 {navigationItems.map((item) => {
                   const Icon = item.icon;
                   const isActive = isActiveRoute(item.path);
@@ -283,13 +287,14 @@ export const ModernHeader: React.FC = () => {
           {/* Right Section: Enhanced Actions + Notifications + User */}
           <Box display="flex" alignItems="center" gap={{ xs: 1, sm: 1.5 }}>
             {/* Enhanced Notifications */}
-            <Box sx={{ position: 'relative' }}>
+            <Box data-tour="notification-badge" sx={{ position: 'relative' }}>
               <NotificationBadge />
             </Box>
 
             {/* Enhanced User Profile Menu */}
             <Tooltip title="User Menu">
               <IconButton
+                data-tour="user-menu"
                 onClick={handleUserMenuOpen}
                 sx={{
                   p: 0,
@@ -472,6 +477,27 @@ export const ModernHeader: React.FC = () => {
                   <Box sx={{ ml: 1, opacity: 0.6, fontSize: '0.75rem' }}>
                     {appTheme.effectiveMode === 'dark' ? '🌙' : '☀️'}
                   </Box>
+                </MenuItem>
+
+                {/* Take a Tour */}
+                <MenuItem
+                  onClick={() => {
+                    handleUserMenuClose();
+                    startTour('welcome');
+                  }}
+                  sx={{
+                    mx: 1,
+                    borderRadius: tokens.spacing.radius.md,
+                    transition: createTransition(['background'], 'fast'),
+                    '&:hover': {
+                      background: tokens.color.neutral[100],
+                    }
+                  }}
+                >
+                  <ListItemIcon>
+                    <TourIcon fontSize="small" sx={{ color: tokens.color.info[600] }} />
+                  </ListItemIcon>
+                  <ListItemText>Take a Tour</ListItemText>
                 </MenuItem>
 
                 <Divider sx={{ opacity: 0.1, my: 1 }} />

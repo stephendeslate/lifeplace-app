@@ -18,6 +18,7 @@ import {
   Gavel,
   Business,
   DesignServices,
+  School,
 } from '@mui/icons-material';
 import type { SettingsNavigationGroup } from '../types/settings.types';
 
@@ -53,6 +54,13 @@ export const settingsNavigationConfig: SettingsNavigationGroup[] = [
         path: '/settings/account/company-settings',
         icon: Business,
         description: 'Configure company branding and PDF settings',
+      },
+      {
+        id: 'guided-tours',
+        label: 'Guided Tours',
+        path: '/settings/account/guided-tours',
+        icon: School,
+        description: 'Manage tour preferences and restart tours',
       },
     ],
   },
