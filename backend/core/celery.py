@@ -32,6 +32,10 @@ app.autodiscover_tasks()
 # =============================================================================
 
 app.conf.update(
+    # Use database scheduler instead of file-based scheduler
+    # This avoids "celerybeat-schedule" file corruption issues
+    beat_scheduler='django_celery_beat.schedulers:DatabaseScheduler',
+
     # Task execution settings
     task_serializer='json',
     accept_content=['json'],
