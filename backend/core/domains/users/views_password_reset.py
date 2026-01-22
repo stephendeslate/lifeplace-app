@@ -118,7 +118,7 @@ def request_password_reset(request):
                     recipient=user.email,
                     context_data={
                         'first_name': user.first_name or user.get_display_name(),
-                        'reset_url': reset_url,
+                        'reset_link': reset_url,
                     },
                     client=user,
                     skip_preference_check=True  # Always send password reset emails
