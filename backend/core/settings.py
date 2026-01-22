@@ -98,8 +98,8 @@ MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'core.utils.api_middleware.TrustedProxyMiddleware',  # SECURITY: Extract real client IP from trusted proxies
     'django.middleware.security.SecurityMiddleware',
-    'core.utils.security.SecurityMiddleware',  # Custom security middleware
     'whitenoise.middleware.WhiteNoiseMiddleware',
+    'core.utils.security.SecurityMiddleware',  # Custom security middleware
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -794,6 +794,9 @@ NOTIFICATION_AUTO_READ_DAYS = int(os.getenv('NOTIFICATION_AUTO_READ_DAYS', '30')
 
 # Site configuration
 SITE_NAME = os.getenv('SITE_NAME', 'LifePlace')
+
+# Google OAuth Configuration
+GOOGLE_OAUTH_CLIENT_ID = os.getenv('GOOGLE_OAUTH_CLIENT_ID', '')
 
 # Business timezone configuration
 BUSINESS_TIMEZONE = 'Asia/Manila'  # Primary business location (Philippines)
