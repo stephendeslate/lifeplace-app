@@ -4,6 +4,9 @@
  * Provides Google OAuth authentication for mobile app users.
  * Uses expo-auth-session for the OAuth flow and sends the ID token
  * to the backend for verification and user creation/login.
+ *
+ * Note: This component requires a development build to function.
+ * It will not render when running in Expo Go due to native module requirements.
  */
 
 import { useEffect, useState, useCallback } from 'react';
@@ -15,8 +18,6 @@ import {
   StyleSheet,
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
-import * as WebBrowser from 'expo-web-browser';
-import * as Google from 'expo-auth-session/providers/google';
 import Constants from 'expo-constants';
 
 import { useAuthContext } from '@/contexts/AuthContext';
@@ -28,8 +29,20 @@ import { colors, spacing, typeScale, layout, shadows, neutralColors } from '@/th
 
 const authLogger = logger.create('GoogleSignIn');
 
-// Ensure the web browser dismisses properly on iOS
-WebBrowser.maybeCompleteAuthSession();
+// Check if native modules are available (not in Expo Go)
+let WebBrowser: typeof import('expo-web-browser') | null = null;
+let Google: typeof import('expo-auth-session/providers/google') | null = null;
+let isNativeModuleAvailable = false;
+
+try {
+  WebBrowser = require('expo-web-browser');
+  Google = require('expo-auth-session/providers/google');
+  isNativeModuleAvailable = true;
+  // Ensure the web browser dismisses properly on iOS
+  WebBrowser.maybeCompleteAuthSession();
+} catch (e) {
+  authLogger.debug('Google Sign-In native modules not available (likely running in Expo Go)');
+}
 
 /**
  * Google "G" Logo SVG Component
@@ -76,6 +89,8 @@ export interface GoogleSignInButtonProps {
  * 3. Sends token to backend for verification
  * 4. Backend creates/returns user and JWT tokens
  * 5. Stores tokens and navigates to app
+ *
+ * Note: Returns null when running in Expo Go (native modules unavailable)
  */
 export function GoogleSignInButton({
   onSuccess,
@@ -94,12 +109,18 @@ export function GoogleSignInButton({
   const iosClientId = Constants.expoConfig?.extra?.googleOAuthIosClientId;
   const androidClientId = Constants.expoConfig?.extra?.googleOAuthAndroidClientId;
 
-  // Configure Google auth request
-  const [request, response, promptAsync] = Google.useAuthRequest({
+  // Configure Google auth request (only if native module available)
+  // We use a conditional hook pattern here - the hook is always called but with null config if unavailable
+  const authConfig = isNativeModuleAvailable && Google ? {
     webClientId: webClientId || undefined,
     iosClientId: iosClientId || undefined,
     androidClientId: androidClientId || undefined,
-  });
+  } : { webClientId: undefined, iosClientId: undefined, androidClientId: undefined };
+
+  // This hook must be called unconditionally to follow React rules
+  // When native modules aren't available, we pass empty config and handle it below
+  const useAuthRequestHook = Google?.useAuthRequest || (() => [null, null, async () => ({ type: 'dismiss' as const })]);
+  const [request, response, promptAsync] = useAuthRequestHook(authConfig);
 
   // Fetch client ID from backend on mount
   useEffect(() => {
@@ -188,7 +209,11 @@ export function GoogleSignInButton({
     }
   };
 
-  // Don't render if not configured
+  // Don't render if native modules unavailable (Expo Go) or not configured
+  if (!isNativeModuleAvailable) {
+    return null;
+  }
+
   if (!isConfigured && !webClientId && !iosClientId && !androidClientId) {
     return null;
   }
