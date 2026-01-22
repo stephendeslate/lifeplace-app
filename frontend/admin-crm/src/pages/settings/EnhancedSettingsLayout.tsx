@@ -137,8 +137,9 @@ export const EnhancedSettingsLayout: React.FC<EnhancedSettingsLayoutProps> = ({ 
               flex: 1,
               px: { xs: 2, sm: 3, md: 4 }, // 8px grid system
               py: { xs: 3, sm: 4, md: 5 },  // 8px grid system  
-              maxWidth: '1200px', // Professional max-width for settings
-              mx: 'auto',
+              maxWidth: 'min(1200px, 100%)', // Responsive max-width that adapts to available space
+              ml: 0, // Left-align to avoid gap after sidebar
+              mr: 'auto',
               display: 'flex',
               flexDirection: 'column',
               animation: 'fadeInUp 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
