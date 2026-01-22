@@ -5,7 +5,7 @@ from core.utils.security import (
     validate_request_data,
 )
 from core.utils.security_logging import security_logger, SecurityEventType
-from django.core.mail import send_mail
+from core.domains.communications.services import CommunicationService
 from django.conf import settings
 from django.db import transaction
 from rest_framework import status
@@ -110,28 +110,18 @@ def request_password_reset(request):
 
             reset_url = f"{frontend_url}/reset-password/{reset_token.id}"
 
-            # Send password reset email
+            # Send password reset email using CommunicationService
             try:
-                send_mail(
-                    subject='Password Reset Request',
-                    message=f'''
-Hello {user.get_display_name()},
-
-You requested a password reset for your account.
-
-Click the link below to reset your password:
-{reset_url}
-
-This link will expire in 1 hour.
-
-If you did not request this password reset, please ignore this email.
-
-Best regards,
-The LifePlace Team
-                    ''',
-                    from_email=settings.DEFAULT_FROM_EMAIL,
-                    recipient_list=[user.email],
-                    fail_silently=False,
+                communication_service = CommunicationService()
+                communication_service.send_communication(
+                    template_name='Password Reset',
+                    recipient=user.email,
+                    context_data={
+                        'first_name': user.first_name or user.get_display_name(),
+                        'reset_url': reset_url,
+                    },
+                    client=user,
+                    skip_preference_check=True  # Always send password reset emails
                 )
 
                 # Log successful password reset request
