@@ -117,8 +117,11 @@ class VenueViewSet(viewsets.ModelViewSet):
                 filename = f"venues/gallery/{venue.id}/{uuid.uuid4().hex}.{ext}"
                 # Save file
                 saved_path = default_storage.save(filename, ContentFile(file.read()))
-                # Build URL
-                file_url = request.build_absolute_uri(f'/media/{saved_path}')
+                # Build URL using storage backend (handles S3/R2 in production)
+                file_url = default_storage.url(saved_path)
+                # If URL is relative (local dev), make it absolute
+                if file_url.startswith('/'):
+                    file_url = request.build_absolute_uri(file_url)
                 gallery_images.append(file_url)
 
         # Update venue's gallery_images if we have any
