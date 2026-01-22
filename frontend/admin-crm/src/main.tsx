@@ -4,7 +4,7 @@ import * as Sentry from '@sentry/react'
 import './index.css'
 import App from './App.tsx'
 
-// Initialize Sentry for error monitoring in production
+// Initialize Sentry for error monitoring in production (v2)
 const SENTRY_DSN = import.meta.env.VITE_SENTRY_DSN;
 
 if (import.meta.env.PROD && SENTRY_DSN) {
