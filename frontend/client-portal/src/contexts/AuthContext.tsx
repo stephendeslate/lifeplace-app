@@ -79,7 +79,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const register = async (credentials: RegisterCredentials): Promise<void> => {
     try {
       const data = await authApi.register(credentials);
-      
+
       // Store tokens and user data
       storage.setTokens(data.tokens);
       const userWithToken = { ...data.user, token: data.tokens.access };
@@ -87,6 +87,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setUser(userWithToken);
     } catch (error) {
       if (import.meta.env.DEV) console.error('Registration error:', error);
+      throw error;
+    }
+  };
+
+  // Google login function using API client
+  const googleLogin = async (credential: string): Promise<void> => {
+    try {
+      const data = await authApi.googleLogin(credential);
+
+      // Store tokens and user data
+      storage.setTokens(data.tokens);
+      const userWithToken = { ...data.user, token: data.tokens.access };
+      storage.setUser(userWithToken);
+      setUser(userWithToken);
+    } catch (error) {
+      if (import.meta.env.DEV) console.error('Google login error:', error);
       throw error;
     }
   };
@@ -255,6 +271,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     isLoading,
     login,
     register,
+    googleLogin,
     logout,
     refreshToken,
     updateUser,

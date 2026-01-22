@@ -45,12 +45,17 @@ export interface LoginResponse {
   user: User;
 }
 
+export interface GoogleLoginResponse extends LoginResponse {
+  created: boolean;
+}
+
 export interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (credentials: LoginCredentials) => Promise<void>;
   register: (credentials: RegisterCredentials) => Promise<void>;
+  googleLogin: (credential: string) => Promise<void>;
   logout: () => void;
   refreshToken: () => Promise<void>;
   updateUser: (userData: Partial<User>) => void;

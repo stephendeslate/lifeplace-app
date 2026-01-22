@@ -1,7 +1,7 @@
 // frontend/client-portal/src/apis/auth.api.ts
 
 import api from '../utils/api';
-import type { LoginCredentials, RegisterCredentials, User, LoginResponse } from '../types/auth.types';
+import type { LoginCredentials, RegisterCredentials, User, LoginResponse, GoogleLoginResponse } from '../types/auth.types';
 
 export const authApi = {
   /**
@@ -17,6 +17,23 @@ export const authApi = {
    */
   register: async (userData: RegisterCredentials): Promise<LoginResponse> => {
     const response = await api.post<LoginResponse>('/users/register/', userData);
+    return response.data;
+  },
+
+  /**
+   * Get Google OAuth client ID
+   */
+  getGoogleClientId: async (): Promise<{ client_id: string }> => {
+    const response = await api.get<{ client_id: string }>('/users/google/client-id/');
+    return response.data;
+  },
+
+  /**
+   * Login/register with Google OAuth
+   * @param credential - Google ID token from Sign In With Google
+   */
+  googleLogin: async (credential: string): Promise<GoogleLoginResponse> => {
+    const response = await api.post<GoogleLoginResponse>('/users/google/login/', { credential });
     return response.data;
   },
 

@@ -31,6 +31,7 @@ import { ErrorHandler } from '../../utils/errorHandler';
 import type { LoginCredentials } from '../../types/auth.types';
 import { GlassCard } from '../../design-system/components/GlassCard';
 import { AnimatedElement } from '../../design-system/components/AnimatedElement';
+import { GoogleLoginButton } from '../../components/auth';
 
 interface LoginProps {
   onNavigateToRegister?: () => void;
@@ -407,6 +408,12 @@ const Login: React.FC<LoginProps> = ({
                       'Sign In'
                     )}
                   </Button>
+
+                  {/* Google Sign-In */}
+                  <GoogleLoginButton
+                    onSuccess={onLoginSuccess}
+                    text="signin_with"
+                  />
                 </Stack>
               </Box>
             </GlassCard>

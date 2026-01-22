@@ -92,6 +92,9 @@ honcho==1.1.0
 # Error tracking and monitoring (production)
 sentry-sdk[django]==2.19.2
 
+# Google OAuth Authentication
+google-auth>=2.0.0
+
 # Push notifications (Expo)
 exponent-server-sdk==2.1.0
 

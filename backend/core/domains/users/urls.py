@@ -9,6 +9,7 @@ from .views_password_reset import (
     confirm_password_reset,
     validate_reset_token,
 )
+from .views_google import google_login, google_client_id
 
 app_name = 'users'
 
@@ -25,6 +26,10 @@ urlpatterns = [
 
     # Client registration endpoint
     path('register/', views.client_register, name='client_register'),
+
+    # Google OAuth endpoints
+    path('google/login/', google_login, name='google_login'),
+    path('google/client-id/', google_client_id, name='google_client_id'),
 
     # Password reset endpoints
     path('password-reset/request/', request_password_reset, name='password_reset_request'),

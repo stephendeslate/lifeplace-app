@@ -33,6 +33,7 @@ import { ErrorHandler } from '../../utils/errorHandler';
 import type { RegisterCredentials } from '../../types/auth.types';
 import { GlassCard } from '../../design-system/components/GlassCard';
 import { AnimatedElement } from '../../design-system/components/AnimatedElement';
+import { GoogleLoginButton } from '../../components/auth';
 
 interface RegisterProps {
   onNavigateToLogin?: () => void;
@@ -506,6 +507,13 @@ const Register: React.FC<RegisterProps> = ({
                       'Create Account'
                     )}
                   </Button>
+
+                  {/* Google Sign-Up */}
+                  <GoogleLoginButton
+                    onSuccess={onRegisterSuccess}
+                    text="signup_with"
+                    dividerText="or sign up with"
+                  />
                 </Stack>
               </Box>
             </GlassCard>
