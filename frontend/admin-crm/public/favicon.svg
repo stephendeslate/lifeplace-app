@@ -1,5 +1,19 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
-  <!-- LifePlace Admin CRM Favicon -->
-  <rect width="32" height="32" rx="6" fill="#1976d2"/>
-  <text x="16" y="22" font-family="Arial, sans-serif" font-size="16" font-weight="bold" text-anchor="middle" fill="white">LP</text>
+  <!-- LifePlace Favicon - Chapel with trees -->
+  <rect width="32" height="32" rx="4" fill="#91AD70"/>
+  <g fill="none" stroke="white" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Left trees -->
+    <path d="M4 24 L5.5 20 L4 20 L6 16 L4.5 16 L6.5 12 L8.5 16 L7 16 L9 20 L7.5 20 L9 24"/>
+    <line x1="6.5" y1="24" x2="6.5" y2="22"/>
+    <!-- Chapel building -->
+    <path d="M11 24 L11 15 L16 9 L21 15 L21 24"/>
+    <!-- Cross on top -->
+    <line x1="16" y1="6" x2="16" y2="10"/>
+    <line x1="14.5" y1="7.5" x2="17.5" y2="7.5"/>
+    <!-- Chapel door/entrance -->
+    <path d="M14 24 L14 19 Q16 17 18 19 L18 24"/>
+    <!-- Right trees -->
+    <path d="M23 24 L24.5 20 L23 20 L25 16 L23.5 16 L25.5 12 L27.5 16 L26 16 L28 20 L26.5 20 L28 24"/>
+    <line x1="25.5" y1="24" x2="25.5" y2="22"/>
+  </g>
 </svg>
