@@ -1,7 +1,8 @@
 // frontend/client-portal/src/components/auth/GoogleLoginButton.tsx
 
 import { useEffect, useState } from 'react';
-import { GoogleLogin, GoogleOAuthProvider, CredentialResponse } from '@react-oauth/google';
+import { GoogleLogin, GoogleOAuthProvider } from '@react-oauth/google';
+import type { CredentialResponse } from '@react-oauth/google';
 import { Box, Typography, Divider, CircularProgress, alpha, useTheme } from '@mui/material';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToastActions } from '../../contexts/ToastContext';
