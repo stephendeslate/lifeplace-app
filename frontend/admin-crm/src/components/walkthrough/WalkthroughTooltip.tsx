@@ -1,6 +1,7 @@
 // frontend/admin-crm/src/components/walkthrough/WalkthroughTooltip.tsx
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import tippy, { type Instance as TippyInstance } from 'tippy.js';
 import {
   Box,
@@ -41,24 +42,34 @@ export const WalkthroughTooltip: React.FC<WalkthroughTooltipProps> = ({
   targetRect,
 }) => {
   const theme = useTheme();
-  const tooltipRef = useRef<HTMLDivElement>(null);
   const tippyInstance = useRef<TippyInstance | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
   const [isVisible, setIsVisible] = useState(false);
+  const [portalContainer, setPortalContainer] = useState<HTMLElement | null>(null);
 
   const isDark = theme.palette.mode === 'dark';
   const progress = ((stepIndex + 1) / totalSteps) * 100;
 
-  // Initialize tippy instance
+  // Create and manage tippy instance with a container element
   useEffect(() => {
-    if (!targetRect || !tooltipRef.current) return;
+    if (!targetRect) return;
+
+    // Create a container div for tippy to manage
+    if (!containerRef.current) {
+      containerRef.current = document.createElement('div');
+      containerRef.current.className = 'walkthrough-tooltip-container';
+    }
 
     // Destroy existing instance
-    tippyInstance.current?.destroy();
+    if (tippyInstance.current) {
+      tippyInstance.current.destroy();
+      tippyInstance.current = null;
+    }
 
-    // Create new tippy instance
+    // Create new tippy instance with the container
     const instance = tippy(document.body, {
       getReferenceClientRect: () => targetRect,
-      content: tooltipRef.current,
+      content: containerRef.current,
       showOnCreate: true,
       interactive: true,
       trigger: 'manual',
@@ -91,12 +102,19 @@ export const WalkthroughTooltip: React.FC<WalkthroughTooltipProps> = ({
       onHide: () => {
         setIsVisible(false);
       },
+      onMount: () => {
+        // Set portal container after tippy mounts
+        setPortalContainer(containerRef.current);
+      },
     });
 
     tippyInstance.current = instance;
 
     return () => {
-      tippyInstance.current?.destroy();
+      if (tippyInstance.current) {
+        tippyInstance.current.destroy();
+        tippyInstance.current = null;
+      }
     };
   }, [targetRect, step.placement]);
 
@@ -142,15 +160,15 @@ export const WalkthroughTooltip: React.FC<WalkthroughTooltipProps> = ({
 
   // Focus the next/done button when visible
   useEffect(() => {
-    if (isVisible && tooltipRef.current) {
-      const focusButton = tooltipRef.current.querySelector<HTMLButtonElement>('[data-autofocus]');
+    if (isVisible && portalContainer) {
+      const focusButton = portalContainer.querySelector<HTMLButtonElement>('[data-autofocus]');
       focusButton?.focus();
     }
-  }, [isVisible, stepIndex]);
+  }, [isVisible, stepIndex, portalContainer]);
 
-  return (
+  // Render tooltip content into the portal container
+  const tooltipContent = (
     <Box
-      ref={tooltipRef}
       sx={{
         maxWidth: 380,
         minWidth: 320,
@@ -314,6 +332,9 @@ export const WalkthroughTooltip: React.FC<WalkthroughTooltipProps> = ({
       </Box>
     </Box>
   );
+
+  // Use createPortal to render into the tippy-managed container
+  return portalContainer ? createPortal(tooltipContent, portalContainer) : null;
 };
 
 export default WalkthroughTooltip;
