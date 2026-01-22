@@ -147,6 +147,12 @@ def google_login(request):
             if updated_fields:
                 user.save(update_fields=updated_fields)
 
+            # Update Google profile picture if available and not already set
+            if picture and hasattr(user, 'profile') and user.profile:
+                if not user.profile.google_picture_url:
+                    user.profile.google_picture_url = picture
+                    user.profile.save(update_fields=['google_picture_url'])
+
             logger.info(f"Google login successful for existing user {email}")
 
         else:
@@ -162,7 +168,11 @@ def google_login(request):
 
                 # Ensure profile exists (should be created by signal, but verify)
                 if not hasattr(user, 'profile') or user.profile is None:
-                    UserProfile.objects.create(user=user)
+                    UserProfile.objects.create(user=user, google_picture_url=picture if picture else None)
+                elif picture:
+                    # Update profile with Google picture
+                    user.profile.google_picture_url = picture
+                    user.profile.save(update_fields=['google_picture_url'])
 
             created = True
             logger.info(f"New user created via Google sign-in: {email}")

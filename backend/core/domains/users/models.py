@@ -151,6 +151,12 @@ class UserProfile(BaseModel):
         blank=True,
         help_text='User profile picture'
     )
+    google_picture_url = models.URLField(
+        max_length=500,
+        null=True,
+        blank=True,
+        help_text='Profile picture URL from Google OAuth (if signed up via Google)'
+    )
     
     # Timezone preferences
     display_timezone = models.CharField(

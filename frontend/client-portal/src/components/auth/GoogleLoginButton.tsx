@@ -8,6 +8,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useToastActions } from '../../contexts/ToastContext';
 import { authApi } from '../../apis/auth.api';
 import { ErrorHandler } from '../../utils/errorHandler';
+import { ProfileCompletionModal } from './ProfileCompletionModal';
 
 interface GoogleLoginButtonProps {
   onSuccess?: () => void;
@@ -29,12 +30,14 @@ export const GoogleLoginButton = ({
   text = 'continue_with',
   dividerText = 'or',
 }: GoogleLoginButtonProps) => {
-  const { googleLogin } = useAuth();
+  const { googleLogin, user } = useAuth();
   const { showError, showSuccess } = useToastActions();
   const theme = useTheme();
   const [clientId, setClientId] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showProfileCompletion, setShowProfileCompletion] = useState(false);
+  const [newUserEmail, setNewUserEmail] = useState<string>('');
 
   useEffect(() => {
     const fetchClientId = async () => {
@@ -63,9 +66,23 @@ export const GoogleLoginButton = ({
 
     setIsSubmitting(true);
     try {
+      // Call the backend Google login endpoint directly to get the 'created' flag
+      const response = await authApi.googleLogin(credentialResponse.credential);
+
+      // Store tokens and update auth state
       await googleLogin(credentialResponse.credential);
-      showSuccess('Welcome!', 'You have successfully signed in with Google.');
-      onSuccess?.();
+
+      // Check if this was a new user signup
+      if (response.created && response.user.email) {
+        // New user - show profile completion modal
+        setNewUserEmail(response.user.email);
+        setShowProfileCompletion(true);
+        showSuccess('Welcome!', 'Your account has been created. Please complete your profile.');
+      } else {
+        // Existing user - just show success and call onSuccess
+        showSuccess('Welcome back!', 'You have successfully signed in with Google.');
+        onSuccess?.();
+      }
     } catch (error: unknown) {
       if (import.meta.env.DEV) {
         console.error('Google login error:', error);
@@ -95,72 +112,87 @@ export const GoogleLoginButton = ({
     return null;
   }
 
+  const handleProfileCompletionClose = () => {
+    setShowProfileCompletion(false);
+    // Call onSuccess after profile completion (whether completed or skipped)
+    onSuccess?.();
+  };
+
   return (
-    <GoogleOAuthProvider clientId={clientId}>
-      <Box sx={{ width: '100%', my: 2 }}>
-        <Divider
-          sx={{
-            my: 2,
-            '&::before, &::after': {
-              borderColor: alpha('#fff', 0.3),
-            },
-          }}
-        >
-          <Typography
-            variant="body2"
+    <>
+      <GoogleOAuthProvider clientId={clientId}>
+        <Box sx={{ width: '100%', my: 2 }}>
+          <Divider
             sx={{
-              color: alpha('#fff', 0.8),
-              px: 2,
+              my: 2,
+              '&::before, &::after': {
+                borderColor: alpha('#fff', 0.3),
+              },
             }}
           >
-            {dividerText}
-          </Typography>
-        </Divider>
-
-        <Box
-          sx={{
-            display: 'flex',
-            justifyContent: 'center',
-            position: 'relative',
-            minHeight: 44,
-          }}
-        >
-          {isSubmitting ? (
-            <Box
+            <Typography
+              variant="body2"
               sx={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                height: 44,
-                width: '100%',
-                backgroundColor: alpha('#fff', 0.1),
-                borderRadius: 1,
-                backdropFilter: 'blur(10px)',
+                color: alpha('#fff', 0.8),
+                px: 2,
               }}
             >
-              <CircularProgress size={24} sx={{ color: theme.palette.primary.light }} />
-              <Typography
-                variant="body2"
-                sx={{ ml: 2, color: alpha('#fff', 0.8) }}
+              {dividerText}
+            </Typography>
+          </Divider>
+
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'center',
+              position: 'relative',
+              minHeight: 44,
+            }}
+          >
+            {isSubmitting ? (
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  height: 44,
+                  width: '100%',
+                  backgroundColor: alpha('#fff', 0.1),
+                  borderRadius: 1,
+                  backdropFilter: 'blur(10px)',
+                }}
               >
-                Signing in...
-              </Typography>
-            </Box>
-          ) : (
-            <GoogleLogin
-              onSuccess={handleGoogleSuccess}
-              onError={handleGoogleError}
-              text={text}
-              shape="rectangular"
-              size="large"
-              width="100%"
-              useOneTap={false}
-              theme="outline"
-            />
-          )}
+                <CircularProgress size={24} sx={{ color: theme.palette.primary.light }} />
+                <Typography
+                  variant="body2"
+                  sx={{ ml: 2, color: alpha('#fff', 0.8) }}
+                >
+                  Signing in...
+                </Typography>
+              </Box>
+            ) : (
+              <GoogleLogin
+                onSuccess={handleGoogleSuccess}
+                onError={handleGoogleError}
+                text={text}
+                shape="rectangular"
+                size="large"
+                width="100%"
+                useOneTap={false}
+                theme="outline"
+              />
+            )}
+          </Box>
         </Box>
-      </Box>
-    </GoogleOAuthProvider>
+      </GoogleOAuthProvider>
+
+      {/* Profile Completion Modal - shown for new Google signups */}
+      <ProfileCompletionModal
+        open={showProfileCompletion}
+        onClose={handleProfileCompletionClose}
+        userEmail={newUserEmail || user?.email || ''}
+      />
+    </>
   );
 };
 

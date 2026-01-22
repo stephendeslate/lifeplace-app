@@ -15,6 +15,8 @@ export interface User {
 export interface UserProfile {
   phone?: string;
   company?: string;
+  avatar_url?: string;
+  google_picture_url?: string;
 }
 
 export interface LoginCredentials {

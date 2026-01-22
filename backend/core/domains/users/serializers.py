@@ -11,7 +11,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = UserProfile
-        fields = ['phone', 'company', 'avatar', 'avatar_url']
+        fields = ['phone', 'company', 'avatar', 'avatar_url', 'google_picture_url']
         extra_kwargs = {
             'avatar': {'write_only': True}
         }
@@ -23,6 +23,9 @@ class UserProfileSerializer(serializers.ModelSerializer):
             if request:
                 return request.build_absolute_uri(obj.avatar.url)
             return obj.avatar.url
+        # Fall back to Google picture if no uploaded avatar
+        if obj.google_picture_url:
+            return obj.google_picture_url
         return None
 
 
