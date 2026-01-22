@@ -139,7 +139,8 @@ export const EnhancedContactInfoStep: React.FC<EnhancedContactInfoStepProps> = (
     if (isAuthenticated && user && !stepData) {
       onDataChange(formData);
     }
-  }, []); // Empty dependency array - only run on mount
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- Only run on mount to autofill authenticated user data
+  }, []);
 
   const [showPassword, setShowPassword] = useState(false);
   const [emailStrength, setEmailStrength] = useState(0);

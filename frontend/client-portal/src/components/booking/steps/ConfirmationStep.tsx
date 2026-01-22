@@ -75,11 +75,19 @@ export const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
 
   // Get selected packages and addons from booking state
   // Check package_selection first, then venue_selection (for custom packages), then booking_data
-  const selectedPackages: SelectedPackage[] = state.stepData.package_selection?.selected_packages ||
+  // Wrapped in useMemo to prevent changing on every render
+  const selectedPackages: SelectedPackage[] = useMemo(() =>
+    state.stepData.package_selection?.selected_packages ||
     (state.stepData.venue_selection as { selected_packages?: SelectedPackage[] })?.selected_packages ||
     (state.currentSession?.booking_data?.selected_packages as SelectedPackage[] | undefined) ||
-    [];
-  const selectedAddons = state.stepData.addon_selection?.selected_addons || [];
+    [],
+    [state.stepData.package_selection?.selected_packages, state.stepData.venue_selection, state.currentSession?.booking_data?.selected_packages]
+  );
+
+  const selectedAddons = useMemo(() =>
+    state.stepData.addon_selection?.selected_addons || [],
+    [state.stepData.addon_selection?.selected_addons]
+  );
 
   // Get payment info from booking state
   const paymentInfo = state.stepData.payment_info;

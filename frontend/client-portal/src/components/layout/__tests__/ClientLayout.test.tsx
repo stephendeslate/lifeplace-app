@@ -4,6 +4,8 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import { BrowserRouter } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ToastProvider } from '../../../contexts/ToastContext';
 import { ClientLayout } from '../ClientLayout';
 
 // Mock the design system components
@@ -37,16 +39,42 @@ vi.mock('../../../contexts/AuthContext', () => ({
   useAuth: () => mockAuthContext,
 }));
 
+// Mock useActionCenter hook
+vi.mock('../../../hooks/useActionCenter', () => ({
+  useActionCenter: () => ({
+    actions: [],
+    isLoading: false,
+    error: null,
+    markAsRead: vi.fn(),
+    markAllAsRead: vi.fn(),
+    refresh: vi.fn(),
+  }),
+  useActionCount: () => ({
+    count: 3,
+    isLoading: false,
+  }),
+}));
+
 // Test wrapper component
 const TestWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const theme = createTheme();
-  
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: { retry: false },
+      mutations: { retry: false },
+    },
+  });
+
   return (
-    <ThemeProvider theme={theme}>
-      <BrowserRouter>
-        {children}
-      </BrowserRouter>
-    </ThemeProvider>
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider theme={theme}>
+        <ToastProvider>
+          <BrowserRouter>
+            {children}
+          </BrowserRouter>
+        </ToastProvider>
+      </ThemeProvider>
+    </QueryClientProvider>
   );
 };
 

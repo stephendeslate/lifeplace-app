@@ -332,8 +332,9 @@ describe('MobileContractCard', () => {
     if (expandButton) {
       await user.click(expandButton);
 
-      // Check signature details
-      expect(screen.getByText('Signatures')).toBeInTheDocument();
+      // Check signature details (there may be multiple "Signatures" elements in different sections)
+      const signaturesElements = screen.getAllByText('Signatures');
+      expect(signaturesElements.length).toBeGreaterThan(0);
       expect(screen.getByText('Client')).toBeInTheDocument();
       expect(screen.getByText('John Smith • May 20, 2024')).toBeInTheDocument();
     }

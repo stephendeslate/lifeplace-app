@@ -590,7 +590,11 @@ const CleanPackageSelectionStep: React.FC<CleanPackageSelectionStepProps> = ({
   }, [availablePackages, filterPackagesByEventDays]);
 
   // Get selected venue IDs from previous step
-  const selectedVenueIds = venueSelectionData?.selected_venue_ids || [];
+  // Wrapped in useMemo to prevent changing on every render
+  const selectedVenueIds = useMemo(() =>
+    venueSelectionData?.selected_venue_ids || [],
+    [venueSelectionData?.selected_venue_ids]
+  );
   const hasVenueSelection = selectedVenueIds.length > 0;
 
   // Fetch venues for display and custom bundle calculation with event-type-specific pricing
@@ -799,7 +803,7 @@ const CleanPackageSelectionStep: React.FC<CleanPackageSelectionStepProps> = ({
         formattedDiscount: '',
       });
     }
-  }, [totalPrice, subtotalPrice, state.taxRate, formatAmount, actions.setOptimisticPrice, actions.setPricingBreakdown]);
+  }, [totalPrice, subtotalPrice, state.taxRate, formatAmount, actions]);
 
   // Check if custom bundle is selected
   const isCustomBundleSelected = selectedPackageIds.includes(-1);
