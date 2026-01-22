@@ -16,6 +16,10 @@ export default ({ config }) => ({
     // Feature Flags
     enablePushNotifications: process.env.EXPO_PUBLIC_ENABLE_PUSH_NOTIFICATIONS === 'true',
     enableAnalytics: process.env.EXPO_PUBLIC_ENABLE_ANALYTICS === 'true',
+    // Google OAuth Configuration
+    googleOAuthClientId: process.env.EXPO_PUBLIC_GOOGLE_OAUTH_CLIENT_ID,
+    googleOAuthIosClientId: process.env.EXPO_PUBLIC_GOOGLE_OAUTH_IOS_CLIENT_ID,
+    googleOAuthAndroidClientId: process.env.EXPO_PUBLIC_GOOGLE_OAUTH_ANDROID_CLIENT_ID,
     // EAS Configuration (projectId from app.json is preserved via config.extra spread)
   },
 });

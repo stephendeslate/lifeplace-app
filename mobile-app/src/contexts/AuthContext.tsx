@@ -51,6 +51,7 @@ interface AuthContextValue {
   // Methods
   login: (credentials: LoginCredentials) => Promise<void>;
   register: (data: RegisterCredentials) => Promise<void>;
+  googleLogin: (credential: string) => Promise<void>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
 }
@@ -181,6 +182,39 @@ export function AuthProvider({ children }: AuthProviderProps) {
   );
 
   // ==========================================================================
+  // GOOGLE LOGIN
+  // ==========================================================================
+
+  const googleLogin = useCallback(
+    async (credential: string) => {
+      setLoading(true);
+
+      try {
+        const response = await AuthAPI.googleLogin(credential);
+
+        // Store tokens and user
+        setTokens(response.tokens.access, response.tokens.refresh);
+        setUser(response.user);
+
+        // Check for pending deep link (from pre-auth navigation attempt)
+        const pendingDeepLink = getPendingDeepLink();
+        if (pendingDeepLink) {
+          // Navigate to the pending deep link destination
+          navigateToDeepLink(pendingDeepLink);
+        } else {
+          // Navigate to main app (Explore tab)
+          router.replace('/(tabs)');
+        }
+      } catch (error) {
+        throw new Error(getErrorMessage(error));
+      } finally {
+        setLoading(false);
+      }
+    },
+    [router, setTokens, setUser, setLoading]
+  );
+
+  // ==========================================================================
   // LOGOUT
   // ==========================================================================
 
@@ -251,6 +285,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       isHydrated,
       login,
       register,
+      googleLogin,
       logout,
       refreshUser,
     }),
@@ -261,6 +296,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       isHydrated,
       login,
       register,
+      googleLogin,
       logout,
       refreshUser,
     ]

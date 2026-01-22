@@ -9,6 +9,7 @@ import api from '@/utils/api';
 import type {
   LoginCredentials,
   LoginResponse,
+  GoogleLoginResponse,
   RegisterCredentials,
   User,
   ChangePasswordRequest,
@@ -39,6 +40,31 @@ export const AuthAPI = {
    */
   register: async (data: RegisterCredentials): Promise<LoginResponse> => {
     const response = await api.post<LoginResponse>('/users/register/', data);
+    return response.data;
+  },
+
+  /**
+   * Get Google OAuth client ID from backend.
+   *
+   * The backend returns the configured client ID for Google Sign-In.
+   * GET /users/google/client-id/
+   */
+  getGoogleClientId: async (): Promise<{ client_id: string }> => {
+    const response = await api.get<{ client_id: string }>('/users/google/client-id/');
+    return response.data;
+  },
+
+  /**
+   * Login or register with Google OAuth.
+   *
+   * Sends the Google ID token to backend for verification.
+   * Creates a new account if user doesn't exist.
+   * POST /users/google/login/
+   */
+  googleLogin: async (credential: string): Promise<GoogleLoginResponse> => {
+    const response = await api.post<GoogleLoginResponse>('/users/google/login/', {
+      credential,
+    });
     return response.data;
   },
 

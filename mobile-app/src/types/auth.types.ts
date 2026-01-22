@@ -107,6 +107,12 @@ export interface LoginResponse {
   tokens: AuthTokens;
 }
 
+/** Response from successful Google OAuth login */
+export interface GoogleLoginResponse extends LoginResponse {
+  /** Whether this was a new user registration */
+  created: boolean;
+}
+
 /** Request to initiate password reset flow */
 export interface PasswordResetRequest {
   /** Email address to send reset link to */

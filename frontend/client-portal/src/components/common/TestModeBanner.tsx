@@ -1,8 +1,13 @@
 // frontend/client-portal/src/components/common/TestModeBanner.tsx
 
-import React from 'react';
-import { Box, Typography, alpha } from '@mui/material';
-import { Science as TestIcon } from '@mui/icons-material';
+import React, { useState, useEffect } from 'react';
+import { Box, Typography, IconButton, Tooltip, alpha } from '@mui/material';
+import {
+  Science as TestIcon,
+  Close as CloseIcon,
+} from '@mui/icons-material';
+
+const STORAGE_KEY = 'lifeplace_test_banner_dismissed';
 
 /**
  * Detects if the app is running in test/sandbox mode.
@@ -25,10 +30,58 @@ export const isTestMode = (): boolean => {
 /**
  * Banner displayed when the app is in test/sandbox mode.
  * Shows a prominent warning that payments are not real.
+ * Can be dismissed and will show a small indicator to restore it.
  */
 export const TestModeBanner: React.FC = () => {
+  const [isDismissed, setIsDismissed] = useState(() => {
+    // Check sessionStorage on initial render
+    if (typeof window !== 'undefined') {
+      return sessionStorage.getItem(STORAGE_KEY) === 'true';
+    }
+    return false;
+  });
+
+  // Don't render anything if not in test mode
   if (!isTestMode()) {
     return null;
+  }
+
+  const handleDismiss = () => {
+    setIsDismissed(true);
+    sessionStorage.setItem(STORAGE_KEY, 'true');
+  };
+
+  const handleRestore = () => {
+    setIsDismissed(false);
+    sessionStorage.removeItem(STORAGE_KEY);
+  };
+
+  // Show minimized indicator when dismissed
+  if (isDismissed) {
+    return (
+      <Tooltip title="Test Mode Active - Click to show banner" arrow>
+        <IconButton
+          onClick={handleRestore}
+          sx={{
+            position: 'fixed',
+            top: 8,
+            right: 8,
+            zIndex: 9999,
+            bgcolor: alpha('#FF9800', 0.9),
+            color: 'white',
+            width: 32,
+            height: 32,
+            '&:hover': {
+              bgcolor: '#FF9800',
+            },
+            boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+          }}
+          size="small"
+        >
+          <TestIcon sx={{ fontSize: 18 }} />
+        </IconButton>
+      </Tooltip>
+    );
   }
 
   return (
@@ -62,6 +115,22 @@ export const TestModeBanner: React.FC = () => {
       >
         Test Mode — No real payments will be processed. All transactions are simulated.
       </Typography>
+      <Tooltip title="Dismiss (reappears next session)" arrow>
+        <IconButton
+          onClick={handleDismiss}
+          size="small"
+          sx={{
+            color: 'white',
+            ml: 1,
+            p: 0.5,
+            '&:hover': {
+              bgcolor: 'rgba(255,255,255,0.2)',
+            },
+          }}
+        >
+          <CloseIcon sx={{ fontSize: 18 }} />
+        </IconButton>
+      </Tooltip>
     </Box>
   );
 };

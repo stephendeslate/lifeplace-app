@@ -18,7 +18,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useAuthContext as useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
 import { Input, PasswordInput, Button, Logo } from '@/components/common';
-import { colors, spacing, typeScale, layout } from '@/theme';
+import { GoogleSignInButton } from '@/components/auth';
+import { colors, spacing, typeScale, layout, neutralColors } from '@/theme';
 
 const loginSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
@@ -149,6 +150,16 @@ export default function LoginScreen() {
             >
               Sign In
             </Button>
+
+            {/* Divider */}
+            <View style={styles.dividerContainer}>
+              <View style={styles.dividerLine} />
+              <Text style={styles.dividerText}>or</Text>
+              <View style={styles.dividerLine} />
+            </View>
+
+            {/* Google Sign-In */}
+            <GoogleSignInButton text="signin" />
           </View>
 
           {/* Register Link */}
@@ -211,6 +222,21 @@ const styles = StyleSheet.create({
   },
   submitButton: {
     marginTop: spacing.sm,
+  },
+  dividerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: spacing.lg,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: neutralColors[200],
+  },
+  dividerText: {
+    ...typeScale.labelMedium,
+    color: neutralColors[400],
+    marginHorizontal: spacing.md,
   },
   registerContainer: {
     flexDirection: 'row',

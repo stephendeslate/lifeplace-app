@@ -119,6 +119,7 @@
         }
       ],
       "expo-local-authentication",
+      "expo-web-browser",
       [
         "expo-build-properties",
         {
