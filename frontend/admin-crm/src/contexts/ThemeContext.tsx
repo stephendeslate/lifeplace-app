@@ -22,8 +22,8 @@ interface ThemeProviderProps {
 
 export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   const [mode, setModeState] = useState<ThemeMode>(() => {
-    if (typeof window === 'undefined') return 'system';
-    
+    if (typeof window === 'undefined') return 'light';
+
     try {
       const stored = localStorage.getItem(THEME_STORAGE_KEY);
       if (stored && ['light', 'dark', 'system'].includes(stored)) {
@@ -32,8 +32,8 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
     } catch (error) {
       console.warn('Failed to read theme preference from localStorage:', error);
     }
-    
-    return 'system';
+
+    return 'light';
   });
 
   const [systemPreference, setSystemPreference] = useState<'light' | 'dark'>(() => {
