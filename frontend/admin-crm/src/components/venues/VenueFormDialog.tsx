@@ -390,16 +390,17 @@ export const VenueFormDialog: React.FC<VenueFormDialogProps> = ({
 
     // Gallery images - for new files, append them; for existing URLs, keep them as JSON
     const existingGalleryUrls: string[] = [];
-    formData.gallery_images.forEach((item, index) => {
+    let newFileIndex = 0;
+    formData.gallery_images.forEach((item) => {
       if (item instanceof File) {
-        formDataObj.append(`gallery_image_${index}`, item);
+        formDataObj.append(`gallery_image_${newFileIndex}`, item);
+        newFileIndex++;
       } else if (typeof item === 'string') {
         existingGalleryUrls.push(item);
       }
     });
-    if (existingGalleryUrls.length > 0) {
-      formDataObj.append('existing_gallery_images', JSON.stringify(existingGalleryUrls));
-    }
+    // Always send existing_gallery_images (even if empty) so backend knows to update the field
+    formDataObj.append('existing_gallery_images', JSON.stringify(existingGalleryUrls));
 
     // Standalone pricing
     formDataObj.append('is_rentable_standalone', String(formData.is_rentable_standalone));
@@ -438,12 +439,15 @@ export const VenueFormDialog: React.FC<VenueFormDialogProps> = ({
       operating_rules: operatingRulesData,
     };
 
-    // Check if we have any files to upload
+    // Check if we have any files to upload or if we're editing (to handle image removals)
     const hasFiles = formData.featured_image instanceof File ||
       formData.gallery_images.some(item => item instanceof File);
 
+    // Always use FormData when editing to ensure image changes (including removals) are processed
+    const shouldUseFormData = hasFiles || !!editingVenue;
+
     // Pass both the FormData and the regular data - let the API decide which to use
-    onSubmit(submitData, hasFiles ? formDataObj : undefined);
+    onSubmit(submitData, shouldUseFormData ? formDataObj : undefined);
   };
 
   const handleClose = () => {
