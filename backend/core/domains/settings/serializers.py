@@ -296,6 +296,8 @@ class CompanySettingsSerializer(serializers.ModelSerializer):
     """
     full_address = serializers.CharField(source='get_full_address', read_only=True)
     logo_url = serializers.SerializerMethodField()
+    logo_dark_url = serializers.SerializerMethodField()
+    favicon_url = serializers.SerializerMethodField()
 
     class Meta:
         model = CompanySettings
@@ -306,7 +308,9 @@ class CompanySettingsSerializer(serializers.ModelSerializer):
             'logo',
             'logo_url',
             'logo_dark',
+            'logo_dark_url',
             'favicon',
+            'favicon_url',
             'primary_color',
             'secondary_color',
             'accent_color',
@@ -337,11 +341,23 @@ class CompanySettingsSerializer(serializers.ModelSerializer):
             'created_at',
             'updated_at',
         ]
-        read_only_fields = ['id', 'created_at', 'updated_at', 'full_address', 'logo_url']
+        read_only_fields = ['id', 'created_at', 'updated_at', 'full_address', 'logo_url', 'logo_dark_url', 'favicon_url']
 
     def get_logo_url(self, obj):
         """Get the logo URL or None."""
         return obj.get_logo_url()
+
+    def get_logo_dark_url(self, obj):
+        """Get the dark logo URL or None."""
+        if obj.logo_dark:
+            return obj.logo_dark.url
+        return None
+
+    def get_favicon_url(self, obj):
+        """Get the favicon URL or None."""
+        if obj.favicon:
+            return obj.favicon.url
+        return None
 
 
 class PublicCompanySettingsSerializer(serializers.ModelSerializer):

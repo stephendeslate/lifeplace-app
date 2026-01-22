@@ -431,7 +431,7 @@ export const CompanySettings: React.FC = () => {
                       <>
                         <Box
                           component="img"
-                          src={logoDarkPreview || (companySettings?.logo_dark ? `/media/${companySettings.logo_dark}` : '')}
+                          src={logoDarkPreview || companySettings?.logo_dark_url || ''}
                           alt="Company Logo Dark"
                           sx={{
                             maxWidth: '100%',
@@ -504,7 +504,7 @@ export const CompanySettings: React.FC = () => {
                       <>
                         <Box
                           component="img"
-                          src={faviconPreview || (companySettings?.favicon ? `/media/${companySettings.favicon}` : '')}
+                          src={faviconPreview || companySettings?.favicon_url || ''}
                           alt="Favicon"
                           sx={{
                             width: 64,
