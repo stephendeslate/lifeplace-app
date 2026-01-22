@@ -146,26 +146,55 @@ export const WalkthroughProvider: React.FC<WalkthroughProviderProps> = ({ childr
     []
   );
 
-  // Navigate to a specific step
+  // Navigate to a specific step, auto-skipping if target not found
   const goToStepInternal = useCallback(
-    async (tour: Tour, stepIndex: number) => {
+    async (tour: Tour, stepIndex: number, direction: 'forward' | 'backward' = 'forward') => {
       const step = tour.steps[stepIndex];
       if (!step) return;
 
       const targetElement = await findTargetElement(step.target, step.waitForElement);
 
-      // Scroll target into view
-      if (targetElement) {
-        targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        // Wait for scroll to complete
-        await new Promise(resolve => setTimeout(resolve, 300));
+      // If target element not found, auto-skip to next available step
+      if (!targetElement) {
+        console.warn(`Tour step "${step.id}" target "${step.target}" not found, skipping...`);
+
+        // Find next step with a valid target
+        const increment = direction === 'forward' ? 1 : -1;
+        let nextIndex = stepIndex + increment;
+
+        while (nextIndex >= 0 && nextIndex < tour.steps.length) {
+          const nextStep = tour.steps[nextIndex];
+          const nextTarget = await findTargetElement(nextStep.target, false);
+
+          if (nextTarget) {
+            // Found a valid step, go to it
+            await goToStepInternal(tour, nextIndex, direction);
+            return;
+          }
+          nextIndex += increment;
+        }
+
+        // No more valid steps found
+        if (direction === 'forward') {
+          // Complete the tour if going forward and no more steps
+          setState(INITIAL_STATE);
+          return;
+        } else {
+          // Stay on current step if going backward
+          return;
+        }
       }
+
+      // Scroll target into view
+      targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      // Wait for scroll to complete
+      await new Promise(resolve => setTimeout(resolve, 300));
 
       setState(prev => ({
         ...prev,
         currentStepIndex: stepIndex,
         targetElement,
-        targetRect: targetElement?.getBoundingClientRect() || null,
+        targetRect: targetElement.getBoundingClientRect(),
       }));
     },
     [findTargetElement]
@@ -183,8 +212,24 @@ export const WalkthroughProvider: React.FC<WalkthroughProviderProps> = ({ childr
       // Navigate to required path if needed
       if (tour.requiredPath && location.pathname !== tour.requiredPath) {
         navigate(tour.requiredPath);
-        // Wait for navigation
-        await new Promise(resolve => setTimeout(resolve, 300));
+        // Wait for navigation and DOM to settle
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+
+      // Find the first step with a valid target
+      let firstValidStepIndex = -1;
+      for (let i = 0; i < tour.steps.length; i++) {
+        const targetElement = await findTargetElement(tour.steps[i].target, tour.steps[i].waitForElement);
+        if (targetElement) {
+          firstValidStepIndex = i;
+          break;
+        }
+      }
+
+      // If no valid steps found, don't start the tour
+      if (firstValidStepIndex === -1) {
+        console.warn(`Tour "${tourId}" has no steps with valid targets, cannot start`);
+        return;
       }
 
       // Set tour as active
@@ -198,10 +243,10 @@ export const WalkthroughProvider: React.FC<WalkthroughProviderProps> = ({ childr
         targetRect: null,
       }));
 
-      // Navigate to first step
-      await goToStepInternal(tour, 0);
+      // Navigate to first valid step
+      await goToStepInternal(tour, firstValidStepIndex, 'forward');
     },
-    [location.pathname, navigate, goToStepInternal]
+    [location.pathname, navigate, goToStepInternal, findTargetElement]
   );
 
   // End the current tour
@@ -241,7 +286,7 @@ export const WalkthroughProvider: React.FC<WalkthroughProviderProps> = ({ childr
       return;
     }
 
-    goToStepInternal(state.currentTour, nextIndex);
+    goToStepInternal(state.currentTour, nextIndex, 'forward');
   }, [state.currentTour, state.currentStepIndex, goToStepInternal, endTour]);
 
   // Navigate to previous step
@@ -249,7 +294,7 @@ export const WalkthroughProvider: React.FC<WalkthroughProviderProps> = ({ childr
     if (!state.currentTour || state.currentStepIndex === 0) return;
 
     const prevIndex = state.currentStepIndex - 1;
-    goToStepInternal(state.currentTour, prevIndex);
+    goToStepInternal(state.currentTour, prevIndex, 'backward');
   }, [state.currentTour, state.currentStepIndex, goToStepInternal]);
 
   // Go to specific step
@@ -258,9 +303,10 @@ export const WalkthroughProvider: React.FC<WalkthroughProviderProps> = ({ childr
       if (!state.currentTour) return;
       if (stepIndex < 0 || stepIndex >= state.currentTour.steps.length) return;
 
-      goToStepInternal(state.currentTour, stepIndex);
+      const direction = stepIndex > state.currentStepIndex ? 'forward' : 'backward';
+      goToStepInternal(state.currentTour, stepIndex, direction);
     },
-    [state.currentTour, goToStepInternal]
+    [state.currentTour, state.currentStepIndex, goToStepInternal]
   );
 
   // Skip tour (marks as not completed)
