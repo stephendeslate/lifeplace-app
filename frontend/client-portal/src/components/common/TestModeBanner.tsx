@@ -1,6 +1,6 @@
 // frontend/client-portal/src/components/common/TestModeBanner.tsx
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Box, Typography, IconButton, Tooltip, alpha } from '@mui/material';
 import {
   Science as TestIcon,

@@ -27,7 +27,8 @@ import {
 import { useAuthContext as useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
 import { Input, PasswordInput, Button, Logo } from '@/components/common';
-import { colors, spacing, typeScale, layout } from '@/theme';
+import { GoogleSignInButton } from '@/components/auth';
+import { colors, spacing, typeScale, layout, neutralColors } from '@/theme';
 
 const registerSchema = z
   .object({
@@ -321,6 +322,16 @@ export default function RegisterScreen() {
             >
               Create Account
             </Button>
+
+            {/* Divider */}
+            <View style={styles.dividerContainer}>
+              <View style={styles.dividerLine} />
+              <Text style={styles.dividerText}>or</Text>
+              <View style={styles.dividerLine} />
+            </View>
+
+            {/* Google Sign-Up */}
+            <GoogleSignInButton text="signup" />
           </View>
 
           {/* Login Link */}
@@ -412,6 +423,21 @@ const styles = StyleSheet.create({
   },
   submitButton: {
     marginTop: spacing.sm,
+  },
+  dividerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: spacing.lg,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: neutralColors[200],
+  },
+  dividerText: {
+    ...typeScale.labelMedium,
+    color: neutralColors[400],
+    marginHorizontal: spacing.md,
   },
   loginContainer: {
     flexDirection: 'row',
