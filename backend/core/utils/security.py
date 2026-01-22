@@ -372,15 +372,28 @@ class SecurityMiddleware:
         response['Permissions-Policy'] = 'geolocation=(), microphone=(), camera=()'
 
         # SECURITY FIX: Add Content Security Policy header
-        # This is a restrictive CSP suitable for an API backend
-        # It blocks all inline scripts, styles, and restricts sources
+        # Use a more permissive CSP for Django admin, strict for API endpoints
         if not settings.DEBUG:
-            csp_directives = [
-                "default-src 'none'",  # Block everything by default
-                "frame-ancestors 'none'",  # Prevent framing (clickjacking)
-                "base-uri 'none'",  # Prevent base tag injection
-                "form-action 'none'",  # Prevent form submissions to other origins
-            ]
+            if request.path.startswith('/admin/'):
+                # Django admin needs scripts, styles, images, and form submissions
+                csp_directives = [
+                    "default-src 'self'",
+                    "script-src 'self'",
+                    "style-src 'self'",
+                    "img-src 'self' data:",
+                    "font-src 'self'",
+                    "form-action 'self'",
+                    "frame-ancestors 'none'",
+                    "base-uri 'self'",
+                ]
+            else:
+                # Restrictive CSP for API endpoints
+                csp_directives = [
+                    "default-src 'none'",  # Block everything by default
+                    "frame-ancestors 'none'",  # Prevent framing (clickjacking)
+                    "base-uri 'none'",  # Prevent base tag injection
+                    "form-action 'none'",  # Prevent form submissions to other origins
+                ]
             response['Content-Security-Policy'] = "; ".join(csp_directives)
 
         return response
