@@ -133,7 +133,7 @@ export const WalkthroughOverlay: React.FC<WalkthroughOverlayProps> = ({
               ${fadeIn} 300ms ${tokens.animation.easing.decelerate} forwards,
               ${pulseGlow} 2s ${tokens.animation.easing.gentle} infinite
             `,
-            transition: createTransition(['top', 'left', 'width', 'height'], 'normal'),
+            transition: ['top', 'left', 'width', 'height'].map(prop => createTransition(prop, 'normal')).join(', '),
             pointerEvents: 'none',
           }}
           aria-hidden="true"

@@ -1,7 +1,7 @@
 // frontend/admin-crm/src/components/walkthrough/WalkthroughTooltip.tsx
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import tippy, { Instance as TippyInstance } from 'tippy.js';
+import tippy, { type Instance as TippyInstance } from 'tippy.js';
 import {
   Box,
   Typography,
@@ -56,7 +56,7 @@ export const WalkthroughTooltip: React.FC<WalkthroughTooltipProps> = ({
     tippyInstance.current?.destroy();
 
     // Create new tippy instance
-    const instances = tippy(document.body, {
+    const instance = tippy(document.body, {
       getReferenceClientRect: () => targetRect,
       content: tooltipRef.current,
       showOnCreate: true,
@@ -93,7 +93,7 @@ export const WalkthroughTooltip: React.FC<WalkthroughTooltipProps> = ({
       },
     });
 
-    tippyInstance.current = instances[0];
+    tippyInstance.current = instance;
 
     return () => {
       tippyInstance.current?.destroy();
@@ -163,7 +163,7 @@ export const WalkthroughTooltip: React.FC<WalkthroughTooltipProps> = ({
         overflow: 'hidden',
         visibility: isVisible ? 'visible' : 'hidden',
         opacity: isVisible ? 1 : 0,
-        transition: createTransition(['opacity', 'visibility'], 'fast'),
+        transition: ['opacity', 'visibility'].map(prop => createTransition(prop, 'fast')).join(', '),
       }}
       role="dialog"
       aria-modal="true"
