@@ -60,6 +60,9 @@ class VenueSerializer(serializers.ModelSerializer):
 
     def get_packages_count(self, obj):
         """Get count of packages that include this venue"""
+        # Use annotated value if available (from optimized queryset)
+        if hasattr(obj, '_packages_count'):
+            return obj._packages_count
         return obj.venue_packages.filter(package__is_active=True).count()
 
     def validate_code(self, value):
@@ -113,6 +116,9 @@ class VenueListSerializer(serializers.ModelSerializer):
         return hasattr(obj, 'venue_operating_rules')
 
     def get_packages_count(self, obj):
+        # Use annotated value if available (from optimized queryset)
+        if hasattr(obj, '_packages_count'):
+            return obj._packages_count
         return obj.venue_packages.count()
 
 

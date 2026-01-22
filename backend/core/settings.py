@@ -503,7 +503,7 @@ CACHES = {
             'IGNORE_EXCEPTIONS': True,  # Fallback gracefully if Redis is down
         },
         'KEY_PREFIX': 'lifeplace:cache',  # Isolates general cache keys
-        'TIMEOUT': 300,  # Default timeout 5 minutes
+        'TIMEOUT': 600,  # Default timeout 10 minutes
     },
     'sessions': {
         'BACKEND': 'django_redis.cache.RedisCache',
@@ -817,7 +817,7 @@ if SENTRY_DSN and IS_PRODUCTION:
         ],
         # Set traces_sample_rate to 1.0 to capture 100% of transactions for performance monitoring.
         # Adjust this value in production to reduce overhead.
-        traces_sample_rate=0.1,  # 10% of requests for performance monitoring
+        traces_sample_rate=0.05,  # 5% of requests for performance monitoring
 
         # Capture 100% of errors
         sample_rate=1.0,
@@ -832,7 +832,7 @@ if SENTRY_DSN and IS_PRODUCTION:
         send_default_pii=False,
 
         # Performance monitoring
-        profiles_sample_rate=0.1,  # 10% of transactions for profiling
+        profiles_sample_rate=0.05,  # 5% of transactions for profiling
     )
 
     print(f"✅ Sentry initialized for environment: {ENV}")

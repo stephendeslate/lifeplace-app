@@ -1179,6 +1179,10 @@ class BookingSession(BaseModel):
 
     class Meta:
         ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['booking_flow', 'is_completed']),  # For flow session queries
+            models.Index(fields=['client', '-created_at']),  # For client session history
+        ]
 
     def __str__(self):
         return f"Session {self.session_id} - {self.booking_flow.name}"

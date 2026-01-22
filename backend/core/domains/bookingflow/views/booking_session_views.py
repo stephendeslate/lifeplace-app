@@ -36,30 +36,41 @@ class BookingSessionViewSet(viewsets.ModelViewSet):
     
     def get_queryset(self):
         user = self.request.user
-        
+
         # Admin can see all sessions
         if user.is_staff or getattr(user, 'role', None) == 'ADMIN':
             queryset = BookingSession.objects.all()
         else:
             # Clients can only see their own sessions
             queryset = BookingSession.objects.filter(client=user)
-        
+
+        # Add select_related and prefetch_related for optimization
+        queryset = queryset.select_related(
+            'booking_flow',
+            'booking_flow__event_type',
+            'client',
+            'current_step',
+            'created_event',
+        ).prefetch_related(
+            'completed_steps',
+        )
+
         # Apply filters
         booking_flow_id = self.request.query_params.get('booking_flow')
         is_completed = self.request.query_params.get('is_completed')
         is_abandoned = self.request.query_params.get('is_abandoned')
-        
+
         if booking_flow_id:
             queryset = queryset.filter(booking_flow_id=booking_flow_id)
-        
+
         if is_completed is not None:
             is_completed = is_completed.lower() == 'true'
             queryset = queryset.filter(is_completed=is_completed)
-        
+
         if is_abandoned is not None:
             is_abandoned = is_abandoned.lower() == 'true'
             queryset = queryset.filter(is_abandoned=is_abandoned)
-        
+
         return queryset.order_by('-created_at')
     
     def get_serializer_class(self):

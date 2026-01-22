@@ -93,7 +93,7 @@ app.conf.update(
         # Date reservation cleanup (race condition prevention)
         'cleanup-expired-reservations': {
             'task': 'core.domains.events.tasks.cleanup_expired_reservations',
-            'schedule': 60,  # Every minute
+            'schedule': 300,  # Every 5 minutes
             'options': {'queue': 'events'}
         },
         # Event deadline tasks
@@ -133,7 +133,7 @@ app.conf.update(
         # Workflow webhook retry processing
         'process-workflow-webhook-retries': {
             'task': 'core.domains.workflows.tasks.process_webhook_retries',
-            'schedule': 60,  # Every minute
+            'schedule': 300,  # Every 5 minutes
             'options': {'queue': 'events'}
         },
         # Automatic event completion (mark past events as COMPLETED)

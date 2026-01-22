@@ -16,7 +16,7 @@ from django.utils import timezone
 
 class OptimizedEventManager(models.Manager):
     """Optimized manager with common query patterns pre-configured"""
-    
+
     def get_queryset(self):
         """Always include basic related data"""
         return super().get_queryset().select_related(
@@ -27,7 +27,7 @@ class OptimizedEventManager(models.Manager):
             'workflow_template',
             'current_stage'
         )
-    
+
     def with_details(self):
         """Include all details for detail views"""
         return self.get_queryset().prefetch_related(
@@ -39,15 +39,43 @@ class OptimizedEventManager(models.Manager):
             'feedback__submitted_by',
             'feedback__response_by',
         )
-    
+
+    def with_financial_data(self):
+        """Include filtered invoice and quote prefetching for list views.
+
+        This version uses lazy imports to avoid circular dependencies.
+        Prefetches only active invoices and accepted quotes.
+        """
+        from django.db.models import Prefetch
+        # Lazy imports to avoid circular dependency
+        from core.domains.payments.models import Invoice
+        from core.domains.sales.models import EventQuote
+
+        return self.get_queryset().prefetch_related(
+            Prefetch(
+                'invoices',
+                queryset=Invoice.objects.filter(
+                    status__in=['DRAFT', 'SENT', 'PAID']
+                ).order_by('-created_at'),
+                to_attr='_prefetched_invoices'
+            ),
+            Prefetch(
+                'quotes',
+                queryset=EventQuote.objects.filter(
+                    status='ACCEPTED'
+                ).order_by('-created_at'),
+                to_attr='_prefetched_quotes'
+            ),
+        )
+
     def active(self):
         """Get only active (non-cancelled) events"""
         return self.get_queryset().exclude(status='CANCELLED')
-    
+
     def for_client(self, client_id):
         """Get events for a specific client"""
         return self.get_queryset().filter(client_id=client_id)
-    
+
     def upcoming(self):
         """Get upcoming events"""
         return self.get_queryset().filter(
@@ -400,6 +428,10 @@ class Event(BaseModel):
             models.Index(fields=['date_hold_status', 'date_hold_expires_at']),  # For hold expiration queries
             models.Index(fields=['check_in_status', 'start_date']),  # For check-in tracking queries
             models.Index(fields=['venue', 'start_date']),  # For venue-based queries
+            # Performance optimization indexes
+            models.Index(fields=['workflow_template']),  # For workflow-based queries
+            models.Index(fields=['current_stage']),  # For stage-based queries
+            models.Index(fields=['accepted_quote']),  # For quote lookup queries
         ]
 
     def update_payment_status(self):

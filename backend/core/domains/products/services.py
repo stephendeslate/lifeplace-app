@@ -4,7 +4,7 @@ from datetime import timedelta
 from decimal import Decimal
 
 from django.db import models, transaction
-from django.db.models import Q, Prefetch
+from django.db.models import Count, Q, Prefetch
 from django.utils import timezone
 from django.utils.text import slugify
 from rest_framework.exceptions import ValidationError
@@ -17,11 +17,15 @@ logger = logging.getLogger(__name__)
 
 class ProductCategoryService:
     """Service for managing product categories"""
-    
+
     @staticmethod
     def get_all_categories(search_query=None, is_active=None, parent_id=None):
-        """Get all categories with filtering options"""
-        queryset = ProductCategory.objects.all()
+        """Get all categories with filtering options and optimized annotations"""
+        # Annotate counts to avoid N+1 queries in serializers
+        queryset = ProductCategory.objects.annotate(
+            _children_count=Count('children', filter=Q(children__is_active=True)),
+            _products_count=Count('products', filter=Q(products__is_active=True)),
+        )
         
         # Apply filters if provided
         if search_query:

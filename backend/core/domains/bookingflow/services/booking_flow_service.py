@@ -3,7 +3,7 @@ import logging
 from typing import Optional
 
 from django.db import models, transaction
-from django.db.models import Q
+from django.db.models import Count, Q
 
 from ..exceptions import BookingFlowNotFound
 from ..models import BookingFlow, BookingFlowStep, BookingSession
@@ -15,12 +15,16 @@ logger = logging.getLogger(__name__)
 
 class BookingFlowService:
     """Service for managing booking flows"""
-    
+
     @staticmethod
     def get_all_flows(search_query=None, event_type_id=None, is_active=None):
-        """Get all booking flows with optional filtering"""
+        """Get all booking flows with optional filtering and optimized annotations"""
         queryset = BookingFlow.objects.select_related('event_type').prefetch_related(
             'steps', 'allowed_payment_gateways', 'default_payment_gateway'
+        ).annotate(
+            # Annotate step counts to avoid N+1 queries in serializers
+            _total_steps=Count('steps'),
+            _enabled_steps_count=Count('steps', filter=Q(steps__is_enabled=True)),
         )
         
         if search_query:

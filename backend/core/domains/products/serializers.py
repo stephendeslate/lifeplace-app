@@ -27,9 +27,15 @@ class ProductCategorySerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'slug', 'created_at', 'updated_at']
     
     def get_children_count(self, obj):
+        # Use annotated value if available (from optimized queryset)
+        if hasattr(obj, '_children_count'):
+            return obj._children_count
         return obj.children.filter(is_active=True).count()
-    
+
     def get_products_count(self, obj):
+        # Use annotated value if available (from optimized queryset)
+        if hasattr(obj, '_products_count'):
+            return obj._products_count
         return obj.products.filter(is_active=True).count()
     
     def validate(self, data):
@@ -152,11 +158,14 @@ class ProductOptionSerializer(serializers.ModelSerializer):
 
     def get_event_type_ids(self, obj):
         """Return list of event type IDs this package is available for"""
-        return list(obj.event_types.values_list('id', flat=True))
+        # Use prefetched data if available (via prefetch_related('event_types'))
+        # .all() uses the prefetch cache if it exists
+        return [et.id for et in obj.event_types.all()]
 
     def get_event_type_names(self, obj):
         """Return list of event type names this package is available for"""
-        return list(obj.event_types.values_list('name', flat=True))
+        # Use prefetched data if available (via prefetch_related('event_types'))
+        return [et.name for et in obj.event_types.all()]
 
     def get_effective_featured_image(self, obj):
         """

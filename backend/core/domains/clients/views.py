@@ -1,7 +1,9 @@
 # backend/core/domains/clients/views.py
 from core.utils.pagination import StandardResultsSetPagination
 from core.utils.permissions import IsAdmin
+from django.contrib.auth.hashers import UNUSABLE_PASSWORD_PREFIX
 from django.db import models, transaction
+from django.db.models import Q
 from rest_framework import filters, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -25,40 +27,43 @@ class ClientViewSet(viewsets.ModelViewSet):
     filter_backends = [filters.SearchFilter]
     search_fields = ['first_name', 'last_name', 'email', 'profile__company', 'profile__phone']
     pagination_class = StandardResultsSetPagination
-    
+
     def get_queryset(self):
         is_active = self.request.query_params.get('is_active')
         has_account = self.request.query_params.get('has_account')
         search_query = self.request.query_params.get('search')
-        
+
         # Convert string to boolean if provided
         if is_active is not None:
             is_active = is_active.lower() == 'true'
-            
-        # Get base queryset first
+
+        # Get base queryset
         queryset = ClientService.get_all_clients(
             search_query=search_query,
             is_active=is_active
-    )
-            
-        # has_account is a custom filter - if true, get clients with passwords set
-        # if false, get clients without passwords (imported clients)
+        )
+
+        # has_account filter - database-level filtering instead of Python iteration
+        # Django stores unusable passwords with prefix '!' (UNUSABLE_PASSWORD_PREFIX)
+        # has_usable_password() returns False if password starts with '!' or is empty/null
         if has_account is not None:
             has_account = has_account.lower() == 'true'
-            
+
             if has_account:
-                # Return clients with valid passwords
-                client_ids = [client.id for client in queryset if client.has_usable_password()]
-                return queryset.filter(id__in=client_ids)
+                # Return clients with usable passwords (have set up their account)
+                # Exclude passwords starting with '!' (unusable), empty, or null
+                queryset = queryset.exclude(
+                    password__startswith=UNUSABLE_PASSWORD_PREFIX
+                ).exclude(password='').exclude(password__isnull=True)
             else:
-                # Return clients without valid passwords
-                client_ids = [client.id for client in queryset if not client.has_usable_password()]
-                return queryset.filter(id__in=client_ids)
-        
-        return ClientService.get_all_clients(
-            search_query=search_query,
-            is_active=is_active
-        )
+                # Return clients without usable passwords (imported/invited but not activated)
+                queryset = queryset.filter(
+                    Q(password__startswith=UNUSABLE_PASSWORD_PREFIX) |
+                    Q(password='') |
+                    Q(password__isnull=True)
+                )
+
+        return queryset
     
     def get_serializer_class(self):
         if self.action == 'list':

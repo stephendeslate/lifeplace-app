@@ -555,6 +555,9 @@ class BookingFlowSerializer(serializers.ModelSerializer):
 
     def get_total_steps(self, obj):
         try:
+            # Use annotated value if available (from optimized queryset)
+            if hasattr(obj, '_total_steps'):
+                return obj._total_steps
             return obj.steps.count() if obj and hasattr(obj, 'steps') else 0
         except Exception as e:
             logger.warning(f"Error getting total_steps for flow {obj.id if hasattr(obj, 'id') else 'unknown'}: {e}")
@@ -562,6 +565,9 @@ class BookingFlowSerializer(serializers.ModelSerializer):
 
     def get_enabled_steps_count(self, obj):
         try:
+            # Use annotated value if available (from optimized queryset)
+            if hasattr(obj, '_enabled_steps_count'):
+                return obj._enabled_steps_count
             return obj.enabled_steps.count() if obj and hasattr(obj, 'enabled_steps') else 0
         except Exception as e:
             logger.warning(f"Error getting enabled_steps_count for flow {obj.id if hasattr(obj, 'id') else 'unknown'}: {e}")

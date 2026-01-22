@@ -823,6 +823,7 @@ class Payment(BaseModel):
             models.Index(fields=['status']),
             models.Index(fields=['due_date']),
             models.Index(fields=['event', 'status']),
+            models.Index(fields=['invoice', 'status']),  # For invoice-payment queries
         ]
 
 
@@ -1148,6 +1149,7 @@ class Invoice(BaseModel):
             models.Index(fields=['due_date']),
             models.Index(fields=['event', 'status']),
             models.Index(fields=['client', 'status']),
+            models.Index(fields=['quote']),  # For quote-invoice lookup queries
         ]
 
 

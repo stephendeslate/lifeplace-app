@@ -48,8 +48,12 @@ class QuoteTemplateSerializer(serializers.ModelSerializer):
     
     def get_products(self, obj):
         """Get the products through the through model"""
-        # Use this method to ensure we get the products regardless of the related name
-        template_products = QuoteTemplateProduct.objects.filter(template=obj)
+        # Use the related manager to benefit from prefetch_related if available
+        if hasattr(obj, 'template_products'):
+            template_products = obj.template_products.all()
+        else:
+            # Fallback if related name is different
+            template_products = QuoteTemplateProduct.objects.filter(template=obj)
         return QuoteTemplateProductSerializer(template_products, many=True).data
 
 

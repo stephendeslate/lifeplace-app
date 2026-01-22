@@ -67,7 +67,15 @@ class VenueViewSet(viewsets.ModelViewSet):
         return VenueSerializer
 
     def get_queryset(self):
-        queryset = Venue.objects.select_related('venue_operating_rules')
+        from django.db.models import Count, Q
+
+        queryset = Venue.objects.select_related('venue_operating_rules').annotate(
+            # Annotate package count to avoid N+1 queries in serializers
+            _packages_count=Count(
+                'venue_packages',
+                filter=Q(venue_packages__package__is_active=True)
+            ),
+        )
 
         # Filter by is_active
         is_active = self.request.query_params.get('is_active')
