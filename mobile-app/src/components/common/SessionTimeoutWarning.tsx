@@ -69,7 +69,6 @@ export function SessionTimeoutWarning({
         const newTime = prev - 1000;
         if (newTime <= 0) {
           clearInterval(interval);
-          onLogout();
           return 0;
         }
         return newTime;
@@ -77,7 +76,14 @@ export function SessionTimeoutWarning({
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [visible, remainingMs, onLogout]);
+  }, [visible, remainingMs]);
+
+  // Handle logout when time reaches zero (separate effect to avoid setState during render)
+  useEffect(() => {
+    if (visible && timeLeft <= 0) {
+      onLogout();
+    }
+  }, [visible, timeLeft, onLogout]);
 
   const handleContinue = useCallback(() => {
     onContinue();
