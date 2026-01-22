@@ -92,12 +92,15 @@ export const PublicHeader: React.FC<PublicHeaderProps> = ({
   const isHomePage = location.pathname === '/';
   const isBookingPage = location.pathname.startsWith('/booking');
 
+  // Robust background color system for proper logo contrast
+  // On home page (not scrolled): transparent to show gradient background
+  // Otherwise: Use primary green for consistent branding and logo visibility
   const headerBackground = isScrolled || !isHomePage
-    ? 'rgba(255, 255, 255, 0.95)' 
-    : 'rgba(255, 255, 255, 0.1)';
+    ? alpha(theme.palette.primary.main, 0.95)
+    : alpha('#ffffff', 0.1);
 
   const textColor = isScrolled || !isHomePage
-    ? 'text.primary' 
+    ? 'primary.contrastText'
     : 'white';
 
   return (
@@ -110,7 +113,7 @@ export const PublicHeader: React.FC<PublicHeaderProps> = ({
           backdropFilter: 'blur(20px)',
           color: textColor,
           transition: 'all 0.3s ease',
-          borderBottom: (isScrolled || !isHomePage) ? `1px solid ${alpha(theme.palette.primary.main, 0.1)}` : 'none',
+          borderBottom: (isScrolled || !isHomePage) ? `1px solid ${alpha('#ffffff', 0.2)}` : 'none',
         }}
       >
         <Toolbar sx={{ py: 1, px: { xs: 2, sm: 3, md: 4 } }}>
@@ -131,9 +134,10 @@ export const PublicHeader: React.FC<PublicHeaderProps> = ({
                 alt="LifePlace Alfonso"
                 onError={() => setLogoError(true)}
                 sx={{
-                  height: { xs: 40, md: 48 },
+                  height: { xs: 56, md: 72 },
                   width: 'auto',
                   objectFit: 'contain',
+                  maxWidth: { xs: '180px', md: '240px' },
                 }}
               />
             ) : (
@@ -179,10 +183,12 @@ export const PublicHeader: React.FC<PublicHeaderProps> = ({
                     borderRadius: 2,
                     position: 'relative',
                     '&:hover': {
-                      backgroundColor: alpha(theme.palette.primary.main, 0.1),
+                      backgroundColor: isScrolled || !isHomePage
+                        ? alpha('#ffffff', 0.2)
+                        : alpha(theme.palette.primary.main, 0.1),
                     },
                     ...(isActivePath(item.path) && {
-                      color: 'primary.main',
+                      color: isScrolled || !isHomePage ? '#ffffff' : 'primary.main',
                       fontWeight: 600,
                       '&::after': {
                         content: '""',
@@ -192,7 +198,7 @@ export const PublicHeader: React.FC<PublicHeaderProps> = ({
                         transform: 'translateX(-50%)',
                         width: 24,
                         height: 2,
-                        backgroundColor: 'primary.main',
+                        backgroundColor: isScrolled || !isHomePage ? '#ffffff' : 'primary.main',
                         borderRadius: 1,
                       },
                     }),
@@ -219,7 +225,9 @@ export const PublicHeader: React.FC<PublicHeaderProps> = ({
                     display: { xs: 'none', md: 'flex' },
                     '&:hover': {
                       borderColor: 'currentColor',
-                      backgroundColor: alpha(theme.palette.primary.main, 0.1),
+                      backgroundColor: isScrolled || !isHomePage
+                        ? alpha('#ffffff', 0.2)
+                        : alpha(theme.palette.primary.main, 0.1),
                     },
                   }}
                 >
@@ -235,7 +243,9 @@ export const PublicHeader: React.FC<PublicHeaderProps> = ({
                   sx={{
                     color: 'inherit',
                     '&:hover': {
-                      backgroundColor: alpha(theme.palette.primary.main, 0.1),
+                      backgroundColor: isScrolled || !isHomePage
+                        ? alpha('#ffffff', 0.2)
+                        : alpha(theme.palette.primary.main, 0.1),
                     },
                   }}
                 >
@@ -248,16 +258,17 @@ export const PublicHeader: React.FC<PublicHeaderProps> = ({
                 variant="contained"
                 onClick={handleBookNow}
                 sx={{
-                  backgroundColor: 'primary.main',
-                  color: 'primary.contrastText',
+                  backgroundColor: isScrolled || !isHomePage ? '#ffffff' : 'primary.main',
+                  color: isScrolled || !isHomePage ? 'primary.main' : 'primary.contrastText',
                   px: 3,
+                  fontWeight: 600,
                   '&:hover': {
-                    backgroundColor: 'primary.dark',
+                    backgroundColor: isScrolled || !isHomePage ? alpha('#ffffff', 0.9) : 'primary.dark',
                     transform: 'translateY(-1px)',
                   },
                   // Highlight if on booking page
                   ...(isBookingPage && {
-                    backgroundColor: 'primary.dark',
+                    backgroundColor: isScrolled || !isHomePage ? alpha('#ffffff', 0.85) : 'primary.dark',
                   }),
                 }}
               >
@@ -316,9 +327,10 @@ export const PublicHeader: React.FC<PublicHeaderProps> = ({
                 alt="LifePlace Alfonso"
                 onError={() => setLogoError(true)}
                 sx={{
-                  height: 32,
+                  height: 48,
                   width: 'auto',
                   objectFit: 'contain',
+                  maxWidth: '200px',
                 }}
               />
             ) : (

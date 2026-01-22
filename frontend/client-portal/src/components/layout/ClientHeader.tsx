@@ -66,13 +66,13 @@ export const ClientHeader: React.FC<ClientHeaderProps> = ({
   };
 
   return (
-    <AppBar 
-      position="fixed" 
+    <AppBar
+      position="fixed"
       sx={{
         zIndex: theme.zIndex.drawer + 1,
-        backgroundColor: alpha('#fff', 0.1),
+        backgroundColor: alpha(theme.palette.primary.main, 0.95),
         backdropFilter: 'blur(20px)',
-        borderBottom: `1px solid ${alpha('#fff', 0.1)}`,
+        borderBottom: `1px solid ${alpha('#fff', 0.2)}`,
         boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
       }}
     >
@@ -84,12 +84,12 @@ export const ClientHeader: React.FC<ClientHeaderProps> = ({
             aria-label="open drawer"
             edge="start"
             onClick={onMenuClick}
-            sx={{ 
+            sx={{
               mr: 2,
-              color: theme.palette.primary.main,
-              backgroundColor: alpha('#fff', 0.1),
+              color: '#ffffff',
+              backgroundColor: alpha('#fff', 0.15),
               '&:hover': {
-                backgroundColor: alpha('#fff', 0.2),
+                backgroundColor: alpha('#fff', 0.25),
                 transform: 'scale(1.05)',
               },
               transition: 'all 0.2s ease',
@@ -108,9 +108,10 @@ export const ClientHeader: React.FC<ClientHeaderProps> = ({
               alt="LifePlace Alfonso"
               onError={() => setLogoError(true)}
               sx={{
-                height: { xs: 36, md: 40 },
+                height: { xs: 52, md: 64 },
                 width: 'auto',
                 objectFit: 'contain',
+                maxWidth: { xs: '180px', md: '240px' },
                 cursor: 'pointer',
               }}
               onClick={() => navigate('/dashboard')}
@@ -163,9 +164,9 @@ export const ClientHeader: React.FC<ClientHeaderProps> = ({
                 onClick={handleProfileMenuOpen}
                 sx={{
                   ml: 1,
-                  backgroundColor: alpha('#fff', 0.1),
+                  backgroundColor: alpha('#fff', 0.15),
                   '&:hover': {
-                    backgroundColor: alpha('#fff', 0.2),
+                    backgroundColor: alpha('#fff', 0.25),
                     transform: 'scale(1.05)',
                   },
                   transition: 'all 0.2s ease',
@@ -175,8 +176,8 @@ export const ClientHeader: React.FC<ClientHeaderProps> = ({
                   sx={{
                     width: 32,
                     height: 32,
-                    backgroundColor: theme.palette.primary.main,
-                    color: 'white',
+                    backgroundColor: '#ffffff',
+                    color: theme.palette.primary.main,
                     fontSize: '0.875rem',
                     fontWeight: 600,
                   }}
