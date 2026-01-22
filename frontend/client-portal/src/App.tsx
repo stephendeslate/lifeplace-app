@@ -7,6 +7,7 @@ import { AppProviders } from './providers/AppProviders';
 import { useAuth } from './contexts/AuthContext';
 import { useToastActions } from './contexts/ToastContext';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
+import { TestModeBanner } from './components/common/TestModeBanner';
 import { PublicLayout, BookingLayout, ClientLayout } from './components/layout';
 import { ProtectedRoute } from './components/auth';
 
@@ -475,6 +476,7 @@ const AppRouter: React.FC = () => {
 const App: React.FC = () => {
   return (
     <AppProviders>
+      <TestModeBanner />
       <ErrorBoundary>
         <Router>
           <AppRouter />
