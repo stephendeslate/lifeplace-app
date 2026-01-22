@@ -19,7 +19,7 @@ import { Calendar, Clock, Info, Check, Warning, CheckCircle, WifiHigh, WifiSlash
 import { colors, spacing, typeScale, layout, shadows } from '@/theme';
 import { useBookingContext } from '@/contexts/BookingContext';
 import { formatDateForPicker, getTimezoneNotice } from '@/utils/timezone';
-import { format, addDays, isBefore, startOfDay, parseISO, differenceInDays } from 'date-fns';
+import { format, addDays, isBefore, isAfter, startOfDay, parseISO, differenceInDays } from 'date-fns';
 import { useEventAvailability } from '@/hooks/useEventAvailability';
 import { useAvailabilityWebSocket } from '@/hooks/useAvailabilityWebSocket';
 import { VenuesAPI } from '@/apis/booking';
@@ -57,6 +57,10 @@ export function DateTimeStep({
   const [venue, setVenue] = useState<VenuePublic | null>(null);
   const [venueLoading, setVenueLoading] = useState(false);
 
+  // Default availability values (matching client-portal config)
+  const DEFAULT_MIN_ADVANCE_BOOKING_DAYS = 7;
+  const DEFAULT_MAX_ADVANCE_BOOKING_DAYS = 365;
+
   // Configuration
   const {
     allow_multi_day = false,
@@ -64,7 +68,18 @@ export function DateTimeStep({
     max_event_days = 7,
     blocked_dates: configBlockedDates = [],
     buffer_before_hours = 24,
+    min_advance_booking_days: configMinAdvanceDays,
+    max_advance_booking_days: configMaxAdvanceDays,
   } = configuration || {};
+
+  // Use flow-level values if available, then step config, then defaults
+  // This matches client-portal's IntelligentDateTimeStep behavior
+  const minAdvanceBookingDays = state.currentFlow?.min_advance_booking_days
+    ?? configMinAdvanceDays
+    ?? DEFAULT_MIN_ADVANCE_BOOKING_DAYS;
+  const maxAdvanceBookingDays = state.currentFlow?.max_advance_booking_days
+    ?? configMaxAdvanceDays
+    ?? DEFAULT_MAX_ADVANCE_BOOKING_DAYS;
 
   // Get event type ID from flow (event_type is the ID directly)
   const eventTypeId = state.currentFlow?.event_type;
@@ -125,7 +140,14 @@ export function DateTimeStep({
   }, [configBlockedDates, apiBlockedDates]);
 
   const timezoneNotice = getTimezoneNotice('booking');
-  const minDate = addDays(new Date(), Math.ceil(buffer_before_hours / 24));
+
+  // Calculate min date: use the larger of buffer_before_hours or min_advance_booking_days
+  // This ensures both constraints are respected
+  const bufferDays = Math.ceil(buffer_before_hours / 24);
+  const minDate = addDays(new Date(), Math.max(bufferDays, minAdvanceBookingDays));
+
+  // Calculate max date for booking window (matching client-portal behavior)
+  const maxDate = addDays(new Date(), maxAdvanceBookingDays);
 
   // Load venue info if a package is selected (for check-in/checkout times)
   useEffect(() => {
@@ -223,10 +245,14 @@ export function DateTimeStep({
     return allBlockedDates.includes(dateStr);
   }, [allBlockedDates]);
 
-  // Check if a date is disabled
+  // Check if a date is disabled (too soon, too far, or blocked)
+  // This matches the client-portal's EventAvailabilityCalendar logic
   const isDateDisabled = useCallback((date: Date): boolean => {
-    return isBefore(startOfDay(date), startOfDay(minDate)) || isDateBlocked(date);
-  }, [minDate, isDateBlocked]);
+    const dateStart = startOfDay(date);
+    const tooSoon = isBefore(dateStart, startOfDay(minDate));
+    const tooFar = isAfter(dateStart, startOfDay(maxDate));
+    return tooSoon || tooFar || isDateBlocked(date);
+  }, [minDate, maxDate, isDateBlocked]);
 
   // Check if a date is in the selected range
   const isInRange = useCallback((date: Date): boolean => {
