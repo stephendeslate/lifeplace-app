@@ -28,16 +28,16 @@ const podcastEpisodes: PodcastEpisode[] = [
     description:
       'In this episode, Peter and Shekinah discuss the significance of rest in our fast-paced world. Learn why taking time to pause and recharge is not just a luxury, but a necessity for a balanced and fulfilling life.',
     duration: '25 min',
-    videoUrl: '', // To be provided later
+    videoUrl: 'https://www.youtube.com/embed/TI3H-h6bVC8',
   },
   {
     id: 'ep-2',
     title: 'Being Is Greater Than Doing',
     hosts: ['Peter Gramaje', 'Shekinah Gramaje'],
     description:
-      'Explore the profound truth that who we are matters more than what we accomplish. Peter and Shekinah share insights on finding identity beyond productivity and embracing the value of simply being present.',
+      'Explore the profound truth that who we are matters more than what we accomplish. Peter and Shakinah share insights on finding identity beyond productivity and embracing the value of simply being present.',
     duration: '30 min',
-    videoUrl: '', // To be provided later
+    videoUrl: 'https://www.youtube.com/embed/6E2-e8kFTH8',
   },
   {
     id: 'ep-3',
@@ -46,7 +46,7 @@ const podcastEpisodes: PodcastEpisode[] = [
     description:
       'An honest conversation about the joys and challenges of marriage. Peter and Shekinah open up about their journey together, sharing practical wisdom for building a strong and lasting relationship.',
     duration: '35 min',
-    videoUrl: '', // To be provided later
+    videoUrl: 'https://www.youtube.com/embed/bipsERoPAX8',
   },
   {
     id: 'ep-4',
@@ -55,7 +55,7 @@ const podcastEpisodes: PodcastEpisode[] = [
     description:
       'Forgiveness is one of the most powerful yet difficult things we can do. Join this meaningful conversation about the freedom that comes from letting go and the practical steps toward healing and reconciliation.',
     duration: '40 min',
-    videoUrl: '', // To be provided later
+    videoUrl: 'https://www.youtube.com/embed/HkHkAy8dx5s',
   },
 ];
 
