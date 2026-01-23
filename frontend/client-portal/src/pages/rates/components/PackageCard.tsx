@@ -4,7 +4,7 @@ import React from 'react';
 import { Box, Typography, Stack } from '@mui/material';
 import { CheckCircle, Star } from '@mui/icons-material';
 import { ModernCard, AnimatedElement, tokens } from '../../../design-system';
-import { Button } from '@shared/design-system';
+import { Button } from '../../../design-system';
 import type { PackageCardProps } from '../types/rates.types';
 
 export const PackageCard: React.FC<PackageCardProps> = ({ package: pkg, index = 0 }) => {

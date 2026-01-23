@@ -95,7 +95,7 @@ vi.mock('../../../design-system/components/GlassCard', () => ({
 }));
 
 // Mock shared Button component
-vi.mock('@shared/design-system', () => ({
+vi.mock('../../../design-system', () => ({
   Button: ({ children, variant, size, onClick, sx }: { children: React.ReactNode; variant?: string; size?: string; onClick?: () => void; sx?: object }) => (
     <button
       data-testid="button"

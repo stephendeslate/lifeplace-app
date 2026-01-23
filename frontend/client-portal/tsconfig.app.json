@@ -18,9 +18,7 @@
     /* Path mapping */
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"],
-      "@shared": ["../shared"],
-      "@shared/*": ["../shared/*"]
+      "@/*": ["./src/*"]
     },
 
     /* Linting */
@@ -32,20 +30,11 @@
     "noUncheckedSideEffectImports": true
   },
   "include": [
-    "src",
-    "../shared/design-system/components/AnimatedElement.tsx",
-    "../shared/design-system/components/Button.tsx",
-    "../shared/design-system/components/IconButton.tsx",
-    "../shared/design-system/index.ts",
-    "../shared/design-system/examples/**/*"
+    "src"
   ],
   "exclude": [
-    "**/*.test.ts", 
-    "**/*.test.tsx", 
-    "**/__tests__/**/*", 
-    "../shared/**/__tests__/**/*", 
-    "../shared/**/*.test.ts", 
-    "../shared/**/*.test.tsx", 
-    "../shared/test-utils/**/*"
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    "**/__tests__/**/*"
   ]
 }

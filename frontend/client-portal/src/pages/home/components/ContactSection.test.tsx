@@ -15,7 +15,7 @@ vi.mock('../../../design-system/components/AnimatedElement', () => ({
 }));
 
 // Mock shared design system Button
-vi.mock('@shared/design-system', () => ({
+vi.mock('../../../design-system', () => ({
   Button: ({ children, onClick, variant, size, endIcon, ariaLabel, ...props }: any) => (
     <button
       onClick={onClick}

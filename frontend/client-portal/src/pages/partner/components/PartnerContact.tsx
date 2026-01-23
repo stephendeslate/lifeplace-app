@@ -22,8 +22,7 @@ import {
   ModernCard,
   tokens
 } from '../../../design-system';
-import { Button } from '../../../../../shared/design-system/components/Button';
-import { FadeIn } from '../../../../../shared/design-system/components/AnimatedElement';
+import { Button, FadeIn } from '../../../design-system';
 
 export const PartnerContact: React.FC = () => {
   return (

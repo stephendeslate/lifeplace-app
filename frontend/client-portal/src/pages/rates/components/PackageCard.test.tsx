@@ -17,7 +17,7 @@ mockIntersectionObserver.mockReturnValue({
 window.IntersectionObserver = mockIntersectionObserver as typeof IntersectionObserver;
 
 // Mock shared Button component
-vi.mock('@shared/design-system', () => ({
+vi.mock('../../../design-system', () => ({
   Button: ({ children, variant, size, onClick, ariaLabel, fullWidth, sx }: {
     children: React.ReactNode;
     variant?: string;

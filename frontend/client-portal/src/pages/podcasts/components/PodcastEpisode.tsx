@@ -6,7 +6,7 @@ import { Box, Typography, Stack } from '@mui/material';
 import { PlayCircle, AccessTime, Person } from '@mui/icons-material';
 import { ModernCard } from '../../../design-system/components/ModernCard';
 import { AnimatedElement } from '../../../design-system/components/AnimatedElement';
-import { Button } from '../../../../../shared/design-system/components/Button';
+import { Button } from '../../../design-system';
 import { tokens } from '../../../design-system/tokens';
 import type { PodcastEpisodeCardProps } from '../types/podcasts.types';
 

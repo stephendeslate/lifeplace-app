@@ -24,7 +24,7 @@ import { useAuth } from '../../../contexts/AuthContext';
 import { Section, Container, tokens } from '../../../design-system';
 import { GlassCard } from '../../../design-system/components/GlassCard';
 import { AnimatedElement } from '../../../design-system/components/AnimatedElement';
-import { Button } from '@shared/design-system';
+import { Button } from '../../../design-system';
 import type { ContactSectionProps } from '../types/home.types';
 
 export const ContactSection: React.FC<ContactSectionProps> = ({

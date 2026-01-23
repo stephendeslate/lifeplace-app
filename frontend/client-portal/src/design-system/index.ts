@@ -7,7 +7,7 @@ export * from './tokens';
 export { GlassCard } from './components/GlassCard';
 export { GradientBackground } from './components/GradientBackground';
 export { HeroBackground } from './components/HeroBackground';
-export { AnimatedElement } from './components/AnimatedElement';
+export { AnimatedElement, FadeIn } from './components/AnimatedElement';
 export { SkeletonLoader, PageSkeletons } from './components/SkeletonLoader';
 export {
   EventActivityFeed,
@@ -22,6 +22,9 @@ export { Section } from './components/Section';
 export { Container } from './components/Container';
 export { ImageWithOverlay } from './components/ImageWithOverlay';
 export { ModernCard } from './components/ModernCard';
+
+// Interactive Components
+export { Button } from './components/Button';
 
 // Patterns
 export { 

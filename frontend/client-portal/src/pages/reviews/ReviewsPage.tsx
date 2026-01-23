@@ -6,8 +6,7 @@ import { ArrowForward } from '@mui/icons-material';
 import { SEO } from '../../hooks/useSEO';
 import { ReviewsHero } from './components/ReviewsHero';
 import { TestimonialGrid } from './components/TestimonialGrid';
-import { AnimatedElement, Section, Container, ModernCard, tokens } from '../../design-system';
-import { Button } from '../../../../shared/design-system';
+import { AnimatedElement, Section, Container, ModernCard, tokens, Button } from '../../design-system';
 import type { ReviewsPageProps } from './types/reviews.types';
 
 const ReviewsPage: React.FC<ReviewsPageProps> = ({ onNavigateToBooking }) => {

@@ -4,7 +4,7 @@ import React from 'react';
 import { Box, Typography, Stack } from '@mui/material';
 import { ArrowForward, Phone, Email } from '@mui/icons-material';
 import { Section, Container, AnimatedElement, tokens } from '../../../design-system';
-import { Button } from '../../../../../shared/design-system/components/Button';
+import { Button } from '../../../design-system';
 import type { ServicesCTAProps } from '../types/services.types';
 
 /**
@@ -73,7 +73,7 @@ export const ServicesCTA: React.FC<ServicesCTAProps> = ({ onNavigateToBooking })
                   Book Your Event
                 </Button>
                 <Button
-                  variant="outline"
+                  variant="outlined"
                   size="large"
                   startIcon={<Phone />}
                   onClick={() => window.location.href = 'tel:+639935260943'}

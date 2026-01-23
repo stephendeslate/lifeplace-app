@@ -148,4 +148,9 @@ export const AnimatedElement: React.FC<AnimatedElementProps> = ({
   );
 };
 
+// Convenience wrapper for fade-in animation
+export const FadeIn: React.FC<Omit<AnimatedElementProps, 'animation'>> = (props) => (
+  <AnimatedElement animation="fadeIn" {...props} />
+);
+
 export default AnimatedElement;

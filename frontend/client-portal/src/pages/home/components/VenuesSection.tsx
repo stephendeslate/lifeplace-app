@@ -11,7 +11,7 @@ import {
   Groups,
 } from '@mui/icons-material';
 import { tokens, Section, Container, AnimatedElement } from '../../../design-system';
-import { Button } from '@shared/design-system';
+import { Button } from '../../../design-system';
 import { GlassCard } from '../../../design-system/components/GlassCard';
 import type { VenueInfo } from '../types/home.types';
 

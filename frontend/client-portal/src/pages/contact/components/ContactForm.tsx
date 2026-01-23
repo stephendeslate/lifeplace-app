@@ -11,7 +11,7 @@ import {
 } from '@mui/material';
 import { Send, Check } from '@mui/icons-material';
 import { Section, Container, ModernCard, AnimatedElement, tokens } from '../../../design-system';
-import { Button } from '../../../../../shared/design-system';
+import { Button } from '../../../design-system';
 import { inquiryApi } from '../../../apis/inquiry.api';
 import type { ContactFormData, InquiryType } from '../types/contact.types';
 
