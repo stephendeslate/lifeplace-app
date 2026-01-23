@@ -20,7 +20,6 @@ import {
   type ModernTableColumn,
   type ModernTableAction,
 } from '../';
-import { tokens } from '../../../design-system';
 import { glassPresets } from '../../../design-system/utils/glassmorphism';
 import { useThemeColors } from '../../../hooks/useThemeColors';
 
