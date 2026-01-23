@@ -124,6 +124,7 @@ export const layout = {
 
 export const borderRadius = {
   none: '0px',
+  xs: '2px',
   sm: '4px',
   md: '8px',
   lg: '12px',
@@ -131,21 +132,24 @@ export const borderRadius = {
   xxl: '24px',
   xxxl: '32px',
   full: '9999px',
-  
-  // Organic shapes
+
+  // Organic shapes - subtle for modern aesthetic
   organic: {
-    sm: '8px 16px 8px 16px',
-    md: '16px 24px 16px 24px',
-    lg: '24px 32px 24px 32px',
+    sm: '6px 12px 6px 12px',
+    md: '12px 18px 12px 18px',
+    lg: '18px 24px 18px 24px',
   },
-  
-  // Component specific
-  button: '28px',
-  card: '20px',
-  input: '16px',
-  chip: '12px',
+
+  // Component specific - refined values
+  button: '8px',         // More subtle, modern
+  buttonPill: '24px',    // For pill-style buttons
+  card: '16px',          // Softer than before
+  cardLarge: '20px',     // For hero cards
+  input: '8px',          // Subtle, clean
+  chip: '16px',          // Pill-shaped
   avatar: '50%',
-  dialog: '24px',
+  dialog: '20px',
+  image: '12px',         // For image containers
 };
 
 export const zIndex = {

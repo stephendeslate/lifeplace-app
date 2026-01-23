@@ -93,6 +93,42 @@ export const animations = {
     '0%': { transform: 'scale(0)', opacity: 1 },
     '100%': { transform: 'scale(4)', opacity: 0 },
   },
+
+  // Additional sophisticated animations
+  zoomIn: {
+    from: { transform: 'scale(0.9)', opacity: 0 },
+    to: { transform: 'scale(1)', opacity: 1 },
+  },
+  zoomOut: {
+    from: { transform: 'scale(1.1)', opacity: 0 },
+    to: { transform: 'scale(1)', opacity: 1 },
+  },
+  slideUpFade: {
+    from: { transform: 'translateY(40px)', opacity: 0 },
+    to: { transform: 'translateY(0)', opacity: 1 },
+  },
+  slideDownFade: {
+    from: { transform: 'translateY(-40px)', opacity: 0 },
+    to: { transform: 'translateY(0)', opacity: 1 },
+  },
+  reveal: {
+    from: { clipPath: 'inset(0 100% 0 0)', opacity: 0 },
+    to: { clipPath: 'inset(0 0 0 0)', opacity: 1 },
+  },
+  blur: {
+    from: { filter: 'blur(10px)', opacity: 0 },
+    to: { filter: 'blur(0px)', opacity: 1 },
+  },
+  spin: {
+    from: { transform: 'rotate(0deg)' },
+    to: { transform: 'rotate(360deg)' },
+  },
+  bounceIn: {
+    '0%': { transform: 'scale(0.3)', opacity: 0 },
+    '50%': { transform: 'scale(1.05)', opacity: 0.8 },
+    '70%': { transform: 'scale(0.9)', opacity: 0.9 },
+    '100%': { transform: 'scale(1)', opacity: 1 },
+  },
 };
 
 export const keyframes = {
@@ -144,11 +180,15 @@ export const durations = {
   normal: 300,
   slow: 500,
   verySlow: 1000,
-  
+  ultra: 1500,
+
   // Specific use cases
   ripple: 600,
   collapse: 300,
   expand: 300,
-  fadeIn: 200,
-  fadeOut: 150,
+  fadeIn: 400,        // Slightly slower for elegance
+  fadeOut: 300,
+  hover: 250,
+  pageTransition: 400,
+  scroll: 800,        // For smooth scroll animations
 };

@@ -4,11 +4,13 @@ export * from './colors';
 export * from './shadows';
 export * from './animations';
 export * from './spacing';
+export * from './typography';
 
 import { baseColors, semanticColors, gradients, glassEffects, overlays } from './colors';
 import { shadows, blurs, glows } from './shadows';
 import { transitions, animations, keyframes, durations } from './animations';
 import { spacing, layout, layoutComponents, borderRadius, zIndex } from './spacing';
+import { typography } from './typography';
 
 export const tokens = {
   color: {
@@ -35,6 +37,15 @@ export const tokens = {
     layoutComponents,
     radius: borderRadius,
     zIndex,
+  },
+  typography: {
+    families: typography.families,
+    weights: typography.weights,
+    sizes: typography.sizes,
+    lineHeights: typography.lineHeights,
+    letterSpacing: typography.letterSpacing,
+    styles: typography.styles,
+    responsive: typography.responsive,
   },
 };
 
