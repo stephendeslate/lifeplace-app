@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Typography, Box, Tooltip } from '@mui/material';
-import { TypographyProps } from '@mui/material/Typography';
+import type { TypographyProps } from '@mui/material/Typography';
 import {
   formatPhilippinesTime,
   formatDualTimezone,
