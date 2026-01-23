@@ -13,6 +13,7 @@ import { ServicesHero } from './components/ServicesHero';
 import { ServiceCard } from './components/ServiceCard';
 import { ServicesCTA } from './components/ServicesCTA';
 import { AnimatedElement } from '../../design-system/components/AnimatedElement';
+import { Section, Container } from '../../design-system';
 import type { ServicesPageProps, ServiceInfo } from './types/services.types';
 
 const ServicesPage: React.FC<ServicesPageProps> = ({ onNavigateToBooking }) => {
@@ -86,50 +87,43 @@ const ServicesPage: React.FC<ServicesPageProps> = ({ onNavigateToBooking }) => {
       <Box sx={{ minHeight: '100vh', width: '100%' }}>
         <ServicesHero />
 
-      {/* Services Grid Section */}
-      <Box
-        sx={{
-          py: { xs: 8, md: 12 },
-          px: { xs: 3, sm: 4, md: 6 },
-          backgroundColor: 'background.paper',
-          width: '100%',
-        }}
-      >
-        <Box sx={{ maxWidth: 'clamp(320px, 90vw, 1400px)', mx: 'auto' }}>
-          <Stack spacing={6}>
-            <AnimatedElement animation="fadeIn" delay={100}>
-              <Stack spacing={2} alignItems="center" sx={{ textAlign: 'center' }}>
-                <Typography variant="h2" sx={{ fontWeight: 600, color: 'primary.main' }}>
-                  What We Offer
-                </Typography>
-                <Typography
-                  variant="h6"
-                  color="text.secondary"
-                  sx={{ maxWidth: 700 }}
-                >
-                  Comprehensive event solutions tailored to your needs, from intimate gatherings
-                  to grand celebrations.
-                </Typography>
-              </Stack>
-            </AnimatedElement>
+        {/* Services Grid Section */}
+        <Section background="white" spacing="large">
+          <Container maxWidth="wide">
+            <Stack spacing={6}>
+              <AnimatedElement animation="fadeIn" delay={100}>
+                <Stack spacing={2} alignItems="center" sx={{ textAlign: 'center' }}>
+                  <Typography variant="h2" sx={{ fontWeight: 600, color: 'primary.main' }}>
+                    What We Offer
+                  </Typography>
+                  <Typography
+                    variant="h6"
+                    color="text.secondary"
+                    sx={{ maxWidth: 700 }}
+                  >
+                    Comprehensive event solutions tailored to your needs, from intimate gatherings
+                    to grand celebrations.
+                  </Typography>
+                </Stack>
+              </AnimatedElement>
 
-            <Box
-              sx={{
-                display: 'grid',
-                gridTemplateColumns: {
-                  xs: '1fr',
-                  md: 'repeat(2, 1fr)',
-                },
-                gap: 4,
-              }}
-            >
-              {services.map((service, index) => (
-                <ServiceCard key={service.id} service={service} index={index} />
-              ))}
-            </Box>
-          </Stack>
-        </Box>
-      </Box>
+              <Box
+                sx={{
+                  display: 'grid',
+                  gridTemplateColumns: {
+                    xs: '1fr',
+                    md: 'repeat(2, 1fr)',
+                  },
+                  gap: 4,
+                }}
+              >
+                {services.map((service, index) => (
+                  <ServiceCard key={service.id} service={service} index={index} />
+                ))}
+              </Box>
+            </Stack>
+          </Container>
+        </Section>
 
         <ServicesCTA onNavigateToBooking={onNavigateToBooking} />
       </Box>

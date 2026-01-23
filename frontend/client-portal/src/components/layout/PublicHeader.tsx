@@ -23,6 +23,7 @@ import {
 } from '@mui/icons-material';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { tokens } from '../../design-system';
 import type { NavigationItem } from '../../types/layout.types';
 
 const navigationItems: NavigationItem[] = [
@@ -94,13 +95,13 @@ export const PublicHeader: React.FC<PublicHeaderProps> = ({
 
   // Robust background color system for proper logo contrast
   // On home page (not scrolled): transparent to show gradient background
-  // Otherwise: Use primary green for consistent branding and logo visibility
+  // Otherwise: Use warm sage for consistent branding and logo visibility
   const headerBackground = isScrolled || !isHomePage
-    ? alpha(theme.palette.primary.main, 0.95)
+    ? alpha(tokens.color.base.sage[500], 0.95)
     : alpha('#ffffff', 0.1);
 
   const textColor = isScrolled || !isHomePage
-    ? 'primary.contrastText'
+    ? '#ffffff'
     : 'white';
 
   return (
@@ -185,10 +186,10 @@ export const PublicHeader: React.FC<PublicHeaderProps> = ({
                     '&:hover': {
                       backgroundColor: isScrolled || !isHomePage
                         ? alpha('#ffffff', 0.2)
-                        : alpha(theme.palette.primary.main, 0.1),
+                        : alpha(tokens.color.base.sage[500], 0.1),
                     },
                     ...(isActivePath(item.path) && {
-                      color: isScrolled || !isHomePage ? '#ffffff' : 'primary.main',
+                      color: isScrolled || !isHomePage ? '#ffffff' : tokens.color.base.sage[600],
                       fontWeight: 600,
                       '&::after': {
                         content: '""',
@@ -198,7 +199,7 @@ export const PublicHeader: React.FC<PublicHeaderProps> = ({
                         transform: 'translateX(-50%)',
                         width: 24,
                         height: 2,
-                        backgroundColor: isScrolled || !isHomePage ? '#ffffff' : 'primary.main',
+                        backgroundColor: isScrolled || !isHomePage ? '#ffffff' : tokens.color.base.terracotta[500],
                         borderRadius: 1,
                       },
                     }),
@@ -227,7 +228,7 @@ export const PublicHeader: React.FC<PublicHeaderProps> = ({
                       borderColor: 'currentColor',
                       backgroundColor: isScrolled || !isHomePage
                         ? alpha('#ffffff', 0.2)
-                        : alpha(theme.palette.primary.main, 0.1),
+                        : alpha(tokens.color.base.sage[500], 0.1),
                     },
                   }}
                 >
@@ -245,7 +246,7 @@ export const PublicHeader: React.FC<PublicHeaderProps> = ({
                     '&:hover': {
                       backgroundColor: isScrolled || !isHomePage
                         ? alpha('#ffffff', 0.2)
-                        : alpha(theme.palette.primary.main, 0.1),
+                        : alpha(tokens.color.base.sage[500], 0.1),
                     },
                   }}
                 >
@@ -258,17 +259,17 @@ export const PublicHeader: React.FC<PublicHeaderProps> = ({
                 variant="contained"
                 onClick={handleBookNow}
                 sx={{
-                  backgroundColor: isScrolled || !isHomePage ? '#ffffff' : 'primary.main',
-                  color: isScrolled || !isHomePage ? 'primary.main' : 'primary.contrastText',
+                  backgroundColor: isScrolled || !isHomePage ? tokens.color.base.terracotta[500] : tokens.color.base.terracotta[500],
+                  color: '#ffffff',
                   px: 3,
                   fontWeight: 600,
                   '&:hover': {
-                    backgroundColor: isScrolled || !isHomePage ? alpha('#ffffff', 0.9) : 'primary.dark',
+                    backgroundColor: tokens.color.base.terracotta[600],
                     transform: 'translateY(-1px)',
                   },
                   // Highlight if on booking page
                   ...(isBookingPage && {
-                    backgroundColor: isScrolled || !isHomePage ? alpha('#ffffff', 0.85) : 'primary.dark',
+                    backgroundColor: tokens.color.base.terracotta[600],
                   }),
                 }}
               >
@@ -355,10 +356,10 @@ export const PublicHeader: React.FC<PublicHeaderProps> = ({
                     mx: 1,
                     mb: 0.5,
                     '&.Mui-selected': {
-                      backgroundColor: alpha(theme.palette.primary.main, 0.1),
-                      color: 'primary.main',
+                      backgroundColor: alpha(tokens.color.base.sage[500], 0.1),
+                      color: tokens.color.base.sage[600],
                       '&:hover': {
-                        backgroundColor: alpha(theme.palette.primary.main, 0.15),
+                        backgroundColor: alpha(tokens.color.base.sage[500], 0.15),
                       },
                     },
                   }}
@@ -384,13 +385,13 @@ export const PublicHeader: React.FC<PublicHeaderProps> = ({
                   borderRadius: 2,
                   mx: 1,
                   mb: 0.5,
-                  backgroundColor: alpha(theme.palette.primary.main, 0.1),
+                  backgroundColor: alpha(tokens.color.base.terracotta[500], 0.1),
                   '&:hover': {
-                    backgroundColor: alpha(theme.palette.primary.main, 0.2),
+                    backgroundColor: alpha(tokens.color.base.terracotta[500], 0.15),
                   },
                   '&.Mui-selected': {
-                    backgroundColor: alpha(theme.palette.primary.main, 0.2),
-                    color: 'primary.main',
+                    backgroundColor: alpha(tokens.color.base.terracotta[500], 0.2),
+                    color: tokens.color.base.terracotta[600],
                   },
                 }}
               >
@@ -399,7 +400,7 @@ export const PublicHeader: React.FC<PublicHeaderProps> = ({
                   sx={{
                     '& .MuiListItemText-primary': {
                       fontWeight: 600,
-                      color: 'primary.main',
+                      color: tokens.color.base.terracotta[600],
                     },
                   }}
                 />

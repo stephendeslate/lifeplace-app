@@ -1,18 +1,27 @@
 // pages/podcasts/components/PodcastEpisode.tsx
+// Modern Organic Luxury redesign using design system tokens
 
 import React from 'react';
-import { Box, Typography, Stack, IconButton } from '@mui/material';
+import { Box, Typography, Stack } from '@mui/material';
 import { PlayCircle, AccessTime, Person } from '@mui/icons-material';
-import { GlassCard } from '../../../design-system/components/GlassCard';
+import { ModernCard } from '../../../design-system/components/ModernCard';
 import { AnimatedElement } from '../../../design-system/components/AnimatedElement';
+import { Button } from '../../../../../shared/design-system/components/Button';
+import { tokens } from '../../../design-system/tokens';
 import type { PodcastEpisodeCardProps } from '../types/podcasts.types';
 
 export const PodcastEpisodeCard: React.FC<PodcastEpisodeCardProps> = ({ episode, index = 0 }) => {
+  const handlePlayClick = () => {
+    // TODO: Implement play/listen functionality
+    console.log('Play episode:', episode.title);
+  };
+
   return (
-    <AnimatedElement animation="fadeIn" delay={100 + index * 100}>
-      <GlassCard
-        variant="light"
-        intensity="medium"
+    <AnimatedElement animation="slideUp" delay={100 + index * 100}>
+      <ModernCard
+        variant="elevated"
+        size="medium"
+        hover
         sx={{
           height: '100%',
           display: 'flex',
@@ -20,21 +29,23 @@ export const PodcastEpisodeCard: React.FC<PodcastEpisodeCardProps> = ({ episode,
           overflow: 'hidden',
         }}
       >
-        {/* Video Placeholder */}
+        {/* Episode Artwork/Thumbnail */}
         <Box
           sx={{
             position: 'relative',
             width: '100%',
             paddingTop: '56.25%', // 16:9 aspect ratio
-            backgroundColor: 'rgba(0, 0, 0, 0.3)',
-            borderRadius: '12px 12px 0 0',
+            backgroundColor: tokens.color.base.neutral[100],
+            borderRadius: tokens.spacing.radius.lg,
             overflow: 'hidden',
+            mb: tokens.spacing.space[4],
           }}
         >
           {episode.videoUrl ? (
             <Box
               component="iframe"
               src={episode.videoUrl}
+              title={episode.title}
               sx={{
                 position: 'absolute',
                 top: 0,
@@ -45,6 +56,20 @@ export const PodcastEpisodeCard: React.FC<PodcastEpisodeCardProps> = ({ episode,
               }}
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen
+            />
+          ) : episode.thumbnailUrl ? (
+            <Box
+              component="img"
+              src={episode.thumbnailUrl}
+              alt={episode.title}
+              sx={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+              }}
             />
           ) : (
             <Box
@@ -58,66 +83,81 @@ export const PodcastEpisodeCard: React.FC<PodcastEpisodeCardProps> = ({ episode,
                 alignItems: 'center',
                 justifyContent: 'center',
                 flexDirection: 'column',
-                gap: 1,
+                gap: tokens.spacing.space[2],
+                background: `linear-gradient(135deg, ${tokens.color.base.sage[100]} 0%, ${tokens.color.base.sage[500]} 100%)`,
               }}
             >
-              <IconButton
+              <PlayCircle
                 sx={{
-                  color: 'white',
-                  backgroundColor: 'rgba(255, 255, 255, 0.2)',
-                  '&:hover': {
-                    backgroundColor: 'rgba(255, 255, 255, 0.3)',
-                    transform: 'scale(1.1)',
-                  },
-                  transition: 'all 0.3s ease',
+                  fontSize: 64,
+                  color: tokens.color.base.neutral[50],
+                  opacity: 0.9,
                 }}
-              >
-                <PlayCircle sx={{ fontSize: 64 }} />
-              </IconButton>
+              />
               <Typography
-                variant="caption"
                 sx={{
-                  color: 'rgba(255, 255, 255, 0.7)',
-                  mt: 1,
+                  ...tokens.typography.styles.caption,
+                  color: tokens.color.base.neutral[50],
+                  opacity: 0.85,
                 }}
               >
-                Video coming soon
+                Episode coming soon
               </Typography>
             </Box>
           )}
         </Box>
 
         {/* Episode Info */}
-        <Box sx={{ p: 3, flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
+          {/* Title */}
           <Typography
-            variant="h6"
             sx={{
-              fontWeight: 600,
-              color: 'white',
-              mb: 1,
-              lineHeight: 1.3,
+              ...tokens.typography.styles.h4,
+              fontSize: { xs: tokens.typography.sizes.xl, md: tokens.typography.sizes['2xl'] },
+              color: tokens.color.base.neutral[900],
+              mb: tokens.spacing.space[2],
             }}
           >
             {episode.title}
           </Typography>
 
-          <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 2 }}>
-            <Stack direction="row" spacing={0.5} alignItems="center">
-              <Person sx={{ fontSize: 16, color: 'rgba(255, 255, 255, 0.7)' }} />
+          {/* Metadata */}
+          <Stack
+            direction="row"
+            spacing={tokens.spacing.space[3]}
+            alignItems="center"
+            sx={{ mb: tokens.spacing.space[3] }}
+          >
+            <Stack direction="row" spacing={tokens.spacing.space[1]} alignItems="center">
+              <Person
+                sx={{
+                  fontSize: 16,
+                  color: tokens.color.base.neutral[600],
+                }}
+              />
               <Typography
-                variant="body2"
-                sx={{ color: 'rgba(255, 255, 255, 0.7)' }}
+                sx={{
+                  ...tokens.typography.styles.bodySmall,
+                  color: tokens.color.base.neutral[600],
+                }}
               >
                 {episode.hosts.join(', ')}
               </Typography>
             </Stack>
 
             {episode.duration && (
-              <Stack direction="row" spacing={0.5} alignItems="center">
-                <AccessTime sx={{ fontSize: 16, color: 'rgba(255, 255, 255, 0.7)' }} />
+              <Stack direction="row" spacing={tokens.spacing.space[1]} alignItems="center">
+                <AccessTime
+                  sx={{
+                    fontSize: 16,
+                    color: tokens.color.base.neutral[600],
+                  }}
+                />
                 <Typography
-                  variant="body2"
-                  sx={{ color: 'rgba(255, 255, 255, 0.7)' }}
+                  sx={{
+                    ...tokens.typography.styles.bodySmall,
+                    color: tokens.color.base.neutral[600],
+                  }}
                 >
                   {episode.duration}
                 </Typography>
@@ -125,18 +165,33 @@ export const PodcastEpisodeCard: React.FC<PodcastEpisodeCardProps> = ({ episode,
             )}
           </Stack>
 
+          {/* Description */}
           <Typography
-            variant="body2"
             sx={{
-              color: 'rgba(255, 255, 255, 0.85)',
-              lineHeight: 1.6,
+              ...tokens.typography.styles.body,
+              color: tokens.color.base.neutral[700],
+              mb: tokens.spacing.space[4],
               flexGrow: 1,
             }}
           >
             {episode.description}
           </Typography>
+
+          {/* Listen Button */}
+          <Box>
+            <Button
+              variant="primary"
+              size="medium"
+              onClick={handlePlayClick}
+              startIcon={<PlayCircle />}
+              fullWidth
+              ariaLabel={`Listen to ${episode.title}`}
+            >
+              Listen
+            </Button>
+          </Box>
         </Box>
-      </GlassCard>
+      </ModernCard>
     </AnimatedElement>
   );
 };

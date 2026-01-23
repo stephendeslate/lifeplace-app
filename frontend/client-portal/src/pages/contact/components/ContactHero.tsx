@@ -1,10 +1,20 @@
 // pages/contact/components/ContactHero.tsx
+/**
+ * ContactHero Component
+ *
+ * Modern Organic Luxury redesign of the contact page hero section.
+ * Features warm terracotta gradient, elegant typography, and smooth animations.
+ */
 
 import React from 'react';
 import { Box, Typography, Stack } from '@mui/material';
 import { KeyboardArrowDown } from '@mui/icons-material';
-import { GradientBackground } from '../../../design-system/components/GradientBackground';
-import { AnimatedElement } from '../../../design-system/components/AnimatedElement';
+import {
+  tokens,
+  HeroBackground,
+  AnimatedElement,
+  Container
+} from '../../../design-system';
 
 export const ContactHero: React.FC = () => {
   const scrollToContent = () => {
@@ -15,12 +25,12 @@ export const ContactHero: React.FC = () => {
   };
 
   return (
-    <GradientBackground
-      gradient="forest"
+    <HeroBackground
+      gradient="terracottaWarmth"
       animated={true}
+      overlay="gradient"
+      minHeight={{ xs: 'calc(100vh - 120px)', md: 'calc(100vh - 140px)' }}
       sx={{
-        minHeight: { xs: 'calc(100vh - 120px)', md: 'calc(100vh - 140px)' },
-        color: 'white',
         mt: { xs: '-120px', md: '-140px' },
       }}
     >
@@ -40,47 +50,184 @@ export const ContactHero: React.FC = () => {
             alignItems: 'center',
             justifyContent: 'center',
             width: '100%',
-            px: { xs: 3, sm: 4, md: 6 },
-            py: { xs: 9, md: 14 },
+            px: tokens.spacing.space[4],
+            py: { xs: tokens.spacing.space[8], md: tokens.spacing.space[12] },
             textAlign: 'center',
           }}
         >
-          <Stack spacing={{ xs: 4, md: 6 }} alignItems="center" sx={{ width: '100%' }}>
-            <AnimatedElement animation="fadeIn" delay={100}>
-              <Box sx={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
+          <Container maxWidth="content">
+            <Stack
+              spacing={{ xs: tokens.spacing.space[4], md: tokens.spacing.space[6] }}
+              alignItems="center"
+              sx={{ width: '100%' }}
+            >
+              {/* Main Heading */}
+              <AnimatedElement animation="fadeIn" delay={0}>
                 <Typography
-                  variant="h1"
                   sx={{
-                    fontSize: { xs: '2.5rem', md: '4rem', lg: '5rem' },
-                    fontWeight: 700,
+                    ...tokens.typography.responsive.h1.mobile,
+                    '@media (min-width: 600px)': {
+                      ...tokens.typography.responsive.h1.tablet,
+                    },
+                    '@media (min-width: 900px)': {
+                      ...tokens.typography.responsive.h1.desktop,
+                    },
+                    color: tokens.color.base.neutral[50],
                     maxWidth: 900,
-                    lineHeight: 1.1,
-                    textShadow: '0 4px 20px rgba(0,0,0,0.3)',
                     textAlign: 'center',
+                    textShadow: tokens.shadow.text.dark,
                   }}
                 >
-                  Contact Us
+                  Get in Touch
                 </Typography>
-              </Box>
-            </AnimatedElement>
+              </AnimatedElement>
 
-            <AnimatedElement animation="fadeIn" delay={200}>
-              <Typography
-                variant="h5"
-                sx={{
-                  maxWidth: 700,
-                  opacity: 0.95,
-                  fontWeight: 400,
-                  lineHeight: 1.6,
-                  textShadow: '0 2px 10px rgba(0,0,0,0.2)',
-                  textAlign: 'center',
-                }}
-              >
-                Experience LifePlace Retreat and Events Center in Alfonso, near Tagaytay.
-                We're here to help you plan your perfect event.
-              </Typography>
-            </AnimatedElement>
-          </Stack>
+              {/* Subheading */}
+              <AnimatedElement animation="fadeIn" delay={200}>
+                <Typography
+                  sx={{
+                    ...tokens.typography.styles.bodyLarge,
+                    color: tokens.color.base.neutral[100],
+                    maxWidth: 700,
+                    textAlign: 'center',
+                    lineHeight: 1.7,
+                    fontSize: { xs: '1rem', md: '1.125rem' },
+                    textShadow: tokens.shadow.text.medium,
+                  }}
+                >
+                  Experience LifePlace Retreat and Events Center in Alfonso, near Tagaytay.
+                  We're here to help you plan your perfect event.
+                </Typography>
+              </AnimatedElement>
+
+              {/* Contact Info Cards */}
+              <AnimatedElement animation="fadeIn" delay={400}>
+                <Stack
+                  direction={{ xs: 'column', md: 'row' }}
+                  spacing={tokens.spacing.space[3]}
+                  sx={{
+                    mt: tokens.spacing.space[4],
+                    width: '100%',
+                    justifyContent: 'center',
+                  }}
+                >
+                  {/* Location Card */}
+                  <Box
+                    sx={{
+                      backgroundColor: 'rgba(250, 247, 242, 0.15)',
+                      backdropFilter: 'blur(12px)',
+                      WebkitBackdropFilter: 'blur(12px)',
+                      border: `1px solid ${tokens.color.overlays.light}`,
+                      borderRadius: tokens.spacing.radius.card,
+                      padding: tokens.spacing.space[3],
+                      transition: tokens.animation.transition.all,
+                      cursor: 'pointer',
+                      '&:hover': {
+                        transform: 'translateY(-4px)',
+                        boxShadow: tokens.shadow.elevation.lg,
+                        backgroundColor: 'rgba(250, 247, 242, 0.25)',
+                      },
+                    }}
+                  >
+                    <Typography
+                      sx={{
+                        ...tokens.typography.styles.overline,
+                        color: tokens.color.base.gold[300],
+                        mb: tokens.spacing.space[1],
+                      }}
+                    >
+                      Location
+                    </Typography>
+                    <Typography
+                      sx={{
+                        ...tokens.typography.styles.body,
+                        color: tokens.color.base.neutral[50],
+                        fontWeight: tokens.typography.weights.medium,
+                      }}
+                    >
+                      Alfonso, Cavite
+                    </Typography>
+                  </Box>
+
+                  {/* Phone Card */}
+                  <Box
+                    sx={{
+                      backgroundColor: 'rgba(250, 247, 242, 0.15)',
+                      backdropFilter: 'blur(12px)',
+                      WebkitBackdropFilter: 'blur(12px)',
+                      border: `1px solid ${tokens.color.overlays.light}`,
+                      borderRadius: tokens.spacing.radius.card,
+                      padding: tokens.spacing.space[3],
+                      transition: tokens.animation.transition.all,
+                      cursor: 'pointer',
+                      '&:hover': {
+                        transform: 'translateY(-4px)',
+                        boxShadow: tokens.shadow.elevation.lg,
+                        backgroundColor: 'rgba(250, 247, 242, 0.25)',
+                      },
+                    }}
+                  >
+                    <Typography
+                      sx={{
+                        ...tokens.typography.styles.overline,
+                        color: tokens.color.base.gold[300],
+                        mb: tokens.spacing.space[1],
+                      }}
+                    >
+                      Phone
+                    </Typography>
+                    <Typography
+                      sx={{
+                        ...tokens.typography.styles.body,
+                        color: tokens.color.base.neutral[50],
+                        fontWeight: tokens.typography.weights.medium,
+                      }}
+                    >
+                      (02) 123-4567
+                    </Typography>
+                  </Box>
+
+                  {/* Email Card */}
+                  <Box
+                    sx={{
+                      backgroundColor: 'rgba(250, 247, 242, 0.15)',
+                      backdropFilter: 'blur(12px)',
+                      WebkitBackdropFilter: 'blur(12px)',
+                      border: `1px solid ${tokens.color.overlays.light}`,
+                      borderRadius: tokens.spacing.radius.card,
+                      padding: tokens.spacing.space[3],
+                      transition: tokens.animation.transition.all,
+                      cursor: 'pointer',
+                      '&:hover': {
+                        transform: 'translateY(-4px)',
+                        boxShadow: tokens.shadow.elevation.lg,
+                        backgroundColor: 'rgba(250, 247, 242, 0.25)',
+                      },
+                    }}
+                  >
+                    <Typography
+                      sx={{
+                        ...tokens.typography.styles.overline,
+                        color: tokens.color.base.gold[300],
+                        mb: tokens.spacing.space[1],
+                      }}
+                    >
+                      Email
+                    </Typography>
+                    <Typography
+                      sx={{
+                        ...tokens.typography.styles.body,
+                        color: tokens.color.base.neutral[50],
+                        fontWeight: tokens.typography.weights.medium,
+                      }}
+                    >
+                      info@lifeplacealfonso.com
+                    </Typography>
+                  </Box>
+                </Stack>
+              </AnimatedElement>
+            </Stack>
+          </Container>
         </Box>
 
         {/* Scroll indicator - at bottom */}
@@ -89,7 +236,7 @@ export const ContactHero: React.FC = () => {
           sx={{
             display: 'flex',
             justifyContent: 'center',
-            pb: 4,
+            pb: tokens.spacing.space[4],
             cursor: 'pointer',
             animation: 'bounce 2s infinite',
             '@keyframes bounce': {
@@ -101,8 +248,9 @@ export const ContactHero: React.FC = () => {
           <KeyboardArrowDown
             sx={{
               fontSize: 48,
-              color: 'white',
-              opacity: 0.8,
+              color: tokens.color.base.neutral[50],
+              opacity: 0.9,
+              transition: tokens.animation.transition.all,
               '&:hover': {
                 opacity: 1,
               },
@@ -110,6 +258,6 @@ export const ContactHero: React.FC = () => {
           />
         </Box>
       </Box>
-    </GradientBackground>
+    </HeroBackground>
   );
 };

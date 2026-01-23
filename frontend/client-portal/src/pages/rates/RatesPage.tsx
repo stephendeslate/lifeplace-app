@@ -8,6 +8,7 @@ import { PackageCard } from './components/PackageCard';
 import { WeddingPackages } from './components/WeddingPackages';
 import { RatesNote } from './components/RatesNote';
 import { AnimatedElement } from '../../design-system/components/AnimatedElement';
+import { Section, Container } from '../../design-system';
 import type { RatesPageProps, PackageInfo } from './types/rates.types';
 
 const RatesPage: React.FC<RatesPageProps> = ({ onNavigateToBooking }) => {
@@ -136,15 +137,8 @@ const RatesPage: React.FC<RatesPageProps> = ({ onNavigateToBooking }) => {
         <RatesHero />
 
       {/* Packages Section */}
-      <Box
-        sx={{
-          py: { xs: 8, md: 12 },
-          px: { xs: 3, sm: 4, md: 6 },
-          backgroundColor: 'background.paper',
-          width: '100%',
-        }}
-      >
-        <Box sx={{ maxWidth: 'clamp(320px, 90vw, 1400px)', mx: 'auto' }}>
+      <Section background="white" spacing="large">
+        <Container maxWidth="wide">
           <Stack spacing={6}>
             <AnimatedElement animation="fadeIn" delay={100}>
               <Stack spacing={2} alignItems="center" sx={{ textAlign: 'center' }}>
@@ -176,8 +170,8 @@ const RatesPage: React.FC<RatesPageProps> = ({ onNavigateToBooking }) => {
               ))}
             </Box>
           </Stack>
-        </Box>
-      </Box>
+        </Container>
+      </Section>
 
       {/* Wedding Packages */}
       <WeddingPackages onNavigateToBooking={onNavigateToBooking} />

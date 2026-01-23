@@ -1,4 +1,13 @@
 // design-system/components/GradientBackground.tsx
+//
+// DEPRECATED: This component is deprecated in favor of HeroBackground
+// which provides better gradient options, video support, and improved overlay controls.
+// Please migrate to HeroBackground for new implementations.
+//
+// Migration example:
+// <GradientBackground gradient="forest" animated overlay>
+//   becomes:
+// <HeroBackground gradient="warmSage" animated overlay="light">
 
 import React from 'react';
 import { Box } from '@mui/material';

@@ -1,96 +1,131 @@
 // pages/services/components/ServicesCTA.tsx
 
 import React from 'react';
-import { Box, Typography, Stack, Button, alpha, useTheme } from '@mui/material';
+import { Box, Typography, Stack } from '@mui/material';
 import { ArrowForward, Phone, Email } from '@mui/icons-material';
-import { GlassCard } from '../../../design-system/components/GlassCard';
-import { AnimatedElement } from '../../../design-system/components/AnimatedElement';
+import { Section, Container, AnimatedElement, tokens } from '../../../design-system';
+import { Button } from '../../../../../shared/design-system/components/Button';
 import type { ServicesCTAProps } from '../types/services.types';
 
+/**
+ * ServicesCTA Component
+ *
+ * Prominent call-to-action section encouraging users to book events or contact LifePlace.
+ * Features dual CTAs with contact information display.
+ *
+ * Design System Compliance:
+ * - Section with sage background for visual prominence
+ * - Container with narrow max-width for focused content
+ * - Typography: h2 heading, bodyLarge description
+ * - Buttons: Terracotta primary, outline secondary
+ * - Animation: fadeIn with scaleUp effect for emphasis
+ * - Generous spacing for visual impact
+ * - WCAG AA compliant contrast ratios
+ */
 export const ServicesCTA: React.FC<ServicesCTAProps> = ({ onNavigateToBooking }) => {
-  const theme = useTheme();
-
   return (
-    <Box
-      sx={{
-        py: { xs: 8, md: 12 },
-        px: { xs: 3, sm: 4, md: 6 },
-        backgroundColor: alpha(theme.palette.primary.main, 0.05),
-        width: '100%',
-      }}
-    >
-      <Box sx={{ maxWidth: 1000, mx: 'auto' }}>
+    <Section background="sage" spacing="xlarge">
+      <Container maxWidth="narrow">
         <AnimatedElement animation="fadeIn" delay={100}>
-          <GlassCard variant="light" intensity="strong">
-            <Stack spacing={4} alignItems="center" sx={{ p: { xs: 4, md: 6 }, textAlign: 'center' }}>
-              <Typography variant="h3" sx={{ fontWeight: 600, color: 'primary.main' }}>
-                Ready to Plan Your Event?
-              </Typography>
+          <Stack spacing={4} alignItems="center" sx={{ textAlign: 'center' }}>
+            {/* Heading */}
+            <Typography
+              sx={{
+                ...tokens.typography.styles.h2,
+                color: tokens.color.base.neutral[900],
+                mb: 2,
+              }}
+            >
+              Ready to Plan Your Event?
+            </Typography>
 
-              <Typography variant="h6" color="text.secondary" sx={{ maxWidth: 600 }}>
-                Contact us today to discuss your event needs. Our team is ready to help
-                you create an unforgettable experience at LifePlace Alfonso.
-              </Typography>
+            {/* Description */}
+            <Typography
+              sx={{
+                ...tokens.typography.styles.bodyLarge,
+                color: tokens.color.base.neutral[700],
+                maxWidth: '600px',
+                mb: 2,
+              }}
+            >
+              Contact us today to discuss your event needs. Our team is ready to help
+              you create an unforgettable experience at LifePlace Alfonso.
+            </Typography>
 
+            {/* CTA Buttons */}
+            <AnimatedElement animation="scaleUp" delay={200}>
               <Stack
                 direction={{ xs: 'column', sm: 'row' }}
                 spacing={2}
-                sx={{ width: '100%', justifyContent: 'center' }}
+                sx={{
+                  width: '100%',
+                  justifyContent: 'center',
+                  mt: 2,
+                }}
               >
                 <Button
-                  variant="contained"
+                  variant="terracotta"
                   size="large"
                   endIcon={<ArrowForward />}
                   onClick={onNavigateToBooking}
-                  sx={{
-                    px: 4,
-                    py: 1.5,
-                    fontSize: '1.1rem',
-                  }}
+                  ariaLabel="Book your event at LifePlace Alfonso"
                 >
                   Book Your Event
                 </Button>
                 <Button
-                  variant="outlined"
+                  variant="outline"
                   size="large"
                   startIcon={<Phone />}
-                  href="tel:+639935260943"
-                  sx={{
-                    px: 4,
-                    py: 1.5,
-                    fontSize: '1.1rem',
-                    borderWidth: 2,
-                    '&:hover': {
-                      borderWidth: 2,
-                    },
-                  }}
+                  onClick={() => window.location.href = 'tel:+639935260943'}
+                  ariaLabel="Call LifePlace Alfonso at +63 993 526 0943"
                 >
                   Call Us
                 </Button>
               </Stack>
+            </AnimatedElement>
 
-              <Stack
-                direction={{ xs: 'column', sm: 'row' }}
-                spacing={3}
-                sx={{ pt: 2 }}
-              >
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Phone fontSize="small" color="primary" />
-                  <Typography variant="body2" color="text.secondary">
-                    +63 993 526 0943
-                  </Typography>
-                </Box>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Email fontSize="small" color="primary" />
-                  <Typography variant="body2" color="text.secondary">
-                    reservations.lifeplace@gmail.com
-                  </Typography>
-                </Box>
-              </Stack>
+            {/* Contact Information */}
+            <Stack
+              direction={{ xs: 'column', sm: 'row' }}
+              spacing={3}
+              sx={{
+                pt: 3,
+                borderTop: `1px solid ${tokens.color.base.sage[200]}`,
+                mt: 3,
+              }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Phone
+                  fontSize="small"
+                  sx={{ color: tokens.color.base.sage[600] }}
+                />
+                <Typography
+                  sx={{
+                    ...tokens.typography.styles.bodySmall,
+                    color: tokens.color.base.neutral[700],
+                  }}
+                >
+                  +63 993 526 0943
+                </Typography>
+              </Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Email
+                  fontSize="small"
+                  sx={{ color: tokens.color.base.sage[600] }}
+                />
+                <Typography
+                  sx={{
+                    ...tokens.typography.styles.bodySmall,
+                    color: tokens.color.base.neutral[700],
+                  }}
+                >
+                  reservations.lifeplace@gmail.com
+                </Typography>
+              </Box>
             </Stack>
-          </GlassCard>
+          </Stack>
         </AnimatedElement>
-      </Box>
-    </Box>
+      </Container>
+    </Section>
   );
 };

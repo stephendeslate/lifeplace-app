@@ -142,9 +142,9 @@ const StyledDay = styled(Box, {
   background: (() => {
     if (!isCurrentMonth) return 'transparent';
     if (isOutOfRange) return tokens.color.base.sage[100];
-    if (hasEvents && !isAvailable) return tokens.color.semantic.error.glass;
-    if (hasEvents && isAvailable) return tokens.color.semantic.warning.glass;
-    if (isAvailable) return tokens.color.semantic.success.glass;
+    if (hasEvents && !isAvailable) return tokens.color.semantic.error.subtle;
+    if (hasEvents && isAvailable) return tokens.color.semantic.warning.subtle;
+    if (isAvailable) return tokens.color.semantic.success.subtle;
     return tokens.color.base.sage[50];
   })(),
 

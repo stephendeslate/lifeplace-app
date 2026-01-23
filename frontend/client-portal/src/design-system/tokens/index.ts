@@ -7,7 +7,7 @@ export * from './spacing';
 export * from './typography';
 
 import { baseColors, semanticColors, gradients, glassEffects, overlays } from './colors';
-import { shadows, blurs, glows } from './shadows';
+import { shadows, blurs, glows, textShadows } from './shadows';
 import { transitions, animations, keyframes, durations } from './animations';
 import { spacing, layout, layoutComponents, borderRadius, zIndex } from './spacing';
 import { typography } from './typography';
@@ -24,6 +24,7 @@ export const tokens = {
     elevation: shadows,
     blur: blurs,
     glow: glows,
+    text: textShadows,
   },
   animation: {
     transition: transitions,

@@ -1,10 +1,9 @@
 // pages/contact/components/ContactSocial.tsx
 
 import React from 'react';
-import { Box, Typography, Stack, IconButton, alpha, useTheme } from '@mui/material';
+import { Box, Typography, Stack, IconButton } from '@mui/material';
 import { Facebook, Instagram } from '@mui/icons-material';
-import { GlassCard } from '../../../design-system/components/GlassCard';
-import { AnimatedElement } from '../../../design-system/components/AnimatedElement';
+import { Section, Container, AnimatedElement, tokens } from '../../../design-system';
 
 // TikTok icon as SVG since MUI doesn't have it
 const TikTokIcon: React.FC<{ sx?: object }> = ({ sx }) => (
@@ -19,84 +18,131 @@ const TikTokIcon: React.FC<{ sx?: object }> = ({ sx }) => (
 );
 
 export const ContactSocial: React.FC = () => {
-  const theme = useTheme();
-
   const socialLinks = [
     {
       name: 'Facebook',
       url: 'https://facebook.com/lifeplacealfonso',
-      icon: <Facebook sx={{ fontSize: 32 }} />,
-      color: '#1877F2',
+      icon: <Facebook sx={{ fontSize: 28 }} />,
       handle: '@lifeplacealfonso',
     },
     {
       name: 'Instagram',
       url: 'https://instagram.com/lifeplacealfonso',
-      icon: <Instagram sx={{ fontSize: 32 }} />,
-      color: '#E4405F',
+      icon: <Instagram sx={{ fontSize: 28 }} />,
       handle: '@lifeplacealfonso',
     },
     {
       name: 'TikTok',
       url: 'https://tiktok.com/@lifeplacealfonso',
-      icon: <TikTokIcon sx={{ fontSize: 32 }} />,
-      color: '#000000',
+      icon: <TikTokIcon sx={{ fontSize: 28 }} />,
       handle: '@lifeplacealfonso',
     },
   ];
 
   return (
-    <Box
-      sx={{
-        py: { xs: 6, md: 8 },
-        px: { xs: 3, sm: 4, md: 6 },
-        backgroundColor: alpha(theme.palette.primary.main, 0.03),
-        width: '100%',
-      }}
-    >
-      <Box sx={{ maxWidth: 800, mx: 'auto' }}>
-        <AnimatedElement animation="fadeIn" delay={100}>
-          <GlassCard variant="light" intensity="medium">
-            <Stack spacing={4} alignItems="center" sx={{ p: { xs: 4, md: 6 }, textAlign: 'center' }}>
-              <Typography variant="h4" sx={{ fontWeight: 600, color: 'primary.main' }}>
+    <Section background="cream" spacing="large">
+      <Container maxWidth="narrow">
+        <Stack spacing={5} alignItems="center" sx={{ textAlign: 'center' }}>
+          {/* Heading */}
+          <AnimatedElement animation="fadeIn" delay={0}>
+            <Stack spacing={2} alignItems="center">
+              <Typography
+                variant="h3"
+                sx={{
+                  fontFamily: tokens.typography.families.heading,
+                  fontSize: {
+                    xs: tokens.typography.responsive.h3.mobile.fontSize,
+                    sm: tokens.typography.responsive.h3.tablet.fontSize,
+                    md: tokens.typography.sizes['3xl'],
+                  },
+                  fontWeight: tokens.typography.weights.semibold,
+                  color: tokens.color.base.neutral[900],
+                  letterSpacing: tokens.typography.letterSpacing.heading,
+                  lineHeight: tokens.typography.lineHeights.heading,
+                }}
+              >
                 Follow Us on Social Media
               </Typography>
 
-              <Typography variant="body1" color="text.secondary">
+              <Typography
+                variant="body1"
+                sx={{
+                  fontFamily: tokens.typography.families.body,
+                  fontSize: tokens.typography.sizes.md,
+                  color: tokens.color.base.neutral[600],
+                  lineHeight: tokens.typography.lineHeights.body,
+                  maxWidth: '500px',
+                }}
+              >
                 Stay connected and see the latest happenings at LifePlace Alfonso.
               </Typography>
-
-              <Stack direction="row" spacing={4}>
-                {socialLinks.map((social) => (
-                  <Box key={social.name} sx={{ textAlign: 'center' }}>
-                    <IconButton
-                      href={social.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      sx={{
-                        width: 64,
-                        height: 64,
-                        backgroundColor: alpha(social.color, 0.1),
-                        color: social.color,
-                        '&:hover': {
-                          backgroundColor: alpha(social.color, 0.2),
-                          transform: 'scale(1.1)',
-                        },
-                        transition: 'all 0.2s ease',
-                      }}
-                    >
-                      {social.icon}
-                    </IconButton>
-                    <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 1 }}>
-                      {social.handle}
-                    </Typography>
-                  </Box>
-                ))}
-              </Stack>
             </Stack>
-          </GlassCard>
-        </AnimatedElement>
-      </Box>
-    </Box>
+          </AnimatedElement>
+
+          {/* Social Icons */}
+          <Stack
+            direction="row"
+            spacing={{ xs: 3, sm: 4 }}
+            sx={{
+              flexWrap: 'wrap',
+              justifyContent: 'center',
+              gap: { xs: 3, sm: 4 },
+            }}
+          >
+            {socialLinks.map((social, index) => (
+              <AnimatedElement
+                key={social.name}
+                animation="fadeIn"
+                delay={100 + index * 100}
+              >
+                <Stack spacing={1.5} alignItems="center">
+                  <IconButton
+                    href={social.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={`Follow us on ${social.name}`}
+                    sx={{
+                      width: 64,
+                      height: 64,
+                      borderRadius: '50%',
+                      backgroundColor: tokens.color.base.sage[100],
+                      color: tokens.color.base.sage[700],
+                      border: `2px solid ${tokens.color.base.sage[200]}`,
+                      transition: tokens.animation.transition.elevate,
+                      boxShadow: tokens.shadow.elevation.sm,
+                      '&:hover': {
+                        backgroundColor: tokens.color.base.terracotta[100],
+                        color: tokens.color.base.terracotta[700],
+                        borderColor: tokens.color.base.terracotta[300],
+                        transform: 'scale(1.1)',
+                        boxShadow: tokens.shadow.elevation.md,
+                      },
+                      '&:focus-visible': {
+                        outline: `3px solid ${tokens.color.base.sage[300]}`,
+                        outlineOffset: '2px',
+                      },
+                    }}
+                  >
+                    {social.icon}
+                  </IconButton>
+
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      fontFamily: tokens.typography.families.body,
+                      fontSize: tokens.typography.sizes.sm,
+                      color: tokens.color.base.neutral[600],
+                      fontWeight: tokens.typography.weights.medium,
+                    }}
+                  >
+                    {social.handle}
+                  </Typography>
+                </Stack>
+              </AnimatedElement>
+            ))}
+          </Stack>
+        </Stack>
+      </Container>
+    </Section>
   );
 };

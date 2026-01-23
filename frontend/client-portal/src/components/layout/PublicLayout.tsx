@@ -4,6 +4,7 @@ import React from 'react';
 import { Box } from '@mui/material';
 import { PublicHeader } from './PublicHeader';
 import { PublicFooter } from './PublicFooter';
+import { tokens } from '../../design-system';
 
 interface PublicLayoutProps {
   children: React.ReactNode;
@@ -28,18 +29,21 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({
         width: '100%',
         overflow: 'hidden',
         position: 'relative',
-        background: 'linear-gradient(135deg, #2d5016 0%, #5a7c47 100%)',
+        // Modern Organic Luxury background gradient - natural and sophisticated
+        background: tokens.color.gradients.heroNatural,
         backgroundSize: '200% 200%',
         animation: 'gradient 15s ease infinite',
         '@media (prefers-reduced-motion: reduce)': {
           animation: 'none',
           backgroundPosition: '0% 50%',
         },
+        // Use design system keyframe for gradient animation
         '@keyframes gradient': {
           '0%': { backgroundPosition: '0% 50%' },
           '50%': { backgroundPosition: '100% 50%' },
           '100%': { backgroundPosition: '0% 50%' },
         },
+        // Radial gradient overlays for depth using design system tokens
         '&::before': {
           content: '""',
           position: 'absolute',
@@ -48,8 +52,8 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({
           right: 0,
           bottom: 0,
           background: `
-            radial-gradient(circle at 20% 50%, rgba(255,255,255,0.1) 0%, transparent 50%),
-            radial-gradient(circle at 80% 80%, rgba(255,255,255,0.05) 0%, transparent 50%)
+            ${tokens.color.gradients.radialSage},
+            ${tokens.color.gradients.radialWarm}
           `,
           pointerEvents: 'none',
           zIndex: 0,
@@ -76,7 +80,11 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({
           width: '100%',
           display: 'flex',
           flexDirection: 'column',
-          pt: { xs: '120px', md: '140px' }, // Account for fixed header height + generous breathing room
+          // Use design system tokens for content offset - maintains exact spacing
+          pt: {
+            xs: tokens.spacing.layoutComponents.contentOffset.mobile,  // 120px
+            md: tokens.spacing.layoutComponents.contentOffset.desktop, // 140px
+          },
           pb: 0, // No bottom spacing - let sections control their own spacing
           ...(fullHeight && {
             minHeight: '100vh',

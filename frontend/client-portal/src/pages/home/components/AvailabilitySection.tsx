@@ -1,8 +1,26 @@
 // pages/home/components/AvailabilitySection.tsx
+/**
+ * AvailabilitySection Component - Modern Organic Luxury Redesign
+ *
+ * Features:
+ * - Section component with cream background
+ * - Container for content width
+ * - ModernCard for calendar wrapper
+ * - Typography using design system tokens
+ * - AnimatedElement for smooth entrance
+ * - Responsive layout with proper spacing
+ */
 
 import React, { useState, useMemo, useCallback } from 'react';
-import { Box, Typography, Stack, Alert, CircularProgress } from '@mui/material';
-import { AnimatedElement } from '../../../design-system/components/AnimatedElement';
+import { Box, Typography, Stack, Alert, CircularProgress, Button } from '@mui/material';
+import { ArrowForward } from '@mui/icons-material';
+import {
+  AnimatedElement,
+  Section,
+  Container,
+  ModernCard,
+  tokens
+} from '../../../design-system';
 import { EventAvailabilityCalendar } from '../../../design-system/visualizations/EventAvailabilityCalendar';
 import { useEventAvailability } from '../../../hooks/useEventAvailability';
 import { useToastActions } from '../../../contexts/ToastContext';
@@ -67,47 +85,144 @@ export const AvailabilitySection: React.FC<AvailabilitySectionProps> = ({
   }, [onNavigateToBooking, showError, showSuccess]);
 
   return (
-    <Box sx={{ py: { xs: 6, md: 8 }, px: { xs: 2, sm: 3, md: 4 }, backgroundColor: 'background.default', width: '100%' }}>
-      <Box sx={{ maxWidth: 800, mx: 'auto' }}>
+    <Section background="cream" spacing="large">
+      <Container maxWidth="narrow">
         <AnimatedElement animation="fadeIn" delay={200}>
-          <Stack spacing={4}>
-            <Stack spacing={2} textAlign="center">
-              <Typography variant="h3" sx={{ fontWeight: 600, color: 'primary.main' }}>
+          <Stack spacing={tokens.spacing.space[6]} alignItems="center">
+
+            {/* Header */}
+            <Stack spacing={tokens.spacing.space[3]} textAlign="center">
+              <Typography
+                sx={{
+                  ...tokens.typography.styles.h2,
+                  fontSize: {
+                    xs: tokens.typography.responsive.h2.mobile.fontSize,
+                    sm: tokens.typography.responsive.h2.tablet.fontSize,
+                    md: tokens.typography.styles.h2.fontSize
+                  },
+                  lineHeight: {
+                    xs: tokens.typography.responsive.h2.mobile.lineHeight,
+                    sm: tokens.typography.responsive.h2.tablet.lineHeight,
+                    md: tokens.typography.styles.h2.lineHeight
+                  },
+                  color: tokens.color.base.sage[800],
+                  textAlign: 'center',
+                }}
+              >
                 Check Availability
               </Typography>
-              <Typography variant="h6" color="text.secondary">
+              <Typography
+                sx={{
+                  ...tokens.typography.styles.bodyLarge,
+                  color: tokens.color.base.neutral[700],
+                  maxWidth: 650,
+                  mx: 'auto',
+                  textAlign: 'center',
+                }}
+              >
                 See available dates and book your perfect event at LifePlace Alfonso
               </Typography>
             </Stack>
 
-            {/* Loading State */}
-            {isLoading && (
-              <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-                <CircularProgress />
-              </Box>
-            )}
+            {/* Calendar Card */}
+            <Box sx={{ width: '100%' }}>
+              <ModernCard variant="elevated" size="large" hover={false}>
+                <Stack spacing={tokens.spacing.space[4]}>
 
-            {/* Error State */}
-            {isError && (
-              <Alert severity="warning">
-                Unable to load availability data. Please try again later.
-              </Alert>
-            )}
+                  {/* Loading State */}
+                  {isLoading && (
+                    <Box sx={{
+                      display: 'flex',
+                      justifyContent: 'center',
+                      py: tokens.spacing.space[8]
+                    }}>
+                      <CircularProgress
+                        sx={{ color: tokens.color.base.sage[500] }}
+                        size={48}
+                      />
+                    </Box>
+                  )}
 
-            {/* Calendar - only show when not in error state */}
-            {!isError && (
-              <EventAvailabilityCalendar
-                events={calendarEvents}
-                selectedDate={selectedDate || undefined}
-                onDateSelect={handleDateSelect}
-                onMonthChange={handleMonthChange}
-                minAdvanceBookingDays={minAdvanceBookingDays}
-                maxAdvanceBookingDays={maxAdvanceBookingDays}
-              />
-            )}
+                  {/* Error State */}
+                  {isError && (
+                    <Alert
+                      severity="warning"
+                      sx={{
+                        borderRadius: tokens.spacing.radius.lg,
+                        backgroundColor: tokens.color.base.terracotta[50],
+                        color: tokens.color.base.terracotta[800],
+                        ...tokens.typography.styles.body,
+                      }}
+                    >
+                      Unable to load availability data. Please try again later.
+                    </Alert>
+                  )}
+
+                  {/* Calendar - only show when not in error state */}
+                  {!isError && !isLoading && (
+                    <EventAvailabilityCalendar
+                      events={calendarEvents}
+                      selectedDate={selectedDate || undefined}
+                      onDateSelect={handleDateSelect}
+                      onMonthChange={handleMonthChange}
+                      minAdvanceBookingDays={minAdvanceBookingDays}
+                      maxAdvanceBookingDays={maxAdvanceBookingDays}
+                    />
+                  )}
+
+                  {/* CTA Button */}
+                  {!isError && !isLoading && (
+                    <Box sx={{
+                      display: 'flex',
+                      justifyContent: 'center',
+                      mt: tokens.spacing.space[4]
+                    }}>
+                      <Button
+                        variant="contained"
+                        size="large"
+                        onClick={onNavigateToBooking}
+                        endIcon={<ArrowForward />}
+                        sx={{
+                          backgroundColor: tokens.color.base.terracotta[500],
+                          color: 'white',
+                          px: tokens.spacing.space[6],
+                          py: tokens.spacing.space[2.5],
+                          ...tokens.typography.styles.button,
+                          borderRadius: tokens.spacing.radius.button,
+                          boxShadow: tokens.shadow.elevation.md,
+                          transition: tokens.animation.transition.elevate,
+                          '&:hover': {
+                            backgroundColor: tokens.color.base.terracotta[600],
+                            boxShadow: tokens.shadow.elevation.lg,
+                            transform: 'translateY(-2px)',
+                          },
+                          '&:active': {
+                            transform: 'translateY(0)',
+                          },
+                        }}
+                      >
+                        Start Your Booking
+                      </Button>
+                    </Box>
+                  )}
+                </Stack>
+              </ModernCard>
+            </Box>
+
+            {/* Instructions */}
+            <Typography
+              sx={{
+                ...tokens.typography.styles.bodySmall,
+                color: tokens.color.base.neutral[600],
+                textAlign: 'center',
+                fontStyle: 'italic',
+              }}
+            >
+              Click on any available date to begin your booking journey
+            </Typography>
           </Stack>
         </AnimatedElement>
-      </Box>
-    </Box>
+      </Container>
+    </Section>
   );
 };

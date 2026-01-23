@@ -77,3 +77,16 @@ export const glows = {
   forest: '0 0 16px rgba(125, 133, 112, 0.20)',
   earth: '0 0 16px rgba(166, 124, 94, 0.22)',
 };
+
+export const textShadows = {
+  // Text shadows for readability on colored backgrounds
+  none: 'none',
+  light: '0 1px 2px rgba(0, 0, 0, 0.1)',
+  medium: '0 2px 4px rgba(0, 0, 0, 0.15)',
+  dark: '0 2px 8px rgba(0, 0, 0, 0.3)',
+  heavy: '0 4px 12px rgba(0, 0, 0, 0.4)',
+
+  // Glow effects for light text on dark backgrounds
+  glow: '0 0 8px rgba(255, 255, 255, 0.3)',
+  glowStrong: '0 0 16px rgba(255, 255, 255, 0.5)',
+};

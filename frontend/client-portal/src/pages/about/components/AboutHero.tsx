@@ -3,10 +3,27 @@
 import React from 'react';
 import { Box, Typography, Stack } from '@mui/material';
 import { KeyboardArrowDown } from '@mui/icons-material';
-import { GradientBackground } from '../../../design-system/components/GradientBackground';
-import { GlassCard } from '../../../design-system/components/GlassCard';
-import { AnimatedElement } from '../../../design-system/components/AnimatedElement';
+import {
+  tokens,
+  HeroBackground,
+  GlassCard,
+  AnimatedElement,
+  Container
+} from '../../../design-system';
 
+/**
+ * AboutHero Component
+ *
+ * Hero section for the About page featuring the LifePlace Alfonso brand message.
+ * Redesigned with Modern Organic Luxury design system.
+ *
+ * Features:
+ * - HeroBackground with earthToSky gradient for warmth and grounding
+ * - Typography using Cormorant Garamond for elegance
+ * - GlassCard for the biblical quote with subtle glassmorphism
+ * - AnimatedElement for staggered fade-in animations
+ * - Scroll indicator with smooth scrolling behavior
+ */
 export const AboutHero: React.FC = () => {
   const scrollToContent = () => {
     window.scrollTo({
@@ -16,12 +33,12 @@ export const AboutHero: React.FC = () => {
   };
 
   return (
-    <GradientBackground
-      gradient="forest"
+    <HeroBackground
+      gradient="earthToSky"
       animated={true}
+      overlay="light"
+      minHeight={{ xs: 'calc(100vh - 120px)', md: 'calc(100vh - 140px)' }}
       sx={{
-        minHeight: { xs: 'calc(100vh - 120px)', md: 'calc(100vh - 140px)' },
-        color: 'white',
         mt: { xs: '-120px', md: '-140px' },
       }}
     >
@@ -41,76 +58,117 @@ export const AboutHero: React.FC = () => {
             alignItems: 'center',
             justifyContent: 'center',
             width: '100%',
-            px: { xs: 3, sm: 4, md: 6 },
-            py: { xs: 9, md: 14 },
+            px: { xs: tokens.spacing.space[3], sm: tokens.spacing.space[4], md: tokens.spacing.space[6] },
+            py: { xs: tokens.spacing.space[9], md: tokens.spacing.space[12] },
             textAlign: 'center',
           }}
         >
-          <Stack spacing={{ xs: 5, md: 9 }} alignItems="center" sx={{ width: '100%' }}>
-            <AnimatedElement animation="fadeIn" delay={100}>
-              <Box sx={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
-                <Typography
-                  variant="h1"
-                  sx={{
-                    fontSize: { xs: '2.5rem', md: '4rem', lg: '5rem' },
-                    fontWeight: 700,
-                    maxWidth: 900,
-                    lineHeight: 1.1,
-                    textShadow: '0 4px 20px rgba(0,0,0,0.3)',
-                    textAlign: 'center',
-                  }}
-                >
-                  LifePlace Alfonso
-                </Typography>
-              </Box>
-            </AnimatedElement>
-
-            <AnimatedElement animation="fadeIn" delay={200}>
-              <Box sx={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
-                <GlassCard
-                  variant="light"
-                  intensity="medium"
-                  sx={{
-                    maxWidth: 700,
-                    textAlign: 'center',
-                  }}
-                >
+          <Container maxWidth="wide">
+            <Stack
+              spacing={{ xs: tokens.spacing.space[5], md: tokens.spacing.space[8] }}
+              alignItems="center"
+              sx={{ width: '100%' }}
+            >
+              {/* Main Heading */}
+              <AnimatedElement animation="fadeIn" delay={100}>
+                <Box sx={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
                   <Typography
-                    variant="h5"
                     sx={{
-                      fontStyle: 'italic',
-                      opacity: 0.95,
-                      fontWeight: 400,
-                      color: 'white',
-                      lineHeight: 1.6,
+                      ...tokens.typography.styles.h1,
+                      fontSize: {
+                        xs: tokens.typography.responsive.h1.mobile.fontSize,
+                        md: tokens.typography.responsive.h1.tablet.fontSize,
+                        lg: tokens.typography.responsive.h1.desktop.fontSize,
+                      },
+                      lineHeight: {
+                        xs: tokens.typography.responsive.h1.mobile.lineHeight,
+                        md: tokens.typography.responsive.h1.tablet.lineHeight,
+                        lg: tokens.typography.responsive.h1.desktop.lineHeight,
+                      },
+                      color: tokens.color.base.neutral[900],
+                      maxWidth: 900,
+                      textAlign: 'center',
+                      textShadow: `0 2px 8px ${tokens.color.overlays.light}`,
                     }}
                   >
-                    "I have come that they may have life, and have it to the full."
+                    LifePlace Alfonso
                   </Typography>
-                  <Typography variant="body1" sx={{ opacity: 0.8, mt: 2, color: 'white' }}>
-                    John 10:10b
-                  </Typography>
-                </GlassCard>
-              </Box>
-            </AnimatedElement>
+                </Box>
+              </AnimatedElement>
 
-            <AnimatedElement animation="fadeIn" delay={300}>
-              <Typography
-                variant="h6"
-                sx={{
-                  maxWidth: 800,
-                  opacity: 0.9,
-                  fontWeight: 400,
-                  lineHeight: 1.6,
-                  textShadow: '0 2px 10px rgba(0,0,0,0.2)',
-                  textAlign: 'center',
-                }}
-              >
-                Located in the peaceful hills of Alfonso, Cavite, near Tagaytay,
-                we provide a sanctuary for life's most meaningful celebrations and gatherings.
-              </Typography>
-            </AnimatedElement>
-          </Stack>
+              {/* Biblical Quote Card */}
+              <AnimatedElement animation="slideUp" delay={200}>
+                <Box sx={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
+                  <GlassCard
+                    variant="light"
+                    intensity="medium"
+                    hover={false}
+                    sx={{
+                      maxWidth: 700,
+                      textAlign: 'center',
+                      padding: {
+                        xs: tokens.spacing.space[4],
+                        md: tokens.spacing.space[5]
+                      },
+                      background: 'rgba(255, 255, 255, 0.25)',
+                      backdropFilter: 'blur(12px)',
+                      WebkitBackdropFilter: 'blur(12px)',
+                      border: `1px solid ${tokens.color.base.neutral[200]}`,
+                      borderRadius: tokens.spacing.radius.cardLarge,
+                      boxShadow: tokens.shadow.elevation.card,
+                    }}
+                  >
+                    <Typography
+                      sx={{
+                        ...tokens.typography.styles.quote,
+                        fontSize: {
+                          xs: tokens.typography.sizes.xl,
+                          md: tokens.typography.sizes['2xl']
+                        },
+                        color: tokens.color.base.neutral[900],
+                        lineHeight: tokens.typography.lineHeights.relaxed,
+                        fontStyle: 'italic',
+                        mb: tokens.spacing.space[2],
+                      }}
+                    >
+                      "I have come that they may have life, and have it to the full."
+                    </Typography>
+                    <Typography
+                      sx={{
+                        ...tokens.typography.styles.bodySmall,
+                        color: tokens.color.base.neutral[600],
+                        fontWeight: tokens.typography.weights.medium,
+                        letterSpacing: tokens.typography.letterSpacing.wide,
+                      }}
+                    >
+                      John 10:10b
+                    </Typography>
+                  </GlassCard>
+                </Box>
+              </AnimatedElement>
+
+              {/* Description Text */}
+              <AnimatedElement animation="fadeIn" delay={400}>
+                <Typography
+                  sx={{
+                    ...tokens.typography.styles.bodyLarge,
+                    maxWidth: 800,
+                    color: tokens.color.base.neutral[700],
+                    lineHeight: tokens.typography.lineHeights.relaxed,
+                    textAlign: 'center',
+                    textShadow: `0 1px 4px ${tokens.color.overlays.light}`,
+                    fontSize: {
+                      xs: tokens.typography.sizes.base,
+                      md: tokens.typography.sizes.md,
+                    },
+                  }}
+                >
+                  Located in the peaceful hills of Alfonso, Cavite, near Tagaytay,
+                  we provide a sanctuary for life's most meaningful celebrations and gatherings.
+                </Typography>
+              </AnimatedElement>
+            </Stack>
+          </Container>
         </Box>
 
         {/* Scroll indicator - at bottom */}
@@ -119,9 +177,14 @@ export const AboutHero: React.FC = () => {
           sx={{
             display: 'flex',
             justifyContent: 'center',
-            pb: 4,
+            pb: tokens.spacing.space[4],
             cursor: 'pointer',
             animation: 'bounce 2s infinite',
+            transition: tokens.animation.transition.organic,
+            '&:hover': {
+              opacity: 1,
+              transform: 'translateY(-4px)',
+            },
             '@keyframes bounce': {
               '0%, 100%': { transform: 'translateY(0)' },
               '50%': { transform: 'translateY(-10px)' },
@@ -131,8 +194,9 @@ export const AboutHero: React.FC = () => {
           <KeyboardArrowDown
             sx={{
               fontSize: 48,
-              color: 'white',
-              opacity: 0.8,
+              color: tokens.color.base.neutral[700],
+              opacity: 0.7,
+              transition: tokens.animation.transition.organic,
               '&:hover': {
                 opacity: 1,
               },
@@ -140,6 +204,6 @@ export const AboutHero: React.FC = () => {
           />
         </Box>
       </Box>
-    </GradientBackground>
+    </HeroBackground>
   );
 };

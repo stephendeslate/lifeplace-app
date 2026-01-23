@@ -2,8 +2,11 @@
 
 import React from 'react';
 import { Box, Typography, Stack } from '@mui/material';
+import { Section } from '../../../design-system/components/Section';
+import { Container } from '../../../design-system/components/Container';
 import { TestimonialCard } from './TestimonialCard';
 import { AnimatedElement } from '../../../design-system/components/AnimatedElement';
+import { tokens } from '../../../design-system/tokens';
 import type { Testimonial } from '../types/reviews.types';
 
 // Hardcoded testimonials from the website
@@ -118,25 +121,33 @@ const testimonials: Testimonial[] = [
 
 export const TestimonialGrid: React.FC = () => {
   return (
-    <Box
-      sx={{
-        py: { xs: 8, md: 12 },
-        px: { xs: 3, sm: 4, md: 6 },
-        backgroundColor: 'background.paper',
-        width: '100%',
-      }}
-    >
-      <Box sx={{ maxWidth: 'clamp(320px, 90vw, 1400px)', mx: 'auto' }}>
-        <Stack spacing={6}>
+    <Section background="sage" spacing="large">
+      <Container maxWidth="wide">
+        <Stack spacing={{ xs: 6, md: 8 }}>
+          {/* Section Header */}
           <AnimatedElement animation="fadeIn" delay={100}>
-            <Stack spacing={2} alignItems="center" sx={{ textAlign: 'center' }}>
-              <Typography variant="h2" sx={{ fontWeight: 600, color: 'primary.main' }}>
+            <Stack
+              spacing={3}
+              alignItems="center"
+              sx={{ textAlign: 'center' }}
+            >
+              <Typography
+                variant="h2"
+                sx={{
+                  ...tokens.typography.responsive.h2.mobile,
+                  '@media (min-width: 768px)': tokens.typography.responsive.h2.tablet,
+                  '@media (min-width: 1024px)': tokens.typography.responsive.h2.desktop,
+                  color: tokens.color.base.sage[900],
+                }}
+              >
                 What Our Guests Say
               </Typography>
               <Typography
-                variant="h6"
-                color="text.secondary"
-                sx={{ maxWidth: 700 }}
+                sx={{
+                  ...tokens.typography.styles.bodyLarge,
+                  color: tokens.color.base.sage[700],
+                  maxWidth: '700px',
+                }}
               >
                 Real experiences from real guests. See why LifePlace is the preferred venue
                 for weddings, retreats, and team building events.
@@ -144,6 +155,7 @@ export const TestimonialGrid: React.FC = () => {
             </Stack>
           </AnimatedElement>
 
+          {/* Testimonials Grid */}
           <Box
             sx={{
               display: 'grid',
@@ -152,7 +164,11 @@ export const TestimonialGrid: React.FC = () => {
                 sm: 'repeat(2, 1fr)',
                 lg: 'repeat(3, 1fr)',
               },
-              gap: 4,
+              gap: {
+                xs: tokens.spacing.layout.grid.gap.sm,
+                md: tokens.spacing.layout.grid.gap.md,
+                lg: tokens.spacing.layout.grid.gap.lg,
+              },
             }}
           >
             {testimonials.map((testimonial, index) => (
@@ -164,7 +180,7 @@ export const TestimonialGrid: React.FC = () => {
             ))}
           </Box>
         </Stack>
-      </Box>
-    </Box>
+      </Container>
+    </Section>
   );
 };

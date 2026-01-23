@@ -1,10 +1,21 @@
 // pages/rates/components/RatesHero.tsx
+/**
+ * RatesHero Component - Modern Organic Luxury Redesign
+ *
+ * Features:
+ * - New HeroBackground with goldenHour gradient for premium luxury feel
+ * - Typography using design system tokens (Cormorant Garamond + Inter)
+ * - Gradient overlay for optimal text readability
+ * - Smooth scroll-triggered animations with staggered delays
+ * - Responsive design across mobile/tablet/desktop
+ * - WCAG AA compliant contrast ratios
+ * - Animated scroll indicator
+ */
 
 import React from 'react';
 import { Box, Typography, Stack } from '@mui/material';
 import { KeyboardArrowDown } from '@mui/icons-material';
-import { GradientBackground } from '../../../design-system/components/GradientBackground';
-import { AnimatedElement } from '../../../design-system/components/AnimatedElement';
+import { HeroBackground, AnimatedElement, tokens } from '../../../design-system';
 
 export const RatesHero: React.FC = () => {
   const scrollToContent = () => {
@@ -15,12 +26,15 @@ export const RatesHero: React.FC = () => {
   };
 
   return (
-    <GradientBackground
-      gradient="forest"
+    <HeroBackground
+      gradient="goldenHour"
       animated={true}
+      overlay="gradient"
       sx={{
         minHeight: { xs: 'calc(100vh - 120px)', md: 'calc(100vh - 140px)' },
-        color: 'white',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
         mt: { xs: '-120px', md: '-140px' },
       }}
     >
@@ -40,22 +54,39 @@ export const RatesHero: React.FC = () => {
             alignItems: 'center',
             justifyContent: 'center',
             width: '100%',
-            px: { xs: 3, sm: 4, md: 6 },
-            py: { xs: 9, md: 14 },
+            px: {
+              xs: tokens.spacing.space.containerPadding.mobile,
+              sm: tokens.spacing.space.containerPadding.tablet,
+              md: tokens.spacing.space.containerPadding.desktop,
+            },
+            py: { xs: tokens.spacing.space[9], md: tokens.spacing.space[14] },
             textAlign: 'center',
           }}
         >
-          <Stack spacing={{ xs: 4, md: 6 }} alignItems="center" sx={{ width: '100%' }}>
-            <AnimatedElement animation="fadeIn" delay={100}>
+          <Stack
+            spacing={{ xs: tokens.spacing.space[4], md: tokens.spacing.space[6] }}
+            alignItems="center"
+            sx={{ width: '100%' }}
+          >
+            {/* Main Heading - H1 Typography */}
+            <AnimatedElement animation="fadeIn" delay={0}>
               <Box sx={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
                 <Typography
-                  variant="h1"
                   sx={{
-                    fontSize: { xs: '2.5rem', md: '4rem', lg: '5rem' },
-                    fontWeight: 700,
+                    ...tokens.typography.styles.h1,
+                    fontSize: {
+                      xs: tokens.typography.responsive.h1.mobile.fontSize,
+                      sm: tokens.typography.responsive.h1.tablet.fontSize,
+                      md: tokens.typography.styles.h1.fontSize,
+                    },
+                    lineHeight: {
+                      xs: tokens.typography.responsive.h1.mobile.lineHeight,
+                      sm: tokens.typography.responsive.h1.tablet.lineHeight,
+                      md: tokens.typography.styles.h1.lineHeight,
+                    },
+                    color: tokens.color.base.neutral[50],
                     maxWidth: 900,
-                    lineHeight: 1.1,
-                    textShadow: '0 4px 20px rgba(0,0,0,0.3)',
+                    textShadow: tokens.shadow.text.heavy,
                     textAlign: 'center',
                   }}
                 >
@@ -64,52 +95,61 @@ export const RatesHero: React.FC = () => {
               </Box>
             </AnimatedElement>
 
+            {/* Subheading - Body Large */}
             <AnimatedElement animation="fadeIn" delay={200}>
-              <Typography
-                variant="h5"
-                sx={{
-                  maxWidth: 700,
-                  opacity: 0.95,
-                  fontWeight: 400,
-                  lineHeight: 1.6,
-                  textShadow: '0 2px 10px rgba(0,0,0,0.2)',
-                  textAlign: 'center',
-                }}
-              >
-                Transparent pricing for all our services. Choose the package that best fits
-                your event needs and budget.
-              </Typography>
+              <Box sx={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
+                <Typography
+                  sx={{
+                    ...tokens.typography.styles.bodyLarge,
+                    fontSize: {
+                      xs: tokens.typography.styles.body.fontSize,
+                      sm: tokens.typography.styles.bodyLarge.fontSize,
+                    },
+                    maxWidth: 700,
+                    color: tokens.color.base.neutral[50],
+                    opacity: 0.95,
+                    textShadow: tokens.shadow.text.medium,
+                    textAlign: 'center',
+                  }}
+                >
+                  Transparent pricing for all our services. Choose the package that best fits
+                  your event needs and budget.
+                </Typography>
+              </Box>
             </AnimatedElement>
           </Stack>
         </Box>
 
         {/* Scroll indicator - at bottom */}
-        <Box
-          onClick={scrollToContent}
-          sx={{
-            display: 'flex',
-            justifyContent: 'center',
-            pb: 4,
-            cursor: 'pointer',
-            animation: 'bounce 2s infinite',
-            '@keyframes bounce': {
-              '0%, 100%': { transform: 'translateY(0)' },
-              '50%': { transform: 'translateY(-10px)' },
-            },
-          }}
-        >
-          <KeyboardArrowDown
+        <AnimatedElement animation="fadeIn" delay={400}>
+          <Box
+            onClick={scrollToContent}
             sx={{
-              fontSize: 48,
-              color: 'white',
-              opacity: 0.8,
-              '&:hover': {
-                opacity: 1,
+              display: 'flex',
+              justifyContent: 'center',
+              pb: tokens.spacing.space[4],
+              cursor: 'pointer',
+              animation: 'bounce 2s infinite',
+              '@keyframes bounce': {
+                '0%, 100%': { transform: 'translateY(0)' },
+                '50%': { transform: 'translateY(-10px)' },
               },
             }}
-          />
-        </Box>
+          >
+            <KeyboardArrowDown
+              sx={{
+                fontSize: 48,
+                color: tokens.color.base.neutral[50],
+                opacity: 0.8,
+                transition: tokens.animation.transition.all,
+                '&:hover': {
+                  opacity: 1,
+                },
+              }}
+            />
+          </Box>
+        </AnimatedElement>
       </Box>
-    </GradientBackground>
+    </HeroBackground>
   );
 };

@@ -3,6 +3,9 @@
 
 import AccessibleButton, { PrimaryButton, SecondaryButton, GlassButton, RoundedButton, LoadingButton } from './components/AccessibleButton';
 import GlassCard, { GlassCardSubtle, GlassCardMedium, GlassCardStrong, InteractiveGlassCard, ColoredGlassCard } from './components/GlassCard';
+import Button from './components/Button';
+import AnimatedElement, { FadeIn, SlideUp, SlideDown, ZoomIn, BounceIn, Reveal, BlurIn } from './components/AnimatedElement';
+import IconButton from './components/IconButton';
 import { createAdminTheme, adminLightTheme, adminDarkTheme } from './themes/admin';
 import { createClientTheme, clientLightTheme, clientDarkTheme } from './themes/client';
 import { designTokens } from './tokens/base';
@@ -55,6 +58,21 @@ export {
   LoadingButton,
 } from './components/AccessibleButton';
 
+export { Button } from './components/Button';
+
+export {
+  AnimatedElement,
+  FadeIn,
+  SlideUp,
+  SlideDown,
+  ZoomIn,
+  BounceIn,
+  Reveal,
+  BlurIn,
+} from './components/AnimatedElement';
+
+export { IconButton } from './components/IconButton';
+
 export type {
   GlassVariant,
   GlassIntensity,
@@ -64,6 +82,12 @@ export type {
 export type { GlassColor } from './tokens/base';
 
 export type { AccessibleButtonProps } from './components/AccessibleButton';
+
+export type { ButtonProps, ButtonVariant, ButtonSize } from './components/Button';
+
+export type { AnimatedElementProps, AnimationType } from './components/AnimatedElement';
+
+export type { IconButtonProps, IconButtonVariant, IconButtonSize } from './components/IconButton';
 
 // Export utilities
 export {
@@ -260,6 +284,16 @@ export default {
     GlassButton: GlassButton,
     RoundedButton: RoundedButton,
     LoadingButton: LoadingButton,
+    Button: Button,
+    AnimatedElement: AnimatedElement,
+    FadeIn: FadeIn,
+    SlideUp: SlideUp,
+    SlideDown: SlideDown,
+    ZoomIn: ZoomIn,
+    BounceIn: BounceIn,
+    Reveal: Reveal,
+    BlurIn: BlurIn,
+    IconButton: IconButton,
   },
   utils: {
     responsive: {

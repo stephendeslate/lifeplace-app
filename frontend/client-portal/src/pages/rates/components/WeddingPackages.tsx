@@ -1,10 +1,12 @@
 // pages/rates/components/WeddingPackages.tsx
 
 import React from 'react';
-import { Box, Typography, Stack, Button, Chip, alpha, useTheme } from '@mui/material';
+import { Box, Typography, Stack, Button, Chip } from '@mui/material';
 import { ArrowForward, Check, Favorite } from '@mui/icons-material';
-import { GlassCard } from '../../../design-system/components/GlassCard';
+import { Section } from '../../../design-system/components/Section';
+import { Container } from '../../../design-system/components/Container';
 import { AnimatedElement } from '../../../design-system/components/AnimatedElement';
+import { tokens } from '../../../design-system/tokens';
 import type { WeddingPackagesProps, WeddingVenue, WeddingCombo, AllInWeddingPackage } from '../types/rates.types';
 
 const weddingVenues: WeddingVenue[] = [
@@ -131,8 +133,6 @@ const allInPackages: AllInWeddingPackage[] = [
 ];
 
 export const WeddingPackages: React.FC<WeddingPackagesProps> = ({ onNavigateToBooking }) => {
-  const theme = useTheme();
-
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('en-PH', {
       style: 'currency',
@@ -143,29 +143,39 @@ export const WeddingPackages: React.FC<WeddingPackagesProps> = ({ onNavigateToBo
   };
 
   return (
-    <Box
-      sx={{
-        py: { xs: 8, md: 12 },
-        px: { xs: 3, sm: 4, md: 6 },
-        backgroundColor: alpha(theme.palette.primary.main, 0.03),
-        width: '100%',
-      }}
-    >
-      <Box sx={{ maxWidth: 'clamp(320px, 90vw, 1400px)', mx: 'auto' }}>
+    <Section background="cream" spacing="xlarge">
+      <Container maxWidth="wide">
         <Stack spacing={8}>
           {/* Header */}
           <AnimatedElement animation="fadeIn" delay={100}>
             <Stack spacing={2} alignItems="center" sx={{ textAlign: 'center' }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                <Favorite sx={{ fontSize: 40, color: '#E91E63' }} />
-                <Typography variant="h2" sx={{ fontWeight: 600, color: 'primary.main' }}>
+                <Favorite sx={{ fontSize: 40, color: tokens.color.semantic.error.main }} />
+                <Typography
+                  sx={{
+                    ...tokens.typography.styles.h2,
+                    fontSize: {
+                      xs: tokens.typography.responsive.h2.mobile.fontSize,
+                      sm: tokens.typography.responsive.h2.tablet.fontSize,
+                      md: tokens.typography.responsive.h2.desktop.fontSize,
+                    },
+                    lineHeight: {
+                      xs: tokens.typography.responsive.h2.mobile.lineHeight,
+                      sm: tokens.typography.responsive.h2.tablet.lineHeight,
+                      md: tokens.typography.responsive.h2.desktop.lineHeight,
+                    },
+                    color: tokens.color.base.sage[900],
+                  }}
+                >
                   Wedding Packages
                 </Typography>
               </Box>
               <Typography
-                variant="h6"
-                color="text.secondary"
-                sx={{ maxWidth: 700 }}
+                sx={{
+                  ...tokens.typography.styles.bodyLarge,
+                  color: tokens.color.base.neutral[700],
+                  maxWidth: 700,
+                }}
               >
                 Create your perfect wedding day with our exclusive venue packages and all-inclusive options.
               </Typography>
@@ -175,7 +185,13 @@ export const WeddingPackages: React.FC<WeddingPackagesProps> = ({ onNavigateToBo
           {/* Venue-Only Options */}
           <Box>
             <AnimatedElement animation="fadeIn" delay={150}>
-              <Typography variant="h4" sx={{ fontWeight: 600, mb: 4 }}>
+              <Typography
+                sx={{
+                  ...tokens.typography.styles.h4,
+                  color: tokens.color.base.sage[900],
+                  mb: 4,
+                }}
+              >
                 Venue-Only Options
               </Typography>
             </AnimatedElement>
@@ -188,38 +204,78 @@ export const WeddingPackages: React.FC<WeddingPackagesProps> = ({ onNavigateToBo
                   sm: 'repeat(2, 1fr)',
                   lg: 'repeat(3, 1fr)',
                 },
-                gap: 3,
+                gap: tokens.spacing.layout.grid.gap.lg,
               }}
             >
               {weddingVenues.map((venue, index) => (
-                <AnimatedElement key={venue.id} animation="fadeIn" delay={200 + index * 50}>
-                  <GlassCard variant="light" intensity="medium" hover sx={{ height: '100%' }}>
-                    <Stack spacing={2} sx={{ p: 3 }}>
-                      <Typography variant="h5" sx={{ fontWeight: 600 }}>
+                <AnimatedElement key={venue.id} animation="slideUp" delay={200 + index * 50}>
+                  <Box
+                    sx={{
+                      height: '100%',
+                      backgroundColor: '#FFFFFF',
+                      borderRadius: tokens.spacing.radius.card,
+                      padding: tokens.spacing.space.cardPadding.lg,
+                      boxShadow: tokens.shadow.elevation.sm,
+                      transition: `all ${tokens.animation.duration.normal}ms ${tokens.animation.transition.smooth}`,
+                      '&:hover': {
+                        boxShadow: tokens.shadow.elevation.md,
+                        transform: 'translateY(-4px)',
+                      },
+                    }}
+                  >
+                    <Stack spacing={2}>
+                      <Typography
+                        sx={{
+                          ...tokens.typography.styles.h5,
+                          color: tokens.color.base.sage[900],
+                        }}
+                      >
                         {venue.name}
                       </Typography>
-                      <Typography variant="h4" color="primary.main" sx={{ fontWeight: 700 }}>
+                      <Typography
+                        sx={{
+                          ...tokens.typography.styles.h4,
+                          color: tokens.color.base.sage[700],
+                          fontWeight: tokens.typography.weights.bold,
+                        }}
+                      >
                         {formatPrice(venue.price)}
                       </Typography>
-                      <Typography variant="body2" color="text.secondary">
+                      <Typography
+                        sx={{
+                          ...tokens.typography.styles.bodySmall,
+                          color: tokens.color.base.neutral[600],
+                        }}
+                      >
                         {venue.duration} • {venue.capacity}
                       </Typography>
                       {venue.includes.length > 0 && (
                         <Stack spacing={0.5}>
                           {venue.includes.map((item, idx) => (
-                            <Typography key={idx} variant="caption" color="text.secondary">
+                            <Typography
+                              key={idx}
+                              sx={{
+                                ...tokens.typography.styles.caption,
+                                color: tokens.color.base.neutral[600],
+                              }}
+                            >
                               • {item}
                             </Typography>
                           ))}
                         </Stack>
                       )}
                       {venue.excessHourRate && (
-                        <Typography variant="caption" color="text.secondary">
+                        <Typography
+                          sx={{
+                            ...tokens.typography.styles.caption,
+                            color: tokens.color.base.neutral[600],
+                          }}
+                        >
                           Excess hour: {formatPrice(venue.excessHourRate)}
                         </Typography>
                       )}
                     </Stack>
-                  </GlassCard>
+                  </Box>
                 </AnimatedElement>
               ))}
             </Box>
@@ -228,7 +284,13 @@ export const WeddingPackages: React.FC<WeddingPackagesProps> = ({ onNavigateToBo
           {/* Combination Packages */}
           <Box>
             <AnimatedElement animation="fadeIn" delay={150}>
-              <Typography variant="h4" sx={{ fontWeight: 600, mb: 4 }}>
+              <Typography
+                sx={{
+                  ...tokens.typography.styles.h4,
+                  color: tokens.color.base.sage[900],
+                  mb: 4,
+                }}
+              >
                 Combination Packages (6 Hours)
               </Typography>
             </AnimatedElement>
@@ -240,34 +302,73 @@ export const WeddingPackages: React.FC<WeddingPackagesProps> = ({ onNavigateToBo
                   xs: '1fr',
                   sm: 'repeat(2, 1fr)',
                 },
-                gap: 3,
+                gap: tokens.spacing.layout.grid.gap.lg,
               }}
             >
               {weddingCombos.map((combo, index) => (
-                <AnimatedElement key={combo.id} animation="fadeIn" delay={200 + index * 50}>
-                  <GlassCard variant="light" intensity="medium" hover sx={{ height: '100%' }}>
-                    <Stack spacing={2} sx={{ p: 3 }}>
-                      <Typography variant="h5" sx={{ fontWeight: 600 }}>
+                <AnimatedElement key={combo.id} animation="slideUp" delay={200 + index * 50}>
+                  <Box
+                    sx={{
+                      height: '100%',
+                      backgroundColor: '#FFFFFF',
+                      borderRadius: tokens.spacing.radius.card,
+                      padding: tokens.spacing.space.cardPadding.lg,
+                      boxShadow: tokens.shadow.elevation.sm,
+                      transition: `all ${tokens.animation.duration.normal}ms ${tokens.animation.transition.smooth}`,
+                      '&:hover': {
+                        boxShadow: tokens.shadow.elevation.md,
+                        transform: 'translateY(-4px)',
+                      },
+                    }}
+                  >
+                    <Stack spacing={2}>
+                      <Typography
+                        sx={{
+                          ...tokens.typography.styles.h5,
+                          color: tokens.color.base.sage[900],
+                        }}
+                      >
                         {combo.name}
                       </Typography>
-                      <Typography variant="h4" color="primary.main" sx={{ fontWeight: 700 }}>
+                      <Typography
+                        sx={{
+                          ...tokens.typography.styles.h4,
+                          color: tokens.color.base.sage[700],
+                          fontWeight: tokens.typography.weights.bold,
+                        }}
+                      >
                         {formatPrice(combo.price)}
                       </Typography>
-                      <Typography variant="body2" color="text.secondary">
+                      <Typography
+                        sx={{
+                          ...tokens.typography.styles.bodySmall,
+                          color: tokens.color.base.neutral[600],
+                        }}
+                      >
                         {combo.duration}
                       </Typography>
                       <Stack spacing={0.5}>
                         {combo.includes.map((item, idx) => (
                           <Box key={idx} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <Check sx={{ fontSize: 16, color: 'success.main' }} />
-                            <Typography variant="body2" color="text.secondary">
+                            <Check
+                              sx={{
+                                fontSize: 16,
+                                color: tokens.color.semantic.success.main,
+                              }}
+                            />
+                            <Typography
+                              sx={{
+                                ...tokens.typography.styles.bodySmall,
+                                color: tokens.color.base.neutral[600],
+                              }}
+                            >
                               {item}
                             </Typography>
                           </Box>
                         ))}
                       </Stack>
                     </Stack>
-                  </GlassCard>
+                  </Box>
                 </AnimatedElement>
               ))}
             </Box>
@@ -276,7 +377,13 @@ export const WeddingPackages: React.FC<WeddingPackagesProps> = ({ onNavigateToBo
           {/* All-In Wedding Packages */}
           <Box>
             <AnimatedElement animation="fadeIn" delay={150}>
-              <Typography variant="h4" sx={{ fontWeight: 600, mb: 4 }}>
+              <Typography
+                sx={{
+                  ...tokens.typography.styles.h4,
+                  color: tokens.color.base.sage[900],
+                  mb: 4,
+                }}
+              >
                 All-In Wedding Packages
               </Typography>
             </AnimatedElement>
@@ -288,40 +395,98 @@ export const WeddingPackages: React.FC<WeddingPackagesProps> = ({ onNavigateToBo
                   xs: '1fr',
                   md: 'repeat(2, 1fr)',
                 },
-                gap: 4,
+                gap: tokens.spacing.layout.grid.gap.lg,
               }}
             >
               {allInPackages.map((pkg, index) => (
-                <AnimatedElement key={pkg.id} animation="fadeIn" delay={200 + index * 100}>
-                  <GlassCard variant="light" intensity="strong" hover sx={{ height: '100%' }}>
-                    <Stack spacing={3} sx={{ p: 4 }}>
+                <AnimatedElement key={pkg.id} animation="slideUp" delay={200 + index * 100}>
+                  <Box
+                    sx={{
+                      height: '100%',
+                      backgroundColor: '#FFFFFF',
+                      borderRadius: tokens.spacing.radius.card,
+                      padding: tokens.spacing.space.cardPadding.lg,
+                      boxShadow: tokens.shadow.elevation.md,
+                      transition: `all ${tokens.animation.duration.normal}ms ${tokens.animation.transition.smooth}`,
+                      '&:hover': {
+                        boxShadow: tokens.shadow.elevation.lg,
+                        transform: 'translateY(-4px)',
+                      },
+                    }}
+                  >
+                    <Stack spacing={3} sx={{ height: '100%' }}>
                       <Box>
-                        <Chip label="All-Inclusive" color="primary" size="small" sx={{ mb: 2 }} />
-                        <Typography variant="h4" sx={{ fontWeight: 600 }}>
+                        <Chip
+                          label="All-Inclusive"
+                          size="small"
+                          sx={{
+                            mb: 2,
+                            backgroundColor: tokens.color.base.sage[100],
+                            color: tokens.color.base.sage[900],
+                            fontWeight: tokens.typography.weights.semibold,
+                          }}
+                        />
+                        <Typography
+                          sx={{
+                            ...tokens.typography.styles.h4,
+                            color: tokens.color.base.sage[900],
+                          }}
+                        >
                           {pkg.guestCount} Guests
                         </Typography>
-                        <Typography variant="body2" color="text.secondary">
+                        <Typography
+                          sx={{
+                            ...tokens.typography.styles.bodySmall,
+                            color: tokens.color.base.neutral[600],
+                          }}
+                        >
                           {pkg.venues}
                         </Typography>
                       </Box>
 
                       <Box>
-                        <Typography variant="caption" color="text.secondary">
+                        <Typography
+                          sx={{
+                            ...tokens.typography.styles.caption,
+                            color: tokens.color.base.neutral[600],
+                          }}
+                        >
                           Starting at
                         </Typography>
-                        <Typography variant="h3" color="primary.main" sx={{ fontWeight: 700 }}>
+                        <Typography
+                          sx={{
+                            ...tokens.typography.styles.h3,
+                            color: tokens.color.base.sage[700],
+                            fontWeight: tokens.typography.weights.bold,
+                          }}
+                        >
                           {formatPrice(pkg.startingPrice)}
                         </Typography>
                       </Box>
 
-                      <Stack spacing={1}>
-                        <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                      <Stack spacing={1} sx={{ flex: 1 }}>
+                        <Typography
+                          sx={{
+                            ...tokens.typography.styles.label,
+                            color: tokens.color.base.sage[900],
+                          }}
+                        >
                           Major Inclusions:
                         </Typography>
                         {pkg.includes.map((item, idx) => (
                           <Box key={idx} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <Check sx={{ fontSize: 18, color: 'success.main' }} />
-                            <Typography variant="body2" color="text.secondary">
+                            <Check
+                              sx={{
+                                fontSize: 18,
+                                color: tokens.color.semantic.success.main,
+                              }}
+                            />
+                            <Typography
+                              sx={{
+                                ...tokens.typography.styles.bodySmall,
+                                color: tokens.color.base.neutral[600],
+                              }}
+                            >
                               {item}
                             </Typography>
                           </Box>
@@ -333,18 +498,29 @@ export const WeddingPackages: React.FC<WeddingPackagesProps> = ({ onNavigateToBo
                         endIcon={<ArrowForward />}
                         onClick={onNavigateToBooking}
                         fullWidth
-                        sx={{ mt: 'auto' }}
+                        sx={{
+                          mt: 'auto',
+                          backgroundColor: tokens.color.base.sage[700],
+                          color: '#FFFFFF',
+                          padding: tokens.spacing.space.buttonPadding.md,
+                          borderRadius: tokens.spacing.radius.button,
+                          textTransform: 'none',
+                          fontWeight: tokens.typography.weights.semibold,
+                          '&:hover': {
+                            backgroundColor: tokens.color.base.sage[800],
+                          },
+                        }}
                       >
                         Inquire Now
                       </Button>
                     </Stack>
-                  </GlassCard>
+                  </Box>
                 </AnimatedElement>
               ))}
             </Box>
           </Box>
         </Stack>
-      </Box>
-    </Box>
+      </Container>
+    </Section>
   );
 };

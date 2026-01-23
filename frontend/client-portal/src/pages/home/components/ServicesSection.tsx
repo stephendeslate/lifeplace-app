@@ -1,117 +1,209 @@
 // pages/home/components/ServicesSection.tsx
 
 import React from 'react';
-import { Box, Typography, Stack, Card, CardContent, alpha, useTheme } from '@mui/material';
+import { Box, Typography, Stack } from '@mui/material';
+import { styled } from '@mui/material/styles';
 import {
   Favorite,
   Groups,
   Spa,
   Nature,
 } from '@mui/icons-material';
-import { AnimatedElement } from '../../../design-system/components/AnimatedElement';
+import { Section, Container, AnimatedElement, tokens } from '../../../design-system';
 import type { ServiceInfo } from '../types/home.types';
 
-export const ServicesSection: React.FC = () => {
-  const theme = useTheme();
+// Modern service card component
+const ServiceCard = styled(Box)(() => ({
+  position: 'relative',
+  height: '100%',
+  background: 'rgba(255, 255, 255, 0.95)',
+  borderRadius: tokens.spacing.radius.card,
+  padding: tokens.spacing.space[4],
+  textAlign: 'center',
+  transition: tokens.animation.transition.all,
+  boxShadow: tokens.shadow.elevation.sm,
+  border: `1px solid ${tokens.color.base.neutral[100]}`,
+  overflow: 'hidden',
 
+  '&::before': {
+    content: '""',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: '4px',
+    background: tokens.color.gradients.warmSage,
+    opacity: 0,
+    transition: tokens.animation.transition.all,
+  },
+
+  '&:hover': {
+    transform: 'translateY(-8px)',
+    boxShadow: tokens.shadow.elevation.lg,
+    '&::before': {
+      opacity: 1,
+    },
+  },
+
+  // Accessibility: Reduced motion
+  '@media (prefers-reduced-motion: reduce)': {
+    transition: 'none',
+    '&:hover': {
+      transform: 'none',
+    },
+  },
+}));
+
+const IconWrapper = styled(Box)({
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  width: '80px',
+  height: '80px',
+  borderRadius: '50%',
+  background: tokens.color.gradients.morningMist,
+  marginBottom: tokens.spacing.space[3],
+  position: 'relative',
+
+  '&::after': {
+    content: '""',
+    position: 'absolute',
+    inset: -2,
+    borderRadius: '50%',
+    background: tokens.color.gradients.warmSage,
+    opacity: 0.1,
+    zIndex: 0,
+  },
+
+  '& > svg': {
+    position: 'relative',
+    zIndex: 1,
+  },
+});
+
+export const ServicesSection: React.FC = () => {
   const services: ServiceInfo[] = [
     {
       id: 'weddings',
       title: 'Weddings',
       description: 'Create timeless memories in our beautiful venues with comprehensive wedding packages.',
-      icon: <Favorite sx={{ fontSize: 48, color: '#E91E63' }} />,
+      icon: <Favorite sx={{ fontSize: 48, color: tokens.color.base.terracotta[500] }} />,
     },
     {
       id: 'team-building',
       title: 'Team Building',
       description: 'Strengthen bonds and foster creativity through hands-on activities in a peaceful environment.',
-      icon: <Groups sx={{ fontSize: 48, color: theme.palette.info.light }} />,
+      icon: <Groups sx={{ fontSize: 48, color: tokens.color.base.sage[600] }} />,
     },
     {
       id: 'retreats',
       title: 'Retreats',
       description: 'Connect with others and find spiritual renewal in our tranquil retreat setting.',
-      icon: <Spa sx={{ fontSize: 48, color: '#9C27B0' }} />,
+      icon: <Spa sx={{ fontSize: 48, color: tokens.color.base.olive[500] }} />,
     },
     {
       id: 'camping',
       title: 'Camping',
       description: 'Experience nature and community in our safe and comfortable camping facilities.',
-      icon: <Nature sx={{ fontSize: 48, color: '#4CAF50' }} />,
+      icon: <Nature sx={{ fontSize: 48, color: tokens.color.base.sage[500] }} />,
     },
   ];
 
   return (
-    <Box sx={{ py: { xs: 8, md: 12 }, px: { xs: 2, sm: 3, md: 4 }, backgroundColor: 'primary.main', color: 'white', width: '100%' }}>
-      <Box sx={{ maxWidth: 'clamp(320px, 90vw, 1400px)', mx: 'auto' }}>
-        <Stack spacing={6}>
+    <Section background="sage" spacing="large">
+      <Container maxWidth="wide">
+        <Stack spacing={tokens.spacing.space[8]}>
+          {/* Section Header */}
           <AnimatedElement animation="fadeIn" delay={100}>
-            <Stack spacing={3} textAlign="center">
-              <Typography variant="h2" sx={{ fontWeight: 600 }}>
+            <Stack spacing={tokens.spacing.space[2]} textAlign="center">
+              <Typography
+                component="h2"
+                sx={{
+                  ...tokens.typography.styles.h2,
+                  color: tokens.color.base.neutral[900],
+                  fontSize: {
+                    xs: tokens.typography.responsive.h2.mobile.fontSize,
+                    md: tokens.typography.responsive.h2.tablet.fontSize,
+                    lg: tokens.typography.styles.h2.fontSize,
+                  },
+                  lineHeight: {
+                    xs: tokens.typography.responsive.h2.mobile.lineHeight,
+                    md: tokens.typography.responsive.h2.tablet.lineHeight,
+                    lg: tokens.typography.styles.h2.lineHeight,
+                  },
+                }}
+              >
                 Our Services
               </Typography>
-              <Typography variant="h6" sx={{ opacity: 0.9 }}>
+              <Typography
+                sx={{
+                  ...tokens.typography.styles.bodyLarge,
+                  color: tokens.color.base.neutral[700],
+                  maxWidth: '800px',
+                  mx: 'auto',
+                }}
+              >
                 We provide comprehensive packages for every type of celebration and gathering
               </Typography>
             </Stack>
           </AnimatedElement>
 
+          {/* Service Cards Grid */}
           <Box
             sx={{
               display: 'grid',
-              gridTemplateColumns: { 
-                xs: '1fr', 
+              gridTemplateColumns: {
+                xs: '1fr',
                 sm: 'repeat(2, 1fr)',
-                md: 'repeat(4, 1fr)',
+                lg: 'repeat(4, 1fr)',
               },
-              gap: 3,
+              gap: {
+                xs: tokens.spacing.space[3],
+                md: tokens.spacing.space[4],
+              },
             }}
           >
             {services.map((service, index) => (
-              <AnimatedElement key={service.id} animation="fadeIn" delay={200 + (index * 100)}>
-                <Card
-                  elevation={2}
-                  sx={{
-                    height: '100%',
-                    backgroundColor: alpha('#fff', 0.1),
-                    backdropFilter: 'blur(10px)',
-                    border: `1px solid ${alpha('#fff', 0.2)}`,
-                    color: 'white',
-                    transition: 'all 0.3s ease',
-                    '&:hover': {
-                      transform: 'translateY(-4px)',
-                      backgroundColor: alpha('#fff', 0.15),
-                    },
-                  }}
+              <AnimatedElement
+                key={service.id}
+                animation="slideUp"
+                delay={200 + index * 100}
+              >
+                <ServiceCard
+                  role="article"
+                  aria-label={`${service.title} service`}
                 >
-                  <CardContent sx={{ p: 4, textAlign: 'center' }}>
-                    <Stack spacing={3} alignItems="center">
-                      <Box sx={{ 
-                        p: 2, 
-                        borderRadius: '50%', 
-                        backgroundColor: alpha('#fff', 0.1),
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}>
-                        {service.icon}
-                      </Box>
-                      <Box>
-                        <Typography variant="h5" sx={{ fontWeight: 600, mb: 2 }}>
-                          {service.title}
-                        </Typography>
-                        <Typography variant="body1" sx={{ lineHeight: 1.7, opacity: 0.9 }}>
-                          {service.description}
-                        </Typography>
-                      </Box>
-                    </Stack>
-                  </CardContent>
-                </Card>
+                  <Stack spacing={tokens.spacing.space[3]} alignItems="center">
+                    <IconWrapper aria-hidden="true">
+                      {service.icon}
+                    </IconWrapper>
+                    <Box>
+                      <Typography
+                        component="h3"
+                        sx={{
+                          ...tokens.typography.styles.h4,
+                          color: tokens.color.base.neutral[900],
+                          mb: tokens.spacing.space[2],
+                        }}
+                      >
+                        {service.title}
+                      </Typography>
+                      <Typography
+                        sx={{
+                          ...tokens.typography.styles.body,
+                          color: tokens.color.base.neutral[600],
+                        }}
+                      >
+                        {service.description}
+                      </Typography>
+                    </Box>
+                  </Stack>
+                </ServiceCard>
               </AnimatedElement>
             ))}
           </Box>
         </Stack>
-      </Box>
-    </Box>
+      </Container>
+    </Section>
   );
 };

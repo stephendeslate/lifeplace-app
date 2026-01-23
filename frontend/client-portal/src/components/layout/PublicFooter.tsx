@@ -9,7 +9,6 @@ import {
   Link as MuiLink,
   IconButton,
   Divider,
-  useTheme,
   alpha,
 } from '@mui/material';
 import {
@@ -22,10 +21,9 @@ import {
   YouTube,
 } from '@mui/icons-material';
 import { AnimatedElement } from '../../design-system/components/AnimatedElement';
+import { tokens } from '../../design-system';
 
 export const PublicFooter: React.FC = () => {
-  const theme = useTheme();
-
   const contactInfo = [
     {
       icon: <LocationOn />,
@@ -73,32 +71,45 @@ export const PublicFooter: React.FC = () => {
     <Box
       component="footer"
       sx={{
-        background: `linear-gradient(135deg, ${theme.palette.primary.dark} 0%, ${theme.palette.primary.main} 100%)`,
+        background: tokens.color.gradients.earthToSky,
         color: 'white',
-        pt: { xs: 6, md: 8 },
-        pb: 3,
+        pt: { xs: tokens.spacing.space[6], md: tokens.spacing.space[8] },
+        pb: tokens.spacing.space[3],
       }}
     >
       <Container maxWidth="lg">
         <AnimatedElement animation="fadeIn" delay={100}>
-          <Box sx={{ 
+          <Box sx={{
             display: 'grid',
             gridTemplateColumns: { xs: '1fr', md: '1fr 1fr 1fr 1fr' },
-            gap: 4,
+            gap: tokens.spacing.space[4],
           }}>
             {/* Company Info */}
             <Box sx={{ gridColumn: { xs: 'span 1', md: 'span 2' } }}>
-              <Box sx={{ mb: 3 }}>
-                <Typography variant="h5" sx={{ fontWeight: 700, mb: 2 }}>
+              <Box sx={{ mb: tokens.spacing.space[3] }}>
+                <Typography
+                  variant="h5"
+                  sx={{
+                    fontWeight: tokens.typography.weights.bold,
+                    mb: tokens.spacing.space[2],
+                  }}
+                >
                   LifePlace Alfonso
                 </Typography>
-                <Typography variant="body1" sx={{ opacity: 0.9, lineHeight: 1.7, mb: 3 }}>
-                  Creating unforgettable moments in the heart of nature. Experience the perfect 
+                <Typography
+                  variant="body1"
+                  sx={{
+                    color: tokens.color.base.neutral[100],
+                    lineHeight: 1.7,
+                    mb: tokens.spacing.space[3],
+                  }}
+                >
+                  Creating unforgettable moments in the heart of nature. Experience the perfect
                   blend of tranquility and celebration at our beautiful venue in Alfonso, Cavite.
                 </Typography>
                 
                 {/* Social Media */}
-                <Box sx={{ display: 'flex', gap: 1 }}>
+                <Box sx={{ display: 'flex', gap: tokens.spacing.space[1] }}>
                   {socialLinks.map((social) => (
                     <IconButton
                       key={social.label}
@@ -106,13 +117,14 @@ export const PublicFooter: React.FC = () => {
                       target="_blank"
                       rel="noopener noreferrer"
                       sx={{
-                        color: 'white',
+                        color: tokens.color.base.neutral[100],
                         backgroundColor: alpha('#fff', 0.1),
                         '&:hover': {
+                          color: tokens.color.base.gold[200],
                           backgroundColor: alpha('#fff', 0.2),
                           transform: 'translateY(-2px)',
                         },
-                        transition: 'all 0.2s',
+                        transition: tokens.animation.transition.all,
                       }}
                     >
                       {social.icon}
@@ -124,22 +136,28 @@ export const PublicFooter: React.FC = () => {
 
             {/* Quick Links */}
             <Box>
-              <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
+              <Typography
+                variant="h6"
+                sx={{
+                  fontWeight: tokens.typography.weights.semibold,
+                  mb: tokens.spacing.space[2],
+                }}
+              >
                 Quick Links
               </Typography>
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: tokens.spacing.space[1] }}>
                 {quickLinks.map((link) => (
                   <MuiLink
                     key={link.label}
                     component={RouterLink}
                     to={link.href}
                     sx={{
-                      color: 'white',
+                      color: tokens.color.base.neutral[100],
                       textDecoration: 'none',
-                      opacity: 0.8,
-                      transition: 'opacity 0.2s',
+                      fontSize: tokens.typography.sizes.base,
+                      transition: tokens.animation.transition.all,
                       '&:hover': {
-                        opacity: 1,
+                        color: tokens.color.base.gold[300],
                         textDecoration: 'underline',
                       },
                     }}
@@ -152,22 +170,28 @@ export const PublicFooter: React.FC = () => {
 
             {/* Services */}
             <Box>
-              <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
+              <Typography
+                variant="h6"
+                sx={{
+                  fontWeight: tokens.typography.weights.semibold,
+                  mb: tokens.spacing.space[2],
+                }}
+              >
                 Our Services
               </Typography>
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: tokens.spacing.space[1] }}>
                 {services.map((service) => (
                   <MuiLink
                     key={service.label}
                     component={RouterLink}
                     to={service.href}
                     sx={{
-                      color: 'white',
+                      color: tokens.color.base.neutral[100],
                       textDecoration: 'none',
-                      opacity: 0.8,
-                      transition: 'opacity 0.2s',
+                      fontSize: tokens.typography.sizes.base,
+                      transition: tokens.animation.transition.all,
                       '&:hover': {
-                        opacity: 1,
+                        color: tokens.color.base.gold[300],
                         textDecoration: 'underline',
                       },
                     }}
@@ -180,28 +204,42 @@ export const PublicFooter: React.FC = () => {
 
             {/* Contact Info */}
             <Box>
-              <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
+              <Typography
+                variant="h6"
+                sx={{
+                  fontWeight: tokens.typography.weights.semibold,
+                  mb: tokens.spacing.space[2],
+                }}
+              >
                 Contact Us
               </Typography>
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: tokens.spacing.space[2] }}>
                 {contactInfo.map((contact) => (
-                  <Box key={contact.label} sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
-                    <Box sx={{ color: alpha('#fff', 0.7), mt: 0.5 }}>
+                  <Box key={contact.label} sx={{ display: 'flex', alignItems: 'flex-start', gap: tokens.spacing.space[1] }}>
+                    <Box sx={{ color: tokens.color.base.neutral[200], mt: 0.5 }}>
                       {contact.icon}
                     </Box>
                     <Box>
-                      <Typography variant="caption" sx={{ display: 'block', opacity: 0.7 }}>
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          display: 'block',
+                          color: tokens.color.base.neutral[200],
+                          fontSize: tokens.typography.sizes.sm,
+                        }}
+                      >
                         {contact.label}
                       </Typography>
                       {contact.href ? (
                         <MuiLink
                           href={contact.href}
                           sx={{
-                            color: 'white',
+                            color: tokens.color.base.neutral[100],
                             textDecoration: 'none',
-                            opacity: 0.9,
+                            fontSize: tokens.typography.sizes.base,
+                            transition: tokens.animation.transition.all,
                             '&:hover': {
-                              opacity: 1,
+                              color: tokens.color.base.gold[300],
                               textDecoration: 'underline',
                             },
                           }}
@@ -209,7 +247,13 @@ export const PublicFooter: React.FC = () => {
                           {contact.value}
                         </MuiLink>
                       ) : (
-                        <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            color: tokens.color.base.neutral[100],
+                            fontSize: tokens.typography.sizes.base,
+                          }}
+                        >
                           {contact.value}
                         </Typography>
                       )}
@@ -221,7 +265,7 @@ export const PublicFooter: React.FC = () => {
           </Box>
         </AnimatedElement>
 
-        <Divider sx={{ my: 4, borderColor: alpha('#fff', 0.1) }} />
+        <Divider sx={{ my: tokens.spacing.space[4], borderColor: alpha('#fff', 0.1) }} />
 
         {/* Bottom Section */}
         <AnimatedElement animation="fadeIn" delay={200}>
@@ -231,23 +275,29 @@ export const PublicFooter: React.FC = () => {
               flexDirection: { xs: 'column', md: 'row' },
               justifyContent: 'space-between',
               alignItems: 'center',
-              gap: 2,
+              gap: tokens.spacing.space[2],
             }}
           >
-            <Typography variant="body2" sx={{ opacity: 0.7 }}>
+            <Typography
+              variant="body2"
+              sx={{
+                color: tokens.color.base.neutral[200],
+                fontSize: tokens.typography.sizes.sm,
+              }}
+            >
               © {new Date().getFullYear()} LifePlace Alfonso. All rights reserved.
             </Typography>
-            <Box sx={{ display: 'flex', gap: 3 }}>
+            <Box sx={{ display: 'flex', gap: tokens.spacing.space[3] }}>
               <MuiLink
                 component={RouterLink}
                 to="/privacy"
                 sx={{
-                  color: 'white',
+                  color: tokens.color.base.neutral[200],
                   textDecoration: 'none',
-                  opacity: 0.7,
-                  fontSize: '0.875rem',
+                  fontSize: tokens.typography.sizes.sm,
+                  transition: tokens.animation.transition.all,
                   '&:hover': {
-                    opacity: 1,
+                    color: tokens.color.base.gold[300],
                     textDecoration: 'underline',
                   },
                 }}
@@ -258,12 +308,12 @@ export const PublicFooter: React.FC = () => {
                 component={RouterLink}
                 to="/terms"
                 sx={{
-                  color: 'white',
+                  color: tokens.color.base.neutral[200],
                   textDecoration: 'none',
-                  opacity: 0.7,
-                  fontSize: '0.875rem',
+                  fontSize: tokens.typography.sizes.sm,
+                  transition: tokens.animation.transition.all,
                   '&:hover': {
-                    opacity: 1,
+                    color: tokens.color.base.gold[300],
                     textDecoration: 'underline',
                   },
                 }}

@@ -6,15 +6,22 @@ export * from './tokens';
 // Components
 export { GlassCard } from './components/GlassCard';
 export { GradientBackground } from './components/GradientBackground';
+export { HeroBackground } from './components/HeroBackground';
 export { AnimatedElement } from './components/AnimatedElement';
 export { SkeletonLoader, PageSkeletons } from './components/SkeletonLoader';
-export { 
+export {
   EventActivityFeed,
   LiveBookingCounter, // Legacy export
   SocialProofBadge,
   TrustIndicators,
   SocialProofSection
 } from './components/SocialProof';
+
+// Layout Components
+export { Section } from './components/Section';
+export { Container } from './components/Container';
+export { ImageWithOverlay } from './components/ImageWithOverlay';
+export { ModernCard } from './components/ModernCard';
 
 // Patterns
 export { 

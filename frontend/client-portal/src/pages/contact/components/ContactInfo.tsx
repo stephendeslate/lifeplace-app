@@ -1,17 +1,37 @@
 // pages/contact/components/ContactInfo.tsx
 
 import React from 'react';
-import { Box, Typography, Stack, Button, alpha, useTheme } from '@mui/material';
+import { Box, Typography, Stack, Button } from '@mui/material';
 import { Phone, Email, LocationOn, AccessTime } from '@mui/icons-material';
-import { GlassCard } from '../../../design-system/components/GlassCard';
-import { AnimatedElement } from '../../../design-system/components/AnimatedElement';
+import {
+  tokens,
+  Section,
+  Container,
+  ModernCard,
+  AnimatedElement,
+} from '../../../design-system';
 
+/**
+ * ContactInfo Component
+ *
+ * Displays contact information cards with phone, email, address, and office hours.
+ * Redesigned with Modern Organic Luxury design system.
+ *
+ * Features:
+ * - Section with warm cream background
+ * - ModernCard variant='elevated' for contact details
+ * - Sage/terracotta accents for icons with circular backgrounds
+ * - Responsive grid layout (1 column mobile, 2 columns tablet+)
+ * - Staggered fadeIn animations for visual interest
+ * - Design tokens for all spacing, colors, and typography
+ * - WCAG AA compliant with proper color contrast
+ */
 export const ContactInfo: React.FC = () => {
-  const theme = useTheme();
-
   const contactDetails = [
     {
-      icon: <Phone sx={{ fontSize: 32, color: 'primary.main' }} />,
+      icon: Phone,
+      iconColor: tokens.color.base.sage[600],
+      iconBg: tokens.color.base.sage[50],
       title: 'Phone Numbers',
       lines: ['(046) 889 0844', '+63 993 526 0943', '(0962) 275 3145'],
       action: {
@@ -20,7 +40,9 @@ export const ContactInfo: React.FC = () => {
       },
     },
     {
-      icon: <Email sx={{ fontSize: 32, color: 'primary.main' }} />,
+      icon: Email,
+      iconColor: tokens.color.base.terracotta[600],
+      iconBg: tokens.color.base.terracotta[50],
       title: 'Email Address',
       lines: ['reservations.lifeplace@gmail.com'],
       action: {
@@ -29,7 +51,9 @@ export const ContactInfo: React.FC = () => {
       },
     },
     {
-      icon: <LocationOn sx={{ fontSize: 32, color: 'primary.main' }} />,
+      icon: LocationOn,
+      iconColor: tokens.color.base.sage[600],
+      iconBg: tokens.color.base.sage[50],
       title: 'Address',
       lines: ['Patutong Malaki North', 'Alfonso, Cavite 4120', 'Philippines'],
       action: {
@@ -38,32 +62,52 @@ export const ContactInfo: React.FC = () => {
       },
     },
     {
-      icon: <AccessTime sx={{ fontSize: 32, color: 'primary.main' }} />,
+      icon: AccessTime,
+      iconColor: tokens.color.base.terracotta[600],
+      iconBg: tokens.color.base.terracotta[50],
       title: 'Office Hours',
       lines: ['Monday - Sunday', '8:00 AM - 6:00 PM', 'Available for inquiries'],
     },
   ];
 
   return (
-    <Box
-      sx={{
-        py: { xs: 8, md: 12 },
-        px: { xs: 3, sm: 4, md: 6 },
-        backgroundColor: 'background.paper',
-        width: '100%',
-      }}
-    >
-      <Box sx={{ maxWidth: 1200, mx: 'auto' }}>
-        <Stack spacing={6}>
+    <Section background="cream" spacing="large">
+      <Container maxWidth="content">
+        <Stack spacing={{ xs: tokens.spacing.space[8], md: tokens.spacing.space[10] }}>
+          {/* Section Header */}
           <AnimatedElement animation="fadeIn" delay={100}>
-            <Stack spacing={2} alignItems="center" sx={{ textAlign: 'center' }}>
-              <Typography variant="h2" sx={{ fontWeight: 600, color: 'primary.main' }}>
+            <Stack
+              spacing={tokens.spacing.space[3]}
+              alignItems="center"
+              sx={{ textAlign: 'center' }}
+            >
+              <Typography
+                sx={{
+                  ...tokens.typography.styles.h3,
+                  fontSize: {
+                    xs: tokens.typography.responsive.h3.mobile.fontSize,
+                    md: tokens.typography.responsive.h3.tablet.fontSize,
+                  },
+                  lineHeight: {
+                    xs: tokens.typography.responsive.h3.mobile.lineHeight,
+                    md: tokens.typography.responsive.h3.tablet.lineHeight,
+                  },
+                  color: tokens.color.base.neutral[900],
+                }}
+              >
                 Get in Touch
               </Typography>
               <Typography
-                variant="h6"
-                color="text.secondary"
-                sx={{ maxWidth: 700 }}
+                sx={{
+                  ...tokens.typography.styles.body,
+                  fontSize: {
+                    xs: tokens.typography.sizes.base,
+                    md: tokens.typography.sizes.lg,
+                  },
+                  color: tokens.color.base.neutral[600],
+                  maxWidth: 700,
+                  lineHeight: tokens.typography.lineHeights.relaxed,
+                }}
               >
                 Reach out to us through any of these channels. We're ready to help
                 you plan your perfect event.
@@ -71,6 +115,7 @@ export const ContactInfo: React.FC = () => {
             </Stack>
           </AnimatedElement>
 
+          {/* Contact Cards Grid */}
           <Box
             sx={{
               display: 'grid',
@@ -78,58 +123,107 @@ export const ContactInfo: React.FC = () => {
                 xs: '1fr',
                 sm: 'repeat(2, 1fr)',
               },
-              gap: 4,
+              gap: { xs: tokens.spacing.space[4], md: tokens.spacing.space[6] },
             }}
           >
-            {contactDetails.map((detail, index) => (
-              <AnimatedElement key={index} animation="fadeIn" delay={200 + index * 100}>
-                <GlassCard variant="light" intensity="medium" hover sx={{ height: '100%' }}>
-                  <Stack spacing={3} sx={{ p: 4 }}>
-                    <Box
-                      sx={{
-                        p: 2,
-                        borderRadius: '50%',
-                        backgroundColor: alpha(theme.palette.primary.main, 0.1),
-                        width: 'fit-content',
-                      }}
-                    >
-                      {detail.icon}
-                    </Box>
-
-                    <Box>
-                      <Typography variant="h5" sx={{ fontWeight: 600, mb: 1.5 }}>
-                        {detail.title}
-                      </Typography>
-                      {detail.lines.map((line, idx) => (
-                        <Typography key={idx} variant="body1" color="text.secondary">
-                          {line}
-                        </Typography>
-                      ))}
-                    </Box>
-
-                    {detail.action && (
-                      <Button
-                        variant="outlined"
-                        href={detail.action.href}
-                        target={detail.action.href.startsWith('http') ? '_blank' : undefined}
+            {contactDetails.map((detail, index) => {
+              const IconComponent = detail.icon;
+              return (
+                <AnimatedElement
+                  key={index}
+                  animation="fadeIn"
+                  delay={200 + index * 100}
+                >
+                  <ModernCard variant="elevated" size="medium" hover sx={{ height: '100%' }}>
+                    <Stack spacing={tokens.spacing.space[4]}>
+                      {/* Icon with circular background */}
+                      <Box
                         sx={{
-                          mt: 'auto',
-                          borderWidth: 2,
-                          '&:hover': {
-                            borderWidth: 2,
-                          },
+                          width: 64,
+                          height: 64,
+                          borderRadius: '50%',
+                          backgroundColor: detail.iconBg,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          transition: tokens.animation.transition.smooth,
                         }}
                       >
-                        {detail.action.label}
-                      </Button>
-                    )}
-                  </Stack>
-                </GlassCard>
-              </AnimatedElement>
-            ))}
+                        <IconComponent
+                          sx={{
+                            fontSize: 32,
+                            color: detail.iconColor,
+                          }}
+                        />
+                      </Box>
+
+                      {/* Title and contact details */}
+                      <Box>
+                        <Typography
+                          sx={{
+                            ...tokens.typography.styles.h5,
+                            fontSize: tokens.typography.sizes.lg,
+                            color: tokens.color.base.neutral[900],
+                            mb: tokens.spacing.space[2],
+                          }}
+                        >
+                          {detail.title}
+                        </Typography>
+                        <Stack spacing={tokens.spacing.space[1]}>
+                          {detail.lines.map((line, idx) => (
+                            <Typography
+                              key={idx}
+                              sx={{
+                                ...tokens.typography.styles.body,
+                                fontSize: tokens.typography.sizes.base,
+                                color: tokens.color.base.neutral[600],
+                                lineHeight: tokens.typography.lineHeights.relaxed,
+                              }}
+                            >
+                              {line}
+                            </Typography>
+                          ))}
+                        </Stack>
+                      </Box>
+
+                      {/* Action Button */}
+                      {detail.action && (
+                        <Box sx={{ mt: 'auto', pt: tokens.spacing.space[2] }}>
+                          <Button
+                            variant="outlined"
+                            href={detail.action.href}
+                            target={detail.action.href.startsWith('http') ? '_blank' : undefined}
+                            rel={detail.action.href.startsWith('http') ? 'noopener noreferrer' : undefined}
+                            sx={{
+                              color: tokens.color.base.sage[700],
+                              borderColor: tokens.color.base.sage[300],
+                              borderWidth: 2,
+                              borderRadius: tokens.spacing.radius.lg,
+                              fontWeight: tokens.typography.weights.medium,
+                              fontSize: tokens.typography.sizes.sm,
+                              textTransform: 'none',
+                              px: tokens.spacing.space[4],
+                              py: tokens.spacing.space[2],
+                              transition: tokens.animation.transition.smooth,
+                              '&:hover': {
+                                borderWidth: 2,
+                                borderColor: tokens.color.base.sage[600],
+                                backgroundColor: tokens.color.base.sage[50],
+                              },
+                            }}
+                          >
+                            {detail.action.label}
+                          </Button>
+                        </Box>
+                      )}
+                    </Stack>
+                  </ModernCard>
+                </AnimatedElement>
+              );
+            })}
           </Box>
         </Stack>
-      </Box>
-    </Box>
+      </Container>
+    </Section>
   );
 };

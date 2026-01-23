@@ -1,18 +1,16 @@
 // pages/reviews/ReviewsPage.tsx
 
 import React from 'react';
-import { Box, Typography, Stack, Button, alpha, useTheme } from '@mui/material';
+import { Box, Typography, Stack } from '@mui/material';
 import { ArrowForward } from '@mui/icons-material';
 import { SEO } from '../../hooks/useSEO';
 import { ReviewsHero } from './components/ReviewsHero';
 import { TestimonialGrid } from './components/TestimonialGrid';
-import { GlassCard } from '../../design-system/components/GlassCard';
-import { AnimatedElement } from '../../design-system/components/AnimatedElement';
+import { AnimatedElement, Section, Container, ModernCard, tokens } from '../../design-system';
+import { Button } from '../../../../shared/design-system';
 import type { ReviewsPageProps } from './types/reviews.types';
 
 const ReviewsPage: React.FC<ReviewsPageProps> = ({ onNavigateToBooking }) => {
-  const theme = useTheme();
-
   return (
     <>
       <SEO
@@ -24,45 +22,33 @@ const ReviewsPage: React.FC<ReviewsPageProps> = ({ onNavigateToBooking }) => {
       <TestimonialGrid />
 
       {/* CTA Section */}
-      <Box
-        sx={{
-          py: { xs: 8, md: 12 },
-          px: { xs: 3, sm: 4, md: 6 },
-          backgroundColor: alpha(theme.palette.primary.main, 0.05),
-          width: '100%',
-        }}
-      >
-        <Box sx={{ maxWidth: 900, mx: 'auto' }}>
+      <Section background="sage" spacing="large">
+        <Container maxWidth="narrow">
           <AnimatedElement animation="fadeIn" delay={100}>
-            <GlassCard variant="light" intensity="strong">
-              <Stack spacing={4} alignItems="center" sx={{ p: { xs: 4, md: 6 }, textAlign: 'center' }}>
-                <Typography variant="h3" sx={{ fontWeight: 600, color: 'primary.main' }}>
+            <ModernCard variant="elevated" size="large">
+              <Stack spacing={4} alignItems="center" sx={{ textAlign: 'center' }}>
+                <Typography sx={{ ...tokens.typography.styles.h3 }}>
                   Create Your Own Unforgettable Moment
                 </Typography>
 
-                <Typography variant="h6" color="text.secondary" sx={{ maxWidth: 600 }}>
+                <Typography sx={{ ...tokens.typography.styles.bodyLarge }}>
                   Join the hundreds of satisfied guests who have celebrated at LifePlace Alfonso.
                   Book your event today!
                 </Typography>
 
                 <Button
-                  variant="contained"
+                  variant="terracotta"
                   size="large"
                   endIcon={<ArrowForward />}
                   onClick={onNavigateToBooking}
-                  sx={{
-                    px: 4,
-                    py: 1.5,
-                    fontSize: '1.1rem',
-                  }}
                 >
                   Book Your Event
                 </Button>
               </Stack>
-            </GlassCard>
+            </ModernCard>
           </AnimatedElement>
-        </Box>
-      </Box>
+        </Container>
+      </Section>
       </Box>
     </>
   );

@@ -1,43 +1,41 @@
 // pages/about/components/LocationContact.tsx
 
 import React from 'react';
-import { Box, Typography, Stack, Button, IconButton, alpha, useTheme } from '@mui/material';
+import { Box, Typography, Stack, IconButton, Button } from '@mui/material';
 import {
   LocationOn,
   Phone,
   Email,
-  ArrowForward,
+  Directions,
   Facebook,
   Instagram,
   MusicNote,
 } from '@mui/icons-material';
-import { GlassCard } from '../../../design-system/components/GlassCard';
+import { Section, Container, ModernCard, tokens } from '../../../design-system';
 import { AnimatedElement } from '../../../design-system/components/AnimatedElement';
 import type { ContactInfo, SocialLink, AboutPageProps } from '../types/about.types';
 
 export const LocationContact: React.FC<Pick<AboutPageProps, 'onNavigateToBooking'>> = ({
   onNavigateToBooking,
 }) => {
-  const theme = useTheme();
-
   const contactInfo: ContactInfo[] = [
     {
       type: 'location',
       label: 'Location',
       value: 'Patutong Malaki North, Alfonso, Cavite 4120',
-      icon: <LocationOn sx={{ fontSize: 32, color: theme.palette.primary.main }} />,
+      icon: <LocationOn sx={{ fontSize: 32 }} />,
     },
     {
       type: 'phone',
       label: 'Phone',
       value: '(046) 889 0844 / (0962) 275 3145 / +639935260943',
-      icon: <Phone sx={{ fontSize: 32, color: theme.palette.primary.main }} />,
+      icon: <Phone sx={{ fontSize: 32 }} />,
     },
     {
       type: 'email',
       label: 'Email',
       value: 'reservations.lifeplace@gmail.com',
-      icon: <Email sx={{ fontSize: 32, color: theme.palette.primary.main }} />,
+      icon: <Email sx={{ fontSize: 32 }} />,
     },
   ];
 
@@ -59,123 +57,218 @@ export const LocationContact: React.FC<Pick<AboutPageProps, 'onNavigateToBooking
     },
   ];
 
+  const handleGetDirections = () => {
+    const address = encodeURIComponent('Patutong Malaki North, Alfonso, Cavite 4120');
+    window.open(`https://www.google.com/maps/search/?api=1&query=${address}`, '_blank');
+  };
+
   return (
-    <Box
-      sx={{
-        py: { xs: 8, md: 12 },
-        px: { xs: 3, sm: 4, md: 6 },
-        background: theme.palette.primary.main,
-        color: 'white',
-        width: '100%',
-      }}
-    >
-      <Box sx={{ maxWidth: 1200, mx: 'auto' }}>
-        <Stack spacing={6}>
+    <Section background="sage" spacing="xlarge">
+      <Container maxWidth="wide">
+        <Stack spacing={{ xs: 6, md: 8 }}>
+          {/* Section Heading */}
           <AnimatedElement animation="fadeIn" delay={100}>
             <Stack spacing={3} alignItems="center">
-              <Typography variant="h2" sx={{ fontWeight: 600, textAlign: 'center' }}>
+              <Typography
+                variant="h2"
+                sx={{
+                  fontWeight: tokens.typography.weights.bold,
+                  textAlign: 'center',
+                  color: tokens.color.base.sage[900],
+                }}
+              >
                 Visit Us
               </Typography>
-              <Typography variant="h6" sx={{ opacity: 0.9, maxWidth: 700, textAlign: 'center' }}>
+              <Typography
+                variant="h6"
+                sx={{
+                  color: tokens.color.base.sage[700],
+                  maxWidth: 700,
+                  textAlign: 'center',
+                  fontWeight: tokens.typography.weights.regular,
+                }}
+              >
                 We're located near Tagaytay, easily accessible from Metro Manila.
                 Come visit us or get in touch to start planning your event.
               </Typography>
             </Stack>
           </AnimatedElement>
 
+          {/* Map & Contact Info Grid */}
           <Box
             sx={{
               display: 'grid',
-              gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' },
-              gap: 3,
+              gridTemplateColumns: { xs: '1fr', lg: '1.2fr 1fr' },
+              gap: { xs: 4, md: 5 },
+              alignItems: 'start',
             }}
           >
-            {contactInfo.map((contact, index) => (
-              <AnimatedElement key={contact.type} animation="fadeIn" delay={200 + index * 100}>
-                <GlassCard
-                  variant="light"
-                  intensity="medium"
-                  hover={false}
-                  sx={{
-                    height: '100%',
-                    backgroundColor: alpha('#fff', 0.1),
-                    backdropFilter: 'blur(10px)',
-                  }}
-                >
-                  <Stack spacing={2} alignItems="center" sx={{ p: 3, textAlign: 'center' }}>
-                    <Box
-                      sx={{
-                        p: 2,
-                        borderRadius: '50%',
-                        backgroundColor: alpha('#fff', 0.15),
-                      }}
-                    >
-                      {contact.icon}
-                    </Box>
-                    <Box>
-                      <Typography variant="h6" sx={{ fontWeight: 600, mb: 1, color: 'white' }}>
-                        {contact.label}
-                      </Typography>
-                      <Typography variant="body1" sx={{ opacity: 0.9, color: 'white' }}>
-                        {contact.value}
-                      </Typography>
-                    </Box>
-                  </Stack>
-                </GlassCard>
-              </AnimatedElement>
-            ))}
-          </Box>
-
-          <AnimatedElement animation="fadeIn" delay={500}>
-            <Stack spacing={3} alignItems="center" sx={{ mt: 4 }}>
-              <Typography variant="h5" sx={{ fontWeight: 600 }}>
-                Follow Us
-              </Typography>
-              <Stack direction="row" spacing={2}>
-                {socialLinks.map((social) => (
-                  <IconButton
-                    key={social.platform}
-                    href={social.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
+            {/* Map Card */}
+            <AnimatedElement animation="slideUp" delay={200}>
+              <ModernCard variant="elevated" size="large" sx={{ height: '100%', minHeight: 400 }}>
+                <Stack spacing={3} sx={{ height: '100%' }}>
+                  <Box
                     sx={{
-                      backgroundColor: alpha('#fff', 0.15),
-                      color: 'white',
-                      '&:hover': {
-                        backgroundColor: alpha('#fff', 0.25),
-                        transform: 'translateY(-4px)',
-                      },
-                      transition: 'all 0.3s ease',
+                      width: '100%',
+                      height: 350,
+                      borderRadius: tokens.spacing.radius.xl,
+                      overflow: 'hidden',
+                      position: 'relative',
                     }}
                   >
-                    {social.icon}
-                  </IconButton>
-                ))}
-              </Stack>
-            </Stack>
-          </AnimatedElement>
+                    <iframe
+                      title="LifePlace Alfonso Location"
+                      src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3870.4747777777777!2d120.84999999999999!3d14.14!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMTTCsDA4JzI0LjAiTiAxMjDCsDUxJzAwLjAiRQ!5e0!3m2!1sen!2sph!4v1234567890"
+                      width="100%"
+                      height="100%"
+                      style={{ border: 0 }}
+                      allowFullScreen
+                      loading="lazy"
+                      referrerPolicy="no-referrer-when-downgrade"
+                    />
+                  </Box>
+                  <Button
+                    variant="contained"
+                    size="large"
+                    fullWidth
+                    startIcon={<Directions />}
+                    onClick={handleGetDirections}
+                    sx={{
+                      backgroundColor: tokens.color.base.sage[600],
+                      color: 'white',
+                      fontWeight: tokens.typography.weights.semibold,
+                      py: 1.5,
+                      transition: tokens.animation.transition.smooth,
+                      '&:hover': {
+                        backgroundColor: tokens.color.base.sage[700],
+                        transform: 'translateY(-2px)',
+                        boxShadow: tokens.shadow.elevation.md,
+                      },
+                    }}
+                  >
+                    Get Directions
+                  </Button>
+                </Stack>
+              </ModernCard>
+            </AnimatedElement>
 
+            {/* Contact Info Cards */}
+            <Stack spacing={3}>
+              {contactInfo.map((contact, index) => (
+                <AnimatedElement key={contact.type} animation="slideUp" delay={300 + index * 100}>
+                  <ModernCard variant="elevated" size="medium" hover>
+                    <Stack direction="row" spacing={3} alignItems="flex-start">
+                      <Box
+                        sx={{
+                          p: 2,
+                          borderRadius: '50%',
+                          backgroundColor:
+                            contact.type === 'location'
+                              ? tokens.color.base.terracotta[100]
+                              : contact.type === 'phone'
+                              ? tokens.color.base.sage[100]
+                              : tokens.color.base.neutral[100],
+                          color:
+                            contact.type === 'location'
+                              ? tokens.color.base.terracotta[700]
+                              : contact.type === 'phone'
+                              ? tokens.color.base.sage[700]
+                              : tokens.color.base.neutral[700],
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          flexShrink: 0,
+                        }}
+                      >
+                        {contact.icon}
+                      </Box>
+                      <Box sx={{ flex: 1 }}>
+                        <Typography
+                          variant="h6"
+                          sx={{
+                            fontWeight: tokens.typography.weights.semibold,
+                            mb: 1,
+                            color: tokens.color.base.neutral[900],
+                          }}
+                        >
+                          {contact.label}
+                        </Typography>
+                        <Typography
+                          variant="body1"
+                          sx={{
+                            color: tokens.color.base.neutral[700],
+                            lineHeight: 1.6,
+                          }}
+                        >
+                          {contact.value}
+                        </Typography>
+                      </Box>
+                    </Stack>
+                  </ModernCard>
+                </AnimatedElement>
+              ))}
+            </Stack>
+          </Box>
+
+          {/* Social Media & CTA */}
           <AnimatedElement animation="fadeIn" delay={600}>
-            <Stack alignItems="center" sx={{ mt: 4 }}>
+            <Stack spacing={4} alignItems="center" sx={{ mt: { xs: 4, md: 6 } }}>
+              {/* Social Media */}
+              <Stack spacing={2} alignItems="center">
+                <Typography
+                  variant="h5"
+                  sx={{
+                    fontWeight: tokens.typography.weights.semibold,
+                    color: tokens.color.base.sage[900],
+                  }}
+                >
+                  Follow Us
+                </Typography>
+                <Stack direction="row" spacing={2}>
+                  {socialLinks.map((social) => (
+                    <IconButton
+                      key={social.platform}
+                      href={social.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={`Visit our ${social.platform} page`}
+                      sx={{
+                        backgroundColor: tokens.color.base.sage[100],
+                        color: tokens.color.base.sage[700],
+                        width: 48,
+                        height: 48,
+                        transition: tokens.animation.transition.smooth,
+                        '&:hover': {
+                          backgroundColor: tokens.color.base.sage[200],
+                          transform: 'translateY(-4px)',
+                          boxShadow: tokens.shadow.elevation.md,
+                        },
+                      }}
+                    >
+                      {social.icon}
+                    </IconButton>
+                  ))}
+                </Stack>
+              </Stack>
+
+              {/* CTA Button */}
               <Button
                 variant="contained"
                 size="large"
-                endIcon={<ArrowForward />}
                 onClick={onNavigateToBooking}
                 sx={{
-                  backgroundColor: 'white',
-                  color: theme.palette.primary.main,
-                  px: 5,
-                  py: 2,
-                  fontSize: '1.1rem',
-                  fontWeight: 600,
-                  boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
+                  minWidth: 280,
+                  backgroundColor: tokens.color.base.terracotta[500],
+                  color: 'white',
+                  fontWeight: tokens.typography.weights.semibold,
+                  px: 4,
+                  py: 1.5,
+                  transition: tokens.animation.transition.smooth,
                   '&:hover': {
-                    backgroundColor: alpha('#fff', 0.9),
-                    transform: 'translateY(-3px)',
-                    boxShadow: '0 12px 40px rgba(0,0,0,0.3)',
+                    backgroundColor: tokens.color.base.terracotta[600],
+                    transform: 'translateY(-2px)',
+                    boxShadow: tokens.shadow.elevation.md,
                   },
-                  transition: 'all 0.3s ease',
                 }}
               >
                 Start Planning Your Event
@@ -183,7 +276,7 @@ export const LocationContact: React.FC<Pick<AboutPageProps, 'onNavigateToBooking
             </Stack>
           </AnimatedElement>
         </Stack>
-      </Box>
-    </Box>
+      </Container>
+    </Section>
   );
 };

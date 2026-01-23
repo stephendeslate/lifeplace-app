@@ -1,14 +1,30 @@
 // pages/home/components/ContactSection.tsx
+/**
+ * ContactSection Component - Modern Organic Luxury Redesign
+ *
+ * Features:
+ * - Sage gradient background with warmth
+ * - GlassCard for contact information cards with terracotta/sage accents
+ * - Design system typography tokens (h2, body, overline)
+ * - Terracotta primary CTA button
+ * - Staggered fadeIn animations
+ * - Full responsive design with proper spacing
+ * - WCAG AA compliance
+ */
 
 import React from 'react';
-import { Box, Typography, Button, Stack } from '@mui/material';
+import { Box, Typography, Stack } from '@mui/material';
 import {
   LocationOn,
   Phone,
   Email,
+  ArrowForward,
 } from '@mui/icons-material';
 import { useAuth } from '../../../contexts/AuthContext';
+import { Section, Container, tokens } from '../../../design-system';
+import { GlassCard } from '../../../design-system/components/GlassCard';
 import { AnimatedElement } from '../../../design-system/components/AnimatedElement';
+import { Button } from '@shared/design-system';
 import type { ContactSectionProps } from '../types/home.types';
 
 export const ContactSection: React.FC<ContactSectionProps> = ({
@@ -21,100 +37,189 @@ export const ContactSection: React.FC<ContactSectionProps> = ({
     onNavigateToBooking?.();
   };
 
+  const contactCards = [
+    {
+      icon: LocationOn,
+      label: 'Location',
+      value: 'Alfonso, Cavite',
+      color: tokens.color.base.terracotta[500],
+      delay: 200,
+    },
+    {
+      icon: Phone,
+      label: 'Phone',
+      value: '(02) 123-4567',
+      color: tokens.color.base.sage[600],
+      delay: 300,
+    },
+    {
+      icon: Email,
+      label: 'Email',
+      value: 'info@lifeplacealfonso.com',
+      color: tokens.color.base.terracotta[500],
+      delay: 400,
+    },
+  ];
+
   return (
-    <Box sx={{ py: { xs: 8, md: 12 }, px: { xs: 2, sm: 3, md: 4 }, backgroundColor: 'background.default', width: '100%' }}>
-      <Box sx={{ maxWidth: 800, mx: 'auto', textAlign: 'center' }}>
-        <AnimatedElement animation="fadeIn" delay={100}>
-          <Stack spacing={4}>
-            <Typography variant="h2" sx={{ fontWeight: 600, color: 'primary.main' }}>
-              Ready to Create Memories?
-            </Typography>
-            
-            <Typography variant="h6" color="text.secondary">
-              Contact us today to discuss your event and let us help bring your vision to life at LifePlace Alfonso.
-            </Typography>
-            
-            <Box
-              sx={{
-                display: 'flex',
-                flexDirection: { xs: 'column', md: 'row' },
-                gap: 4,
-                justifyContent: 'center',
-                alignItems: 'center',
-                my: 4,
-              }}
-            >
-              <Box display="flex" alignItems="center" gap={1}>
-                <LocationOn color="primary" />
-                <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                  Alfonso, Cavite
-                </Typography>
-              </Box>
-              <Box display="flex" alignItems="center" gap={1}>
-                <Phone color="primary" />
-                <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                  (02) 123-4567
-                </Typography>
-              </Box>
-              <Box display="flex" alignItems="center" gap={1}>
-                <Email color="primary" />
-                <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                  info@lifeplacealfonso.com
-                </Typography>
-              </Box>
-            </Box>
-            
-            <Stack
-              direction={{ xs: 'column', sm: 'row' }}
-              spacing={3}
-              justifyContent="center"
-              sx={{ mt: 4 }}
-            >
-              <Button
-                variant="contained"
-                size="large"
-                onClick={handleBookNow}
-                sx={{ 
-                  px: 4, 
-                  py: 2, 
-                  fontSize: '1.1rem',
-                  fontWeight: 600,
-                  boxShadow: '0 4px 16px rgba(0,0,0,0.2)',
-                  '&:hover': {
-                    transform: 'translateY(-2px)',
-                    boxShadow: '0 8px 24px rgba(0,0,0,0.3)',
+    <Section background="sage" spacing="xlarge">
+      <Container maxWidth="content">
+        <Stack spacing={{ xs: tokens.spacing.space[6], md: tokens.spacing.space[8] }} alignItems="center">
+
+          {/* Heading */}
+          <AnimatedElement animation="fadeIn" delay={0}>
+            <Box sx={{ textAlign: 'center', maxWidth: 700, mx: 'auto' }}>
+              <Typography
+                component="h2"
+                sx={{
+                  ...tokens.typography.styles.h2,
+                  fontSize: {
+                    xs: tokens.typography.responsive.h2.mobile.fontSize,
+                    sm: tokens.typography.responsive.h2.tablet.fontSize,
+                    md: tokens.typography.styles.h2.fontSize,
                   },
-                  transition: 'all 0.3s ease',
+                  lineHeight: {
+                    xs: tokens.typography.responsive.h2.mobile.lineHeight,
+                    sm: tokens.typography.responsive.h2.tablet.lineHeight,
+                    md: tokens.typography.styles.h2.lineHeight,
+                  },
+                  color: tokens.color.base.sage[800],
+                  mb: tokens.spacing.space[3],
                 }}
               >
-                Book Your Event Now
+                Ready to Create Memories?
+              </Typography>
+
+              <Typography
+                sx={{
+                  ...tokens.typography.styles.bodyLarge,
+                  color: tokens.color.base.sage[700],
+                  maxWidth: 600,
+                  mx: 'auto',
+                }}
+              >
+                Contact us today to discuss your event and let us help bring your vision to life at LifePlace Alfonso.
+              </Typography>
+            </Box>
+          </AnimatedElement>
+
+          {/* Contact Cards */}
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: {
+                xs: '1fr',
+                sm: 'repeat(2, 1fr)',
+                md: 'repeat(3, 1fr)',
+              },
+              gap: { xs: tokens.spacing.space[3], md: tokens.spacing.space[4] },
+              width: '100%',
+              maxWidth: 1000,
+            }}
+          >
+            {contactCards.map((card, index) => (
+              <AnimatedElement key={index} animation="fadeIn" delay={card.delay}>
+                <GlassCard
+                  variant="light"
+                  intensity="medium"
+                  hover={false}
+                  sx={{
+                    height: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    textAlign: 'center',
+                    px: { xs: tokens.spacing.space[3], md: tokens.spacing.space[4] },
+                    py: { xs: tokens.spacing.space[4], md: tokens.spacing.space[5] },
+                    transition: tokens.animation.transition.organic,
+                    '&:hover': {
+                      transform: 'translateY(-4px)',
+                      boxShadow: tokens.shadow.elevation.lg,
+                    },
+                  }}
+                >
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      width: 56,
+                      height: 56,
+                      borderRadius: tokens.spacing.radius.full,
+                      backgroundColor: `${card.color}15`,
+                      mb: tokens.spacing.space[2],
+                      transition: tokens.animation.transition.organic,
+                    }}
+                  >
+                    <card.icon
+                      sx={{
+                        fontSize: 28,
+                        color: card.color,
+                      }}
+                    />
+                  </Box>
+
+                  <Typography
+                    sx={{
+                      ...tokens.typography.styles.overline,
+                      color: tokens.color.base.sage[600],
+                      mb: tokens.spacing.space[1],
+                    }}
+                  >
+                    {card.label}
+                  </Typography>
+
+                  <Typography
+                    sx={{
+                      ...tokens.typography.styles.body,
+                      fontWeight: tokens.typography.weights.medium,
+                      color: tokens.color.base.sage[800],
+                    }}
+                  >
+                    {card.value}
+                  </Typography>
+                </GlassCard>
+              </AnimatedElement>
+            ))}
+          </Box>
+
+          {/* Call to Action */}
+          <AnimatedElement animation="fadeIn" delay={500}>
+            <Stack
+              direction={{ xs: 'column', sm: 'row' }}
+              spacing={tokens.spacing.space[3]}
+              sx={{
+                mt: tokens.spacing.space[2],
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              {/* Primary CTA - Terracotta */}
+              <Button
+                variant="terracotta"
+                size="large"
+                onClick={handleBookNow}
+                endIcon={<ArrowForward />}
+                ariaLabel="Book your event now"
+              >
+                Get In Touch
               </Button>
-              
+
+              {/* Secondary CTA - Sage Outline (only for non-authenticated users) */}
               {!isAuthenticated && (
                 <Button
-                  variant="outlined"
+                  variant="secondary"
                   size="large"
                   onClick={onNavigateToRegister}
-                  sx={{ 
-                    px: 4, 
-                    py: 2, 
-                    fontSize: '1.1rem',
-                    fontWeight: 600,
-                    borderWidth: 2,
-                    '&:hover': {
-                      borderWidth: 2,
-                      transform: 'translateY(-2px)',
-                    },
-                    transition: 'all 0.3s ease',
-                  }}
+                  ariaLabel="Create a new account"
                 >
                   Create Account
                 </Button>
               )}
             </Stack>
-          </Stack>
-        </AnimatedElement>
-      </Box>
-    </Box>
+          </AnimatedElement>
+        </Stack>
+      </Container>
+    </Section>
   );
 };

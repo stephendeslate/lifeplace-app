@@ -1,9 +1,22 @@
 // pages/podcasts/components/PodcastsGrid.tsx
+/**
+ * PodcastsGrid Component - Modern Organic Luxury Redesign
+ *
+ * Features:
+ * - Section and Container components for layout structure
+ * - Responsive grid (1/2/3 columns based on screen size)
+ * - Typography using design system tokens (h2 for section heading)
+ * - Staggered animations for engaging user experience
+ * - Cream background for warm, inviting feel
+ * - Grid gaps using design tokens
+ * - WCAG AA compliant color contrast
+ * - Integration with PodcastEpisode cards
+ */
 
 import React from 'react';
-import { Box, Typography, Stack } from '@mui/material';
+import { Box, Typography } from '@mui/material';
 import { PodcastEpisodeCard } from './PodcastEpisode';
-import { AnimatedElement } from '../../../design-system/components/AnimatedElement';
+import { Section, Container, AnimatedElement, tokens } from '../../../design-system';
 import type { PodcastEpisode } from '../types/podcasts.types';
 
 // Hardcoded episodes from lifeplacealfonso.com
@@ -48,36 +61,48 @@ const podcastEpisodes: PodcastEpisode[] = [
 
 export const PodcastsGrid: React.FC = () => {
   return (
-    <Box
-      sx={{
-        py: { xs: 8, md: 12 },
-        px: { xs: 3, sm: 4, md: 6 },
-      }}
-    >
-      <Stack spacing={{ xs: 6, md: 8 }} alignItems="center" sx={{ maxWidth: 1200, mx: 'auto' }}>
-        <AnimatedElement animation="fadeIn" delay={100}>
+    <Section background="cream" spacing="large">
+      <Container maxWidth="wide">
+        {/* Section Heading */}
+        <AnimatedElement animation="fadeIn" delay={0}>
           <Typography
-            variant="h3"
+            component="h2"
             sx={{
-              fontWeight: 700,
-              color: 'white',
+              ...tokens.typography.styles.h2,
+              fontSize: {
+                xs: tokens.typography.responsive.h2.mobile.fontSize,
+                md: tokens.typography.responsive.h2.tablet.fontSize,
+                lg: tokens.typography.responsive.h2.desktop.fontSize,
+              },
+              lineHeight: {
+                xs: tokens.typography.responsive.h2.mobile.lineHeight,
+                md: tokens.typography.responsive.h2.tablet.lineHeight,
+                lg: tokens.typography.responsive.h2.desktop.lineHeight,
+              },
+              color: tokens.color.base.neutral[900],
               textAlign: 'center',
-              textShadow: '0 4px 20px rgba(0,0,0,0.3)',
+              mb: { xs: tokens.spacing.space[6], md: tokens.spacing.space[8] },
             }}
           >
             Recent Episodes
           </Typography>
         </AnimatedElement>
 
+        {/* Podcast Episodes Grid */}
         <Box
           sx={{
             display: 'grid',
             gridTemplateColumns: {
               xs: '1fr',
               sm: 'repeat(2, 1fr)',
+              lg: 'repeat(3, 1fr)',
             },
-            gap: { xs: 3, md: 4 },
+            gap: {
+              xs: tokens.spacing.space[4],
+              md: tokens.spacing.space[6],
+            },
             width: '100%',
+            mb: { xs: tokens.spacing.space[6], md: tokens.spacing.space[8] },
           }}
         >
           {podcastEpisodes.map((episode, index) => (
@@ -85,20 +110,22 @@ export const PodcastsGrid: React.FC = () => {
           ))}
         </Box>
 
+        {/* Coming Soon Message */}
         <AnimatedElement animation="fadeIn" delay={500}>
           <Typography
-            variant="body1"
             sx={{
-              color: 'rgba(255, 255, 255, 0.8)',
+              ...tokens.typography.styles.body,
+              color: tokens.color.base.neutral[600],
               textAlign: 'center',
-              maxWidth: 600,
-              lineHeight: 1.6,
+              maxWidth: 700,
+              mx: 'auto',
+              lineHeight: tokens.typography.lineHeights.relaxed,
             }}
           >
             More episodes coming soon. Subscribe to stay updated on new conversations about life, rest, and purpose.
           </Typography>
         </AnimatedElement>
-      </Stack>
-    </Box>
+      </Container>
+    </Section>
   );
 };

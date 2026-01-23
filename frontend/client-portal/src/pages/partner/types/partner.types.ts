@@ -15,6 +15,9 @@ export interface PartnerCategory {
   description: string;
   benefits: string[];
   icon: ReactNode;
+  variant?: 'subtle' | 'elevated' | 'warm' | 'terracotta' | 'sage' | 'outlined';
+  iconColor?: string;
+  iconBg?: string;
 }
 
 export interface PartnerPageProps {
