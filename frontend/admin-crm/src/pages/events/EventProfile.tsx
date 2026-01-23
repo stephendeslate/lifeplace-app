@@ -80,6 +80,7 @@ import {
   FinancialSummary,
   WorkflowVisualization,
   calculateEventFinancials,
+  DateTimeFull,
   type ActivityItem,
 } from '../../components/common';
 import { EVENT_STATUSES, type UpdateEventData } from '../../types/events.types';
@@ -440,43 +441,6 @@ export const EventProfile: React.FC = () => {
     }
   };
 
-  const formatDateRange = (startDate: string, endDate: string | null) => {
-    const start = new Date(startDate);
-    const startStr = start.toLocaleDateString('en-US', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-
-    if (!endDate) {
-      return startStr;
-    }
-
-    const end = new Date(endDate);
-
-    // Check if same day
-    if (start.toDateString() === end.toDateString()) {
-      return `${start.toLocaleDateString('en-US', {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-      })} from ${start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} to ${end.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
-    }
-
-    return `${startStr} to ${end.toLocaleDateString('en-US', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    })}`;
-  };
-
   if (isLoading) {
     return (
       <ModernPageLayout backgroundPattern="default">
@@ -652,9 +616,13 @@ export const EventProfile: React.FC = () => {
                   </Typography>
                   <Box display="flex" alignItems="center" gap={2} mt={1}>
                     <ScheduleIcon color="action" sx={{ fontSize: 20 }} />
-                    <Typography variant="body2" fontWeight={500} sx={{ flex: 1 }}>
-                      {formatDateRange(event.start_date, event.end_date)}
-                    </Typography>
+                    <DateTimeFull
+                      date={event.start_date}
+                      showDualTimezone
+                      variant="body2"
+                      fontWeight={500}
+                      sx={{ flex: 1 }}
+                    />
                   </Box>
                 </Box>
 

@@ -163,6 +163,10 @@ class EventSerializer(serializers.ModelSerializer):
     checked_in_by_name = serializers.SerializerMethodField()
     checked_out_by_name = serializers.SerializerMethodField()
 
+    # Timezone metadata (all datetime fields are in Philippine Time)
+    timezone = serializers.SerializerMethodField()
+    timezone_offset = serializers.SerializerMethodField()
+
     class Meta:
         model = Event
         fields = [
@@ -188,6 +192,8 @@ class EventSerializer(serializers.ModelSerializer):
             'late_checkout_fee_applied', 'late_checkout_fee_amount',
             # Cancellation
             'cancelled_reason', 'cancelled_at', 'can_rebook',
+            # Timezone metadata
+            'timezone', 'timezone_offset',
         ]
         read_only_fields = ['id', 'created_at', 'updated_at', 'workflow_progress', 'next_task',
                            'current_total_amount', 'current_quote', 'current_invoice',
@@ -312,6 +318,21 @@ class EventSerializer(serializers.ModelSerializer):
         if obj.checked_out_by:
             return f"{obj.checked_out_by.first_name} {obj.checked_out_by.last_name}"
         return None
+
+    def get_timezone(self, obj):
+        """Get timezone for all datetime fields
+
+        All event datetimes are in Philippine Time (Asia/Manila).
+        The Philippines does not observe daylight saving time (constant UTC+8).
+        """
+        return 'Asia/Manila'
+
+    def get_timezone_offset(self, obj):
+        """Get UTC offset for Philippine Time
+
+        Philippines is UTC+8 year-round (no DST).
+        """
+        return '+08:00'
 
     def validate(self, data):
         """Validate event data"""

@@ -178,3 +178,73 @@ Frontend apps use environment variables for:
 - Frontend: Vitest with React Testing Library
 - Run all frontend tests before commits
 - Test files co-located with components
+
+## Timezone Handling
+
+**IMPORTANT:** This application uses a single-timezone architecture.
+
+### Overview
+- All datetimes are stored as **naive datetimes** in **Philippine Time (Asia/Manila, UTC+8)**
+- `USE_TZ = False` is **intentional** (see [ADR-001](docs/architecture/ADR-001-timezone-handling.md))
+- Philippines does **NOT** observe daylight saving time (constant UTC+8 year-round)
+- All event times represent venue wall-clock time in the Philippines
+
+### For Backend Developers
+- **Use `timezone.now()`** (not `datetime.now()`) for current time
+- All datetime fields in models are naive (no timezone info attached)
+- Email templates automatically include "PHT" suffix
+- API serializers include `timezone` and `timezone_offset` metadata fields
+
+### For Frontend Developers
+- **Always use timezone utilities** from `src/utils/timezone.ts`
+- **NEVER use** `toLocaleDateString()` or `toLocaleTimeString()` directly
+- **Use `formatPhilippinesTime()`** for consistent timezone display
+- **Use `DateTimeDisplay` component** for automatic PHT labeling
+
+#### Correct Usage Examples
+```typescript
+// ✅ GOOD - Uses timezone utilities
+import { formatPhilippinesTime } from '../../utils/timezone';
+formatPhilippinesTime(event.start_date, true, 'MMM d, yyyy h:mm a');
+// Output: "Mar 15, 2026 6:00 PM PHT"
+
+// ✅ GOOD - Uses DateTimeDisplay component
+<DateTimeDisplay date={event.start_date} showDualTimezone />
+
+// ❌ BAD - Uses browser's local timezone
+new Date(event.start_date).toLocaleDateString()
+// Output varies by browser timezone - WRONG!
+```
+
+#### Available Utilities
+- `formatPhilippinesTime(date, includeTimezone, format)` - Format date in PHT
+- `formatDualTimezone(date, adminTimezone)` - Show both business and admin timezones
+- `DateTimeDisplay` component - React component with PHT display
+- `DateTimeFull` component - Full date with day of week
+- `DateDisplay` component - Date only (no time)
+- `TimeDisplay` component - Time only (no date)
+
+### For API Clients
+- All datetime fields are in **Philippine Time**
+- Each response includes `timezone: "Asia/Manila"` and `timezone_offset: "+08:00"`
+- Convert to your local timezone on the client side
+- See API documentation at `/api/docs/` for examples
+
+### Why Single Timezone?
+- All events are physical venue events in the Philippines
+- Simpler architecture for single-timezone business
+- Matches how venue staff think about event times
+- See [ADR-001](docs/architecture/ADR-001-timezone-handling.md) for full rationale
+
+### Migration Path
+If business expands internationally:
+- Enable `USE_TZ = True` in Django settings
+- Run migration to convert naive datetimes to timezone-aware
+- Update all `datetime.now()` to `timezone.now()`
+- Estimated effort: 2-3 weeks
+
+### References
+- **Architecture Decision**: [ADR-001](docs/architecture/ADR-001-timezone-handling.md)
+- **Frontend Utilities**: `frontend/admin-crm/src/utils/timezone.ts`
+- **Backend Settings**: `backend/core/settings.py:196`
+- **Email Templates**: `backend/core/domains/communications/context_service.py`

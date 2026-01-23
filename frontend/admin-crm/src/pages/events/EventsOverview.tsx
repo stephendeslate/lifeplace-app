@@ -48,7 +48,7 @@ import { EventForm } from '../../components/events/EventForm';
 import { eventsApi } from '../../apis/events.api';
 import type { Event, EventFilters, CreateEventData, EventStatus } from '../../types/events.types';
 import { EVENT_STATUSES } from '../../types/events.types';
-import { ModernPageLayout, ModernPageHeader, ModernEmptyState } from '../../components/common';
+import { ModernPageLayout, ModernPageHeader, ModernEmptyState, DateTimeDisplay } from '../../components/common';
 
 export const EventsOverview: React.FC = () => {
   const navigate = useNavigate();
@@ -178,26 +178,6 @@ export const EventsOverview: React.FC = () => {
         return 'default';
     }
   };
-
-  const formatDateRange = (startDate: string, endDate: string | null) => {
-    const start = new Date(startDate);
-    const startStr = start.toLocaleDateString() + ' ' + start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    
-    if (!endDate) {
-      return startStr;
-    }
-    
-    const end = new Date(endDate);
-    const endStr = end.toLocaleDateString() + ' ' + end.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    
-    // Check if same day
-    if (start.toDateString() === end.toDateString()) {
-      return `${start.toLocaleDateString()} ${start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - ${end.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
-    }
-    
-    return `${startStr} - ${endStr}`;
-  };
-
 
   const hasActiveFilters = Object.values(filters).some(value => value !== undefined);
   const filteredCount = totalEvents || 0;
@@ -355,9 +335,12 @@ export const EventsOverview: React.FC = () => {
                     >
                       <TableCell>
                         <Box>
-                          <Typography variant="body2" fontWeight="medium">
-                            {formatDateRange(event.start_date, event.end_date)}
-                          </Typography>
+                          <DateTimeDisplay
+                            date={event.start_date}
+                            showDualTimezone
+                            variant="body2"
+                            fontWeight="medium"
+                          />
                           {event.lead_source && (
                             <Box display="flex" alignItems="center" gap={0.5} mt={0.5}>
                               <TrendingUpIcon sx={{ fontSize: 14, color: 'text.secondary' }} />

@@ -391,7 +391,30 @@ COMMUNICATION_THROTTLE_DISABLED = DEBUG
 # =============================================================================
 SPECTACULAR_SETTINGS = {
     'TITLE': 'LifePlace API',
-    'DESCRIPTION': 'API documentation for the LifePlace event management platform',
+    'DESCRIPTION': '''API documentation for the LifePlace event management platform.
+
+## Timezone Handling
+
+**IMPORTANT:** All datetime fields in this API use **Philippine Time (PHT / Asia/Manila / UTC+8)**.
+
+- All event datetimes represent times at the physical venue in the Philippines
+- The Philippines does NOT observe daylight saving time (constant UTC+8 year-round)
+- All API responses include `timezone` and `timezone_offset` fields for clarity
+- When sending datetime values, send in ISO 8601 format (timezone will be interpreted as PHT)
+
+### Example Response
+```json
+{
+  "id": 123,
+  "start_date": "2026-03-15T18:00:00",
+  "end_date": "2026-03-16T02:00:00",
+  "timezone": "Asia/Manila",
+  "timezone_offset": "+08:00"
+}
+```
+
+For clients in different timezones, convert to your local time on the client side using the provided timezone information.
+    ''',
     'VERSION': '1.0.0',
     'SERVE_INCLUDE_SCHEMA': False,
     'SWAGGER_UI_SETTINGS': {

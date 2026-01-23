@@ -15,6 +15,12 @@ from django.core.exceptions import ValidationError
 
 logger = logging.getLogger(__name__)
 
+# Timezone display constant for email templates
+# All event times are in Philippine Time (UTC+8, no DST)
+PHILIPPINES_TZ_DISPLAY = 'PHT'
+PHILIPPINES_TZ_LONG = 'Philippine Time (PHT)'
+PHILIPPINES_TZ_OFFSET = 'UTC+8'
+
 
 class ContextType:
     """Context type constants for communication templates."""
@@ -85,9 +91,9 @@ VARIABLE_GROUPS = {
         "variables": {
             "event_name": {"description": "Event name or title", "required": True},
             "event_type": {"description": "Type of event (Wedding, Corporate, etc.)", "required": True},
-            "event_date": {"description": "Event date (Month Day, Year)", "required": True},
-            "event_date_short": {"description": "Event date (MM/DD/YYYY)", "required": True},
-            "event_time": {"description": "Event start time (HH:MM AM/PM)", "required": True},
+            "event_date": {"description": "Event date (Month Day, Year) in Philippine Time", "required": True},
+            "event_date_short": {"description": "Event date (MM/DD/YYYY) in Philippine Time", "required": True},
+            "event_time": {"description": "Event start time (HH:MM AM/PM PHT)", "required": True},
             "start_date": {"description": "Event start date", "required": True},
             "end_date": {"description": "Event end date", "required": False},
             "start_time": {"description": "Event start time", "required": True},
@@ -127,8 +133,8 @@ VARIABLE_GROUPS = {
             "payment_amount": {"description": "Payment amount (numeric)", "required": True},
             "payment_amount_formatted": {"description": "Payment amount (formatted with currency)", "required": True},
             "payment_status": {"description": "Payment status (Completed, Pending, etc.)", "required": True},
-            "payment_date": {"description": "Date payment was made", "required": False},
-            "payment_due_date": {"description": "Payment due date", "required": True},
+            "payment_date": {"description": "Date payment was made (Philippine Time)", "required": False},
+            "payment_due_date": {"description": "Payment due date (Philippine Time)", "required": True},
             "payment_method": {"description": "Payment method used (Credit Card, Bank Transfer, etc.)", "required": False},
             "payment_method_last_four": {"description": "Last 4 digits of card/account", "required": False},
             "receipt_number": {"description": "Receipt reference number", "required": False},
@@ -145,8 +151,8 @@ VARIABLE_GROUPS = {
         "available_in": [ContextType.INVOICE, ContextType.PAYMENT],
         "variables": {
             "invoice_number": {"description": "Invoice ID/number", "required": True},
-            "invoice_issue_date": {"description": "Invoice issue date", "required": True},
-            "invoice_due_date": {"description": "Invoice due date", "required": True},
+            "invoice_issue_date": {"description": "Invoice issue date (Philippine Time)", "required": True},
+            "invoice_due_date": {"description": "Invoice due date (Philippine Time)", "required": True},
             "invoice_status": {"description": "Invoice status", "required": True},
             "invoice_subtotal": {"description": "Subtotal before tax", "required": True},
             "invoice_tax_amount": {"description": "Tax amount", "required": False},
@@ -567,11 +573,12 @@ class CommunicationContextService:
         event_type = event.event_type
         event_type_name = event_type.name if event_type else 'Event'
 
-        # Date formatting
+        # Date formatting with timezone display
+        # All dates/times are in Philippine Time (Asia/Manila, UTC+8)
         event_date = event.start_date.strftime('%B %d, %Y') if event.start_date else ''
         event_date_short = event.start_date.strftime('%m/%d/%Y') if event.start_date else ''
-        start_time = event.start_date.strftime('%I:%M %p') if event.start_date else ''
-        end_time = event.end_date.strftime('%I:%M %p') if event.end_date else ''
+        start_time = event.start_date.strftime(f'%I:%M %p {PHILIPPINES_TZ_DISPLAY}') if event.start_date else ''
+        end_time = event.end_date.strftime(f'%I:%M %p {PHILIPPINES_TZ_DISPLAY}') if event.end_date else ''
 
         # Days until event
         days_until = None
@@ -836,8 +843,8 @@ class CommunicationContextService:
             'payment_amount': str(payment.amount),
             'payment_amount_formatted': amount_formatted,
             'payment_status': payment.get_status_display(),
-            'payment_date': payment.paid_on.strftime('%B %d, %Y') if payment.paid_on else '',
-            'payment_due_date': payment.due_date.strftime('%B %d, %Y') if payment.due_date else '',
+            'payment_date': payment.paid_on.strftime(f'%B %d, %Y {PHILIPPINES_TZ_DISPLAY}') if payment.paid_on else '',
+            'payment_due_date': payment.due_date.strftime(f'%B %d, %Y {PHILIPPINES_TZ_DISPLAY}') if payment.due_date else '',
             'payment_method': method_name,
             'payment_method_last_four': method_last_four,
             'receipt_number': payment.receipt_number or '',
@@ -876,8 +883,8 @@ class CommunicationContextService:
 
         return {
             'invoice_number': invoice.invoice_id,
-            'invoice_issue_date': invoice.issue_date.strftime('%B %d, %Y') if invoice.issue_date else '',
-            'invoice_due_date': invoice.due_date.strftime('%B %d, %Y') if invoice.due_date else '',
+            'invoice_issue_date': invoice.issue_date.strftime(f'%B %d, %Y {PHILIPPINES_TZ_DISPLAY}') if invoice.issue_date else '',
+            'invoice_due_date': invoice.due_date.strftime(f'%B %d, %Y {PHILIPPINES_TZ_DISPLAY}') if invoice.due_date else '',
             'invoice_status': invoice.get_status_display(),
             'invoice_subtotal': str(invoice.subtotal),
             'invoice_tax_amount': str(invoice.tax_amount),
