@@ -495,7 +495,7 @@ const Register: React.FC<RegisterProps> = ({
                       '&:hover': {
                         backgroundColor: tokens.color.base.sage[700],
                         transform: 'translateY(-2px)',
-                        boxShadow: tokens.shadow.elevation.high,
+                        boxShadow: tokens.shadow.elevation.cardHover,
                       },
                       '&:disabled': {
                         backgroundColor: tokens.color.base.sage[400],
