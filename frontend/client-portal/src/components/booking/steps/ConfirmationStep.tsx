@@ -27,6 +27,7 @@ import { useBooking } from '../../../contexts/BookingContext';
 import { useConfirmation } from '../../../hooks/booking/useConfirmation';
 import { useSimplePricing } from '../../../hooks/booking/useSimplePricing';
 import { usePaymentPlanSettings } from '../../../hooks/usePaymentPlanSettings';
+import { formatPhilippinesTime } from '../../../utils/timezone';
 import { BookingSummaryCard } from '../shared/BookingSummaryCard';
 import { PaymentSummaryCard } from '../shared/PaymentSummaryCard';
 import { QuestionnaireSummaryCard } from '../shared/QuestionnaireSummaryCard';
@@ -242,7 +243,7 @@ export const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
 
     return {
       eventType: state.currentFlow?.event_type_name || 'Event',
-      date: new Date(dateTimeData.start_date).toLocaleDateString(),
+      date: formatPhilippinesTime(dateTimeData.start_date, false, 'EEEE, MMMM d, yyyy'),
       venue: undefined, // Venue is determined by venue selection step
     };
   }, [state.stepData.date_time, state.currentFlow]);

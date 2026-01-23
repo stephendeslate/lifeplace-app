@@ -395,7 +395,14 @@ class PublicBookingFlowViewSet(viewsets.ReadOnlyModelViewSet):
             # Always create a user for guest bookings if session doesn't have a client
             user = None
             user_created = False
-            
+
+            # Handle case where user logged in during booking flow but session wasn't updated
+            if request.user.is_authenticated and not session.client:
+                # Associate the authenticated user with the session
+                session.client = request.user
+                session.save()
+                logger.info(f"Associated authenticated user {request.user.email} with session {session_uuid}")
+
             if not request.user.is_authenticated and not session.client:
                 from core.domains.users.services import UserService
                 try:

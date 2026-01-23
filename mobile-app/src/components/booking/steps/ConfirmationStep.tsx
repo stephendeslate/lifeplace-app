@@ -49,6 +49,7 @@ import { colors, spacing, typeScale, layout, shadows } from '@/theme';
 import { useBookingContext } from '@/contexts/BookingContext';
 import { formatCurrency } from '@/utils/currency';
 import { format, parseISO } from 'date-fns';
+import { formatPhilippinesTime } from '@/utils/timezone';
 import { useConfirmationManager } from '@/hooks/booking/useConfirmation';
 import { useSimplePricing } from '@/hooks/booking/useSimplePricing';
 import { usePaymentPlanSettings, useRefundPolicy } from '@/hooks/usePaymentPlanSettings';
@@ -247,7 +248,7 @@ export function ConfirmationStep({
     try {
       const shareMessage = isQuoteRequest
         ? `I just requested a quote from LifePlace! 🎉\n\nRequest Reference: ${displayReference}\n\nCheck out LifePlace for your next event!`
-        : `I just booked an event at LifePlace! 🎉\n\nBooking Reference: ${displayReference}\nDate: ${eventDate ? format(parseISO(eventDate), 'MMMM d, yyyy') : 'TBD'}\n\nCheck out LifePlace for your next event!`;
+        : `I just booked an event at LifePlace! 🎉\n\nBooking Reference: ${displayReference}\nDate: ${eventDate ? formatPhilippinesTime(eventDate, 'MMMM d, yyyy') : 'TBD'}\n\nCheck out LifePlace for your next event!`;
 
       await Share.share({
         message: shareMessage,
@@ -384,10 +385,10 @@ export function ConfirmationStep({
               <View style={styles.summaryRow}>
                 <Calendar size={18} color={colors.accent.wood} />
                 <View style={styles.summaryRowContent}>
-                  <Text style={styles.summaryLabel}>Date</Text>
+                  <Text style={styles.summaryLabel}>Date (PHT)</Text>
                   <Text style={styles.summaryValue}>
-                    {format(parseISO(eventDate), 'EEEE, MMMM d, yyyy')}
-                    {endDate && endDate !== eventDate && ` - ${format(parseISO(endDate), 'MMMM d, yyyy')}`}
+                    {formatPhilippinesTime(eventDate, 'EEEE, MMMM d, yyyy')}
+                    {endDate && endDate !== eventDate && ` - ${formatPhilippinesTime(endDate, 'MMMM d, yyyy')}`}
                   </Text>
                 </View>
               </View>
@@ -586,10 +587,10 @@ export function ConfirmationStep({
               <Calendar size={20} color={colors.accent.wood} />
             </View>
             <View style={styles.detailContent}>
-              <Text style={styles.detailLabel}>Date</Text>
+              <Text style={styles.detailLabel}>Date (PHT)</Text>
               <Text style={styles.detailValue}>
-                {format(parseISO(eventDate), 'EEEE, MMMM d, yyyy')}
-                {endDate && endDate !== eventDate && ` - ${format(parseISO(endDate), 'MMMM d, yyyy')}`}
+                {formatPhilippinesTime(eventDate, 'EEEE, MMMM d, yyyy')}
+                {endDate && endDate !== eventDate && ` - ${formatPhilippinesTime(endDate, 'MMMM d, yyyy')}`}
               </Text>
             </View>
           </View>

@@ -31,6 +31,7 @@ import {
 import { useBooking } from '../../../contexts/BookingContext';
 import { useSimplePricing } from '../../../hooks/booking/useSimplePricing';
 import { useCurrencySettings } from '../../../hooks/useCurrency';
+import { formatPhilippinesTime } from '../../../utils/timezone';
 import type {
   PricingSummaryStepData,
   PricingSummaryStepConfiguration,
@@ -236,10 +237,10 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
     });
   };
 
-  // Format date helper
+  // Format date helper - uses Philippines timezone for consistency
   const formatDate = (dateString: string) => {
     if (!dateString) return 'Not specified';
-    return new Date(dateString).toLocaleDateString();
+    return formatPhilippinesTime(dateString, false, 'MMMM d, yyyy');
   };
 
   // Show loading state on initial load
