@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Box, Typography, Stack, Button } from '@mui/material';
-import { Map, OpenInNew, LocationOn } from '@mui/icons-material';
+import { OpenInNew } from '@mui/icons-material';
 import {
   tokens,
   Section,
@@ -67,56 +67,25 @@ export const ContactMap: React.FC = () => {
                 </Typography>
               </Box>
 
-              {/* Map Placeholder */}
+              {/* Embedded Map */}
               <Box
                 sx={{
                   width: '100%',
                   height: { xs: 300, sm: 350, md: 400 },
-                  backgroundColor: tokens.color.base.sage[50],
                   borderRadius: tokens.spacing.radius.xl,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 2,
-                  border: `2px dashed ${tokens.color.base.sage[300]}`,
                   overflow: 'hidden',
                 }}
-                role="img"
-                aria-label="Map showing LifePlace Alfonso location in Patutong Malaki North, Alfonso, Cavite"
               >
-                <Map
-                  sx={{
-                    fontSize: 64,
-                    color: tokens.color.base.sage[400],
-                  }}
-                  aria-hidden="true"
+                <iframe
+                  title="LifePlace Alfonso Location"
+                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3870.4747777777777!2d120.84999999999999!3d14.14!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMTTCsDA4JzI0LjAiTiAxMjDCsDUxJzAwLjAiRQ!5e0!3m2!1sen!2sph!4v1234567890"
+                  width="100%"
+                  height="100%"
+                  style={{ border: 0 }}
+                  allowFullScreen
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
                 />
-                <Stack spacing={1} alignItems="center">
-                  <LocationOn
-                    sx={{ color: tokens.color.base.sage[600] }}
-                    aria-hidden="true"
-                  />
-                  <Typography
-                    variant="h6"
-                    sx={{
-                      color: tokens.color.base.sage[900],
-                      fontWeight: tokens.typography.weights.semibold,
-                      textAlign: 'center',
-                    }}
-                  >
-                    Patutong Malaki North
-                  </Typography>
-                  <Typography
-                    variant="body2"
-                    sx={{
-                      color: tokens.color.base.neutral[600],
-                      textAlign: 'center',
-                    }}
-                  >
-                    Alfonso, Cavite 4120
-                  </Typography>
-                </Stack>
               </Box>
 
               {/* Directions Button */}
