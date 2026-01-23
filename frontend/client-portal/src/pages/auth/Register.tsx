@@ -34,6 +34,7 @@ import type { RegisterCredentials } from '../../types/auth.types';
 import { GlassCard } from '../../design-system/components/GlassCard';
 import { AnimatedElement } from '../../design-system/components/AnimatedElement';
 import { GoogleLoginButton } from '../../components/auth';
+import { tokens } from '../../design-system';
 
 interface RegisterProps {
   onNavigateToLogin?: () => void;
@@ -50,30 +51,33 @@ const Register: React.FC<RegisterProps> = ({
   const { showSuccess } = useToastActions();
   const theme = useTheme();
 
-  // Glass morphism TextField styling
+  // Glass morphism TextField styling with improved contrast
   const glassTextFieldSx = {
     '& .MuiOutlinedInput-root': {
-      backgroundColor: alpha('#fff', 0.1),
+      backgroundColor: alpha('#fff', 0.7),
       backdropFilter: 'blur(10px)',
-      color: 'white',
+      color: tokens.color.base.neutral[900],
       '& fieldset': {
-        borderColor: alpha('#fff', 0.3),
+        borderColor: tokens.color.base.neutral[300],
       },
       '&:hover fieldset': {
-        borderColor: alpha('#fff', 0.5),
+        borderColor: tokens.color.base.neutral[400],
       },
       '&.Mui-focused fieldset': {
-        borderColor: theme.palette.primary.light,
+        borderColor: tokens.color.base.sage[600],
       },
     },
     '& .MuiInputLabel-root': {
-      color: alpha('#fff', 0.8),
+      color: tokens.color.base.neutral[600],
       '&.Mui-focused': {
-        color: theme.palette.primary.light,
+        color: tokens.color.base.sage[700],
       },
     },
     '& .MuiFormHelperText-root': {
-      color: alpha('#fff', 0.7),
+      color: tokens.color.base.neutral[600],
+      backgroundColor: alpha('#fff', 0.7),
+      marginLeft: 0,
+      paddingLeft: '14px',
     },
   };
 
@@ -217,35 +221,36 @@ const Register: React.FC<RegisterProps> = ({
               <Button
                 startIcon={<ArrowBack />}
                 onClick={onNavigateToHome}
-                sx={{ 
-                  alignSelf: 'flex-start', 
+                sx={{
+                  alignSelf: 'flex-start',
                   mb: 2,
-                  color: 'white',
+                  color: tokens.color.base.neutral[900],
                   backdropFilter: 'blur(10px)',
-                  backgroundColor: alpha('#fff', 0.1),
+                  backgroundColor: alpha('#fff', 0.6),
+                  border: `1px solid ${tokens.color.base.neutral[200]}`,
                   '&:hover': {
-                    backgroundColor: alpha('#fff', 0.2),
+                    backgroundColor: alpha('#fff', 0.8),
                   },
                 }}
               >
                 Back to Home
               </Button>
-              
-              <Typography 
-                variant="h3" 
-                sx={{ 
+
+              <Typography
+                variant="h3"
+                sx={{
                   fontWeight: 600,
-                  color: 'white',
-                  textShadow: '0 4px 20px rgba(0,0,0,0.3)',
+                  color: tokens.color.base.neutral[900],
+                  textShadow: `0 2px 8px ${tokens.color.overlays.light}`,
                 }}
               >
                 Join LifePlace
               </Typography>
-              <Typography 
-                variant="h6" 
-                sx={{ 
-                  color: alpha('#fff', 0.9),
-                  textShadow: '0 2px 10px rgba(0,0,0,0.2)',
+              <Typography
+                variant="h6"
+                sx={{
+                  color: tokens.color.base.neutral[700],
+                  textShadow: `0 1px 4px ${tokens.color.overlays.light}`,
                 }}
               >
                 Create your account and start your journey
@@ -255,31 +260,31 @@ const Register: React.FC<RegisterProps> = ({
 
           {/* Registration Form */}
           <AnimatedElement animation="slideUp" delay={200}>
-            <GlassCard 
-              variant="light" 
+            <GlassCard
+              variant="light"
               intensity="strong"
-              sx={{ 
+              sx={{
                 p: 4,
                 backdropFilter: 'blur(20px)',
-                backgroundColor: 'rgba(255,255,255,0.1)',
-                border: '1px solid rgba(255,255,255,0.3)',
-                boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
+                backgroundColor: alpha('#fff', 0.5),
+                border: `1px solid ${tokens.color.base.neutral[200]}`,
+                boxShadow: tokens.shadow.elevation.card,
               }}
             >
               <Box component="form" onSubmit={handleSubmit}>
                 <Stack spacing={3}>
                   {/* Form Error */}
                   {errors.form && (
-                    <Alert 
-                      severity="error" 
-                      sx={{ 
+                    <Alert
+                      severity="error"
+                      sx={{
                         borderRadius: 2,
-                        backgroundColor: alpha(theme.palette.error.main, 0.1),
+                        backgroundColor: alpha(theme.palette.error.main, 0.08),
                         backdropFilter: 'blur(10px)',
-                        border: `1px solid ${alpha(theme.palette.error.main, 0.3)}`,
-                        color: 'white',
+                        border: `1px solid ${theme.palette.error.main}`,
+                        color: theme.palette.error.dark,
                         '& .MuiAlert-icon': {
-                          color: theme.palette.error.light,
+                          color: theme.palette.error.main,
                         },
                       }}
                     >
@@ -288,13 +293,12 @@ const Register: React.FC<RegisterProps> = ({
                   )}
 
                   {/* Personal Information */}
-                  <Typography 
-                    variant="h6" 
-                    sx={{ 
-                      fontWeight: 600, 
+                  <Typography
+                    variant="h6"
+                    sx={{
+                      fontWeight: 600,
                       mb: 1,
-                      color: alpha('#fff', 0.95),
-                      textShadow: '0 2px 10px rgba(0,0,0,0.2)',
+                      color: tokens.color.base.neutral[900],
                     }}
                   >
                     Personal Information
@@ -321,7 +325,7 @@ const Register: React.FC<RegisterProps> = ({
                         InputProps={{
                           startAdornment: (
                             <InputAdornment position="start">
-                              <Person sx={{ color: errors.first_name ? theme.palette.error.light : alpha('#fff', 0.7) }} />
+                              <Person sx={{ color: errors.first_name ? theme.palette.error.main : tokens.color.base.neutral[600] }} />
                             </InputAdornment>
                           ),
                         }}
@@ -355,7 +359,7 @@ const Register: React.FC<RegisterProps> = ({
                     InputProps={{
                       startAdornment: (
                         <InputAdornment position="start">
-                          <Email sx={{ color: errors.email ? theme.palette.error.light : alpha('#fff', 0.7) }} />
+                          <Email sx={{ color: errors.email ? theme.palette.error.main : tokens.color.base.neutral[600] }} />
                         </InputAdornment>
                       ),
                     }}
@@ -375,7 +379,7 @@ const Register: React.FC<RegisterProps> = ({
                     InputProps={{
                       startAdornment: (
                         <InputAdornment position="start">
-                          <Lock sx={{ color: errors.password ? theme.palette.error.light : alpha('#fff', 0.7) }} />
+                          <Lock sx={{ color: errors.password ? theme.palette.error.main : tokens.color.base.neutral[600] }} />
                         </InputAdornment>
                       ),
                       endAdornment: (
@@ -384,7 +388,7 @@ const Register: React.FC<RegisterProps> = ({
                             onClick={handleTogglePasswordVisibility('password')}
                             edge="end"
                             disabled={isSubmitting}
-                            sx={{ color: alpha('#fff', 0.7) }}
+                            sx={{ color: tokens.color.base.neutral[600] }}
                           >
                             {showPassword ? <VisibilityOff /> : <Visibility />}
                           </IconButton>
@@ -406,7 +410,7 @@ const Register: React.FC<RegisterProps> = ({
                     InputProps={{
                       startAdornment: (
                         <InputAdornment position="start">
-                          <Lock sx={{ color: errors.confirm_password ? theme.palette.error.light : alpha('#fff', 0.7) }} />
+                          <Lock sx={{ color: errors.confirm_password ? theme.palette.error.main : tokens.color.base.neutral[600] }} />
                         </InputAdornment>
                       ),
                       endAdornment: (
@@ -415,7 +419,7 @@ const Register: React.FC<RegisterProps> = ({
                             onClick={handleTogglePasswordVisibility('confirm_password')}
                             edge="end"
                             disabled={isSubmitting}
-                            sx={{ color: alpha('#fff', 0.7) }}
+                            sx={{ color: tokens.color.base.neutral[600] }}
                           >
                             {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
                           </IconButton>
@@ -424,16 +428,15 @@ const Register: React.FC<RegisterProps> = ({
                     }}
                   />
 
-                  <Divider sx={{ borderColor: alpha('#fff', 0.3), my: 2 }} />
+                  <Divider sx={{ borderColor: tokens.color.base.neutral[300], my: 2 }} />
 
                   {/* Optional Information */}
-                  <Typography 
-                    variant="h6" 
-                    sx={{ 
-                      fontWeight: 600, 
+                  <Typography
+                    variant="h6"
+                    sx={{
+                      fontWeight: 600,
                       mb: 1,
-                      color: alpha('#fff', 0.95),
-                      textShadow: '0 2px 10px rgba(0,0,0,0.2)',
+                      color: tokens.color.base.neutral[900],
                     }}
                   >
                     Additional Information (Optional)
@@ -451,7 +454,7 @@ const Register: React.FC<RegisterProps> = ({
                     InputProps={{
                       startAdornment: (
                         <InputAdornment position="start">
-                          <Phone sx={{ color: errors['profile.phone'] ? theme.palette.error.light : alpha('#fff', 0.7) }} />
+                          <Phone sx={{ color: errors['profile.phone'] ? theme.palette.error.main : tokens.color.base.neutral[600] }} />
                         </InputAdornment>
                       ),
                     }}
@@ -467,7 +470,7 @@ const Register: React.FC<RegisterProps> = ({
                     InputProps={{
                       startAdornment: (
                         <InputAdornment position="start">
-                          <Business sx={{ color: alpha('#fff', 0.7) }} />
+                          <Business sx={{ color: tokens.color.base.neutral[600] }} />
                         </InputAdornment>
                       ),
                     }}
@@ -486,19 +489,20 @@ const Register: React.FC<RegisterProps> = ({
                       fontWeight: 600,
                       mt: 3,
                       position: 'relative',
-                      backgroundColor: 'white',
-                      color: theme.palette.primary.main,
-                      boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
+                      backgroundColor: tokens.color.base.sage[600],
+                      color: '#FFFFFF',
+                      boxShadow: tokens.shadow.elevation.card,
                       '&:hover': {
-                        backgroundColor: alpha('#fff', 0.9),
+                        backgroundColor: tokens.color.base.sage[700],
                         transform: 'translateY(-2px)',
-                        boxShadow: '0 12px 40px rgba(0,0,0,0.3)',
+                        boxShadow: tokens.shadow.elevation.high,
                       },
                       '&:disabled': {
-                        backgroundColor: alpha('#fff', 0.7),
-                        color: theme.palette.primary.main,
+                        backgroundColor: tokens.color.base.sage[400],
+                        color: '#FFFFFF',
+                        opacity: 0.7,
                       },
-                      transition: 'all 0.3s ease',
+                      transition: tokens.animation.transition.smooth,
                     }}
                   >
                     {isSubmitting ? (
@@ -522,7 +526,7 @@ const Register: React.FC<RegisterProps> = ({
           {/* Login Link */}
           <AnimatedElement animation="fadeIn" delay={300}>
             <Box textAlign="center">
-              <Typography variant="body1" sx={{ color: alpha('#fff', 0.9) }}>
+              <Typography variant="body1" sx={{ color: tokens.color.base.neutral[700] }}>
                 Already have an account?{' '}
                 <Link
                   component="button"
@@ -531,11 +535,10 @@ const Register: React.FC<RegisterProps> = ({
                   sx={{
                     fontWeight: 600,
                     textDecoration: 'none',
-                    color: 'white',
-                    textShadow: '0 2px 10px rgba(0,0,0,0.3)',
+                    color: tokens.color.base.sage[700],
                     '&:hover': {
                       textDecoration: 'underline',
-                      textShadow: '0 2px 15px rgba(255,255,255,0.5)',
+                      color: tokens.color.base.sage[800],
                     },
                   }}
                 >
@@ -548,11 +551,10 @@ const Register: React.FC<RegisterProps> = ({
           {/* Help Text */}
           <AnimatedElement animation="fadeIn" delay={400}>
             <Box textAlign="center">
-              <Typography 
-                variant="body2" 
-                sx={{ 
-                  color: alpha('#fff', 0.7),
-                  textShadow: '0 1px 5px rgba(0,0,0,0.2)',
+              <Typography
+                variant="body2"
+                sx={{
+                  color: tokens.color.base.neutral[600],
                 }}
               >
                 By creating an account, you agree to our Terms of Service and Privacy Policy

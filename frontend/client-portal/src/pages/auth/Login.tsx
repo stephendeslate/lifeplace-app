@@ -32,6 +32,7 @@ import type { LoginCredentials } from '../../types/auth.types';
 import { GlassCard } from '../../design-system/components/GlassCard';
 import { AnimatedElement } from '../../design-system/components/AnimatedElement';
 import { GoogleLoginButton } from '../../components/auth';
+import { tokens } from '../../design-system';
 
 interface LoginProps {
   onNavigateToRegister?: () => void;
@@ -145,35 +146,36 @@ const Login: React.FC<LoginProps> = ({
               <Button
                 startIcon={<ArrowBack />}
                 onClick={onNavigateToHome}
-                sx={{ 
-                  alignSelf: 'flex-start', 
+                sx={{
+                  alignSelf: 'flex-start',
                   mb: 2,
-                  color: 'white',
+                  color: tokens.color.base.neutral[900],
                   backdropFilter: 'blur(10px)',
-                  backgroundColor: alpha('#fff', 0.1),
+                  backgroundColor: alpha('#fff', 0.6),
+                  border: `1px solid ${tokens.color.base.neutral[200]}`,
                   '&:hover': {
-                    backgroundColor: alpha('#fff', 0.2),
+                    backgroundColor: alpha('#fff', 0.8),
                   },
                 }}
               >
                 Back to Home
               </Button>
-              
-              <Typography 
-                variant="h3" 
-                sx={{ 
+
+              <Typography
+                variant="h3"
+                sx={{
                   fontWeight: 600,
-                  color: 'white',
-                  textShadow: '0 4px 20px rgba(0,0,0,0.3)',
+                  color: tokens.color.base.neutral[900],
+                  textShadow: `0 2px 8px ${tokens.color.overlays.light}`,
                 }}
               >
                 Welcome Back
               </Typography>
-              <Typography 
-                variant="h6" 
-                sx={{ 
-                  color: alpha('#fff', 0.9),
-                  textShadow: '0 2px 10px rgba(0,0,0,0.2)',
+              <Typography
+                variant="h6"
+                sx={{
+                  color: tokens.color.base.neutral[700],
+                  textShadow: `0 1px 4px ${tokens.color.overlays.light}`,
                 }}
               >
                 Sign in to your LifePlace account
@@ -183,31 +185,31 @@ const Login: React.FC<LoginProps> = ({
 
           {/* Login Form */}
           <AnimatedElement animation="slideUp" delay={200}>
-            <GlassCard 
-              variant="light" 
+            <GlassCard
+              variant="light"
               intensity="strong"
-              sx={{ 
+              sx={{
                 p: 4,
                 backdropFilter: 'blur(20px)',
-                backgroundColor: 'rgba(255,255,255,0.1)',
-                border: '1px solid rgba(255,255,255,0.3)',
-                boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
+                backgroundColor: alpha('#fff', 0.5),
+                border: `1px solid ${tokens.color.base.neutral[200]}`,
+                boxShadow: tokens.shadow.elevation.card,
               }}
             >
               <Box component="form" onSubmit={handleSubmit}>
                 <Stack spacing={3}>
                   {/* Form Error */}
                   {errors.form && (
-                    <Alert 
-                      severity="error" 
-                      sx={{ 
+                    <Alert
+                      severity="error"
+                      sx={{
                         borderRadius: 2,
-                        backgroundColor: alpha(theme.palette.error.main, 0.1),
+                        backgroundColor: alpha(theme.palette.error.main, 0.08),
                         backdropFilter: 'blur(10px)',
-                        border: `1px solid ${alpha(theme.palette.error.main, 0.3)}`,
-                        color: 'white',
+                        border: `1px solid ${theme.palette.error.main}`,
+                        color: theme.palette.error.dark,
                         '& .MuiAlert-icon': {
-                          color: theme.palette.error.light,
+                          color: theme.palette.error.main,
                         },
                       }}
                     >
@@ -227,33 +229,36 @@ const Login: React.FC<LoginProps> = ({
                     disabled={isSubmitting}
                     sx={{
                       '& .MuiOutlinedInput-root': {
-                        backgroundColor: alpha('#fff', 0.1),
+                        backgroundColor: alpha('#fff', 0.7),
                         backdropFilter: 'blur(10px)',
-                        color: 'white',
+                        color: tokens.color.base.neutral[900],
                         '& fieldset': {
-                          borderColor: alpha('#fff', 0.3),
+                          borderColor: tokens.color.base.neutral[300],
                         },
                         '&:hover fieldset': {
-                          borderColor: alpha('#fff', 0.5),
+                          borderColor: tokens.color.base.neutral[400],
                         },
                         '&.Mui-focused fieldset': {
-                          borderColor: theme.palette.primary.light,
+                          borderColor: tokens.color.base.sage[600],
                         },
                       },
                       '& .MuiInputLabel-root': {
-                        color: alpha('#fff', 0.8),
+                        color: tokens.color.base.neutral[600],
                         '&.Mui-focused': {
-                          color: theme.palette.primary.light,
+                          color: tokens.color.base.sage[700],
                         },
                       },
                       '& .MuiFormHelperText-root': {
-                        color: alpha('#fff', 0.7),
+                        color: tokens.color.base.neutral[600],
+                        backgroundColor: alpha('#fff', 0.7),
+                        marginLeft: 0,
+                        paddingLeft: '14px',
                       },
                     }}
                     InputProps={{
                       startAdornment: (
                         <InputAdornment position="start">
-                          <Email sx={{ color: errors.email ? theme.palette.error.light : alpha('#fff', 0.7) }} />
+                          <Email sx={{ color: errors.email ? theme.palette.error.main : tokens.color.base.neutral[600] }} />
                         </InputAdornment>
                       ),
                     }}
@@ -271,33 +276,36 @@ const Login: React.FC<LoginProps> = ({
                     disabled={isSubmitting}
                     sx={{
                       '& .MuiOutlinedInput-root': {
-                        backgroundColor: alpha('#fff', 0.1),
+                        backgroundColor: alpha('#fff', 0.7),
                         backdropFilter: 'blur(10px)',
-                        color: 'white',
+                        color: tokens.color.base.neutral[900],
                         '& fieldset': {
-                          borderColor: alpha('#fff', 0.3),
+                          borderColor: tokens.color.base.neutral[300],
                         },
                         '&:hover fieldset': {
-                          borderColor: alpha('#fff', 0.5),
+                          borderColor: tokens.color.base.neutral[400],
                         },
                         '&.Mui-focused fieldset': {
-                          borderColor: theme.palette.primary.light,
+                          borderColor: tokens.color.base.sage[600],
                         },
                       },
                       '& .MuiInputLabel-root': {
-                        color: alpha('#fff', 0.8),
+                        color: tokens.color.base.neutral[600],
                         '&.Mui-focused': {
-                          color: theme.palette.primary.light,
+                          color: tokens.color.base.sage[700],
                         },
                       },
                       '& .MuiFormHelperText-root': {
-                        color: alpha('#fff', 0.7),
+                        color: tokens.color.base.neutral[600],
+                        backgroundColor: alpha('#fff', 0.7),
+                        marginLeft: 0,
+                        paddingLeft: '14px',
                       },
                     }}
                     InputProps={{
                       startAdornment: (
                         <InputAdornment position="start">
-                          <Lock sx={{ color: errors.password ? theme.palette.error.light : alpha('#fff', 0.7) }} />
+                          <Lock sx={{ color: errors.password ? theme.palette.error.main : tokens.color.base.neutral[600] }} />
                         </InputAdornment>
                       ),
                       endAdornment: (
@@ -306,7 +314,7 @@ const Login: React.FC<LoginProps> = ({
                             onClick={handleTogglePasswordVisibility}
                             edge="end"
                             disabled={isSubmitting}
-                            sx={{ color: alpha('#fff', 0.7) }}
+                            sx={{ color: tokens.color.base.neutral[600] }}
                           >
                             {showPassword ? <VisibilityOff /> : <Visibility />}
                           </IconButton>
@@ -332,16 +340,16 @@ const Login: React.FC<LoginProps> = ({
                           onChange={handleInputChange('remember_me')}
                           disabled={isSubmitting}
                           sx={{
-                            color: alpha('#fff', 0.7),
+                            color: tokens.color.base.neutral[600],
                             '&.Mui-checked': {
-                              color: theme.palette.primary.light,
+                              color: tokens.color.base.sage[600],
                             },
                           }}
                         />
                       }
                       label="Remember me for 7 days"
                       sx={{
-                        color: alpha('#fff', 0.8),
+                        color: tokens.color.base.neutral[700],
                         '& .MuiFormControlLabel-label': {
                           fontSize: '0.875rem',
                         },
@@ -355,17 +363,17 @@ const Login: React.FC<LoginProps> = ({
                       onClick={() => window.location.href = '/forgot-password'}
                       disabled={isSubmitting}
                       sx={{
-                        color: alpha('#fff', 0.9),
+                        color: tokens.color.base.sage[700],
                         fontWeight: 600,
                         textDecoration: 'none',
                         cursor: 'pointer',
                         fontSize: '0.875rem',
                         '&:hover': {
-                          color: '#fff',
+                          color: tokens.color.base.sage[800],
                           textDecoration: 'underline',
                         },
                         '&:disabled': {
-                          color: alpha('#fff', 0.4),
+                          color: tokens.color.base.neutral[400],
                           cursor: 'not-allowed',
                         },
                       }}
@@ -387,19 +395,20 @@ const Login: React.FC<LoginProps> = ({
                       fontWeight: 600,
                       mt: 2,
                       position: 'relative',
-                      backgroundColor: 'white',
-                      color: theme.palette.primary.main,
-                      boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
+                      backgroundColor: tokens.color.base.sage[600],
+                      color: '#FFFFFF',
+                      boxShadow: tokens.shadow.elevation.card,
                       '&:hover': {
-                        backgroundColor: alpha('#fff', 0.9),
+                        backgroundColor: tokens.color.base.sage[700],
                         transform: 'translateY(-2px)',
-                        boxShadow: '0 12px 40px rgba(0,0,0,0.3)',
+                        boxShadow: tokens.shadow.elevation.high,
                       },
                       '&:disabled': {
-                        backgroundColor: alpha('#fff', 0.7),
-                        color: theme.palette.primary.main,
+                        backgroundColor: tokens.color.base.sage[400],
+                        color: '#FFFFFF',
+                        opacity: 0.7,
                       },
-                      transition: 'all 0.3s ease',
+                      transition: tokens.animation.transition.smooth,
                     }}
                   >
                     {isSubmitting ? (
@@ -422,7 +431,7 @@ const Login: React.FC<LoginProps> = ({
           {/* Register Link */}
           <AnimatedElement animation="fadeIn" delay={300}>
             <Box textAlign="center">
-              <Typography variant="body1" sx={{ color: alpha('#fff', 0.9) }}>
+              <Typography variant="body1" sx={{ color: tokens.color.base.neutral[700] }}>
                 Don't have an account?{' '}
                 <Link
                   component="button"
@@ -431,11 +440,10 @@ const Login: React.FC<LoginProps> = ({
                   sx={{
                     fontWeight: 600,
                     textDecoration: 'none',
-                    color: 'white',
-                    textShadow: '0 2px 10px rgba(0,0,0,0.3)',
+                    color: tokens.color.base.sage[700],
                     '&:hover': {
                       textDecoration: 'underline',
-                      textShadow: '0 2px 15px rgba(255,255,255,0.5)',
+                      color: tokens.color.base.sage[800],
                     },
                   }}
                 >
@@ -448,11 +456,10 @@ const Login: React.FC<LoginProps> = ({
           {/* Help Text */}
           <AnimatedElement animation="fadeIn" delay={400}>
             <Box textAlign="center">
-              <Typography 
-                variant="body2" 
-                sx={{ 
-                  color: alpha('#fff', 0.7),
-                  textShadow: '0 1px 5px rgba(0,0,0,0.2)',
+              <Typography
+                variant="body2"
+                sx={{
+                  color: tokens.color.base.neutral[600],
                 }}
               >
                 By signing in, you agree to our Terms of Service and Privacy Policy
