@@ -11,20 +11,28 @@ const STORAGE_KEY = 'lifeplace_test_banner_dismissed';
 
 /**
  * Detects if the app is running in test/sandbox mode.
- * Checks the Stripe publishable key prefix.
+ * Shows by default unless VITE_SHOW_TEST_MODE_NOTICE=false.
+ * Also auto-detects Stripe test keys.
  */
 export const isTestMode = (): boolean => {
-  const stripeKey = import.meta.env.VITE_STRIPE_PUBLIC_KEY || '';
+  // Explicitly disabled via env var
+  if (import.meta.env.VITE_SHOW_TEST_MODE_NOTICE === 'false') {
+    return false;
+  }
 
-  // Stripe test keys start with pk_test_
+  // Explicitly enabled via env var (shows in production too)
+  if (import.meta.env.VITE_SHOW_TEST_MODE_NOTICE === 'true') {
+    return true;
+  }
+
+  // Auto-detect: Stripe test keys start with pk_test_
+  const stripeKey = import.meta.env.VITE_STRIPE_PUBLIC_KEY || '';
   if (stripeKey.startsWith('pk_test_')) {
     return true;
   }
 
-  // Could also check PayMongo test keys (pk_test_) in the future
-  // or an explicit VITE_TEST_MODE env var
-
-  return false;
+  // Default: show the banner (for testing phase)
+  return true;
 };
 
 /**
