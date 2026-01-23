@@ -1,0 +1,20 @@
+{
+  "extends": "../client-portal/tsconfig.json",
+  "compilerOptions": {
+    "composite": true,
+    "declaration": true,
+    "declarationMap": true,
+    "outDir": "./dist",
+    "rootDir": "."
+  },
+  "include": [
+    "components/**/*",
+    "examples/**/*",
+    "tokens/**/*",
+    "index.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
+}
