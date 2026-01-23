@@ -134,10 +134,10 @@ export const PublicHeader: React.FC<PublicHeaderProps> = ({
                 alt="LifePlace Alfonso"
                 onError={() => setLogoError(true)}
                 sx={{
-                  height: { xs: 56, md: 72 },
+                  height: { xs: 72, md: 96 },
                   width: 'auto',
                   objectFit: 'contain',
-                  maxWidth: { xs: '180px', md: '240px' },
+                  maxWidth: { xs: '220px', md: '300px' },
                 }}
               />
             ) : (
@@ -327,10 +327,10 @@ export const PublicHeader: React.FC<PublicHeaderProps> = ({
                 alt="LifePlace Alfonso"
                 onError={() => setLogoError(true)}
                 sx={{
-                  height: 48,
+                  height: 64,
                   width: 'auto',
                   objectFit: 'contain',
-                  maxWidth: '200px',
+                  maxWidth: '240px',
                 }}
               />
             ) : (

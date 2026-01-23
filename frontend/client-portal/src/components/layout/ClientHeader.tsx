@@ -108,10 +108,10 @@ export const ClientHeader: React.FC<ClientHeaderProps> = ({
               alt="LifePlace Alfonso"
               onError={() => setLogoError(true)}
               sx={{
-                height: { xs: 52, md: 64 },
+                height: { xs: 68, md: 88 },
                 width: 'auto',
                 objectFit: 'contain',
-                maxWidth: { xs: '180px', md: '240px' },
+                maxWidth: { xs: '220px', md: '300px' },
                 cursor: 'pointer',
               }}
               onClick={() => navigate('/dashboard')}
