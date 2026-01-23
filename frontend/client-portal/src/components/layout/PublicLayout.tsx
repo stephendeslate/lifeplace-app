@@ -9,15 +9,11 @@ import { tokens } from '../../design-system';
 interface PublicLayoutProps {
   children: React.ReactNode;
   fullHeight?: boolean;
-  onNavigateToLogin?: () => void;
-  onNavigateToRegister?: () => void;
 }
 
 export const PublicLayout: React.FC<PublicLayoutProps> = ({
   children,
   fullHeight = false,
-  onNavigateToLogin,
-  onNavigateToRegister,
 }) => {
 
   return (
@@ -66,10 +62,7 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({
         role="banner"
         sx={{ position: 'relative', zIndex: 2 }}
       >
-        <PublicHeader
-          onNavigateToLogin={onNavigateToLogin}
-          onNavigateToRegister={onNavigateToRegister}
-        />
+        <PublicHeader />
       </Box>
 
       {/* Main Content */}

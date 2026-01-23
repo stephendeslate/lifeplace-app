@@ -115,11 +115,7 @@ const AppRouter: React.FC = () => {
         <Route
           path="/"
           element={
-          <PublicLayout 
-            fullHeight
-            onNavigateToLogin={handleNavigateToLogin}
-            onNavigateToRegister={handleNavigateToRegister}
-          >
+          <PublicLayout fullHeight>
             <Home
               onNavigateToLogin={handleNavigateToLogin}
               onNavigateToRegister={handleNavigateToRegister}
@@ -130,28 +126,22 @@ const AppRouter: React.FC = () => {
       />
       
       {/* Booking Routes - Using BookingLayout with original background */}
-      <Route 
-        path="/booking" 
+      <Route
+        path="/booking"
         element={
-          <BookingLayout
-            onNavigateToLogin={handleNavigateToLogin}
-            onNavigateToRegister={handleNavigateToRegister}
-          >
+          <BookingLayout>
             <BookingPage />
           </BookingLayout>
-        } 
+        }
       />
-      
-      <Route 
-        path="/booking/complete" 
+
+      <Route
+        path="/booking/complete"
         element={
-          <BookingLayout
-            onNavigateToLogin={handleNavigateToLogin}
-            onNavigateToRegister={handleNavigateToRegister}
-          >
+          <BookingLayout>
             <BookingComplete />
           </BookingLayout>
-        } 
+        }
       />
       
       {/* Public About page */}
@@ -228,16 +218,13 @@ const AppRouter: React.FC = () => {
       />
 
       {/* Auth routes - redirect if already authenticated */}
-      <Route 
-        path="/login" 
+      <Route
+        path="/login"
         element={
           isAuthenticated ? (
             <Navigate to="/dashboard" replace />
           ) : (
-            <PublicLayout
-              onNavigateToLogin={handleNavigateToLogin}
-              onNavigateToRegister={handleNavigateToRegister}
-            >
+            <PublicLayout>
               <Login
                 onNavigateToRegister={handleNavigateToRegister}
                 onNavigateToHome={handleNavigateToHome}
@@ -245,19 +232,16 @@ const AppRouter: React.FC = () => {
               />
             </PublicLayout>
           )
-        } 
+        }
       />
-      
+
       <Route
         path="/register"
         element={
           isAuthenticated ? (
             <Navigate to="/dashboard" replace />
           ) : (
-            <PublicLayout
-              onNavigateToLogin={handleNavigateToLogin}
-              onNavigateToRegister={handleNavigateToRegister}
-            >
+            <PublicLayout>
               <Register
                 onNavigateToLogin={handleNavigateToLogin}
                 onNavigateToHome={handleNavigateToHome}
@@ -275,10 +259,7 @@ const AppRouter: React.FC = () => {
           isAuthenticated ? (
             <Navigate to="/dashboard" replace />
           ) : (
-            <PublicLayout
-              onNavigateToLogin={handleNavigateToLogin}
-              onNavigateToRegister={handleNavigateToRegister}
-            >
+            <PublicLayout>
               <ForgotPassword
                 onNavigateToLogin={handleNavigateToLogin}
                 onNavigateToHome={handleNavigateToHome}
@@ -291,10 +272,7 @@ const AppRouter: React.FC = () => {
       <Route
         path="/reset-password/:tokenId"
         element={
-          <PublicLayout
-            onNavigateToLogin={handleNavigateToLogin}
-            onNavigateToRegister={handleNavigateToRegister}
-          >
+          <PublicLayout>
             <ResetPassword
               onNavigateToLogin={handleNavigateToLogin}
               onNavigateToHome={handleNavigateToHome}

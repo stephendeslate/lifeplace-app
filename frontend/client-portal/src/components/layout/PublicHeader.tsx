@@ -38,15 +38,7 @@ const navigationItems: NavigationItem[] = [
   { id: 'contact', label: 'Contact', path: '/contact' },
 ];
 
-interface PublicHeaderProps {
-  onNavigateToLogin?: () => void;
-  onNavigateToRegister?: () => void;
-}
-
-export const PublicHeader: React.FC<PublicHeaderProps> = ({
-  onNavigateToLogin,
-  onNavigateToRegister,
-}) => {
+export const PublicHeader: React.FC = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const location = useLocation();
@@ -240,7 +232,7 @@ export const PublicHeader: React.FC<PublicHeaderProps> = ({
               {!isAuthenticated && !isMobile && (
                 <Button
                   variant="text"
-                  onClick={onNavigateToLogin}
+                  onClick={() => handleNavigation('/login')}
                   sx={{
                     color: 'inherit',
                     '&:hover': {
@@ -422,7 +414,7 @@ export const PublicHeader: React.FC<PublicHeaderProps> = ({
                 <Button
                   variant="text"
                   fullWidth
-                  onClick={onNavigateToRegister}
+                  onClick={() => handleNavigation('/register')}
                   sx={{ color: 'text.secondary' }}
                 >
                   Create Account

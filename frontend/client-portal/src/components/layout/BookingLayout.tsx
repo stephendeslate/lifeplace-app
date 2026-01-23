@@ -7,14 +7,10 @@ import { PublicFooter } from './PublicFooter';
 
 interface BookingLayoutProps {
   children: React.ReactNode;
-  onNavigateToLogin?: () => void;
-  onNavigateToRegister?: () => void;
 }
 
-export const BookingLayout: React.FC<BookingLayoutProps> = ({ 
-  children, 
-  onNavigateToLogin,
-  onNavigateToRegister,
+export const BookingLayout: React.FC<BookingLayoutProps> = ({
+  children,
 }) => {
   const theme = useTheme();
 
@@ -49,10 +45,7 @@ export const BookingLayout: React.FC<BookingLayoutProps> = ({
     >
       {/* Header */}
       <Box sx={{ position: 'relative', zIndex: 2 }}>
-        <PublicHeader 
-          onNavigateToLogin={onNavigateToLogin}
-          onNavigateToRegister={onNavigateToRegister}
-        />
+        <PublicHeader />
       </Box>
 
       {/* Main Content */}
