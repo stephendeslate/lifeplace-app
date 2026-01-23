@@ -41,7 +41,8 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        py: { xs: tokens.spacing.space[9], md: tokens.spacing.space[14] },
+        pt: { xs: tokens.spacing.space[20], md: tokens.spacing.space[24] },
+        pb: { xs: tokens.spacing.space[9], md: tokens.spacing.space[14] },
         mt: { xs: '-120px', md: '-140px' },
       }}
     >

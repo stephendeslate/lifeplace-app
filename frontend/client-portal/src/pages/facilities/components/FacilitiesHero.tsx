@@ -65,7 +65,11 @@ export const FacilitiesHero: React.FC<FacilitiesHeroProps> = () => {
               sm: tokens.spacing.space[4],
               md: tokens.spacing.space[6]
             },
-            py: {
+            pt: {
+              xs: tokens.spacing.space[20],
+              md: tokens.spacing.space[24]
+            },
+            pb: {
               xs: tokens.spacing.space[9],
               md: tokens.spacing.space[14]
             },

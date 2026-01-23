@@ -78,7 +78,8 @@ export const PartnerHero: React.FC = () => {
               sm: tokens.spacing.space.containerPadding.tablet,
               md: tokens.spacing.space.containerPadding.desktop,
             },
-            py: { xs: tokens.spacing.space[9], md: tokens.spacing.space[14] },
+            pt: { xs: tokens.spacing.space[20], md: tokens.spacing.space[24] },
+            pb: { xs: tokens.spacing.space[9], md: tokens.spacing.space[14] },
             textAlign: 'center',
           }}
         >
