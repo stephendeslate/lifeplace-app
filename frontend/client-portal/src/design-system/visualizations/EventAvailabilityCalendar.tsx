@@ -75,33 +75,51 @@ interface EventAvailabilityCalendarProps {
   onRangeSelect?: (startDate: Date, endDate: Date) => void;
 }
 
-const StyledCalendarContainer = styled(Box)(() => ({
+const StyledCalendarContainer = styled(Box)(({ theme }) => ({
   width: '100%',
   maxWidth: '800px',
   margin: '0 auto',
+  minWidth: 0, // Allow shrinking in flex/grid contexts
+  [theme.breakpoints.down('sm')]: {
+    maxWidth: '100%',
+  },
 }));
 
-const StyledCalendarHeader = styled(Box)(() => ({
+const StyledCalendarHeader = styled(Box)(({ theme }) => ({
   display: 'flex',
   justifyContent: 'space-between',
   alignItems: 'center',
   marginBottom: tokens.spacing.space[3],
   padding: `0 ${tokens.spacing.space[2]}`,
+  [theme.breakpoints.down('sm')]: {
+    marginBottom: tokens.spacing.space[2],
+    padding: 0,
+  },
 }));
 
-const StyledCalendarGrid = styled(Box)(() => ({
+const StyledCalendarGrid = styled(Box)(({ theme }) => ({
   display: 'grid',
   gridTemplateColumns: 'repeat(7, 1fr)',
   gap: tokens.spacing.space[1],
   marginBottom: tokens.spacing.space[2],
+  minWidth: 0, // Allow grid to shrink below content size
+  [theme.breakpoints.down('sm')]: {
+    gap: '2px', // Tighter gap on mobile
+  },
 }));
 
-const StyledDayHeader = styled(Box)(() => ({
+const StyledDayHeader = styled(Box)(({ theme }) => ({
   textAlign: 'center',
   fontWeight: 600,
   fontSize: '0.875rem',
   color: tokens.color.base.forest[600],
   padding: tokens.spacing.space[1],
+  minWidth: 0, // Allow shrinking
+  overflow: 'hidden',
+  [theme.breakpoints.down('sm')]: {
+    fontSize: '0.75rem',
+    padding: '4px 2px',
+  },
 }));
 
 const StyledDay = styled(Box, {
@@ -117,8 +135,7 @@ const StyledDay = styled(Box, {
   isInRange?: boolean;
   isRangeEnd?: boolean;
   isOutOfRange?: boolean;
-}>(({
-  isAvailable = false,
+}>(({ theme, isAvailable = false,
   hasEvents = false,
   isSelected = false,
   isToday = false,
@@ -139,6 +156,8 @@ const StyledDay = styled(Box, {
   transition: tokens.animation.transition.all,
   borderRadius: tokens.spacing.radius.md,
   border: '2px solid transparent',
+  minWidth: 0, // Allow shrinking in grid
+  overflow: 'hidden',
   background: (() => {
     if (!isCurrentMonth) return 'transparent';
     if (isOutOfRange) return tokens.color.base.sage[100];
@@ -147,6 +166,11 @@ const StyledDay = styled(Box, {
     if (isAvailable) return tokens.color.semantic.success.subtle;
     return tokens.color.base.sage[50];
   })(),
+  [theme.breakpoints.down('sm')]: {
+    padding: '2px',
+    borderWidth: '1px',
+    borderRadius: tokens.spacing.radius.sm,
+  },
 
   // Range selection styling
   ...(isInRange && {
@@ -202,13 +226,17 @@ const StyledEventIndicator = styled(Box)(() => ({
   background: tokens.color.base.forest[600],
 }));
 
-const StyledLegend = styled(Box)(() => ({
+const StyledLegend = styled(Box)(({ theme }) => ({
   display: 'flex',
   gap: tokens.spacing.space[2],
   flexWrap: 'wrap',
   justifyContent: 'center',
   padding: tokens.spacing.space[2],
   borderTop: `1px solid ${tokens.color.base.sage[200]}`,
+  [theme.breakpoints.down('sm')]: {
+    gap: tokens.spacing.space[1],
+    padding: tokens.spacing.space[1],
+  },
 }));
 
 const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];

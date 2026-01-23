@@ -14,6 +14,7 @@ interface GlassCardProps extends BoxProps {
   intensity?: GlassIntensity;
   hover?: boolean;
   gradient?: boolean;
+  overflow?: 'hidden' | 'visible' | 'auto';
   children?: React.ReactNode;
 }
 
@@ -33,9 +34,9 @@ const intensityMap = {
 };
 
 const StyledGlassCard = styled(Box, {
-  shouldForwardProp: (prop) => 
-    !['variant', 'intensity', 'hover', 'gradient'].includes(prop as string),
-})<GlassCardProps>(({ variant = 'light', intensity = 'medium', hover = true, gradient = false }) => {
+  shouldForwardProp: (prop) =>
+    !['variant', 'intensity', 'hover', 'gradient', 'overflow'].includes(prop as string),
+})<GlassCardProps>(({ variant = 'light', intensity = 'medium', hover = true, gradient = false, overflow = 'hidden' }) => {
   const getGlassEffect = () => {
     switch (variant) {
       case 'dark':
@@ -65,7 +66,7 @@ const StyledGlassCard = styled(Box, {
     borderRadius: tokens.spacing.radius.card,
     padding: tokens.spacing.space[3],
     transition: tokens.animation.transition.all,
-    overflow: 'hidden',
+    overflow,
     
     '&::before': gradient ? {
       content: '""',
