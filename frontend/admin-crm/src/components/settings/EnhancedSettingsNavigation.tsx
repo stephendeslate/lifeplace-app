@@ -368,7 +368,7 @@ export const EnhancedSettingsNavigation: React.FC<EnhancedSettingsNavigationProp
             p: 2,
             borderTop: 1,
             borderColor: 'divider',
-            bgcolor: 'grey.50',
+            bgcolor: 'action.hover',
           }}
         >
           <Box sx={{ display: 'flex', gap: 1, justifyContent: 'center' }}>

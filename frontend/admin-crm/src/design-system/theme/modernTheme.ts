@@ -705,18 +705,48 @@ export const modernTheme = createTheme({
   components: componentOverrides,
 });
 
+// Dark mode surface elevation scale
+// Uses solid backgrounds instead of glass for better readability
+const darkSurfaces = {
+  base: '#0f0f0f',      // Page background (neutral 950)
+  surface1: '#171717',   // Cards, containers (neutral 900)
+  surface2: '#1f1f1f',   // Elevated cards, sidebars
+  surface3: '#262626',   // Table headers, emphasized areas (neutral 800)
+  surface4: '#2d2d2d',   // Menus, popovers
+  surface5: '#333333',   // Tooltips, overlays
+  border: {
+    subtle: '#2d2d2d',   // Subtle dividers
+    default: '#404040',  // Default borders (neutral 700)
+    prominent: '#525252', // Emphasized borders (neutral 600)
+  },
+  text: {
+    primary: '#fafafa',   // Main text (neutral 50)
+    secondary: '#a3a3a3', // Secondary text (neutral 400)
+    tertiary: '#737373',  // Muted text (neutral 500)
+    disabled: '#525252',  // Disabled text (neutral 600)
+  },
+  // Semantic colors adjusted for dark backgrounds
+  semantic: {
+    primary: { bg: '#1e3a5f', border: '#2563eb', text: '#60a5fa' },
+    success: { bg: '#14532d', border: '#16a34a', text: '#4ade80' },
+    warning: { bg: '#451a03', border: '#d97706', text: '#fbbf24' },
+    error: { bg: '#450a0a', border: '#dc2626', text: '#f87171' },
+    info: { bg: '#082f49', border: '#0284c7', text: '#38bdf8' },
+  },
+};
+
 // Theme variants
 export const createModernTheme = (mode: 'light' | 'dark' = 'light') => {
   const baseTheme = { ...modernThemeOptions };
-  
+
   if (mode === 'dark') {
-    // Dark mode adjustments
+    // Dark mode adjustments with elevated surfaces
     baseTheme.palette = {
       ...baseTheme.palette,
       mode: 'dark',
       primary: {
         50: tokens.color.primary[900],
-        100: tokens.color.primary[800], 
+        100: tokens.color.primary[800],
         200: tokens.color.primary[700],
         300: tokens.color.primary[600],
         400: tokens.color.primary[500],
@@ -728,18 +758,18 @@ export const createModernTheme = (mode: 'light' | 'dark' = 'light') => {
         main: tokens.color.primary[400],
         light: tokens.color.primary[300],
         dark: tokens.color.primary[600],
-        contrastText: tokens.color.neutral[900],
+        contrastText: '#ffffff',
       },
       background: {
-        default: tokens.color.neutral[950],
-        paper: tokens.color.neutral[900],
+        default: darkSurfaces.base,
+        paper: darkSurfaces.surface1,
       },
       text: {
-        primary: tokens.color.neutral[50],
-        secondary: tokens.color.neutral[300],
-        disabled: tokens.color.neutral[600],
+        primary: darkSurfaces.text.primary,
+        secondary: darkSurfaces.text.secondary,
+        disabled: darkSurfaces.text.disabled,
       },
-      divider: tokens.color.neutral[700],
+      divider: darkSurfaces.border.default,
       grey: {
         50: tokens.color.neutral[900],
         100: tokens.color.neutral[800],
@@ -754,126 +784,154 @@ export const createModernTheme = (mode: 'light' | 'dark' = 'light') => {
       },
     };
 
-    // Dark mode glass adjustments
+    // Dark mode uses solid surfaces, but keep glass tokens for overlays
     baseTheme.glass = {
-      light: 'rgba(255, 255, 255, 0.05)',
-      medium: 'rgba(255, 255, 255, 0.08)', 
-      strong: 'rgba(255, 255, 255, 0.12)',
-      primary: 'rgba(54, 165, 255, 0.15)',
-      success: 'rgba(16, 185, 129, 0.15)',
-      warning: 'rgba(245, 158, 11, 0.15)',
-      error: 'rgba(239, 68, 68, 0.15)',
+      light: darkSurfaces.surface2,
+      medium: darkSurfaces.surface3,
+      strong: darkSurfaces.surface4,
+      primary: darkSurfaces.semantic.primary.bg,
+      success: darkSurfaces.semantic.success.bg,
+      warning: darkSurfaces.semantic.warning.bg,
+      error: darkSurfaces.semantic.error.bg,
     };
 
-    // Dark mode background adjustments
+    // Dark mode shadow adjustments
     baseTheme.customShadows = {
-      glass: '0 8px 32px rgba(0, 0, 0, 0.3)',
-      floating: '0 20px 40px rgba(0, 0, 0, 0.4)',
-      card: '0 4px 16px rgba(0, 0, 0, 0.2)',
-      modal: '0 25px 50px rgba(0, 0, 0, 0.5)',
+      glass: '0 8px 32px rgba(0, 0, 0, 0.5)',
+      floating: '0 20px 40px rgba(0, 0, 0, 0.6)',
+      card: '0 4px 16px rgba(0, 0, 0, 0.4)',
+      modal: '0 25px 50px rgba(0, 0, 0, 0.7)',
     };
   }
 
   // Dynamic component overrides based on mode
   const modeSpecificComponents: Components = {
     ...componentOverrides,
-    
-    // AppBar for dark mode
+
+    // AppBar with solid dark background
     MuiAppBar: {
       styleOverrides: {
         root: {
-          background: mode === 'dark' 
-            ? 'rgba(26, 26, 26, 0.9)' 
+          background: mode === 'dark'
+            ? darkSurfaces.surface2
             : 'rgba(255, 255, 255, 0.85)',
-          backdropFilter: 'blur(20px)',
+          backdropFilter: mode === 'dark' ? 'none' : 'blur(20px)',
           borderBottom: mode === 'dark'
-            ? `1px solid ${tokens.color.neutral[700]}`
+            ? `1px solid ${darkSurfaces.border.default}`
             : `1px solid ${tokens.color.borders.glass}`,
           boxShadow: mode === 'dark'
-            ? '0 1px 3px rgba(0, 0, 0, 0.5)'
+            ? '0 1px 3px rgba(0, 0, 0, 0.4)'
             : tokens.shadow.component.header,
-          color: mode === 'dark' 
-            ? tokens.color.neutral[50] 
+          color: mode === 'dark'
+            ? darkSurfaces.text.primary
             : tokens.color.neutral[800],
         },
       },
     },
 
-    // Card components for dark mode
+    // Card with elevated surface
     MuiCard: {
       styleOverrides: {
         root: {
           borderRadius: tokens.spacing.radius.xxl,
           background: mode === 'dark'
-            ? 'rgba(255, 255, 255, 0.05)'
+            ? darkSurfaces.surface1
             : tokens.color.glass.light,
-          backdropFilter: 'blur(20px)',
+          backdropFilter: mode === 'dark' ? 'none' : 'blur(20px)',
           border: mode === 'dark'
-            ? '1px solid rgba(255, 255, 255, 0.1)'
+            ? `1px solid ${darkSurfaces.border.default}`
             : `1px solid ${tokens.color.borders.glass}`,
           boxShadow: mode === 'dark'
-            ? '0 8px 32px rgba(0, 0, 0, 0.3)'
+            ? '0 4px 16px rgba(0, 0, 0, 0.4)'
             : tokens.shadow.glass.light,
           transition: tokens.animation.transitions.card,
           '&:hover': {
             background: mode === 'dark'
-              ? 'rgba(255, 255, 255, 0.08)'
+              ? darkSurfaces.surface2
               : tokens.color.glass.medium,
             boxShadow: mode === 'dark'
-              ? '0 12px 40px rgba(0, 0, 0, 0.4)'
+              ? '0 8px 24px rgba(0, 0, 0, 0.5)'
               : tokens.shadow.glass.medium,
             transform: 'translateY(-2px)',
+            borderColor: mode === 'dark'
+              ? darkSurfaces.border.prominent
+              : undefined,
           },
         },
       },
     },
 
-    // Paper components for dark mode
+    // Paper with elevated surface
     MuiPaper: {
       styleOverrides: {
         root: {
           borderRadius: tokens.spacing.radius.lg,
-          backgroundColor: mode === 'dark' 
-            ? tokens.color.neutral[900] 
+          backgroundColor: mode === 'dark'
+            ? darkSurfaces.surface1
             : '#ffffff',
           '&.glass': {
             background: mode === 'dark'
-              ? 'rgba(255, 255, 255, 0.08)'
+              ? darkSurfaces.surface2
               : tokens.color.glass.medium,
-            backdropFilter: 'blur(20px)',
+            backdropFilter: mode === 'dark' ? 'none' : 'blur(20px)',
             border: mode === 'dark'
-              ? '1px solid rgba(255, 255, 255, 0.1)'
+              ? `1px solid ${darkSurfaces.border.default}`
               : `1px solid ${tokens.color.borders.glass}`,
             boxShadow: mode === 'dark'
-              ? '0 8px 32px rgba(0, 0, 0, 0.3)'
+              ? '0 4px 16px rgba(0, 0, 0, 0.4)'
               : tokens.shadow.glass.medium,
           },
+        },
+        elevation1: {
+          boxShadow: mode === 'dark'
+            ? '0 1px 3px rgba(0, 0, 0, 0.3)'
+            : tokens.shadow.elevation.sm,
+        },
+        elevation2: {
+          boxShadow: mode === 'dark'
+            ? '0 2px 6px rgba(0, 0, 0, 0.4)'
+            : tokens.shadow.elevation.md,
+        },
+        elevation3: {
+          boxShadow: mode === 'dark'
+            ? '0 4px 12px rgba(0, 0, 0, 0.5)'
+            : tokens.shadow.elevation.lg,
         },
       },
     },
 
-    // TextField for dark mode
+    // TextField with visible backgrounds and borders
     MuiTextField: {
       styleOverrides: {
         root: {
           '& .MuiOutlinedInput-root': {
             borderRadius: tokens.spacing.radius.lg,
             background: mode === 'dark'
-              ? 'rgba(255, 255, 255, 0.05)'
+              ? darkSurfaces.surface2
               : 'rgba(255, 255, 255, 0.8)',
-            backdropFilter: 'blur(10px)',
+            backdropFilter: mode === 'dark' ? 'none' : 'blur(10px)',
             transition: tokens.animation.transitions.normal,
+            '& .MuiOutlinedInput-notchedOutline': {
+              borderColor: mode === 'dark'
+                ? darkSurfaces.border.default
+                : undefined,
+            },
             '&:hover': {
               background: mode === 'dark'
-                ? 'rgba(255, 255, 255, 0.08)'
+                ? darkSurfaces.surface3
                 : 'rgba(255, 255, 255, 0.9)',
+              '& .MuiOutlinedInput-notchedOutline': {
+                borderColor: mode === 'dark'
+                  ? darkSurfaces.border.prominent
+                  : undefined,
+              },
             },
             '&.Mui-focused': {
               background: mode === 'dark'
-                ? 'rgba(255, 255, 255, 0.1)'
+                ? darkSurfaces.surface3
                 : 'rgba(255, 255, 255, 0.95)',
               boxShadow: mode === 'dark'
-                ? '0 0 0 2px rgba(54, 165, 255, 0.3)'
+                ? `0 0 0 2px ${darkSurfaces.semantic.primary.border}`
                 : tokens.shadow.component.inputFocus,
             },
           },
@@ -881,25 +939,25 @@ export const createModernTheme = (mode: 'light' | 'dark' = 'light') => {
       },
     },
 
-    // Drawer for dark mode
+    // Drawer with solid dark background
     MuiDrawer: {
       styleOverrides: {
         paper: {
           background: mode === 'dark'
-            ? 'rgba(26, 26, 26, 0.95)'
+            ? darkSurfaces.surface1
             : 'rgba(248, 250, 252, 0.95)',
-          backdropFilter: 'blur(20px)',
+          backdropFilter: mode === 'dark' ? 'none' : 'blur(20px)',
           borderRight: mode === 'dark'
-            ? '1px solid rgba(255, 255, 255, 0.1)'
+            ? `1px solid ${darkSurfaces.border.default}`
             : `1px solid ${tokens.color.borders.glass}`,
           boxShadow: mode === 'dark'
-            ? '0 0 20px rgba(0, 0, 0, 0.5)'
+            ? '4px 0 16px rgba(0, 0, 0, 0.4)'
             : tokens.shadow.component.drawer,
         },
       },
     },
 
-    // ListItemButton for dark mode
+    // ListItemButton with visible hover states
     MuiListItemButton: {
       styleOverrides: {
         root: {
@@ -908,24 +966,529 @@ export const createModernTheme = (mode: 'light' | 'dark' = 'light') => {
           transition: tokens.animation.transitions.fast,
           '&:hover': {
             background: mode === 'dark'
-              ? 'rgba(255, 255, 255, 0.05)'
+              ? darkSurfaces.surface3
               : tokens.color.glass.light,
-            backdropFilter: 'blur(10px)',
+            backdropFilter: mode === 'dark' ? 'none' : 'blur(10px)',
           },
           '&.Mui-selected': {
             background: mode === 'dark'
-              ? 'rgba(54, 165, 255, 0.2)'
+              ? darkSurfaces.semantic.primary.bg
               : tokens.color.backgrounds.primaryGradient,
-            color: mode === 'dark' 
-              ? tokens.color.primary[300]
+            color: mode === 'dark'
+              ? darkSurfaces.semantic.primary.text
               : 'white',
             '&:hover': {
               background: mode === 'dark'
-                ? 'rgba(54, 165, 255, 0.25)'
+                ? '#234b75'
                 : tokens.color.backgrounds.primaryGradient,
-              filter: 'brightness(1.1)',
+              filter: mode === 'dark' ? 'none' : 'brightness(1.1)',
             },
           },
+        },
+      },
+    },
+
+    // Table container with elevated surface
+    MuiTableContainer: {
+      styleOverrides: {
+        root: {
+          borderRadius: tokens.spacing.radius.xxl,
+          background: mode === 'dark'
+            ? darkSurfaces.surface1
+            : tokens.color.glass.light,
+          backdropFilter: mode === 'dark' ? 'none' : 'blur(20px)',
+          border: mode === 'dark'
+            ? `1px solid ${darkSurfaces.border.default}`
+            : `1px solid ${tokens.color.borders.glass}`,
+          boxShadow: mode === 'dark'
+            ? '0 4px 16px rgba(0, 0, 0, 0.4)'
+            : tokens.shadow.glass.light,
+        },
+      },
+    },
+
+    // Table head with distinct background
+    MuiTableHead: {
+      styleOverrides: {
+        root: {
+          background: mode === 'dark'
+            ? darkSurfaces.surface3
+            : tokens.color.glass.medium,
+          backdropFilter: mode === 'dark' ? 'none' : 'blur(20px)',
+          '& .MuiTableCell-head': {
+            color: mode === 'dark'
+              ? darkSurfaces.text.primary
+              : tokens.color.neutral[700],
+            fontWeight: 600,
+            borderBottom: mode === 'dark'
+              ? `1px solid ${darkSurfaces.border.default}`
+              : undefined,
+          },
+        },
+      },
+    },
+
+    // Table cell with proper borders
+    MuiTableCell: {
+      styleOverrides: {
+        root: {
+          borderBottom: mode === 'dark'
+            ? `1px solid ${darkSurfaces.border.subtle}`
+            : `1px solid ${tokens.color.neutral[200]}`,
+          color: mode === 'dark'
+            ? darkSurfaces.text.primary
+            : tokens.color.neutral[800],
+        },
+        head: {
+          backgroundColor: mode === 'dark'
+            ? darkSurfaces.surface3
+            : tokens.color.neutral[100],
+          color: mode === 'dark'
+            ? darkSurfaces.text.primary
+            : tokens.color.neutral[700],
+          fontWeight: 600,
+        },
+      },
+    },
+
+    // Table row hover states
+    MuiTableRow: {
+      styleOverrides: {
+        root: {
+          '&:hover': {
+            backgroundColor: mode === 'dark'
+              ? darkSurfaces.surface2
+              : 'rgba(0, 0, 0, 0.04)',
+          },
+          '&.Mui-selected': {
+            backgroundColor: mode === 'dark'
+              ? darkSurfaces.semantic.primary.bg
+              : undefined,
+            '&:hover': {
+              backgroundColor: mode === 'dark'
+                ? '#234b75'
+                : undefined,
+            },
+          },
+        },
+      },
+    },
+
+    // Chip with visible backgrounds
+    MuiChip: {
+      styleOverrides: {
+        root: {
+          borderRadius: tokens.spacing.radius.lg,
+          fontWeight: 500,
+          background: mode === 'dark'
+            ? darkSurfaces.surface3
+            : tokens.color.glass.light,
+          backdropFilter: mode === 'dark' ? 'none' : 'blur(10px)',
+          border: mode === 'dark'
+            ? `1px solid ${darkSurfaces.border.default}`
+            : `1px solid ${tokens.color.borders.glass}`,
+          color: mode === 'dark'
+            ? darkSurfaces.text.primary
+            : undefined,
+          '&:hover': {
+            background: mode === 'dark'
+              ? darkSurfaces.surface4
+              : tokens.color.glass.medium,
+          },
+        },
+        colorPrimary: {
+          background: mode === 'dark'
+            ? darkSurfaces.semantic.primary.bg
+            : tokens.color.glass.primaryGlass,
+          color: mode === 'dark'
+            ? darkSurfaces.semantic.primary.text
+            : tokens.color.primary[700],
+          border: mode === 'dark'
+            ? `1px solid ${darkSurfaces.semantic.primary.border}`
+            : `1px solid ${tokens.color.borders.primary}`,
+        },
+        colorSuccess: {
+          background: mode === 'dark'
+            ? darkSurfaces.semantic.success.bg
+            : undefined,
+          color: mode === 'dark'
+            ? darkSurfaces.semantic.success.text
+            : undefined,
+          border: mode === 'dark'
+            ? `1px solid ${darkSurfaces.semantic.success.border}`
+            : undefined,
+        },
+        colorError: {
+          background: mode === 'dark'
+            ? darkSurfaces.semantic.error.bg
+            : undefined,
+          color: mode === 'dark'
+            ? darkSurfaces.semantic.error.text
+            : undefined,
+          border: mode === 'dark'
+            ? `1px solid ${darkSurfaces.semantic.error.border}`
+            : undefined,
+        },
+        colorWarning: {
+          background: mode === 'dark'
+            ? darkSurfaces.semantic.warning.bg
+            : undefined,
+          color: mode === 'dark'
+            ? darkSurfaces.semantic.warning.text
+            : undefined,
+          border: mode === 'dark'
+            ? `1px solid ${darkSurfaces.semantic.warning.border}`
+            : undefined,
+        },
+      },
+    },
+
+    // Dialog with elevated surface
+    MuiDialog: {
+      styleOverrides: {
+        paper: {
+          borderRadius: tokens.spacing.radius.xxxl,
+          background: mode === 'dark'
+            ? darkSurfaces.surface2
+            : 'rgba(255, 255, 255, 0.95)',
+          backdropFilter: mode === 'dark' ? 'none' : 'blur(40px)',
+          boxShadow: mode === 'dark'
+            ? '0 25px 50px rgba(0, 0, 0, 0.7)'
+            : tokens.shadow.component.modal,
+          border: mode === 'dark'
+            ? `1px solid ${darkSurfaces.border.default}`
+            : `1px solid ${tokens.color.borders.glass}`,
+        },
+      },
+    },
+
+    // Menu with elevated surface
+    MuiMenu: {
+      styleOverrides: {
+        paper: {
+          borderRadius: tokens.spacing.radius.xl,
+          background: mode === 'dark'
+            ? darkSurfaces.surface4
+            : 'rgba(255, 255, 255, 0.95)',
+          backdropFilter: mode === 'dark' ? 'none' : 'blur(20px)',
+          border: mode === 'dark'
+            ? `1px solid ${darkSurfaces.border.default}`
+            : `1px solid ${tokens.color.borders.glass}`,
+          boxShadow: mode === 'dark'
+            ? '0 8px 24px rgba(0, 0, 0, 0.5)'
+            : tokens.shadow.component.dropdown,
+          marginTop: '8px',
+        },
+      },
+    },
+
+    // MenuItem with visible hover
+    MuiMenuItem: {
+      styleOverrides: {
+        root: {
+          '&:hover': {
+            backgroundColor: mode === 'dark'
+              ? darkSurfaces.surface5
+              : undefined,
+          },
+          '&.Mui-selected': {
+            backgroundColor: mode === 'dark'
+              ? darkSurfaces.semantic.primary.bg
+              : undefined,
+            '&:hover': {
+              backgroundColor: mode === 'dark'
+                ? '#234b75'
+                : undefined,
+            },
+          },
+        },
+      },
+    },
+
+    // Popover with elevated surface
+    MuiPopover: {
+      styleOverrides: {
+        paper: {
+          borderRadius: tokens.spacing.radius.xl,
+          background: mode === 'dark'
+            ? darkSurfaces.surface4
+            : 'rgba(255, 255, 255, 0.95)',
+          backdropFilter: mode === 'dark' ? 'none' : 'blur(20px)',
+          border: mode === 'dark'
+            ? `1px solid ${darkSurfaces.border.default}`
+            : `1px solid ${tokens.color.borders.glass}`,
+          boxShadow: mode === 'dark'
+            ? '0 8px 24px rgba(0, 0, 0, 0.5)'
+            : tokens.shadow.component.popover,
+        },
+      },
+    },
+
+    // Tooltip with higher contrast
+    MuiTooltip: {
+      styleOverrides: {
+        tooltip: {
+          background: mode === 'dark'
+            ? darkSurfaces.surface5
+            : 'rgba(0, 0, 0, 0.8)',
+          backdropFilter: 'blur(10px)',
+          borderRadius: tokens.spacing.radius.lg,
+          fontSize: '0.75rem',
+          border: mode === 'dark'
+            ? `1px solid ${darkSurfaces.border.default}`
+            : undefined,
+        },
+      },
+    },
+
+    // Divider with visible color
+    MuiDivider: {
+      styleOverrides: {
+        root: {
+          borderColor: mode === 'dark'
+            ? darkSurfaces.border.subtle
+            : tokens.color.neutral[200],
+        },
+      },
+    },
+
+    // Button adjustments for dark mode
+    MuiButton: {
+      styleOverrides: {
+        root: {
+          borderRadius: tokens.spacing.radius.xl,
+          textTransform: 'none',
+          fontWeight: 600,
+          fontSize: '0.875rem',
+          padding: '8px 20px',
+          transition: tokens.animation.transitions.button,
+          boxShadow: 'none',
+          '&:hover': {
+            boxShadow: tokens.shadow.component.buttonHover,
+            transform: 'translateY(-1px)',
+          },
+          '&:active': {
+            transform: 'translateY(0)',
+          },
+        },
+        contained: {
+          background: tokens.color.backgrounds.primaryGradient,
+          '&:hover': {
+            background: tokens.color.backgrounds.primaryGradient,
+            filter: 'brightness(1.1)',
+          },
+        },
+        outlined: {
+          borderColor: mode === 'dark'
+            ? darkSurfaces.border.prominent
+            : tokens.color.borders.glass,
+          background: mode === 'dark'
+            ? darkSurfaces.surface2
+            : tokens.color.glass.light,
+          backdropFilter: mode === 'dark' ? 'none' : 'blur(10px)',
+          color: mode === 'dark'
+            ? darkSurfaces.text.primary
+            : undefined,
+          '&:hover': {
+            background: mode === 'dark'
+              ? darkSurfaces.surface3
+              : tokens.color.glass.medium,
+            backdropFilter: mode === 'dark' ? 'none' : 'blur(15px)',
+            borderColor: mode === 'dark'
+              ? darkSurfaces.border.prominent
+              : undefined,
+          },
+        },
+        text: {
+          color: mode === 'dark'
+            ? darkSurfaces.text.primary
+            : undefined,
+          '&:hover': {
+            background: mode === 'dark'
+              ? darkSurfaces.surface3
+              : undefined,
+          },
+        },
+      },
+    },
+
+    // IconButton for dark mode
+    MuiIconButton: {
+      styleOverrides: {
+        root: {
+          color: mode === 'dark'
+            ? darkSurfaces.text.secondary
+            : undefined,
+          '&:hover': {
+            backgroundColor: mode === 'dark'
+              ? darkSurfaces.surface3
+              : undefined,
+          },
+        },
+      },
+    },
+
+    // Select component
+    MuiSelect: {
+      styleOverrides: {
+        root: {
+          '& .MuiOutlinedInput-notchedOutline': {
+            borderColor: mode === 'dark'
+              ? darkSurfaces.border.default
+              : undefined,
+          },
+          '&:hover .MuiOutlinedInput-notchedOutline': {
+            borderColor: mode === 'dark'
+              ? darkSurfaces.border.prominent
+              : undefined,
+          },
+        },
+      },
+    },
+
+    // Input label
+    MuiInputLabel: {
+      styleOverrides: {
+        root: {
+          color: mode === 'dark'
+            ? darkSurfaces.text.secondary
+            : undefined,
+          '&.Mui-focused': {
+            color: mode === 'dark'
+              ? darkSurfaces.semantic.primary.text
+              : undefined,
+          },
+        },
+      },
+    },
+
+    // Tabs
+    MuiTabs: {
+      styleOverrides: {
+        root: {
+          '& .MuiTabs-indicator': {
+            backgroundColor: mode === 'dark'
+              ? darkSurfaces.semantic.primary.text
+              : undefined,
+          },
+        },
+      },
+    },
+
+    MuiTab: {
+      styleOverrides: {
+        root: {
+          color: mode === 'dark'
+            ? darkSurfaces.text.secondary
+            : undefined,
+          '&.Mui-selected': {
+            color: mode === 'dark'
+              ? darkSurfaces.semantic.primary.text
+              : undefined,
+          },
+          '&:hover': {
+            backgroundColor: mode === 'dark'
+              ? darkSurfaces.surface3
+              : undefined,
+          },
+        },
+      },
+    },
+
+    // Autocomplete
+    MuiAutocomplete: {
+      styleOverrides: {
+        paper: {
+          backgroundColor: mode === 'dark'
+            ? darkSurfaces.surface4
+            : undefined,
+          border: mode === 'dark'
+            ? `1px solid ${darkSurfaces.border.default}`
+            : undefined,
+        },
+        option: {
+          '&:hover': {
+            backgroundColor: mode === 'dark'
+              ? darkSurfaces.surface5
+              : undefined,
+          },
+          '&[aria-selected="true"]': {
+            backgroundColor: mode === 'dark'
+              ? darkSurfaces.semantic.primary.bg
+              : undefined,
+          },
+        },
+      },
+    },
+
+    // Switch
+    MuiSwitch: {
+      styleOverrides: {
+        track: {
+          backgroundColor: mode === 'dark'
+            ? darkSurfaces.surface4
+            : undefined,
+        },
+      },
+    },
+
+    // Skeleton for loading states
+    MuiSkeleton: {
+      styleOverrides: {
+        root: {
+          backgroundColor: mode === 'dark'
+            ? darkSurfaces.surface3
+            : undefined,
+        },
+      },
+    },
+
+    // Alert component
+    MuiAlert: {
+      styleOverrides: {
+        standardSuccess: {
+          backgroundColor: mode === 'dark'
+            ? darkSurfaces.semantic.success.bg
+            : undefined,
+          color: mode === 'dark'
+            ? darkSurfaces.semantic.success.text
+            : undefined,
+          border: mode === 'dark'
+            ? `1px solid ${darkSurfaces.semantic.success.border}`
+            : undefined,
+        },
+        standardError: {
+          backgroundColor: mode === 'dark'
+            ? darkSurfaces.semantic.error.bg
+            : undefined,
+          color: mode === 'dark'
+            ? darkSurfaces.semantic.error.text
+            : undefined,
+          border: mode === 'dark'
+            ? `1px solid ${darkSurfaces.semantic.error.border}`
+            : undefined,
+        },
+        standardWarning: {
+          backgroundColor: mode === 'dark'
+            ? darkSurfaces.semantic.warning.bg
+            : undefined,
+          color: mode === 'dark'
+            ? darkSurfaces.semantic.warning.text
+            : undefined,
+          border: mode === 'dark'
+            ? `1px solid ${darkSurfaces.semantic.warning.border}`
+            : undefined,
+        },
+        standardInfo: {
+          backgroundColor: mode === 'dark'
+            ? darkSurfaces.semantic.info.bg
+            : undefined,
+          color: mode === 'dark'
+            ? darkSurfaces.semantic.info.text
+            : undefined,
+          border: mode === 'dark'
+            ? `1px solid ${darkSurfaces.semantic.info.border}`
+            : undefined,
         },
       },
     },

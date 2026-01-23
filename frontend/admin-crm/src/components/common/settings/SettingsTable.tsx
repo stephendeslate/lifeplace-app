@@ -12,7 +12,7 @@ import {
 import {
   Search as SearchIcon,
 } from '@mui/icons-material';
-import { 
+import {
   ModernTable,
   ModernCard,
   ModernEmptyState,
@@ -22,6 +22,7 @@ import {
 } from '../';
 import { tokens } from '../../../design-system';
 import { glassPresets } from '../../../design-system/utils/glassmorphism';
+import { useThemeColors } from '../../../hooks/useThemeColors';
 
 export interface SettingsTableColumn<T = Record<string, unknown>> extends ModernTableColumn<T> {
   searchable?: boolean;
@@ -96,6 +97,7 @@ export const SettingsTable = <T extends Record<string, unknown>>({
 }: SettingsTableProps<T>) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilters, setActiveFilters] = useState<Record<string, unknown>>({});
+  const themeColors = useThemeColors();
 
   // Filter and search data
   const filteredData = useMemo(() => {
@@ -203,19 +205,19 @@ export const SettingsTable = <T extends Record<string, unknown>>({
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
-                    <SearchIcon sx={{ color: tokens.color.neutral[500] }} />
+                    <SearchIcon sx={{ color: themeColors.text.secondary }} />
                   </InputAdornment>
                 ),
               }}
               sx={{
                 mb: filters.length > 0 ? 2 : 0,
                 '& .MuiOutlinedInput-root': {
-                  backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                  backgroundColor: themeColors.surface.level2,
                   '&:hover': {
-                    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                    backgroundColor: themeColors.surface.level3,
                   },
                   '&.Mui-focused': {
-                    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                    backgroundColor: themeColors.surface.level3,
                   },
                 },
               }}
@@ -225,45 +227,45 @@ export const SettingsTable = <T extends Record<string, unknown>>({
           {/* Active Filters Display */}
           {(searchQuery || Object.keys(activeFilters).length > 0) && (
             <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', flexWrap: 'wrap' }}>
-              <Typography variant="body2" sx={{ color: tokens.color.neutral[500], mr: 1 }}>
+              <Typography variant="body2" sx={{ color: themeColors.text.secondary, mr: 1 }}>
                 Active filters:
               </Typography>
-              
+
               {searchQuery && (
                 <Chip
                   label={`Search: "${searchQuery}"`}
                   size="small"
                   onDelete={() => setSearchQuery('')}
-                  sx={{ backgroundColor: 'rgba(255, 255, 255, 0.1)' }}
+                  sx={{ backgroundColor: themeColors.surface.level3 }}
                 />
               )}
-              
+
               {Object.entries(activeFilters).map(([key, value]) => {
                 if (!value) return null;
                 const filter = filters.find(f => f.key === key);
-                const displayValue = Array.isArray(value) 
+                const displayValue = Array.isArray(value)
                   ? `${value.length} selected`
                   : String(value);
-                
+
                 return (
                   <Chip
                     key={key}
                     label={`${filter?.label || key}: ${displayValue}`}
                     size="small"
                     onDelete={() => handleFilterChange(key, null)}
-                    sx={{ backgroundColor: 'rgba(255, 255, 255, 0.1)' }}
+                    sx={{ backgroundColor: themeColors.surface.level3 }}
                   />
                 );
               })}
-              
+
               <Chip
                 label="Clear all"
                 size="small"
                 variant="outlined"
                 onClick={clearFilters}
-                sx={{ 
-                  borderColor: 'rgba(255, 255, 255, 0.3)',
-                  color: tokens.color.neutral[500],
+                sx={{
+                  borderColor: themeColors.border.prominent,
+                  color: themeColors.text.secondary,
                 }}
               />
             </Box>

@@ -45,11 +45,11 @@ export const EnhancedSettingsLayout: React.FC<EnhancedSettingsLayoutProps> = ({ 
 
   return (
     <EnhancedSettingsProvider>
-      <Box 
-        sx={{ 
-          display: 'flex', 
+      <Box
+        sx={{
+          display: 'flex',
           minHeight: '100%',
-          bgcolor: 'grey.50',
+          bgcolor: 'background.default',
           position: 'relative',
         }}
       >

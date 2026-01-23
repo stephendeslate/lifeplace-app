@@ -25,6 +25,7 @@ import {
   Add as AddIcon,
 } from '@mui/icons-material';
 import { tokens } from '../../design-system';
+import { useThemeColors } from '../../hooks/useThemeColors';
 
 interface BreadcrumbItem {
   label: string;
@@ -79,6 +80,8 @@ export const ModernPageHeader: React.FC<ModernPageHeaderProps> = ({
   className,
   sx,
 }) => {
+  const themeColors = useThemeColors();
+
   const getPadding = () => {
     switch (size) {
       case 'small': return { xs: 2, md: 3 };
@@ -123,9 +126,9 @@ export const ModernPageHeader: React.FC<ModernPageHeaderProps> = ({
           ...baseButtonProps.sx,
           width: size === 'large' ? 48 : 40,
           height: size === 'large' ? 48 : 40,
-          color: action.color ? tokens.color[action.color][600] : tokens.color.neutral[600],
+          color: action.color ? tokens.color[action.color][600] : themeColors.text.secondary,
           '&:hover': {
-            bgcolor: tokens.color.neutral[100],
+            bgcolor: themeColors.surface.level2,
           }
         }}
       >
@@ -151,11 +154,11 @@ export const ModernPageHeader: React.FC<ModernPageHeaderProps> = ({
             }
           }),
           ...(action.variant === 'outlined' && {
-            borderColor: tokens.color.neutral[300],
-            color: tokens.color.neutral[700],
+            borderColor: themeColors.border.default,
+            color: themeColors.text.primary,
             '&:hover': {
-              bgcolor: tokens.color.neutral[50],
-              borderColor: tokens.color.neutral[400],
+              bgcolor: themeColors.surface.level2,
+              borderColor: themeColors.border.prominent,
             }
           }),
         }}
@@ -194,7 +197,7 @@ export const ModernPageHeader: React.FC<ModernPageHeaderProps> = ({
           gap={{ xs: 3, lg: 4 }}
           sx={{
             bgcolor: 'background.paper',
-            border: `1px solid ${tokens.color.borders.subtle}`,
+            border: `1px solid ${themeColors.border.default}`,
             borderRadius: tokens.spacing.radius.lg,
             p: getPadding(),
           }}
@@ -212,7 +215,7 @@ export const ModernPageHeader: React.FC<ModernPageHeaderProps> = ({
                     display: 'flex',
                     alignItems: 'center',
                     gap: 0.5,
-                    color: tokens.color.neutral[600],
+                    color: themeColors.text.secondary,
                     textDecoration: 'none',
                     fontSize: '0.875rem',
                     fontWeight: 500,
@@ -233,8 +236,8 @@ export const ModernPageHeader: React.FC<ModernPageHeaderProps> = ({
                     onClick={crumb.onClick}
                     sx={{
                       color: crumb.current
-                        ? tokens.color.neutral[800]
-                        : tokens.color.neutral[600],
+                        ? themeColors.text.primary
+                        : themeColors.text.secondary,
                       textDecoration: 'none',
                       fontSize: '0.875rem',
                       fontWeight: crumb.current ? 600 : 500,
@@ -260,7 +263,7 @@ export const ModernPageHeader: React.FC<ModernPageHeaderProps> = ({
                   sx={{
                     borderRadius: tokens.spacing.radius.md,
                     p: size === 'large' ? 2 : 1.5,
-                    bgcolor: tokens.color.primary[50],
+                    bgcolor: themeColors.semantic.primary.bg,
                     flexShrink: 0,
                   }}
                 >
@@ -268,7 +271,7 @@ export const ModernPageHeader: React.FC<ModernPageHeaderProps> = ({
                     ? React.cloneElement(icon as React.ReactElement<{ sx?: object }>, {
                         sx: {
                           fontSize: getIconSize(),
-                          color: tokens.color.primary[600]
+                          color: themeColors.semantic.primary.text
                         }
                       })
                     : icon
@@ -284,7 +287,7 @@ export const ModernPageHeader: React.FC<ModernPageHeaderProps> = ({
                     component="h1"
                     sx={{
                       fontWeight: 700,
-                      color: tokens.color.neutral[800],
+                      color: themeColors.text.primary,
                       lineHeight: 1.2,
                       wordBreak: 'break-word',
                     }}
@@ -310,7 +313,7 @@ export const ModernPageHeader: React.FC<ModernPageHeaderProps> = ({
                   <Typography
                     variant="body2"
                     sx={{
-                      color: tokens.color.neutral[600],
+                      color: themeColors.text.secondary,
                       fontWeight: 400,
                       mb: stats ? 2 : 0,
                       lineHeight: 1.4,
@@ -336,7 +339,7 @@ export const ModernPageHeader: React.FC<ModernPageHeaderProps> = ({
                           variant="h6"
                           sx={{
                             fontWeight: 700,
-                            color: tokens.color.neutral[800],
+                            color: themeColors.text.primary,
                             lineHeight: 1.2,
                           }}
                         >
@@ -345,7 +348,7 @@ export const ModernPageHeader: React.FC<ModernPageHeaderProps> = ({
                         <Typography
                           variant="caption"
                           sx={{
-                            color: tokens.color.neutral[500],
+                            color: themeColors.text.secondary,
                             textTransform: 'uppercase',
                             letterSpacing: '0.05em',
                             fontWeight: 500,
