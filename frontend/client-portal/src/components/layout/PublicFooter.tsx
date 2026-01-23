@@ -17,8 +17,7 @@ import {
   Email,
   Facebook,
   Instagram,
-  Twitter,
-  YouTube,
+  MusicNote,
 } from '@mui/icons-material';
 import { AnimatedElement } from '../../design-system/components/AnimatedElement';
 import { tokens } from '../../design-system';
@@ -28,19 +27,19 @@ export const PublicFooter: React.FC = () => {
     {
       icon: <LocationOn />,
       label: 'Address',
-      value: 'Alfonso, Cavite, Philippines',
+      value: 'Patutong Malaki North, Alfonso, Cavite 4120',
     },
     {
       icon: <Phone />,
       label: 'Phone',
-      value: '+63 (02) 123-4567',
-      href: 'tel:+630212345567',
+      value: '(046) 889 0844',
+      href: 'tel:+63468890844',
     },
     {
       icon: <Email />,
       label: 'Email',
-      value: 'info@lifeplacealfonso.com',
-      href: 'mailto:info@lifeplacealfonso.com',
+      value: 'reservations.lifeplace@gmail.com',
+      href: 'mailto:reservations.lifeplace@gmail.com',
     },
   ];
 
@@ -61,10 +60,9 @@ export const PublicFooter: React.FC = () => {
   ];
 
   const socialLinks = [
-    { icon: <Facebook />, href: 'https://facebook.com/lifeplacealfonso', label: 'Facebook' },
-    { icon: <Instagram />, href: 'https://instagram.com/lifeplacealfonso', label: 'Instagram' },
-    { icon: <Twitter />, href: 'https://twitter.com/lifeplacealfonso', label: 'Twitter' },
-    { icon: <YouTube />, href: 'https://youtube.com/lifeplacealfonso', label: 'YouTube' },
+    { icon: <Facebook />, href: 'https://www.facebook.com/lifeplacealfonso/', label: 'Facebook' },
+    { icon: <Instagram />, href: 'https://www.instagram.com/lifeplacealfonso/', label: 'Instagram' },
+    { icon: <MusicNote />, href: 'https://www.tiktok.com/@lifeplacealfonso', label: 'TikTok' },
   ];
 
   return (
