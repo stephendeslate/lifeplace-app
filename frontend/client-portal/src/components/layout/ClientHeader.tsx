@@ -76,7 +76,7 @@ export const ClientHeader: React.FC<ClientHeaderProps> = ({
         boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
       }}
     >
-      <Toolbar sx={{ px: { xs: 2, sm: 3 } }}>
+      <Toolbar sx={{ px: { xs: 2, sm: 3 }, py: 1 }}>
         {/* Menu Button */}
         <AnimatedElement animation="fadeIn" delay={100}>
           <IconButton

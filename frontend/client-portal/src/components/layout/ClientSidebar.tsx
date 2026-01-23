@@ -330,8 +330,8 @@ export const ClientSidebar: React.FC<ClientSidebarProps> = ({
           boxSizing: 'border-box',
           backgroundColor: 'transparent',
           borderRight: 'none',
-          mt: variant === 'persistent' ? '64px' : 0,
-          height: variant === 'persistent' ? 'calc(100vh - 64px)' : '100vh',
+          mt: variant === 'persistent' ? { xs: '72px', md: '96px' } : 0,
+          height: variant === 'persistent' ? { xs: 'calc(100vh - 72px)', md: 'calc(100vh - 96px)' } : '100vh',
         },
       }}
       ModalProps={{

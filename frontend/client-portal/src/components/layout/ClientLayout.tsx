@@ -70,8 +70,8 @@ export const ClientLayout: React.FC<ClientLayoutProps> = ({ children }) => {
         component="main"
         sx={{
           flexGrow: 1,
-          minHeight: 'calc(100vh - 64px)',
-          marginTop: '64px',
+          minHeight: { xs: 'calc(100vh - 72px)', md: 'calc(100vh - 96px)' },
+          marginTop: { xs: '72px', md: '96px' },
           marginLeft: !isMobile && sidebarOpen ? `${sidebarWidth}px` : 0,
           transition: theme.transitions.create(['margin-left'], {
             easing: theme.transitions.easing.sharp,
@@ -88,7 +88,7 @@ export const ClientLayout: React.FC<ClientLayoutProps> = ({ children }) => {
             backdropFilter: 'blur(1px)',
             borderRadius: { xs: 0, sm: 3 },
             mx: { xs: 0, sm: 2, md: 3 },
-            my: { xs: 0, sm: 2 },
+            my: { xs: 0, sm: 2, md: 3 },
             minHeight: 'calc(100vh - 96px)',
             border: `1px solid ${alpha('#fff', 0.05)}`,
             boxShadow: '0 8px 32px rgba(0,0,0,0.04)',
