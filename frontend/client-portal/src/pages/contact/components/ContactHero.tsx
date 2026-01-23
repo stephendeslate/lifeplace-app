@@ -51,7 +51,7 @@ export const ContactHero: React.FC = () => {
             justifyContent: 'center',
             width: '100%',
             px: tokens.spacing.space[4],
-            py: { xs: tokens.spacing.space[8], md: tokens.spacing.space[12] },
+            py: { xs: tokens.spacing.space[9], md: tokens.spacing.space[14] },
             textAlign: 'center',
           }}
         >

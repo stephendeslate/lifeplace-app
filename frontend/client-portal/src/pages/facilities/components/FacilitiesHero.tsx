@@ -67,7 +67,7 @@ export const FacilitiesHero: React.FC<FacilitiesHeroProps> = () => {
             },
             py: {
               xs: tokens.spacing.space[9],
-              md: tokens.spacing.space[12]
+              md: tokens.spacing.space[14]
             },
             textAlign: 'center',
           }}

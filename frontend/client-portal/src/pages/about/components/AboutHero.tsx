@@ -59,7 +59,7 @@ export const AboutHero: React.FC = () => {
             justifyContent: 'center',
             width: '100%',
             px: { xs: tokens.spacing.space[3], sm: tokens.spacing.space[4], md: tokens.spacing.space[6] },
-            py: { xs: tokens.spacing.space[9], md: tokens.spacing.space[12] },
+            py: { xs: tokens.spacing.space[9], md: tokens.spacing.space[14] },
             textAlign: 'center',
           }}
         >
