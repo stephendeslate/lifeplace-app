@@ -31,7 +31,14 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true
   },
-  "include": ["src", "../shared/design-system/**/*"],
+  "include": [
+    "src",
+    "../shared/design-system/components/AnimatedElement.tsx",
+    "../shared/design-system/components/Button.tsx",
+    "../shared/design-system/components/IconButton.tsx",
+    "../shared/design-system/index.ts",
+    "../shared/design-system/examples/**/*"
+  ],
   "exclude": [
     "**/*.test.ts", 
     "**/*.test.tsx", 
