@@ -451,7 +451,16 @@ export const EventAvailabilityCalendar: React.FC<EventAvailabilityCalendarProps>
   
   return (
     <StyledCalendarContainer>
-      <GlassCard variant="light" intensity="subtle" hover={false}>
+      <GlassCard
+        variant="light"
+        intensity="subtle"
+        hover={false}
+        sx={{
+          [theme.breakpoints.down('sm')]: {
+            padding: tokens.spacing.space[2], // 16px instead of 24px on mobile
+          },
+        }}
+      >
         {/* Calendar Header */}
         <StyledCalendarHeader>
           <IconButton onClick={handlePrevMonth} size="small">
