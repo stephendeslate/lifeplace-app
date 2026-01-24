@@ -457,7 +457,7 @@ export const EventAvailabilityCalendar: React.FC<EventAvailabilityCalendarProps>
         hover={false}
         sx={{
           [theme.breakpoints.down('sm')]: {
-            padding: tokens.spacing.space[2], // 16px instead of 24px on mobile
+            padding: tokens.spacing.space[1], // 8px on mobile for more calendar space
           },
         }}
       >

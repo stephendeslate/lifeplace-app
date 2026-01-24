@@ -328,9 +328,13 @@ export const IntelligentDateTimeStep: React.FC<IntelligentDateTimeStepProps> = (
 
       {/* Date Selection */}
       <AnimatedElement animation="slideUp" delay={200}>
-        <GlassCard variant="light" intensity="medium">
-          <Box sx={{ p: { xs: 1.5, sm: 3 } }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: { xs: 2, sm: 3 } }}>
+        <GlassCard
+          variant="light"
+          intensity="medium"
+          sx={{ p: { xs: 1, sm: 3 } }}
+        >
+          <Box sx={{ p: 0 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: { xs: 1.5, sm: 3 } }}>
               <CalendarIcon color="primary" />
               <Typography variant="h6" sx={{ fontWeight: 600 }}>
                 Select Date
