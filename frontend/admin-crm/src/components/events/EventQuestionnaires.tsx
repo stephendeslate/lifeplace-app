@@ -29,7 +29,6 @@ import {
   AccordionSummary,
   AccordionDetails,
   Alert,
-  Tooltip,
 } from '@mui/material';
 import {
   Save as SaveIcon,
@@ -48,7 +47,7 @@ import {
   Warning as OverdueIcon,
 } from '@mui/icons-material';
 import { format } from 'date-fns';
-import { useQuestionnaires, useQuestionnaireResponses } from '../../hooks/useQuestionnaires';
+import { useQuestionnaireResponses } from '../../hooks/useQuestionnaires';
 import {
   useEventQuestionnairesForEvent,
   useDeleteEventQuestionnaire,
@@ -56,7 +55,6 @@ import {
   useSendQuestionnaireReminder,
 } from '../../hooks/useEventQuestionnaires';
 import type {
-  Questionnaire,
   QuestionnaireField,
   SaveEventResponsesData,
   EventQuestionnaire,

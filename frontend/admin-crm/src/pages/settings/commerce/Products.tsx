@@ -172,6 +172,8 @@ const defaultProduct: ProductOption = {
   category_path: '',
   pricing_model: 'FIXED',
   pricing_model_display: 'Fixed Price',
+  pricing_unit: 'PER_EVENT',
+  pricing_unit_display: 'Per Event',
   base_price: '0.00',
   currency: 'USD',
   is_tax_inclusive: false,

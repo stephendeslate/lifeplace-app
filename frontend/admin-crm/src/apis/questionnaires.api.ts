@@ -16,7 +16,6 @@ import type {
   ReorderFieldsData,
   SaveEventResponsesData,
   EventQuestionnaire,
-  EventQuestionnaireSummary,
   CreateEventQuestionnaireData,
   UpdateEventQuestionnaireData,
 } from '../types/questionnaires.types';

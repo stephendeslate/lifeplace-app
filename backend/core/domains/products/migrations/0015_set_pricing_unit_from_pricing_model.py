@@ -5,8 +5,9 @@ from django.db import migrations
 
 def set_pricing_unit_from_pricing_model(apps, schema_editor):
     """
-    Set pricing_unit based on pricing_model for existing products:
+    Set pricing_unit based on pricing_model and allow_multiple for existing products:
     - HOURLY -> PER_HOUR
+    - allow_multiple=True (camp/retreat packages) -> PER_PERSON
     - All others (FIXED, TIERED, CUSTOM) -> PER_EVENT (default)
     """
     ProductOption = apps.get_model('products', 'ProductOption')
@@ -14,7 +15,12 @@ def set_pricing_unit_from_pricing_model(apps, schema_editor):
     # Update HOURLY products to PER_HOUR
     ProductOption.objects.filter(pricing_model='HOURLY').update(pricing_unit='PER_HOUR')
 
-    # FIXED, TIERED, CUSTOM products keep the default PER_EVENT
+    # Update PACKAGES with allow_multiple=True to PER_PERSON
+    # These are camp/retreat packages where price is per person
+    # Note: PRODUCTs (add-ons) with allow_multiple stay PER_EVENT by default
+    ProductOption.objects.filter(type='PACKAGE', allow_multiple=True).update(pricing_unit='PER_PERSON')
+
+    # FIXED, TIERED, CUSTOM products without allow_multiple keep the default PER_EVENT
     # (already set by the default value in the previous migration)
 
 
