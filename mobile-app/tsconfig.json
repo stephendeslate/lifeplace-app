@@ -14,7 +14,7 @@
       "@theme/*": ["src/theme/*"],
       "@contexts/*": ["src/contexts/*"],
       "@stores/*": ["src/stores/*"],
-      "@test/*": ["src/__tests__/*"],
+      "@test/*": ["src/test/*"],
       "@assets/*": ["assets/*"]
     }
   },

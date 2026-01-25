@@ -199,8 +199,9 @@ describe('useSignContract', () => {
       result.current.mutate({
         contractId: 1,
         data: {
-          signature: 'data:image/png;base64,SIGNATURE_DATA',
+          signature_data: 'data:image/png;base64,SIGNATURE_DATA',
           signer_name: 'John Doe',
+          agreed_to_terms: true,
         },
       });
     });
@@ -229,8 +230,9 @@ describe('useSignContract', () => {
       result.current.mutate({
         contractId: 1,
         data: {
-          signature: 'data:image/png;base64,SIGNATURE_DATA',
+          signature_data: 'data:image/png;base64,SIGNATURE_DATA',
           signer_name: 'John Doe',
+          agreed_to_terms: true,
         },
       });
     });

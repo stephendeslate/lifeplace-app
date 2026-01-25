@@ -39,7 +39,9 @@ try {
   Google = require('expo-auth-session/providers/google');
   isNativeModuleAvailable = true;
   // Ensure the web browser dismisses properly on iOS
-  WebBrowser.maybeCompleteAuthSession();
+  if (WebBrowser) {
+    WebBrowser.maybeCompleteAuthSession();
+  }
 } catch (e) {
   authLogger.debug('Google Sign-In native modules not available (likely running in Expo Go)');
 }

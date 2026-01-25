@@ -142,7 +142,7 @@ describe('useRegister', () => {
       result.current.mutate({
         email: 'newuser@example.com',
         password: 'Password123!',
-        password_confirm: 'Password123!',
+        confirm_password: 'Password123!',
         first_name: 'New',
         last_name: 'User',
       });
@@ -175,7 +175,7 @@ describe('useRegister', () => {
       result.current.mutate({
         email: 'existing@example.com',
         password: 'Password123!',
-        password_confirm: 'Password123!',
+        confirm_password: 'Password123!',
         first_name: 'Test',
         last_name: 'User',
       });
@@ -499,7 +499,7 @@ describe('Auth Flow Integration', () => {
       registerResult.current.mutate({
         email: 'newuser@example.com',
         password: 'Password123!',
-        password_confirm: 'Password123!',
+        confirm_password: 'Password123!',
         first_name: 'New',
         last_name: 'User',
       });
