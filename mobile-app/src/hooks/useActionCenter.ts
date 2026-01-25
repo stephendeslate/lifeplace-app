@@ -136,7 +136,12 @@ function transformContractToAction(contract: PendingContract): ContractActionIte
     createdAt: new Date().toISOString(),
     contractId: parseInt(contract.id, 10),
     templateName: contract.template_name,
-    signatureProgress: contract.signature_progress,
+    signatureProgress: {
+      ...contract.signature_progress,
+      required_roles: [],
+      signed_roles: [],
+      missing_roles: [],
+    },
     contractStatus: contract.status,
     expiresAt: contract.expires_at,
     daysUntilExpiry,

@@ -29,35 +29,49 @@ const initialState = useBookingStore.getState();
 
 // Mock booking flow steps
 const mockSteps: BookingFlowStep[] = [
-  { id: 1, step_type: 'introduction', order: 0, is_enabled: true, is_required: true, configuration: {} },
-  { id: 2, step_type: 'venue_selection', order: 1, is_enabled: true, is_required: true, configuration: {} },
-  { id: 3, step_type: 'date_time', order: 2, is_enabled: true, is_required: true, configuration: {} },
-  { id: 4, step_type: 'package_selection', order: 3, is_enabled: true, is_required: true, configuration: {} },
-  { id: 5, step_type: 'addon_selection', order: 4, is_enabled: false, is_required: false, configuration: {} }, // Disabled
-  { id: 6, step_type: 'pricing_summary', order: 5, is_enabled: true, is_required: true, configuration: {} },
-  { id: 7, step_type: 'contact_info', order: 6, is_enabled: true, is_required: true, configuration: {} },
-  { id: 8, step_type: 'payment_info', order: 7, is_enabled: true, is_required: true, configuration: {} },
-  { id: 9, step_type: 'confirmation', order: 8, is_enabled: true, is_required: true, configuration: {} },
+  { id: '1', step_type: 'introduction', order: 0, is_enabled: true, is_required: true, is_skippable: false, display_conditions: {}, configuration: {}, validation_rules: {} },
+  { id: '2', step_type: 'venue_selection', order: 1, is_enabled: true, is_required: true, is_skippable: false, display_conditions: {}, configuration: {}, validation_rules: {} },
+  { id: '3', step_type: 'date_time', order: 2, is_enabled: true, is_required: true, is_skippable: false, display_conditions: {}, configuration: {}, validation_rules: {} },
+  { id: '4', step_type: 'package_selection', order: 3, is_enabled: true, is_required: true, is_skippable: false, display_conditions: {}, configuration: {}, validation_rules: {} },
+  { id: '5', step_type: 'addon_selection', order: 4, is_enabled: false, is_required: false, is_skippable: true, display_conditions: {}, configuration: {}, validation_rules: {} }, // Disabled
+  { id: '6', step_type: 'pricing_summary', order: 5, is_enabled: true, is_required: true, is_skippable: false, display_conditions: {}, configuration: {}, validation_rules: {} },
+  { id: '7', step_type: 'contact_info', order: 6, is_enabled: true, is_required: true, is_skippable: false, display_conditions: {}, configuration: {}, validation_rules: {} },
+  { id: '8', step_type: 'payment_info', order: 7, is_enabled: true, is_required: true, is_skippable: false, display_conditions: {}, configuration: {}, validation_rules: {} },
+  { id: '9', step_type: 'confirmation', order: 8, is_enabled: true, is_required: true, is_skippable: false, display_conditions: {}, configuration: {}, validation_rules: {} },
 ];
 
 // Mock booking flow
 const mockFlow: BookingFlow = {
-  id: 1,
+  id: '1',
   name: 'Wedding Booking',
-  slug: 'wedding-booking',
-  event_type: { id: 1, name: 'Wedding', slug: 'wedding' },
+  event_type: { id: '1', name: 'Wedding', is_active: true },
   steps: mockSteps,
   is_active: true,
+  allow_guest_booking: true,
+  require_account_creation: false,
+  auto_approve_bookings: false,
+  enable_progress_saving: true,
+  max_advance_booking_days: 365,
+  min_advance_booking_days: 1,
+  allow_discounts: true,
+  require_immediate_payment: false,
+  is_test_mode: false,
 };
 
 // Mock booking session
 const mockSession: BookingSession = {
-  id: 'test-session-123',
-  flow_id: 1,
-  current_step: 0,
-  step_data: {},
+  session_id: 'test-session-123',
+  booking_flow: mockFlow,
+  current_step: mockSteps[0],
+  completed_steps: [],
+  booking_data: {},
+  validation_errors: {},
+  is_completed: false,
+  is_abandoned: false,
   expires_at: new Date(Date.now() + 3600000).toISOString(),
+  progress_percentage: 0,
   created_at: new Date().toISOString(),
+  updated_at: new Date().toISOString(),
 };
 
 // Mock contact info
@@ -467,9 +481,9 @@ describe('bookingStore', () => {
           questionnaireResponses: { field_1: 'answer' },
           discountCode: 'SAVE10',
         },
-        venueDetails: { 'v1': {} },
-        packageDetails: { 'p1': {} },
-        addonDetails: { 'a1': {} },
+        venueDetails: { 'v1': {} as never },
+        packageDetails: { 'p1': {} as never },
+        addonDetails: { 'a1': {} as never },
         isLoading: true,
         isValidating: true,
         isSubmitting: true,

@@ -71,7 +71,7 @@ describe('usePendingContracts', () => {
           signed_at: null,
           expires_at: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
           can_client_sign: true,
-          signature_progress: { total_required: 1, signed_count: 0, percentage: 0 },
+          signature_progress: { total_required: 1, signed_count: 0, percentage: 0, required_roles: ['Client'], signed_roles: [], missing_roles: ['Client'] },
           signatures: [],
         }]));
       })
@@ -257,7 +257,7 @@ describe('contractKeys', () => {
   });
 
   it('generates correct key for filtered list', () => {
-    const filters = { status: 'SIGNED' };
+    const filters = { status: 'SIGNED' as const };
     expect(contractKeys.list(filters)).toEqual(['contracts', 'list', filters]);
   });
 
@@ -399,7 +399,7 @@ describe('canSignContract', () => {
       signed_at: null,
       expires_at: null,
       can_client_sign: true,
-      signature_progress: { total_required: 1, signed_count: 0, percentage: 0 },
+      signature_progress: { total_required: 1, signed_count: 0, percentage: 0, required_roles: ['Client'], signed_roles: [], missing_roles: ['Client'] },
       signatures: [],
     };
 
@@ -419,7 +419,7 @@ describe('canSignContract', () => {
       signed_at: null,
       expires_at: null,
       can_client_sign: true,
-      signature_progress: { total_required: 2, signed_count: 1, percentage: 50 },
+      signature_progress: { total_required: 2, signed_count: 1, percentage: 50, required_roles: ['Client', 'Vendor'], signed_roles: ['Client'], missing_roles: ['Vendor'] },
       signatures: [],
     };
 
@@ -439,7 +439,7 @@ describe('canSignContract', () => {
       signed_at: null,
       expires_at: null,
       can_client_sign: false,
-      signature_progress: { total_required: 1, signed_count: 0, percentage: 0 },
+      signature_progress: { total_required: 1, signed_count: 0, percentage: 0, required_roles: ['Client'], signed_roles: [], missing_roles: ['Client'] },
       signatures: [],
     };
 
@@ -459,7 +459,7 @@ describe('canSignContract', () => {
       signed_at: new Date().toISOString(),
       expires_at: null,
       can_client_sign: true,
-      signature_progress: { total_required: 1, signed_count: 1, percentage: 100 },
+      signature_progress: { total_required: 1, signed_count: 1, percentage: 100, required_roles: ['Client'], signed_roles: ['Client'], missing_roles: [] },
       signatures: [],
     };
 
@@ -479,7 +479,7 @@ describe('canSignContract', () => {
       signed_at: null,
       expires_at: null,
       can_client_sign: true,
-      signature_progress: { total_required: 2, signed_count: 2, percentage: 100 },
+      signature_progress: { total_required: 2, signed_count: 2, percentage: 100, required_roles: ['Client', 'Vendor'], signed_roles: ['Client', 'Vendor'], missing_roles: [] },
       signatures: [],
     };
 

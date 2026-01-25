@@ -74,7 +74,7 @@ export const mockEvent: Event = {
       template_name: 'Wedding Contract',
       can_client_sign: false,
       expires_at: null,
-      signature_progress: { total_required: 2, signed_count: 2, percentage: 100 },
+      signature_progress: { total_required: 2, signed_count: 2, percentage: 100, required_roles: ['Client'], signed_roles: ['Client'], missing_roles: [] },
     },
   ],
   pending_signature_required: false,
@@ -429,6 +429,9 @@ export const mockContracts: Contract[] = [
       total_required: 1,
       signed_count: 0,
       percentage: 0,
+      required_roles: ['Client'],
+      signed_roles: [],
+      missing_roles: ['Client'],
     },
     signatures: [
       {

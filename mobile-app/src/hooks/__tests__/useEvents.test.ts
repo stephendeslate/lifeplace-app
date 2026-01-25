@@ -208,9 +208,9 @@ describe('useUpdateEventTask', () => {
   it('updates task and invalidates queries on success', async () => {
     server.use(
       http.patch(`${API_URL}/client/events/:eventId/tasks/:taskId/`, async ({ request }) => {
-        let body = {};
+        let body: Record<string, unknown> = {};
         try {
-          body = await request.json();
+          body = (await request.json()) as Record<string, unknown>;
         } catch {
           // Body parsing failed, use defaults
         }
@@ -229,7 +229,7 @@ describe('useUpdateEventTask', () => {
       result.current.mutate({
         eventId: 1,
         taskId: 1,
-        data: { status: 'completed' },
+        data: { status: 'COMPLETED' as const },
       });
     });
 
@@ -255,7 +255,7 @@ describe('useUpdateEventTask', () => {
       result.current.mutate({
         eventId: 1,
         taskId: 1,
-        data: { status: 'completed' },
+        data: { status: 'COMPLETED' as const },
       });
     });
 
@@ -269,9 +269,9 @@ describe('useCreateEventNote', () => {
   it('creates note and invalidates queries on success', async () => {
     server.use(
       http.post(`${API_URL}/client/events/:eventId/notes/`, async ({ request }) => {
-        let body = {};
+        let body: Record<string, unknown> = {};
         try {
-          body = await request.json();
+          body = (await request.json()) as Record<string, unknown>;
         } catch {
           // Body parsing failed, use defaults
         }
@@ -303,9 +303,9 @@ describe('useSubmitEventFeedback', () => {
   it('submits feedback successfully', async () => {
     server.use(
       http.post(`${API_URL}/client/events/:eventId/feedback/`, async ({ request }) => {
-        let body = {};
+        let body: Record<string, unknown> = {};
         try {
-          body = await request.json();
+          body = (await request.json()) as Record<string, unknown>;
         } catch {
           // Body parsing failed, use defaults
         }
@@ -324,8 +324,8 @@ describe('useSubmitEventFeedback', () => {
       result.current.mutate({
         eventId: 1,
         data: {
-          rating: 5,
-          comment: 'Great event!',
+          overall_rating: 5,
+          comments: 'Great event!',
         },
       });
     });
@@ -397,7 +397,7 @@ describe('eventKeys', () => {
   });
 
   it('generates correct key for filtered list', () => {
-    const filters = { status: 'CONFIRMED' };
+    const filters = { status: 'CONFIRMED' as const };
     expect(eventKeys.list(filters)).toEqual(['events', 'list', filters]);
   });
 

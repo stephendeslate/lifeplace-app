@@ -313,6 +313,8 @@ describe('getQuoteUrgency', () => {
       currency: 'PHP',
       valid_until: new Date(Date.now() - 86400000).toISOString(),
       days_until_expiry: -1,
+      created_at: new Date().toISOString(),
+      urgency_score: 100,
     };
 
     expect(getQuoteUrgency(quote)).toBe('critical');
@@ -329,6 +331,8 @@ describe('getQuoteUrgency', () => {
       currency: 'PHP',
       valid_until: new Date().toISOString(),
       days_until_expiry: 0,
+      created_at: new Date().toISOString(),
+      urgency_score: 100,
     };
 
     expect(getQuoteUrgency(quote)).toBe('critical');
@@ -345,6 +349,8 @@ describe('getQuoteUrgency', () => {
       currency: 'PHP',
       valid_until: new Date(Date.now() + 86400000).toISOString(),
       days_until_expiry: 1,
+      created_at: new Date().toISOString(),
+      urgency_score: 90,
     };
 
     expect(getQuoteUrgency(quote)).toBe('critical');
@@ -361,6 +367,8 @@ describe('getQuoteUrgency', () => {
       currency: 'PHP',
       valid_until: new Date(Date.now() + 3 * 86400000).toISOString(),
       days_until_expiry: 3,
+      created_at: new Date().toISOString(),
+      urgency_score: 70,
     };
 
     expect(getQuoteUrgency(quote)).toBe('high');
@@ -377,6 +385,8 @@ describe('getQuoteUrgency', () => {
       currency: 'PHP',
       valid_until: new Date(Date.now() + 7 * 86400000).toISOString(),
       days_until_expiry: 7,
+      created_at: new Date().toISOString(),
+      urgency_score: 50,
     };
 
     expect(getQuoteUrgency(quote)).toBe('medium');
@@ -393,6 +403,8 @@ describe('getQuoteUrgency', () => {
       currency: 'PHP',
       valid_until: new Date(Date.now() + 10 * 86400000).toISOString(),
       days_until_expiry: 10,
+      created_at: new Date().toISOString(),
+      urgency_score: 30,
     };
 
     expect(getQuoteUrgency(quote)).toBe('low');

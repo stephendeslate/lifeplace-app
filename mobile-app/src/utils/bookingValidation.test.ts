@@ -396,6 +396,10 @@ describe('Step Schemas', () => {
         require_country: false,
         require_company: false,
         require_account_creation: false,
+        show_job_title: false,
+        offer_account_creation: false,
+        show_welcome_back_for_authenticated: false,
+        prefill_from_profile: false,
       };
 
       const schema = createContactInfoSchema(config);
@@ -418,6 +422,10 @@ describe('Step Schemas', () => {
         require_country: false,
         require_company: false,
         require_account_creation: true,
+        show_job_title: false,
+        offer_account_creation: true,
+        show_welcome_back_for_authenticated: false,
+        prefill_from_profile: false,
         password_requirements: {
           min_length: 8,
           require_uppercase: true,
@@ -505,6 +513,7 @@ describe('Questionnaire Validation', () => {
         field_type: 'text',
         label: 'Name',
         is_required: true,
+        order: 0,
         validation_rules: {
           min_length: 2,
           max_length: 50,
@@ -523,6 +532,7 @@ describe('Questionnaire Validation', () => {
         field_type: 'email',
         label: 'Email',
         is_required: true,
+        order: 0,
       };
 
       const schema = createFieldSchema(field);
@@ -537,6 +547,7 @@ describe('Questionnaire Validation', () => {
         field_type: 'number',
         label: 'Guests',
         is_required: true,
+        order: 0,
         validation_rules: {
           min_value: 10,
           max_value: 500,
@@ -556,6 +567,7 @@ describe('Questionnaire Validation', () => {
         field_type: 'rating',
         label: 'Rating',
         is_required: true,
+        order: 0,
         validation_rules: {
           min_rating: 1,
           max_rating: 5,
@@ -575,6 +587,7 @@ describe('Questionnaire Validation', () => {
         field_type: 'boolean',
         label: 'Agree',
         is_required: true,
+        order: 0,
       };
 
       const schema = createFieldSchema(field);
@@ -590,6 +603,7 @@ describe('Questionnaire Validation', () => {
         field_type: 'select',
         label: 'Color',
         is_required: true,
+        order: 0,
         options: [
           { value: 'red', label: 'Red' },
           { value: 'blue', label: 'Blue' },
@@ -608,6 +622,7 @@ describe('Questionnaire Validation', () => {
         field_type: 'text',
         label: 'Notes',
         is_required: false,
+        order: 0,
       };
 
       const schema = createFieldSchema(field);
@@ -620,9 +635,9 @@ describe('Questionnaire Validation', () => {
   describe('createQuestionnaireSchema', () => {
     it('creates schema for multiple fields', () => {
       const fields: QuestionnaireField[] = [
-        { id: 1, field_type: 'text', label: 'Name', is_required: true },
-        { id: 2, field_type: 'email', label: 'Email', is_required: true },
-        { id: 3, field_type: 'number', label: 'Age', is_required: false },
+        { id: 1, field_type: 'text', label: 'Name', is_required: true, order: 0 },
+        { id: 2, field_type: 'email', label: 'Email', is_required: true, order: 1 },
+        { id: 3, field_type: 'number', label: 'Age', is_required: false, order: 2 },
       ];
 
       const schema = createQuestionnaireSchema(fields);
@@ -637,7 +652,7 @@ describe('Questionnaire Validation', () => {
 
     it('uses field_id as key prefix', () => {
       const fields: QuestionnaireField[] = [
-        { id: 42, field_type: 'text', label: 'Answer', is_required: true },
+        { id: 42, field_type: 'text', label: 'Answer', is_required: true, order: 0 },
       ];
 
       const schema = createQuestionnaireSchema(fields);
@@ -712,6 +727,10 @@ describe('Validation Functions', () => {
         require_country: false,
         require_company: false,
         require_account_creation: false,
+        show_job_title: false,
+        offer_account_creation: false,
+        show_welcome_back_for_authenticated: false,
+        prefill_from_profile: false,
       };
 
       const result = validateStepData('contact_info', {
