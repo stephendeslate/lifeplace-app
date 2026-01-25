@@ -316,6 +316,8 @@ export interface ProductOption {
   // Additional API fields
   currency?: string;
   pricing_model?: 'FIXED' | 'HOURLY' | 'DAILY' | 'CUSTOM';
+  pricing_unit?: 'PER_EVENT' | 'PER_PERSON' | 'PER_HOUR';
+  pricing_unit_display?: string;
   min_hours?: number;
   max_hours?: number;
   unit_label?: string | null;

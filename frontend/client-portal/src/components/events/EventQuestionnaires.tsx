@@ -28,6 +28,7 @@ import {
   List,
   ListItem,
   ListItemText,
+  LinearProgress,
 } from '@mui/material';
 import { DatePicker, TimePicker } from '@mui/x-date-pickers';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -40,10 +41,17 @@ import {
   Edit as EditIcon,
   Save as SaveIcon,
   Cancel as CancelIcon,
+  Warning as OverdueIcon,
+  Schedule as PendingIcon,
 } from '@mui/icons-material';
 import { format } from 'date-fns';
 import { useEventQuestionnaires } from '../../hooks/useEventQuestionnaires';
-import type { Questionnaire, QuestionnaireField, QuestionnaireResponse } from '../../types/questionnaires.types';
+import type {
+  QuestionnaireField,
+  QuestionnaireResponse,
+  EventQuestionnaire,
+  EventQuestionnaireStatus,
+} from '../../types/questionnaires.types';
 
 interface EventQuestionnairesProps {
   eventId: number;
@@ -53,18 +61,32 @@ interface ResponseFormData {
   [fieldId: number]: string | string[];
 }
 
+// Status chip colors and labels
+const STATUS_CONFIG: Record<EventQuestionnaireStatus, { color: 'default' | 'primary' | 'warning' | 'success'; label: string }> = {
+  PENDING: { color: 'default', label: 'Pending' },
+  SENT: { color: 'primary', label: 'Awaiting Response' },
+  PARTIAL: { color: 'warning', label: 'In Progress' },
+  COMPLETE: { color: 'success', label: 'Complete' },
+};
+
 const EventQuestionnaires: React.FC<EventQuestionnairesProps> = ({ eventId }) => {
   const [editMode, setEditMode] = useState(false);
   const [formData, setFormData] = useState<ResponseFormData>({});
   const [expandedPanel, setExpandedPanel] = useState<string | false>(false);
 
-  const { useQuestionnairesForEvent, useEventResponses, useSaveEventResponses } = useEventQuestionnaires();
-
   const {
-    data: questionnaires = [],
+    useEventQuestionnairesForEvent,
+    useEventResponses,
+    useSaveEventResponses
+  } = useEventQuestionnaires();
+
+  // Fetch EventQuestionnaire assignments for this event
+  const {
+    data: eventQuestionnaires = [],
     isLoading: isLoadingQuestionnaires,
-    error: questionnairesError
-  } = useQuestionnairesForEvent(eventId);
+    error: questionnairesError,
+    refetch: refetchQuestionnaires,
+  } = useEventQuestionnairesForEvent(eventId);
 
   const {
     data: responses = [],
@@ -76,12 +98,12 @@ const EventQuestionnaires: React.FC<EventQuestionnairesProps> = ({ eventId }) =>
 
   // Initialize form data with existing responses
   useEffect(() => {
-    if (responses && responses.length > 0) {
+    if (responses && responses.length > 0 && eventQuestionnaires.length > 0) {
       const initialData: ResponseFormData = {};
       responses.forEach((response: QuestionnaireResponse) => {
         // Handle multi-select values (stored as comma-separated strings)
-        const field = questionnaires
-          .flatMap(q => q.fields)
+        const field = eventQuestionnaires
+          .flatMap(eq => eq.questionnaire_detail?.fields || [])
           .find(f => f.id === response.field);
 
         if (field?.type === 'multi-select') {
@@ -92,7 +114,7 @@ const EventQuestionnaires: React.FC<EventQuestionnairesProps> = ({ eventId }) =>
       });
       setFormData(initialData);
     }
-  }, [responses, questionnaires]);
+  }, [responses, eventQuestionnaires]);
 
   const handlePanelChange = (panel: string) => (_: React.SyntheticEvent, isExpanded: boolean) => {
     setExpandedPanel(isExpanded ? panel : false);
@@ -125,6 +147,7 @@ const EventQuestionnaires: React.FC<EventQuestionnairesProps> = ({ eventId }) =>
     saveResponsesMutation.mutate(responsesData, {
       onSuccess: () => {
         setEditMode(false);
+        refetchQuestionnaires();
       }
     });
   };
@@ -135,8 +158,8 @@ const EventQuestionnaires: React.FC<EventQuestionnairesProps> = ({ eventId }) =>
     if (responses && responses.length > 0) {
       const savedData: ResponseFormData = {};
       responses.forEach((response: QuestionnaireResponse) => {
-        const field = questionnaires
-          .flatMap(q => q.fields)
+        const field = eventQuestionnaires
+          .flatMap(eq => eq.questionnaire_detail?.fields || [])
           .find(f => f.id === response.field);
 
         if (field?.type === 'multi-select') {
@@ -184,7 +207,8 @@ const EventQuestionnaires: React.FC<EventQuestionnairesProps> = ({ eventId }) =>
             onChange={(e) => handleFieldChange(field.id, e.target.value)}
             type={field.type === 'email' ? 'email' : field.type === 'phone' ? 'tel' : 'text'}
             required={field.required}
-            helperText={field.help_text}
+            helperText={field.description}
+            placeholder={field.placeholder}
           />
         );
 
@@ -196,7 +220,8 @@ const EventQuestionnaires: React.FC<EventQuestionnairesProps> = ({ eventId }) =>
             value={value}
             onChange={(e) => handleFieldChange(field.id, e.target.value)}
             required={field.required}
-            helperText={field.help_text}
+            helperText={field.description}
+            placeholder={field.placeholder}
           />
         );
 
@@ -211,7 +236,7 @@ const EventQuestionnaires: React.FC<EventQuestionnairesProps> = ({ eventId }) =>
                 textField: {
                   fullWidth: true,
                   required: field.required,
-                  helperText: field.help_text,
+                  helperText: field.description,
                 },
               }}
             />
@@ -229,7 +254,7 @@ const EventQuestionnaires: React.FC<EventQuestionnairesProps> = ({ eventId }) =>
                 textField: {
                   fullWidth: true,
                   required: field.required,
-                  helperText: field.help_text,
+                  helperText: field.description,
                 },
               }}
             />
@@ -248,8 +273,8 @@ const EventQuestionnaires: React.FC<EventQuestionnairesProps> = ({ eventId }) =>
               }
               label={value === 'true' ? 'Yes' : 'No'}
             />
-            {field.help_text && (
-              <FormHelperText>{field.help_text}</FormHelperText>
+            {field.description && (
+              <FormHelperText>{field.description}</FormHelperText>
             )}
           </FormControl>
         );
@@ -273,8 +298,8 @@ const EventQuestionnaires: React.FC<EventQuestionnairesProps> = ({ eventId }) =>
                 </MenuItem>
               ))}
             </Select>
-            {field.help_text && (
-              <FormHelperText>{field.help_text}</FormHelperText>
+            {field.description && (
+              <FormHelperText>{field.description}</FormHelperText>
             )}
           </FormControl>
         );
@@ -303,8 +328,8 @@ const EventQuestionnaires: React.FC<EventQuestionnairesProps> = ({ eventId }) =>
                 </MenuItem>
               ))}
             </Select>
-            {field.help_text && (
-              <FormHelperText>{field.help_text}</FormHelperText>
+            {field.description && (
+              <FormHelperText>{field.description}</FormHelperText>
             )}
           </FormControl>
         );
@@ -316,27 +341,27 @@ const EventQuestionnaires: React.FC<EventQuestionnairesProps> = ({ eventId }) =>
             value={value}
             onChange={(e) => handleFieldChange(field.id, e.target.value)}
             required={field.required}
-            helperText={field.help_text}
+            helperText={field.description}
+            placeholder={field.placeholder}
           />
         );
     }
   };
 
-  const getCompletionStatus = (questionnaire: Questionnaire) => {
-    const allFields = questionnaire.fields || [];
-    const completedFields = allFields.filter(field => {
-      const response = formData[field.id];
-      if (Array.isArray(response)) {
-        return response.length > 0;
-      }
-      return response !== undefined && response !== null && response !== '';
-    });
-
-    return {
-      completed: completedFields.length,
-      total: allFields.length,
-      isComplete: completedFields.length === allFields.length && allFields.length > 0
-    };
+  const renderStatusIcon = (eq: EventQuestionnaire) => {
+    if (eq.status === 'COMPLETE') {
+      return <CompleteIcon color="success" />;
+    }
+    if (eq.is_overdue) {
+      return <OverdueIcon color="error" />;
+    }
+    if (eq.status === 'PENDING') {
+      return <PendingIcon color="action" />;
+    }
+    if (eq.status === 'PARTIAL') {
+      return <IncompleteIcon color="warning" />;
+    }
+    return <IncompleteIcon color="action" />;
   };
 
   const loading = isLoadingQuestionnaires || isLoadingResponses;
@@ -370,7 +395,7 @@ const EventQuestionnaires: React.FC<EventQuestionnairesProps> = ({ eventId }) =>
     );
   }
 
-  if (!questionnaires || questionnaires.length === 0) {
+  if (!eventQuestionnaires || eventQuestionnaires.length === 0) {
     return (
       <Paper
         sx={{
@@ -384,7 +409,7 @@ const EventQuestionnaires: React.FC<EventQuestionnairesProps> = ({ eventId }) =>
           No questionnaires available
         </Typography>
         <Typography variant="body2" color="text.secondary">
-          Questionnaires for this event will appear here when available.
+          Questionnaires for this event will appear here when assigned.
         </Typography>
       </Paper>
     );
@@ -403,8 +428,8 @@ const EventQuestionnaires: React.FC<EventQuestionnairesProps> = ({ eventId }) =>
             startIcon={<EditIcon />}
             onClick={() => {
               setEditMode(true);
-              if (questionnaires.length > 0) {
-                setExpandedPanel(questionnaires[0].id.toString());
+              if (eventQuestionnaires.length > 0) {
+                setExpandedPanel(eventQuestionnaires[0].id.toString());
               }
             }}
           >
@@ -432,33 +457,56 @@ const EventQuestionnaires: React.FC<EventQuestionnairesProps> = ({ eventId }) =>
       </Box>
 
       {/* Questionnaires Accordions */}
-      {questionnaires.map((questionnaire) => {
-        const status = getCompletionStatus(questionnaire);
+      {eventQuestionnaires.map((eq) => {
+        const stats = eq.completion_stats;
+        const statusConfig = STATUS_CONFIG[eq.status];
+        const fields = eq.questionnaire_detail?.fields || [];
 
         return (
           <Accordion
-            key={questionnaire.id}
-            expanded={expandedPanel === questionnaire.id.toString()}
-            onChange={handlePanelChange(questionnaire.id.toString())}
+            key={eq.id}
+            expanded={expandedPanel === eq.id.toString()}
+            onChange={handlePanelChange(eq.id.toString())}
             sx={{ mb: 2 }}
           >
             <AccordionSummary expandIcon={<ExpandMore />}>
               <Box sx={{ display: 'flex', alignItems: 'center', width: '100%', pr: 2 }}>
                 <Box sx={{ flex: 1 }}>
                   <Stack direction="row" spacing={2} alignItems="center">
-                    {status.isComplete ? (
-                      <CompleteIcon color="success" />
-                    ) : (
-                      <IncompleteIcon color="action" />
-                    )}
+                    {renderStatusIcon(eq)}
                     <Typography variant="subtitle1">
-                      {questionnaire.name}
+                      {eq.questionnaire_name}
                     </Typography>
+                    <Chip
+                      label={statusConfig.label}
+                      size="small"
+                      color={statusConfig.color}
+                    />
+                    {eq.is_overdue && (
+                      <Chip
+                        label="Overdue"
+                        size="small"
+                        color="error"
+                      />
+                    )}
                   </Stack>
+                  {eq.due_date && !eq.is_overdue && (
+                    <Typography variant="caption" color="text.secondary" sx={{ ml: 5 }}>
+                      Due: {format(new Date(eq.due_date), 'MMM d, yyyy')}
+                    </Typography>
+                  )}
                 </Box>
-                <Typography variant="body2" color="text.secondary">
-                  {status.completed} of {status.total} fields completed
-                </Typography>
+                <Box sx={{ minWidth: 120 }}>
+                  <Typography variant="caption" color="text.secondary">
+                    {stats.answered_count} of {stats.total_fields} fields
+                  </Typography>
+                  <LinearProgress
+                    variant="determinate"
+                    value={stats.completion_percentage}
+                    sx={{ mt: 0.5, height: 6, borderRadius: 3 }}
+                    color={stats.completion_percentage === 100 ? 'success' : 'primary'}
+                  />
+                </Box>
               </Box>
             </AccordionSummary>
             <AccordionDetails>
@@ -468,8 +516,14 @@ const EventQuestionnaires: React.FC<EventQuestionnairesProps> = ({ eventId }) =>
                 </Alert>
               )}
 
+              {eq.is_overdue && !editMode && (
+                <Alert severity="warning" sx={{ mb: 2 }}>
+                  This questionnaire is overdue. Please complete it as soon as possible.
+                </Alert>
+              )}
+
               <Stack spacing={3}>
-                {questionnaire.fields?.map((field, index) => (
+                {fields.map((field, index) => (
                   <Box key={field.id}>
                     {index > 0 && <Divider sx={{ mb: 2 }} />}
                     <Box>
@@ -492,7 +546,7 @@ const EventQuestionnaires: React.FC<EventQuestionnairesProps> = ({ eventId }) =>
                 ))}
               </Stack>
 
-              {questionnaire.fields?.length === 0 && (
+              {fields.length === 0 && (
                 <Typography variant="body2" color="text.secondary" textAlign="center" py={2}>
                   This questionnaire has no fields configured.
                 </Typography>
@@ -509,20 +563,25 @@ const EventQuestionnaires: React.FC<EventQuestionnairesProps> = ({ eventId }) =>
             Response Summary
           </Typography>
           <List dense>
-            {questionnaires.map((questionnaire) => {
-              const status = getCompletionStatus(questionnaire);
+            {eventQuestionnaires.map((eq) => {
+              const stats = eq.completion_stats;
+              const statusConfig = STATUS_CONFIG[eq.status];
 
               return (
-                <ListItem key={questionnaire.id}>
+                <ListItem key={eq.id}>
                   <ListItemText
-                    primary={questionnaire.name}
+                    primary={eq.questionnaire_name}
                     secondary={
-                      status.isComplete
+                      eq.status === 'COMPLETE'
                         ? 'All fields completed'
-                        : `${status.completed}/${status.total} fields completed`
+                        : `${stats.answered_count}/${stats.total_fields} fields completed`
                     }
                   />
-                  {status.isComplete && <CompleteIcon color="success" fontSize="small" />}
+                  <Chip
+                    label={statusConfig.label}
+                    size="small"
+                    color={statusConfig.color}
+                  />
                 </ListItem>
               );
             })}

@@ -421,7 +421,11 @@ export const AddonSelectionStep: React.FC<AddonSelectionStepProps> = ({
                             
                             <Typography variant="h6" color="primary">
                               {formatPrice(addon.base_price)}
-                              {addon.pricing_model === 'HOURLY' && (
+                              {addon.pricing_unit ? (
+                                <Typography component="span" variant="body2" color="text.secondary">
+                                  {' '}{addon.pricing_unit_display?.toLowerCase() || addon.pricing_unit.replace('PER_', 'per ').toLowerCase()}
+                                </Typography>
+                              ) : addon.pricing_model === 'HOURLY' && (
                                 <Typography component="span" variant="body2" color="text.secondary">
                                   {' '}per hour
                                 </Typography>

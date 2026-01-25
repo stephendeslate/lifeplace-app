@@ -80,6 +80,7 @@ class ProductOptionSerializer(serializers.ModelSerializer):
     """Serializer for products and packages"""
     type_display = serializers.CharField(source='get_type_display', read_only=True)
     pricing_model_display = serializers.CharField(source='get_pricing_model_display', read_only=True)
+    pricing_unit_display = serializers.CharField(source='get_pricing_unit_display', read_only=True)
     category_name = serializers.CharField(source='category.name', read_only=True)
     category_path = serializers.CharField(source='category.full_path', read_only=True)
     formatted_price = serializers.CharField(read_only=True)
@@ -121,7 +122,8 @@ class ProductOptionSerializer(serializers.ModelSerializer):
         model = ProductOption
         fields = [
             'id', 'name', 'description', 'category', 'category_name', 'category_path',
-            'pricing_model', 'pricing_model_display', 'base_price', 'currency',
+            'pricing_model', 'pricing_model_display', 'pricing_unit', 'pricing_unit_display',
+            'base_price', 'currency',
             'is_tax_inclusive',  # Indicates if base_price already includes tax
             'type', 'type_display', 'is_active', 'is_featured', 'allow_multiple', 'requires_approval',
             'minimum_hours', 'maximum_hours', 'advance_booking_days', 'maximum_booking_days',

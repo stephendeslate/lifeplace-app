@@ -50,6 +50,140 @@ def _increment_reminder_count(event_id: int) -> int:
     max_retries=3,
     default_retry_delay=60,
 )
+def send_event_questionnaire_notification(
+    self,
+    event_questionnaire_id: int,
+    notification_type: str = 'sent'
+):
+    """
+    Send notification when an EventQuestionnaire is sent to a client or a reminder is triggered.
+
+    Sends both:
+    - Professional email via CommunicationService
+    - In-app notification via NotificationService
+
+    Args:
+        event_questionnaire_id: ID of the EventQuestionnaire
+        notification_type: Type of notification ('sent' or 'reminder')
+    """
+    from .models import EventQuestionnaire
+    from core.domains.notifications.services import NotificationService
+    from core.domains.communications.services import CommunicationService
+    from core.domains.communications.context_service import (
+        CommunicationContextService, ContextType
+    )
+
+    try:
+        event_questionnaire = EventQuestionnaire.objects.select_related(
+            'event', 'event__client', 'questionnaire'
+        ).get(id=event_questionnaire_id)
+
+        client = event_questionnaire.event.client
+        if not client:
+            logger.warning(f"EventQuestionnaire {event_questionnaire_id} event has no client")
+            return {'status': 'skipped', 'reason': 'no_client'}
+
+        # Format dates
+        event = event_questionnaire.event
+        event_date_formatted = (
+            event.start_date.strftime("%B %d, %Y")
+            if event.start_date else "your event"
+        )
+        due_date_formatted = (
+            event_questionnaire.due_date.strftime("%B %d, %Y")
+            if event_questionnaire.due_date else None
+        )
+
+        questionnaire_name = event_questionnaire.questionnaire.name
+
+        # Determine template and notification based on type
+        if notification_type == 'sent':
+            email_template = 'Questionnaire Sent to Client'
+            notification_type_code = 'QUESTIONNAIRE_SENT'
+            title = 'New Questionnaire to Complete'
+            message = (
+                f'A questionnaire "{questionnaire_name}" has been sent for {event_date_formatted}. '
+                f'Please complete it at your earliest convenience.'
+            )
+            if due_date_formatted:
+                message += f' Due by {due_date_formatted}.'
+        else:  # reminder
+            email_template = 'Questionnaire Reminder'
+            notification_type_code = 'QUESTIONNAIRE_REMINDER'
+            title = 'Questionnaire Reminder'
+            stats = event_questionnaire.completion_stats
+            message = (
+                f'Reminder: Please complete the questionnaire "{questionnaire_name}" for {event_date_formatted}. '
+                f'{stats["required_answered"]}/{stats["required_fields"]} required fields completed.'
+            )
+            if due_date_formatted:
+                message += f' Due by {due_date_formatted}.'
+
+        priority = 'HIGH' if event_questionnaire.is_overdue else 'NORMAL'
+
+        # Send professional email via CommunicationService
+        if client.email:
+            try:
+                comm_service = CommunicationService()
+                # Use EVENT context type with additional questionnaire data
+                template_data = CommunicationContextService.generate_context(
+                    context_type=ContextType.EVENT,
+                    client=client,
+                    event=event,
+                )
+                # Add questionnaire-specific context
+                template_data.update({
+                    'questionnaire_name': questionnaire_name,
+                    'due_date': due_date_formatted,
+                    'completion_stats': event_questionnaire.completion_stats,
+                    'is_overdue': event_questionnaire.is_overdue,
+                    'days_until_due': event_questionnaire.days_until_due,
+                })
+                comm_service.send_communication(
+                    template_name=email_template,
+                    recipient=client.email,
+                    context_data=template_data,
+                    client=client,
+                    event=event,
+                    use_async=True,
+                )
+                logger.info(f"Sent {notification_type} email for EventQuestionnaire {event_questionnaire_id}")
+            except Exception as email_error:
+                logger.error(f"Failed to send {notification_type} email for EventQuestionnaire {event_questionnaire_id}: {email_error}")
+                # Continue to send in-app notification even if email fails
+
+        # Send in-app notification via NotificationService
+        NotificationService.create_notification(
+            recipient=client,
+            notification_type_code=notification_type_code,
+            context={
+                'questionnaire_name': questionnaire_name,
+                'event_name': event.name or event_date_formatted,
+                'event_date': event_date_formatted,
+                'due_date': due_date_formatted,
+                'completion_stats': event_questionnaire.completion_stats,
+            },
+            delivery_methods=['IN_APP'],  # Email handled by CommunicationService above
+            event=event,
+            client=client,
+        )
+
+        logger.info(f"Sent {notification_type} notification for EventQuestionnaire {event_questionnaire_id}")
+        return {'status': 'sent', 'event_questionnaire_id': event_questionnaire_id, 'type': notification_type}
+
+    except EventQuestionnaire.DoesNotExist:
+        logger.warning(f"EventQuestionnaire {event_questionnaire_id} not found for notification")
+        return {'status': 'error', 'reason': 'event_questionnaire_not_found'}
+    except Exception as e:
+        logger.error(f"Error sending {notification_type} notification for EventQuestionnaire {event_questionnaire_id}: {e}")
+        raise  # Let Celery retry
+
+
+@shared_task(
+    bind=True,
+    max_retries=3,
+    default_retry_delay=60,
+)
 def send_questionnaire_reminder(self, event_id: int, reminder_reason: str = 'incomplete'):
     """
     Send a reminder notification to the client about incomplete questionnaire.

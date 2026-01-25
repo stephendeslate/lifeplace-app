@@ -32,6 +32,7 @@ export interface CreateCategoryData {
 export type UpdateCategoryData = Partial<CreateCategoryData>;
 
 export type PricingModel = 'FIXED' | 'HOURLY' | 'TIERED' | 'CUSTOM';
+export type PricingUnit = 'PER_EVENT' | 'PER_PERSON' | 'PER_HOUR';
 export type ProductType = 'PRODUCT' | 'PACKAGE';
 
 export interface ProductOption {
@@ -43,6 +44,8 @@ export interface ProductOption {
   category_path: string;
   pricing_model: PricingModel;
   pricing_model_display: string;
+  pricing_unit: PricingUnit;
+  pricing_unit_display: string;
   base_price: string;
   currency: string;
   is_tax_inclusive: boolean;
@@ -76,6 +79,7 @@ export interface CreateProductData {
   description: string;
   category: number;
   pricing_model?: PricingModel;
+  pricing_unit?: PricingUnit;
   base_price: string;
   currency?: string;
   is_tax_inclusive?: boolean;
@@ -105,6 +109,7 @@ export interface ProductFormData {
   description: string;
   category: string;
   pricing_model: PricingModel;
+  pricing_unit: PricingUnit;
   base_price: string;
   currency: string;
   is_tax_inclusive: boolean;

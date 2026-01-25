@@ -221,15 +221,24 @@ const PackageCard: React.FC<PackageCardProps> = ({
               <Typography variant="h4" sx={{ fontWeight: 700, color: packageColor }}>
                 {pkg.formatted_price || `₱${parseFloat(pkg.base_price || '0').toLocaleString()}`}
               </Typography>
-              {pkg.pricing_model === 'HOURLY' && (
+              {/* Pricing unit display - use pricing_unit if available, fall back to pricing_model */}
+              {pkg.pricing_unit ? (
                 <Typography variant="body2" color="text.secondary">
-                  per hour
+                  {pkg.pricing_unit_display?.toLowerCase() || pkg.pricing_unit.replace('PER_', 'per ').toLowerCase()}
                 </Typography>
-              )}
-              {pkg.pricing_model === 'FIXED' && (
-                <Typography variant="body2" color="text.secondary">
-                  per event
-                </Typography>
+              ) : (
+                <>
+                  {pkg.pricing_model === 'HOURLY' && (
+                    <Typography variant="body2" color="text.secondary">
+                      per hour
+                    </Typography>
+                  )}
+                  {pkg.pricing_model === 'FIXED' && (
+                    <Typography variant="body2" color="text.secondary">
+                      per event
+                    </Typography>
+                  )}
+                </>
               )}
             </Box>
 

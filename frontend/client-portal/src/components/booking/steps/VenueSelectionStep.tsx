@@ -250,19 +250,17 @@ export const VenueSelectionStep: React.FC<VenueSelectionStepProps> = ({
               )}
 
               <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' } }}>
-                {venue.featured_image && (
-                  <CardMedia
-                    component="img"
-                    image={venue.featured_image}
-                    alt={venue.name}
-                    loading="lazy"
-                    sx={{
-                      width: { xs: '100%', sm: 200 },
-                      height: { xs: 150, sm: 'auto' },
-                      objectFit: 'cover',
-                    }}
-                  />
-                )}
+                <CardMedia
+                  component="img"
+                  image={venue.featured_image || '/assets/Fountain-min.png'}
+                  alt={venue.name}
+                  loading="lazy"
+                  sx={{
+                    width: { xs: '100%', sm: 200 },
+                    height: { xs: 150, sm: 'auto' },
+                    objectFit: 'cover',
+                  }}
+                />
 
                 <CardContent sx={{ flex: 1 }}>
                   <Typography variant="h6" gutterBottom>

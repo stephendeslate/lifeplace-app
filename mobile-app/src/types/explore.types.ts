@@ -125,6 +125,8 @@ export interface PackagePublic {
   category_name: string | null;
   base_price: string;
   pricing_model: 'FIXED' | 'HOURLY' | 'TIERED' | 'CUSTOM';
+  pricing_unit?: 'PER_EVENT' | 'PER_PERSON' | 'PER_HOUR';
+  pricing_unit_display?: string;
   has_excess_hours: boolean;
   included_hours: number | null;
   excess_hour_price: string | null;

@@ -512,6 +512,9 @@ class QuestionnaireResponseService:
             # Sync guest count after saving responses
             QuestionnaireResponseService.sync_event_guest_count(event_id)
 
+            # Sync EventQuestionnaire status if any exist
+            QuestionnaireResponseService.sync_event_questionnaire_status(event_id)
+
             return created_responses
 
     @staticmethod
@@ -583,3 +586,24 @@ class QuestionnaireResponseService:
 
             if guest_breakdown:
                 logger.info(f"Guest breakdown for event {event_id}: {guest_breakdown}")
+
+    @staticmethod
+    def sync_event_questionnaire_status(event_id):
+        """
+        Update EventQuestionnaire status based on current responses.
+        Called after responses are saved to keep status in sync.
+
+        Args:
+            event_id: ID of the event whose questionnaires should be updated
+        """
+        from .models import EventQuestionnaire
+
+        # Get all EventQuestionnaire records for this event
+        event_questionnaires = EventQuestionnaire.objects.filter(event_id=event_id)
+
+        for eq in event_questionnaires:
+            try:
+                eq.update_status_from_responses()
+                logger.info(f"Updated EventQuestionnaire {eq.id} status to {eq.status}")
+            except Exception as e:
+                logger.error(f"Error updating EventQuestionnaire {eq.id} status: {e}")

@@ -371,7 +371,11 @@ export const ProductCard: React.FC<{
         <Typography variant="h4" fontWeight={700}>
           ₱{basePrice.toLocaleString()}
         </Typography>
-        {product.pricing_model === 'HOURLY' && (
+        {product.pricing_unit ? (
+          <Typography variant="body2" sx={{ opacity: 0.7 }}>
+            {product.pricing_unit_display?.toLowerCase() || product.pricing_unit.replace('PER_', 'per ').toLowerCase()}
+          </Typography>
+        ) : product.pricing_model === 'HOURLY' && (
           <Typography variant="body2" sx={{ opacity: 0.7 }}>
             per hour
           </Typography>

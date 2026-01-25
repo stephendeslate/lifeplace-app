@@ -56,7 +56,7 @@ export const BookingLayout: React.FC<BookingLayoutProps> = ({
           width: '100%',
           display: 'flex',
           flexDirection: 'column',
-          pt: { xs: '60px', md: '64px' }, // Zero gap below fixed header
+          pt: { xs: '96px', md: '120px' }, // Tighter than PublicLayout - just clears the fixed header
           pb: { xs: '40px', md: '60px' }, // Add reasonable bottom spacing
           position: 'relative',
           zIndex: 1,

@@ -192,6 +192,8 @@ function PackageCard({
     effective_featured_image,
     base_price,
     pricing_model,
+    pricing_unit,
+    pricing_unit_display,
     included_hours,
     excess_hour_price,
     has_excess_hours,
@@ -279,7 +281,9 @@ function PackageCard({
                 )}
               </View>
               <Text style={styles.packagePriceUnit}>
-                {pricing_model === 'HOURLY' ? 'per hour' : 'per event'}
+                {pricing_unit_display?.toLowerCase() ||
+                 (pricing_unit ? pricing_unit.replace('PER_', 'per ').toLowerCase() :
+                  (pricing_model === 'HOURLY' ? 'per hour' : 'per event'))}
               </Text>
             </View>
 

@@ -79,3 +79,54 @@ export interface ResponseFilters {
   field?: number;
   field_type?: string;
 }
+
+// EventQuestionnaire types - for tracking questionnaire assignments to events
+export type EventQuestionnaireStatus = 'PENDING' | 'SENT' | 'PARTIAL' | 'COMPLETE';
+
+export interface EventQuestionnaireCompletionStats {
+  total_fields: number;
+  required_fields: number;
+  answered_count: number;
+  required_answered: number;
+  completion_percentage: number;
+  required_completion_percentage: number;
+}
+
+export interface EventQuestionnaireActivity {
+  id: number;
+  action: string;
+  action_display: string;
+  action_by: number | null;
+  action_by_name: string | null;
+  notes: string;
+  created_at: string;
+}
+
+export interface EventQuestionnaire {
+  id: number;
+  event: number;
+  event_name: string | null;
+  questionnaire: number;
+  questionnaire_name: string;
+  questionnaire_fields_count: number;
+  questionnaire_detail?: Questionnaire;
+  client_name: string | null;
+  client_email: string | null;
+  status: EventQuestionnaireStatus;
+  status_display: string;
+  assigned_by: number | null;
+  assigned_by_name: string | null;
+  sent_at: string | null;
+  sent_by: number | null;
+  sent_by_name: string | null;
+  completed_at: string | null;
+  due_date: string | null;
+  notes: string;
+  workflow_stage: number | null;
+  completion_stats: EventQuestionnaireCompletionStats;
+  is_overdue: boolean;
+  days_until_due: number | null;
+  activities: EventQuestionnaireActivity[];
+  created_at: string;
+  updated_at: string;
+}

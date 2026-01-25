@@ -49,6 +49,7 @@ const defaultFormData: ProductFormData = {
   description: '',
   category: '',
   pricing_model: 'FIXED',
+  pricing_unit: 'PER_EVENT',
   base_price: '',
   currency: 'PHP',
   is_tax_inclusive: false,
@@ -92,6 +93,7 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
           description: editingProduct.description || '',
           category: editingProduct.category?.toString() || '',
           pricing_model: editingProduct.pricing_model || 'FIXED',
+          pricing_unit: editingProduct.pricing_unit || 'PER_EVENT',
           base_price: editingProduct.base_price || '',
           currency: editingProduct.currency || 'PHP',
           is_tax_inclusive: editingProduct.is_tax_inclusive ?? false,
@@ -209,6 +211,7 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
       description: formData.description.trim(),
       category: formData.category ? parseInt(formData.category.toString()) : 0,
       pricing_model: formData.pricing_model,
+      pricing_unit: formData.pricing_unit,
       base_price: formData.base_price,
       currency: formData.currency,
       is_tax_inclusive: formData.is_tax_inclusive,
@@ -408,7 +411,24 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
                       </Select>
                     </FormControl>
                   </Box>
-                  
+
+                  <Box flex={1}>
+                    <FormControl fullWidth>
+                      <InputLabel>Pricing Unit</InputLabel>
+                      <Select
+                        value={formData.pricing_unit}
+                        onChange={handleInputChange('pricing_unit')}
+                        label="Pricing Unit"
+                      >
+                        <MenuItem value="PER_EVENT">Per Event</MenuItem>
+                        <MenuItem value="PER_PERSON">Per Person</MenuItem>
+                        <MenuItem value="PER_HOUR">Per Hour</MenuItem>
+                      </Select>
+                    </FormControl>
+                  </Box>
+                </Box>
+
+                <Box display="flex" flexDirection={{ xs: 'column', sm: 'row' }} gap={2}>
                   <Box flex={1}>
                     <TextField
                       fullWidth
@@ -425,7 +445,7 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
                       required
                     />
                   </Box>
-                  
+
                   <Box flex={1} display="flex" alignItems="center">
                     <FormControlLabel
                       control={
@@ -439,8 +459,8 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
                   </Box>
                 </Box>
                 <Typography variant="caption" color="text.secondary">
-                  If enabled, the base price already includes tax and no additional tax will be applied.
-                  Tax rate is configured globally in Currency & Taxes settings.
+                  Pricing Unit determines how the price is displayed to clients (e.g., "per person" for camps, "per event" for weddings).
+                  If Tax Inclusive is enabled, the base price already includes tax.
                 </Typography>
               </Box>
 

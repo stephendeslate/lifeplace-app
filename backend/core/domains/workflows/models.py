@@ -498,15 +498,18 @@ class WorkflowStage(BaseModel):
         """
         Execute questionnaire automation for this stage.
 
-        This automation:
-        1. Checks if the questionnaire is already completed for this event
-        2. If complete → logs and skips (no action needed)
-        3. If incomplete or no responses → sends email notification with portal link
+        This automation follows the EventContract pattern:
+        1. Checks if EventQuestionnaire already exists for this event/questionnaire
+        2. If exists and complete → logs and skips
+        3. If exists and incomplete → sends reminder notification
+        4. If not exists → creates EventQuestionnaire record and sends notification
 
         The email template should include a link to the client portal where
         they can fill out/complete the questionnaire.
         """
-        from core.domains.questionnaires.models import Questionnaire, QuestionnaireResponse
+        from core.domains.questionnaires.models import (
+            Questionnaire, QuestionnaireResponse, EventQuestionnaire, EventQuestionnaireActivity
+        )
         from core.domains.events.models import EventTimeline
 
         if not self.questionnaire_template:
@@ -519,141 +522,126 @@ class WorkflowStage(BaseModel):
         try:
             questionnaire = self.questionnaire_template
 
-            # Get all required fields for this questionnaire
-            required_fields = questionnaire.fields.filter(required=True)
-            required_field_ids = set(required_fields.values_list('id', flat=True))
-
-            # Get existing responses for this event and questionnaire
-            existing_responses = QuestionnaireResponse.objects.filter(
+            # Check if EventQuestionnaire already exists for this event/questionnaire
+            existing_assignment = EventQuestionnaire.objects.filter(
                 event=event,
-                field__questionnaire=questionnaire
-            )
-            answered_field_ids = set(existing_responses.values_list('field_id', flat=True))
+                questionnaire=questionnaire
+            ).first()
 
-            # Check if all required fields have been answered
-            is_complete = required_field_ids.issubset(answered_field_ids)
-
-            if is_complete and required_field_ids:
-                # Questionnaire is already complete - log and skip
-                logger.info(
-                    f"Questionnaire '{questionnaire.name}' already complete for event {event.id}. "
-                    f"Skipping automation."
-                )
-                EventTimeline.objects.create(
-                    event=event,
-                    action_type='SYSTEM_UPDATE',
-                    description=f"Questionnaire '{questionnaire.name}' automation skipped (already complete)",
-                    action_data={
-                        'stage_id': self.id,
-                        'questionnaire_id': questionnaire.id,
-                        'status': 'already_complete'
-                    },
-                    is_public=False
-                )
-                return
-
-            # Determine if this is a reminder or initial notification
-            has_partial_responses = existing_responses.exists()
-            notification_type = 'reminder' if has_partial_responses else 'initial'
-
-            # Calculate completion percentage for context
-            total_fields = questionnaire.fields.count()
-            answered_count = existing_responses.count()
-            completion_percentage = (
-                round((answered_count / total_fields) * 100) if total_fields > 0 else 0
-            )
-
-            # Send email notification if email template is configured
-            if self.email_template:
-                from core.domains.communications.services import CommunicationService
-                from core.domains.communications.context_service import (
-                    CommunicationContextService, ContextType
-                )
-
-                try:
-                    comm_service = CommunicationService()
-
-                    # Generate context using the unified context service
-                    context_data = CommunicationContextService.generate_context(
-                        context_type=ContextType.EVENT,
-                        client=event.client,
-                        event=event,
-                    )
-
-                    # Add questionnaire-specific context
-                    context_data.update({
-                        'questionnaire_name': questionnaire.name,
-                        'questionnaire_id': questionnaire.id,
-                        'is_reminder': has_partial_responses,
-                        'completion_percentage': completion_percentage,
-                        'answered_count': answered_count,
-                        'total_fields': total_fields,
-                        'remaining_fields': total_fields - answered_count,
-                        'stage_name': self.name,
-                        # Portal link for completing questionnaire
-                        'questionnaire_url': f'/portal/events/{event.id}/questionnaires',
-                    })
-
-                    comm_service.send_communication_by_template(
-                        template=self.email_template,
-                        recipient=event.client.email,
-                        context_data=context_data,
-                        client=event.client,
-                        sent_by=None
-                    )
-
-                    action_description = (
-                        f"Questionnaire reminder sent for '{questionnaire.name}' "
-                        f"({completion_percentage}% complete)"
-                        if has_partial_responses
-                        else f"Questionnaire request sent for '{questionnaire.name}'"
-                    )
-
+            if existing_assignment:
+                # EventQuestionnaire exists - check status
+                if existing_assignment.status == 'COMPLETE':
+                    # Already complete - skip
                     logger.info(
-                        f"Sent questionnaire {notification_type} email "
-                        f"'{self.email_template.name}' for event {event.id}"
+                        f"EventQuestionnaire for '{questionnaire.name}' already complete for event {event.id}. "
+                        f"Skipping automation."
                     )
-
-                    # Log timeline entry
                     EventTimeline.objects.create(
                         event=event,
-                        action_type='QUESTIONNAIRE_SENT' if not has_partial_responses else 'QUESTIONNAIRE_REMINDER',
-                        description=action_description,
+                        action_type='SYSTEM_UPDATE',
+                        description=f"Questionnaire '{questionnaire.name}' automation skipped (already complete)",
                         action_data={
                             'stage_id': self.id,
                             'questionnaire_id': questionnaire.id,
-                            'notification_type': notification_type,
-                            'completion_percentage': completion_percentage
+                            'event_questionnaire_id': existing_assignment.id,
+                            'status': 'already_complete'
                         },
-                        is_public=True
+                        is_public=False
                     )
+                    return
 
-                except Exception as email_error:
-                    logger.error(
-                        f"Failed to send questionnaire email for event {event.id}: {email_error}"
-                    )
-            else:
-                # No email template - just create in-app notification
-                from core.domains.notifications.services import NotificationService
+                # Incomplete - send reminder via the EventQuestionnaire notification task
+                from core.domains.questionnaires.tasks import send_event_questionnaire_notification
 
-                NotificationService.create_notification(
-                    recipient=event.client,
-                    notification_type_code='QUESTIONNAIRE_REQUEST',
-                    context={
-                        'questionnaire_name': questionnaire.name,
-                        'event_name': event.name or f"{getattr(event, 'event_type', 'Event')}",
-                        'event_id': event.id,
-                        'is_reminder': has_partial_responses,
-                        'completion_percentage': completion_percentage,
-                        'action_url': f'/portal/events/{event.id}/questionnaires',
-                    },
-                    event=event,
-                    client=event.client
+                # Update workflow stage reference if not set
+                if not existing_assignment.workflow_stage:
+                    existing_assignment.workflow_stage = self
+                    existing_assignment.save(update_fields=['workflow_stage', 'updated_at'])
+
+                # Record activity
+                EventQuestionnaireActivity.objects.create(
+                    event_questionnaire=existing_assignment,
+                    action='REMINDER_SENT',
+                    notes=f"Reminder triggered by workflow stage '{self.name}'"
+                )
+
+                # Send reminder notification
+                send_event_questionnaire_notification.delay(existing_assignment.id, 'reminder')
+
+                stats = existing_assignment.completion_stats
+                action_description = (
+                    f"Questionnaire reminder sent for '{questionnaire.name}' "
+                    f"({stats['completion_percentage']}% complete)"
                 )
 
                 logger.info(
-                    f"Created questionnaire {notification_type} notification for event {event.id}"
+                    f"Sent questionnaire reminder for EventQuestionnaire {existing_assignment.id}, "
+                    f"event {event.id}"
                 )
+
+                EventTimeline.objects.create(
+                    event=event,
+                    action_type='QUESTIONNAIRE_REMINDER',
+                    description=action_description,
+                    action_data={
+                        'stage_id': self.id,
+                        'questionnaire_id': questionnaire.id,
+                        'event_questionnaire_id': existing_assignment.id,
+                        'notification_type': 'reminder',
+                        'completion_percentage': stats['completion_percentage']
+                    },
+                    is_public=True
+                )
+                return
+
+            # No existing assignment - create new EventQuestionnaire
+            from django.utils import timezone
+
+            event_questionnaire = EventQuestionnaire.objects.create(
+                event=event,
+                questionnaire=questionnaire,
+                status='SENT',
+                sent_at=timezone.now(),
+                workflow_stage=self
+            )
+
+            # Record creation activity
+            EventQuestionnaireActivity.objects.create(
+                event_questionnaire=event_questionnaire,
+                action='CREATED',
+                notes=f"Created by workflow automation (stage: '{self.name}')"
+            )
+
+            # Record sent activity
+            EventQuestionnaireActivity.objects.create(
+                event_questionnaire=event_questionnaire,
+                action='SENT',
+                notes=f"Sent via workflow automation (stage: '{self.name}')"
+            )
+
+            # Send notification via task
+            from core.domains.questionnaires.tasks import send_event_questionnaire_notification
+            send_event_questionnaire_notification.delay(event_questionnaire.id, 'sent')
+
+            action_description = f"Questionnaire '{questionnaire.name}' assigned and sent to client"
+
+            logger.info(
+                f"Created and sent EventQuestionnaire {event_questionnaire.id} for event {event.id}"
+            )
+
+            # Log timeline entry
+            EventTimeline.objects.create(
+                event=event,
+                action_type='QUESTIONNAIRE_SENT',
+                description=action_description,
+                action_data={
+                    'stage_id': self.id,
+                    'questionnaire_id': questionnaire.id,
+                    'event_questionnaire_id': event_questionnaire.id,
+                    'notification_type': 'initial'
+                },
+                is_public=True
+            )
 
         except Exception as e:
             logger.error(

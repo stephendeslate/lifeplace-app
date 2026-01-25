@@ -15,6 +15,10 @@ import type {
   ReorderQuestionnairesData,
   ReorderFieldsData,
   SaveEventResponsesData,
+  EventQuestionnaire,
+  EventQuestionnaireSummary,
+  CreateEventQuestionnaireData,
+  UpdateEventQuestionnaireData,
 } from '../types/questionnaires.types';
 import type { PaginatedResponse } from '../types/common.types';
 
@@ -166,6 +170,51 @@ export const questionnairesApi = {
   getFieldValueDistribution: async (fieldId: number, limit?: number): Promise<FieldValueDistribution> => {
     const params = limit ? `?limit=${limit}` : '';
     const response = await api.get<FieldValueDistribution>(`/questionnaires/fields/${fieldId}/value_distribution/${params}`);
+    return response.data;
+  },
+
+  // EventQuestionnaire methods - for managing questionnaire assignments to events
+  getEventQuestionnaires: async (): Promise<EventQuestionnaire[]> => {
+    const response = await api.get('/questionnaires/event-questionnaires/');
+    const data = response.data as { results?: EventQuestionnaire[] } | EventQuestionnaire[];
+    return Array.isArray(data) ? data : data.results || [];
+  },
+
+  getEventQuestionnaire: async (id: number): Promise<EventQuestionnaire> => {
+    const response = await api.get<EventQuestionnaire>(`/questionnaires/event-questionnaires/${id}/`);
+    return response.data;
+  },
+
+  getEventQuestionnairesForEvent: async (eventId: number): Promise<EventQuestionnaire[]> => {
+    const response = await api.get<EventQuestionnaire[]>(`/questionnaires/event-questionnaires/for_event/${eventId}/`);
+    return response.data;
+  },
+
+  createEventQuestionnaire: async (data: CreateEventQuestionnaireData): Promise<EventQuestionnaire> => {
+    const response = await api.post<EventQuestionnaire>('/questionnaires/event-questionnaires/', data);
+    return response.data;
+  },
+
+  updateEventQuestionnaire: async (id: number, data: UpdateEventQuestionnaireData): Promise<EventQuestionnaire> => {
+    const response = await api.patch<EventQuestionnaire>(`/questionnaires/event-questionnaires/${id}/`, data);
+    return response.data;
+  },
+
+  deleteEventQuestionnaire: async (id: number): Promise<void> => {
+    await api.delete(`/questionnaires/event-questionnaires/${id}/`);
+  },
+
+  sendEventQuestionnaire: async (id: number): Promise<EventQuestionnaire> => {
+    const response = await api.post<EventQuestionnaire>(`/questionnaires/event-questionnaires/${id}/send/`);
+    return response.data;
+  },
+
+  sendEventQuestionnaireReminder: async (id: number): Promise<void> => {
+    await api.post(`/questionnaires/event-questionnaires/${id}/send_reminder/`);
+  },
+
+  getEventQuestionnaireResponses: async (id: number): Promise<QuestionnaireResponse[]> => {
+    const response = await api.get<QuestionnaireResponse[]>(`/questionnaires/event-questionnaires/${id}/responses/`);
     return response.data;
   },
 };

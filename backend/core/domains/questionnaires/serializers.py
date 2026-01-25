@@ -3,7 +3,13 @@ from core.domains.events.basic_serializers import EventTypeSerializer
 from rest_framework import serializers
 
 from .exceptions import InvalidFieldType, OptionsRequired
-from .models import Questionnaire, QuestionnaireField, QuestionnaireResponse
+from .models import (
+    Questionnaire,
+    QuestionnaireField,
+    QuestionnaireResponse,
+    EventQuestionnaire,
+    EventQuestionnaireActivity,
+)
 
 
 class QuestionnaireFieldSerializer(serializers.ModelSerializer):
@@ -177,3 +183,177 @@ class EventQuestionnaireResponsesSerializer(serializers.Serializer):
             child=serializers.CharField()
         )
     )
+
+
+# ============================================================================
+# EventQuestionnaire Serializers
+# ============================================================================
+
+class EventQuestionnaireActivitySerializer(serializers.ModelSerializer):
+    """Serializer for questionnaire activity tracking"""
+    action_display = serializers.CharField(source='get_action_display', read_only=True)
+    action_by_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = EventQuestionnaireActivity
+        fields = [
+            'id', 'action', 'action_display', 'action_by',
+            'action_by_name', 'notes', 'created_at'
+        ]
+        read_only_fields = ['id', 'created_at']
+
+    def get_action_by_name(self, obj):
+        if obj.action_by:
+            return obj.action_by.get_full_name() or obj.action_by.email
+        return None
+
+
+class EventQuestionnaireSummarySerializer(serializers.ModelSerializer):
+    """Lightweight serializer for EventQuestionnaire list views"""
+    questionnaire_name = serializers.CharField(
+        source='questionnaire.name',
+        read_only=True
+    )
+    status_display = serializers.CharField(
+        source='get_status_display',
+        read_only=True
+    )
+    completion_stats = serializers.ReadOnlyField()
+    is_overdue = serializers.ReadOnlyField()
+
+    class Meta:
+        model = EventQuestionnaire
+        fields = [
+            'id', 'event', 'questionnaire', 'questionnaire_name',
+            'status', 'status_display', 'sent_at',
+            'completed_at', 'due_date', 'is_overdue',
+            'completion_stats', 'created_at'
+        ]
+        read_only_fields = ['id', 'created_at']
+
+
+class EventQuestionnaireSerializer(serializers.ModelSerializer):
+    """Full serializer for EventQuestionnaire with all details"""
+    questionnaire_name = serializers.CharField(
+        source='questionnaire.name',
+        read_only=True
+    )
+    questionnaire_fields_count = serializers.SerializerMethodField()
+    event_name = serializers.SerializerMethodField()
+    client_name = serializers.SerializerMethodField()
+    client_email = serializers.SerializerMethodField()
+    status_display = serializers.CharField(
+        source='get_status_display',
+        read_only=True
+    )
+    assigned_by_name = serializers.SerializerMethodField()
+    sent_by_name = serializers.SerializerMethodField()
+    completion_stats = serializers.ReadOnlyField()
+    is_overdue = serializers.ReadOnlyField()
+    days_until_due = serializers.ReadOnlyField()
+    activities = EventQuestionnaireActivitySerializer(
+        many=True,
+        read_only=True
+    )
+    # Include questionnaire details for rendering the form
+    questionnaire_detail = QuestionnaireDetailSerializer(
+        source='questionnaire',
+        read_only=True
+    )
+
+    class Meta:
+        model = EventQuestionnaire
+        fields = [
+            'id', 'event', 'event_name', 'questionnaire',
+            'questionnaire_name', 'questionnaire_fields_count',
+            'questionnaire_detail',
+            'client_name', 'client_email', 'status', 'status_display',
+            'assigned_by', 'assigned_by_name',
+            'sent_at', 'sent_by', 'sent_by_name',
+            'completed_at', 'due_date', 'notes',
+            'workflow_stage', 'completion_stats',
+            'is_overdue', 'days_until_due',
+            'activities', 'created_at', 'updated_at'
+        ]
+        read_only_fields = [
+            'id', 'sent_at', 'completed_at',
+            'created_at', 'updated_at'
+        ]
+
+    def get_questionnaire_fields_count(self, obj):
+        return obj.questionnaire.fields.count()
+
+    def get_event_name(self, obj):
+        if obj.event:
+            return obj.event.name or f"Event #{obj.event.id}"
+        return None
+
+    def get_client_name(self, obj):
+        if obj.event and obj.event.client:
+            return obj.event.client.get_full_name() or obj.event.client.email
+        return None
+
+    def get_client_email(self, obj):
+        if obj.event and obj.event.client:
+            return obj.event.client.email
+        return None
+
+    def get_assigned_by_name(self, obj):
+        if obj.assigned_by:
+            return obj.assigned_by.get_full_name() or obj.assigned_by.email
+        return None
+
+    def get_sent_by_name(self, obj):
+        if obj.sent_by:
+            return obj.sent_by.get_full_name() or obj.sent_by.email
+        return None
+
+
+class EventQuestionnaireCreateSerializer(serializers.ModelSerializer):
+    """Serializer for creating EventQuestionnaire assignments"""
+    class Meta:
+        model = EventQuestionnaire
+        fields = ['event', 'questionnaire', 'due_date', 'notes']
+
+    def validate(self, data):
+        # Check if assignment already exists
+        if EventQuestionnaire.objects.filter(
+            event=data['event'],
+            questionnaire=data['questionnaire']
+        ).exists():
+            raise serializers.ValidationError(
+                "This questionnaire is already assigned to this event."
+            )
+
+        # Validate questionnaire is active
+        if not data['questionnaire'].is_active:
+            raise serializers.ValidationError(
+                "Cannot assign an inactive questionnaire."
+            )
+
+        return data
+
+    def create(self, validated_data):
+        request = self.context.get('request')
+        user = request.user if request else None
+
+        validated_data['assigned_by'] = user
+
+        instance = super().create(validated_data)
+
+        # Create activity record
+        EventQuestionnaireActivity.objects.create(
+            event_questionnaire=instance,
+            action='CREATED',
+            action_by=user,
+            notes=f"Questionnaire assigned by {user.get_full_name() if user else 'system'}"
+        )
+
+        return instance
+
+
+class EventQuestionnaireUpdateSerializer(serializers.ModelSerializer):
+    """Serializer for updating EventQuestionnaire"""
+    class Meta:
+        model = EventQuestionnaire
+        fields = ['due_date', 'notes']

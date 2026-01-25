@@ -32,6 +32,26 @@ export const useEventQuestionnaires = () => {
     });
   };
 
+  // EventQuestionnaires assigned to an event (for admin-assigned questionnaires)
+  const useEventQuestionnairesForEvent = (eventId: number) => {
+    return useQuery({
+      queryKey: ['assigned-questionnaires', eventId],
+      queryFn: () => questionnairesApi.getEventQuestionnairesForEvent(eventId),
+      enabled: !!eventId,
+      staleTime: 2 * 60 * 1000, // 2 minutes
+    });
+  };
+
+  // Get a single EventQuestionnaire
+  const useEventQuestionnaire = (id: number) => {
+    return useQuery({
+      queryKey: ['event-questionnaire', id],
+      queryFn: () => questionnairesApi.getEventQuestionnaire(id),
+      enabled: !!id,
+      staleTime: 2 * 60 * 1000, // 2 minutes
+    });
+  };
+
   // Event Responses Query
   const useEventResponses = (eventId: number) => {
     return useQuery({
@@ -69,6 +89,10 @@ export const useEventQuestionnaires = () => {
     // Questionnaire operations
     useActiveQuestionnaires,
     useQuestionnairesForEvent,
+
+    // EventQuestionnaire operations (admin-assigned questionnaires)
+    useEventQuestionnairesForEvent,
+    useEventQuestionnaire,
 
     // Response operations
     useEventResponses,

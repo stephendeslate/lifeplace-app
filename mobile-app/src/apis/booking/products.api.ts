@@ -42,6 +42,8 @@ export interface ProductOption {
   is_tax_inclusive: boolean;
   currency: string;
   pricing_model: 'FIXED' | 'HOURLY' | 'DAILY' | 'CUSTOM';
+  pricing_unit?: 'PER_EVENT' | 'PER_PERSON' | 'PER_HOUR';
+  pricing_unit_display?: string;
   unit_label: string | null;
   has_excess_hours: boolean;
   included_hours: number | string | null;

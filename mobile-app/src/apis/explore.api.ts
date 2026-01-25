@@ -434,6 +434,7 @@ export function formatStartingTotal(pkg: PackagePublic): string | null {
 
 /**
  * Format package price with pricing model context
+ * Uses pricing_unit if available, otherwise falls back to pricing_model
  * For per-person packages (allow_multiple=true), shows "Starting from ₱X"
  * For hourly packages, shows "₱X/hour"
  * For custom packages, shows "Request Quote"
@@ -450,6 +451,20 @@ export function formatPackagePrice(pkg: PackagePublic): string {
     return `${formatPrice(pkg.base_price)}/person`;
   }
 
+  // Use pricing_unit if available
+  if (pkg.pricing_unit) {
+    switch (pkg.pricing_unit) {
+      case 'PER_HOUR':
+        return `${formatPrice(pkg.base_price)}/hour`;
+      case 'PER_PERSON':
+        return `${formatPrice(pkg.base_price)}/person`;
+      case 'PER_EVENT':
+      default:
+        return formatPrice(pkg.base_price);
+    }
+  }
+
+  // Fallback to pricing_model
   if (pkg.pricing_model === 'HOURLY') {
     return `${formatPrice(pkg.base_price)}/hour`;
   }

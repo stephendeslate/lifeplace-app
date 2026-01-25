@@ -215,6 +215,8 @@ export interface ProductOption {
   is_active: boolean;
   is_featured: boolean;
   pricing_model?: 'FLAT' | 'HOURLY';
+  pricing_unit?: 'PER_EVENT' | 'PER_PERSON' | 'PER_HOUR';
+  pricing_unit_display?: string;
   advance_booking_days?: number;
   maximum_booking_days?: number;
   event_days?: number | null;

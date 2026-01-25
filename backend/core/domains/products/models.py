@@ -72,6 +72,12 @@ class ProductOption(BaseModel):
         ('TIERED', 'Tiered Pricing'),
         ('CUSTOM', 'Custom Quote'),
     ]
+
+    PRICING_UNIT_CHOICES = [
+        ('PER_EVENT', 'Per Event'),
+        ('PER_PERSON', 'Per Person'),
+        ('PER_HOUR', 'Per Hour'),
+    ]
     
     name = models.CharField(max_length=200)
     description = models.TextField()
@@ -79,6 +85,12 @@ class ProductOption(BaseModel):
     
     # Pricing
     pricing_model = models.CharField(max_length=10, choices=PRICING_MODEL_CHOICES, default='FIXED')
+    pricing_unit = models.CharField(
+        max_length=15,
+        choices=PRICING_UNIT_CHOICES,
+        default='PER_EVENT',
+        help_text="What unit the price applies to (per event, per person, per hour)"
+    )
     base_price = models.DecimalField(max_digits=15, decimal_places=2)
     currency = models.CharField(max_length=3, default='PHP')
     is_tax_inclusive = models.BooleanField(

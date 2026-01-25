@@ -167,6 +167,8 @@ export interface ProductOption {
   category: ProductCategory;
   type: ProductType;
   pricing_model: PricingModel;
+  pricing_unit?: 'PER_EVENT' | 'PER_PERSON' | 'PER_HOUR';
+  pricing_unit_display?: string;
   base_price: number;
   currency: string;
   is_tax_inclusive: boolean;

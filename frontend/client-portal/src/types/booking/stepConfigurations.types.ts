@@ -220,6 +220,8 @@ export interface ProductOption {
   category_path: string;
   pricing_model: 'FIXED' | 'HOURLY' | 'TIERED' | 'CUSTOM';
   pricing_model_display: string;
+  pricing_unit?: 'PER_EVENT' | 'PER_PERSON' | 'PER_HOUR';
+  pricing_unit_display?: string;
   base_price: string;
   currency: string;
   is_tax_inclusive: boolean;

@@ -26,6 +26,13 @@ export function parseAsPhilippinesTime(dateString: string): Date {
   if (/[Zz]$/.test(dateString) || /[+-]\d{2}:\d{2}$/.test(dateString)) {
     return parseISO(dateString);
   }
+
+  // Check if this is a date-only string (YYYY-MM-DD format)
+  // Date-only strings need a time component before the timezone offset
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+    return parseISO(`${dateString}T00:00:00${BUSINESS_TIMEZONE_OFFSET}`);
+  }
+
   // Append PHT offset to naive datetime strings
   return parseISO(`${dateString}${BUSINESS_TIMEZONE_OFFSET}`);
 }

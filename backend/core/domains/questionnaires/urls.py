@@ -10,6 +10,7 @@ router = DefaultRouter()
 router.register(r'questionnaires', views.QuestionnaireViewSet, basename='questionnaire')
 router.register(r'fields', views.QuestionnaireFieldViewSet, basename='field')
 router.register(r'responses', views.QuestionnaireResponseViewSet, basename='response')
+router.register(r'event-questionnaires', views.EventQuestionnaireViewSet, basename='event-questionnaire')
 
 urlpatterns = [
     path('', include(router.urls)),
