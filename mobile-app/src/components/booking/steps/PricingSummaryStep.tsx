@@ -116,6 +116,10 @@ export function PricingSummaryStep({
     venueAdditionalHours
   );
 
+  // Determine if this is "quote mode" - only add-ons selected, no packages
+  const hasPackagesSelected = selectedPackages.length > 0;
+  const isQuoteMode = !hasPackagesSelected && selectedAddons.length > 0;
+
   // Get payment plan settings
   const { data: paymentSettings } = usePaymentPlanSettings();
 
@@ -240,16 +244,145 @@ export function PricingSummaryStep({
     );
   }
 
-  // Show error if no items
+  // Show friendly view if no items - user can still proceed to request a quote
   if (!hasItems && !calculatingPricing) {
     return (
-      <View style={styles.errorContainer}>
-        <Warning size={48} color={colors.semantic.warning} />
-        <Text style={styles.errorTitle}>No Items Selected</Text>
-        <Text style={styles.errorText}>
-          Please go back and select packages or add-ons to see the pricing summary.
-        </Text>
-      </View>
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={styles.contentContainer}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Header */}
+        <View style={styles.header}>
+          <Text style={styles.title}>Quote Request</Text>
+          <Text style={styles.subtitle}>
+            You haven't selected any packages or add-ons yet. You can still proceed to request a custom quote for your event.
+          </Text>
+        </View>
+
+        {/* Info Alert */}
+        <View style={styles.quoteInfoBanner}>
+          <Info size={18} color={colors.tertiary.teal} />
+          <Text style={styles.quoteInfoText}>
+            No packages or add-ons selected. Continue to submit a quote request and our team will prepare a custom proposal for you.
+          </Text>
+        </View>
+
+        {/* Event Details */}
+        {show_booking_review && show_event_details && dateTimeData?.start_date && (
+          <View style={styles.reviewSection}>
+            <View style={styles.reviewSectionHeader}>
+              <Calendar size={18} color={colors.tertiary.teal} />
+              <Text style={styles.reviewSectionTitle}>Event Details</Text>
+            </View>
+            <View style={styles.reviewContent}>
+              <View style={styles.reviewRow}>
+                <Text style={styles.reviewLabel}>Event Type</Text>
+                <Text style={styles.reviewValue}>
+                  {state.currentFlow?.event_type_name || 'Not specified'}
+                </Text>
+              </View>
+              <View style={styles.reviewRow}>
+                <Text style={styles.reviewLabel}>Event Date</Text>
+                <Text style={styles.reviewValue}>
+                  {formatDate(dateTimeData.start_date)}
+                </Text>
+              </View>
+              {dateTimeData.end_date && dateTimeData.end_date !== dateTimeData.start_date && (
+                <View style={styles.reviewRow}>
+                  <Text style={styles.reviewLabel}>End Date</Text>
+                  <Text style={styles.reviewValue}>
+                    {formatDate(dateTimeData.end_date)}
+                  </Text>
+                </View>
+              )}
+            </View>
+          </View>
+        )}
+
+        {/* Special Requests */}
+        {show_booking_review && show_special_requests && (
+          <View style={styles.reviewSection}>
+            <View style={styles.reviewSectionHeader}>
+              <Note size={18} color={colors.tertiary.teal} />
+              <Text style={styles.reviewSectionTitle}>Special Requests</Text>
+            </View>
+            <TextInput
+              style={styles.specialRequestsInput}
+              placeholder="Describe what you're looking for - our team will prepare a custom quote for you..."
+              placeholderTextColor={colors.neutral.gray}
+              multiline
+              numberOfLines={4}
+              textAlignVertical="top"
+              value={data.special_requests || ''}
+              onChangeText={handleSpecialRequestsChange}
+            />
+          </View>
+        )}
+
+        {/* Terms and Conditions */}
+        {show_terms_checkbox && (
+          <View style={styles.termsSection}>
+            <TouchableOpacity
+              style={styles.checkboxRow}
+              onPress={() => handleTermsChange(!data.terms_accepted)}
+              activeOpacity={0.7}
+            >
+              {data.terms_accepted ? (
+                <CheckSquare size={24} color={colors.secondary.forest} weight="fill" />
+              ) : (
+                <Square size={24} color={colors.neutral.gray} />
+              )}
+              <Text style={styles.termsText}>
+                {terms_text || (
+                  <>
+                    I agree to the{' '}
+                    <Text
+                      style={styles.termsLink}
+                      onPress={() => openLink(terms_url || '/terms')}
+                    >
+                      Terms of Service
+                    </Text>
+                    {' '}and{' '}
+                    <Text
+                      style={styles.termsLink}
+                      onPress={() => openLink(privacy_url || '/privacy')}
+                    >
+                      Privacy Policy
+                    </Text>
+                  </>
+                )}
+              </Text>
+            </TouchableOpacity>
+
+            {require_terms_acceptance && validationErrors?.terms_accepted && (
+              <View style={styles.termsError}>
+                <Warning size={14} color={colors.semantic.error} />
+                <Text style={styles.termsErrorText}>
+                  {validationErrors.terms_accepted[0]}
+                </Text>
+              </View>
+            )}
+
+            {show_marketing_consent && (
+              <TouchableOpacity
+                style={[styles.checkboxRow, styles.marketingCheckbox]}
+                onPress={() => handleMarketingConsentChange(!data.marketing_consent)}
+                activeOpacity={0.7}
+              >
+                {data.marketing_consent ? (
+                  <CheckSquare size={24} color={colors.secondary.forest} weight="fill" />
+                ) : (
+                  <Square size={24} color={colors.neutral.gray} />
+                )}
+                <Text style={styles.marketingText}>
+                  I would like to receive marketing updates and special offers (optional)
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
+      </ScrollView>
     );
   }
 
@@ -261,11 +394,29 @@ export function PricingSummaryStep({
     >
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.title}>Pricing Summary</Text>
+        <Text style={styles.title}>
+          {isQuoteMode ? 'Quote Request Summary' : 'Pricing Summary'}
+        </Text>
         <Text style={styles.subtitle}>
-          Review your booking details and confirm your selection
+          {isQuoteMode
+            ? 'Review your selected add-ons. A custom quote with package recommendations will be provided.'
+            : 'Review your booking details and confirm your selection'}
         </Text>
       </View>
+
+      {/* Quote Mode Alert */}
+      {isQuoteMode && (
+        <View style={styles.quoteModeAlert}>
+          <Info size={18} color={colors.tertiary.teal} />
+          <View style={styles.quoteModeAlertContent}>
+            <Text style={styles.quoteModeAlertTitle}>Quote Request Mode</Text>
+            <Text style={styles.quoteModeAlertText}>
+              You've selected add-ons but no package. Since packages are required for booking,
+              you'll receive a custom quote with package recommendations that best fit your needs.
+            </Text>
+          </View>
+        </View>
+      )}
 
       {/* Pricing Error Warning */}
       {pricingError && hasItems && (
@@ -343,7 +494,9 @@ export function PricingSummaryStep({
           >
             <View style={styles.sectionHeaderLeft}>
               <Tag size={20} color={colors.tertiary.teal} />
-              <Text style={styles.sectionTitle}>Add-ons</Text>
+              <Text style={styles.sectionTitle}>
+                {isQuoteMode ? 'Estimated Add-ons Summary' : 'Add-ons'}
+              </Text>
               <View style={styles.badge}>
                 <Text style={styles.badgeText}>{selectedAddons.length}</Text>
               </View>
@@ -458,9 +611,18 @@ export function PricingSummaryStep({
         <View style={styles.divider} />
 
         <View style={styles.grandTotalRow}>
-          <Text style={styles.grandTotalLabel}>Total</Text>
-          <Text style={styles.grandTotalValue}>{pricing?.formattedTotal}</Text>
+          <Text style={[styles.grandTotalLabel, isQuoteMode && styles.estimatedTotalLabel]}>
+            {isQuoteMode ? 'Estimated Total' : 'Total'}
+          </Text>
+          <Text style={[styles.grandTotalValue, isQuoteMode && styles.estimatedTotalValue]}>
+            {pricing?.formattedTotal}
+          </Text>
         </View>
+        {isQuoteMode && (
+          <Text style={styles.quoteFootnote}>
+            * Final pricing will be provided in your custom quote, which will include a recommended package.
+          </Text>
+        )}
       </View>
 
       {/* Payment Schedule */}
@@ -1109,6 +1271,58 @@ const styles = StyleSheet.create({
     ...typeScale.bodySmall,
     color: colors.tertiary.tealDark,
     flex: 1,
+  },
+  // Quote mode styles
+  quoteInfoBanner: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: colors.tertiary.tealSubtle,
+    padding: spacing.md,
+    borderRadius: layout.borderRadius.md,
+    gap: spacing.sm,
+    marginBottom: spacing.lg,
+  },
+  quoteInfoText: {
+    ...typeScale.bodySmall,
+    color: colors.tertiary.tealDark,
+    flex: 1,
+  },
+  quoteModeAlert: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: colors.tertiary.tealSubtle,
+    padding: spacing.md,
+    borderRadius: layout.borderRadius.md,
+    gap: spacing.sm,
+    marginBottom: spacing.lg,
+    borderWidth: 1,
+    borderColor: colors.tertiary.teal + '40',
+  },
+  quoteModeAlertContent: {
+    flex: 1,
+  },
+  quoteModeAlertTitle: {
+    ...typeScale.labelMedium,
+    color: colors.tertiary.tealDark,
+    fontWeight: '600',
+    marginBottom: spacing.xxs,
+  },
+  quoteModeAlertText: {
+    ...typeScale.bodySmall,
+    color: colors.tertiary.tealDark,
+  },
+  estimatedTotalLabel: {
+    color: colors.tertiary.teal,
+  },
+  estimatedTotalValue: {
+    color: colors.tertiary.teal,
+  },
+  quoteFootnote: {
+    ...typeScale.labelSmall,
+    color: colors.neutral.darkGray,
+    fontStyle: 'italic',
+    marginTop: spacing.sm,
+    textAlign: 'center',
   },
 });
 

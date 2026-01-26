@@ -111,6 +111,10 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
     venueAdditionalHours
   );
 
+  // Determine if this is "quote mode" - only add-ons selected, no packages
+  // In quote mode, pricing shown is an estimate and user will receive a quote
+  const hasPackagesSelected = selectedPackages.length > 0;
+  const isQuoteMode = !hasPackagesSelected && selectedAddons.length > 0;
 
   // Update parent component with calculated pricing data
   const updatePricingData = useCallback(async () => {
@@ -268,15 +272,153 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
     );
   }
 
-  // Show message if no items selected
+  // Show simplified view if no items selected - allows proceeding for quote requests
   if (!hasItems && !calculatingPricing) {
     return (
-      <Alert severity="info" sx={{ mb: 3 }}>
-        <Typography variant="h6">No Items Selected</Typography>
-        <Typography variant="body2">
-          Please go back and select packages or add-ons to see the pricing summary.
+      <Box>
+        <Typography variant="h5" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Receipt />
+          {config?.header_text || 'Pricing Summary'}
         </Typography>
-      </Alert>
+
+        <Alert severity="info" sx={{ mb: 3 }}>
+          <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
+            No Packages or Add-ons Selected
+          </Typography>
+          <Typography variant="body2">
+            You haven't selected any packages or add-ons yet. You can go back to browse available options,
+            or continue to request a custom quote for your event.
+          </Typography>
+        </Alert>
+
+        {/* Event Details - show even without items */}
+        {config?.show_booking_review !== false && config?.show_event_details !== false && (
+          <Box sx={{ mb: 3 }}>
+            <Paper elevation={0} sx={{ p: 3, border: 1, borderColor: 'divider' }}>
+              <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
+                Event Details
+              </Typography>
+
+              <Box sx={{ mb: 2 }}>
+                <Typography variant="body2" color="text.secondary">Event Type</Typography>
+                <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                  {flow?.event_type_name || 'Not specified'}
+                </Typography>
+              </Box>
+
+              {allStepData?.date_time?.start_date && (
+                <Box sx={{ mb: 2 }}>
+                  <Typography variant="body2" color="text.secondary">Event Date</Typography>
+                  <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                    {formatDate(allStepData.date_time.start_date)}
+                  </Typography>
+                </Box>
+              )}
+            </Paper>
+          </Box>
+        )}
+
+        {/* Special Requests */}
+        {config?.show_special_requests !== false && (
+          <Box sx={{ mb: 3 }}>
+            <Paper elevation={0} sx={{ p: 3, border: 1, borderColor: 'divider' }}>
+              <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
+                Special Requests
+              </Typography>
+
+              <textarea
+                placeholder="Any additional requests or special requirements for your event..."
+                value={stepData.special_requests || ''}
+                onChange={(e) => handleSpecialRequestsChange(e.target.value)}
+                style={{
+                  width: '100%',
+                  minHeight: '80px',
+                  padding: '12px',
+                  border: '1px solid #ddd',
+                  borderRadius: '4px',
+                  fontSize: '14px',
+                  fontFamily: 'inherit',
+                  resize: 'vertical',
+                }}
+              />
+            </Paper>
+          </Box>
+        )}
+
+        {/* Terms and Conditions - required even for quote requests */}
+        {config?.show_terms_checkbox !== false && (
+          <Box sx={{ mb: 3 }}>
+            <Paper elevation={0} sx={{ p: 3, border: 1, borderColor: 'divider' }}>
+              <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
+                Terms and Conditions
+              </Typography>
+
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={stepData.terms_accepted || false}
+                    onChange={(e) => handleTermsChange(e.target.checked)}
+                    color="primary"
+                  />
+                }
+                label={
+                  <Typography variant="body2">
+                    {config?.terms_text || (
+                      <>
+                        I agree to the{' '}
+                        <a
+                          href={config?.effective_terms_url || config?.terms_url || '/terms'}
+                          target="_blank"
+                          rel="noreferrer"
+                          style={{ color: 'inherit', textDecoration: 'underline' }}
+                        >
+                          Terms of Service
+                        </a>{' '}
+                        and{' '}
+                        <a
+                          href={config?.effective_privacy_url || config?.privacy_url || '/privacy'}
+                          target="_blank"
+                          rel="noreferrer"
+                          style={{ color: 'inherit', textDecoration: 'underline' }}
+                        >
+                          Privacy Policy
+                        </a>
+                      </>
+                    )}
+                  </Typography>
+                }
+                sx={{ mb: 2 }}
+              />
+
+              {config?.show_marketing_consent !== false && (
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={stepData.marketing_consent || false}
+                      onChange={(e) => handleMarketingConsentChange(e.target.checked)}
+                      color="primary"
+                    />
+                  }
+                  label="I would like to receive marketing updates and special offers (optional)"
+                />
+              )}
+
+              {config?.require_terms_acceptance !== false && validationErrors.terms_accepted && (
+                <Alert severity="error" sx={{ mt: 2 }}>
+                  {validationErrors.terms_accepted[0]}
+                </Alert>
+              )}
+            </Paper>
+          </Box>
+        )}
+
+        {/* Footer text */}
+        {config?.footer_text && (
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+            {config.footer_text}
+          </Typography>
+        )}
+      </Box>
     );
   }
 
@@ -299,8 +441,25 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
       </Typography>
       
       <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-        Review your selected items and total cost. You can apply a discount code if you have one.
+        {isQuoteMode
+          ? 'Review your selected add-ons below. Since no package is selected, you will receive a custom quote from our team.'
+          : 'Review your selected items and total cost. You can apply a discount code if you have one.'
+        }
       </Typography>
+
+      {/* Quote mode alert - shown when only add-ons are selected */}
+      {isQuoteMode && (
+        <Alert severity="info" sx={{ mb: 3 }}>
+          <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 0.5 }}>
+            Quote Request Mode
+          </Typography>
+          <Typography variant="body2">
+            You've selected add-ons but no event package. The pricing below is an estimate for your selected add-ons only.
+            On the next step, you'll be able to request a custom quote and our team will recommend the best package
+            options for your event.
+          </Typography>
+        </Alert>
+      )}
 
       {/* Show pricing error as warning if we have items */}
       {pricingError && hasItems && (
@@ -502,9 +661,9 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
       )}
 
       {/* Pricing Summary */}
-      <Paper variant="outlined" sx={{ p: 2 }}>
+      <Paper variant="outlined" sx={{ p: 2, ...(isQuoteMode && { borderColor: 'info.main', borderWidth: 2 }) }}>
         <Typography variant="h6" gutterBottom>
-          Order Summary
+          {isQuoteMode ? 'Estimated Add-ons Summary' : 'Order Summary'}
         </Typography>
         
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
@@ -550,8 +709,8 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
           <Divider sx={{ my: 1 }} />
           
           <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-            <Typography variant="h6">Total</Typography>
-            <Typography variant="h6" color="primary">
+            <Typography variant="h6">{isQuoteMode ? 'Estimated Total' : 'Total'}</Typography>
+            <Typography variant="h6" color={isQuoteMode ? 'info.main' : 'primary'}>
               {isUpdatingPrices ? (
                 <Skeleton width={100} animation="wave" />
               ) : (
@@ -559,6 +718,11 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
               )}
             </Typography>
           </Box>
+          {isQuoteMode && (
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1, textAlign: 'center' }}>
+              * Final pricing will be provided in your custom quote, which will include a recommended package.
+            </Typography>
+          )}
         </Box>
       </Paper>
 
@@ -596,57 +760,6 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
                       {formatDate(allStepData.date_time.end_date)}
                     </Typography>
                   </Box>
-                )}
-              </Paper>
-            </Box>
-          )}
-
-          {/* Contact Information */}
-          {config?.show_contact_details !== false && (
-            <Box sx={{ mt: 3 }}>
-              <Paper elevation={0} sx={{ p: 3, border: 1, borderColor: 'divider' }}>
-                <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
-                  Contact Information
-                </Typography>
-
-                {allStepData?.contact_info?.full_name && (
-                  <Box sx={{ mb: 2 }}>
-                    <Typography variant="body2" color="text.secondary">Name</Typography>
-                    <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                      {allStepData.contact_info.full_name}
-                    </Typography>
-                  </Box>
-                )}
-
-                {allStepData?.contact_info?.email && (
-                  <Box sx={{ mb: 2 }}>
-                    <Typography variant="body2" color="text.secondary">Email</Typography>
-                    <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                      {allStepData.contact_info.email}
-                    </Typography>
-                  </Box>
-                )}
-
-                {allStepData?.contact_info?.phone && (
-                  <Box sx={{ mb: 2 }}>
-                    <Typography variant="body2" color="text.secondary">Phone</Typography>
-                    <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                      {allStepData.contact_info.phone}
-                    </Typography>
-                  </Box>
-                )}
-
-                {allStepData?.contact_info?.company && (
-                  <Box sx={{ mb: 2 }}>
-                    <Typography variant="body2" color="text.secondary">Company</Typography>
-                    <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                      {allStepData.contact_info.company}
-                    </Typography>
-                  </Box>
-                )}
-
-                {allStepData?.contact_info?.create_account && (
-                  <Chip label="Account will be created" color="primary" size="small" />
                 )}
               </Paper>
             </Box>

@@ -51,8 +51,8 @@ class ClientInvitationService:
         except User.DoesNotExist:
             raise ClientNotFound()
         
-        # FIXED: Check if client already has an account using the correct method
-        if client.is_active and client.has_usable_password():
+        # Check if client already has an account using auth_method field
+        if client.is_active and client.auth_method in ('password', 'google'):
             raise ClientAlreadyActive(detail="Client already has an active account")
         
         # Get inviting admin
@@ -116,6 +116,7 @@ class ClientInvitationService:
             client = invitation.client
             client.is_active = True
             client.set_password(password)
+            client.auth_method = 'password'
             client.save()
             
             # Mark invitation as accepted
@@ -211,14 +212,14 @@ class ClientService:
             # Create user
             client = User.objects.create_user(**client_data)
             
-            # FIXED: Handle password properly
+            # Handle password and auth_method properly
             if password:
-                # Set usable password
                 client.set_password(password)
+                client.auth_method = 'password'
             else:
-                # Set unusable password for clients without accounts
                 client.set_unusable_password()
-            
+                client.auth_method = 'invitation_pending'
+
             client.save()
             
             # Update profile
@@ -265,7 +266,8 @@ class ClientService:
             # Update password if provided
             if password:
                 client.set_password(password)
-            
+                client.auth_method = 'password'
+
             client.save()
             
             # Update profile

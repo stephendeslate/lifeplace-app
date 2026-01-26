@@ -1,9 +1,7 @@
 # backend/core/domains/clients/views.py
 from core.utils.pagination import StandardResultsSetPagination
 from core.utils.permissions import IsAdmin
-from django.contrib.auth.hashers import UNUSABLE_PASSWORD_PREFIX
 from django.db import models, transaction
-from django.db.models import Q
 from rest_framework import filters, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -43,25 +41,18 @@ class ClientViewSet(viewsets.ModelViewSet):
             is_active=is_active
         )
 
-        # has_account filter - database-level filtering instead of Python iteration
-        # Django stores unusable passwords with prefix '!' (UNUSABLE_PASSWORD_PREFIX)
-        # has_usable_password() returns False if password starts with '!' or is empty/null
+        # has_account filter - filter by auth_method field
+        # Users with 'password' or 'google' auth_method have active accounts
+        # Users with 'invitation_pending' do not have active accounts yet
         if has_account is not None:
             has_account = has_account.lower() == 'true'
 
             if has_account:
-                # Return clients with usable passwords (have set up their account)
-                # Exclude passwords starting with '!' (unusable), empty, or null
-                queryset = queryset.exclude(
-                    password__startswith=UNUSABLE_PASSWORD_PREFIX
-                ).exclude(password='').exclude(password__isnull=True)
+                # Return clients with active auth methods (password or Google OAuth)
+                queryset = queryset.filter(auth_method__in=['password', 'google'])
             else:
-                # Return clients without usable passwords (imported/invited but not activated)
-                queryset = queryset.filter(
-                    Q(password__startswith=UNUSABLE_PASSWORD_PREFIX) |
-                    Q(password='') |
-                    Q(password__isnull=True)
-                )
+                # Return clients without active auth (invitation pending)
+                queryset = queryset.filter(auth_method='invitation_pending')
 
         return queryset
     

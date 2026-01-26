@@ -45,18 +45,16 @@ export const PublicFooter: React.FC = () => {
 
   const quickLinks = [
     { label: 'About Us', href: '/about' },
-    { label: 'Services', href: '/#services' },
-    { label: 'Gallery', href: '/gallery' },
-    { label: 'Testimonials', href: '/testimonials' },
+    { label: 'Reviews', href: '/reviews' },
     { label: 'Contact', href: '/contact' },
   ];
 
   const services = [
-    { label: 'Weddings', href: '/services/weddings' },
-    { label: 'Corporate Events', href: '/services/corporate' },
-    { label: 'Retreats', href: '/services/retreats' },
-    { label: 'Team Building', href: '/services/team-building' },
-    { label: 'Camping', href: '/services/camping' },
+    { label: 'Our Services', href: '/services' },
+    { label: 'Rates & Packages', href: '/rates' },
+    { label: 'Facilities', href: '/facilities' },
+    { label: 'Partner With Us', href: '/partner' },
+    { label: 'Podcasts', href: '/podcasts' },
   ];
 
   const socialLinks = [
@@ -166,7 +164,7 @@ export const PublicFooter: React.FC = () => {
               </Box>
             </Box>
 
-            {/* Services */}
+            {/* Explore */}
             <Box>
               <Typography
                 variant="h6"
@@ -175,7 +173,7 @@ export const PublicFooter: React.FC = () => {
                   mb: tokens.spacing.space[2],
                 }}
               >
-                Our Services
+                Explore
               </Typography>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: tokens.spacing.space[1] }}>
                 {services.map((service) => (

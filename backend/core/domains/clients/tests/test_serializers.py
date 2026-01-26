@@ -108,17 +108,31 @@ class TestClientListSerializer:
         assert 'has_account' in serializer.data
 
     def test_has_account_true_for_user_with_password(self, user_factory):
-        """Test has_account returns True for user with usable password."""
+        """Test has_account returns True for user with password auth_method."""
         user = user_factory(role='CLIENT', password='testpass123')
+        user.auth_method = 'password'
+        user.save()
 
         serializer = ClientListSerializer(user)
 
         assert serializer.data['has_account'] is True
 
-    def test_has_account_false_for_user_without_password(self, user_factory):
-        """Test has_account returns False for user with unusable password."""
+    def test_has_account_true_for_google_oauth_user(self, user_factory):
+        """Test has_account returns True for user with google auth_method."""
         user = user_factory(role='CLIENT')
         user.set_unusable_password()
+        user.auth_method = 'google'
+        user.save()
+
+        serializer = ClientListSerializer(user)
+
+        assert serializer.data['has_account'] is True
+
+    def test_has_account_false_for_invitation_pending(self, user_factory):
+        """Test has_account returns False for user with invitation_pending auth_method."""
+        user = user_factory(role='CLIENT')
+        user.set_unusable_password()
+        user.auth_method = 'invitation_pending'
         user.save()
 
         serializer = ClientListSerializer(user)
@@ -177,7 +191,9 @@ class TestClientDetailSerializer:
 
     def test_has_account_field(self, user_factory):
         """Test has_account field in detail view."""
-        user = user_factory(role='CLIENT')
+        user = user_factory(role='CLIENT', password='testpass123')
+        user.auth_method = 'password'
+        user.save()
 
         serializer = ClientDetailSerializer(user)
 
@@ -206,9 +222,10 @@ class TestClientCreateUpdateSerializer:
         assert client.last_name == 'Client'
         assert client.role == 'CLIENT'
         assert not client.has_usable_password()
+        assert client.auth_method == 'invitation_pending'
 
     def test_create_client_with_password(self):
-        """Test creating client with password sets usable password."""
+        """Test creating client with password sets usable password and auth_method."""
         data = {
             'email': 'newclient@example.com',
             'first_name': 'New',
@@ -222,6 +239,7 @@ class TestClientCreateUpdateSerializer:
 
         assert client.has_usable_password()
         assert client.check_password('securepass123')
+        assert client.auth_method == 'password'
 
     def test_create_client_with_profile(self):
         """Test creating client with profile data."""
@@ -259,8 +277,10 @@ class TestClientCreateUpdateSerializer:
         assert client.last_name == 'Name'
 
     def test_update_client_password(self, user_factory):
-        """Test updating client password."""
+        """Test updating client password sets auth_method to password."""
         user = user_factory(role='CLIENT', password='oldpass123')
+        user.auth_method = 'invitation_pending'  # Start with pending
+        user.save()
         assert user.check_password('oldpass123')
 
         data = {'password': 'newpass123'}
@@ -270,6 +290,7 @@ class TestClientCreateUpdateSerializer:
         client = serializer.save()
 
         assert client.check_password('newpass123')
+        assert client.auth_method == 'password'
 
     def test_update_client_profile(self, user_factory):
         """Test updating client profile data."""

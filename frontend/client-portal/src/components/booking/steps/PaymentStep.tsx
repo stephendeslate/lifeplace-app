@@ -28,6 +28,7 @@ import { usePaymentPlanSettings } from '../../../hooks/usePaymentPlanSettings';
 import { UnifiedStripePaymentFlow } from '../../payments/UnifiedStripePaymentFlow';
 import { PaymentMethodSelector } from '../../payments/PaymentMethodSelector';
 import { useAuth } from '../../../hooks/useAuth';
+import { useBooking } from '../../../contexts/BookingContext';
 import type {
   BookingModeConfig,
   PaymentFlowResult,
@@ -77,6 +78,24 @@ export const PaymentStep: React.FC<PaymentStepProps> = ({
 
   // Auth hook
   const { isAuthenticated } = useAuth();
+
+  // Booking context to access package/addon selection data
+  const { state: bookingState } = useBooking();
+
+  // Check if packages are selected (not just add-ons)
+  // Packages can come from package_selection step, venue_selection step (custom packages), or booking_data
+  const hasPackagesSelected = useMemo(() => {
+    const packagesFromStepData = bookingState.stepData.package_selection?.selected_packages;
+    const packagesFromVenueSelection = (bookingState.stepData.venue_selection as { selected_packages?: unknown[] } | undefined)?.selected_packages;
+    const packagesFromBookingData = bookingState.currentSession?.booking_data?.selected_packages as unknown[] | undefined;
+
+    const packages = packagesFromStepData || packagesFromVenueSelection || packagesFromBookingData || [];
+    return Array.isArray(packages) && packages.length > 0;
+  }, [
+    bookingState.stepData.package_selection?.selected_packages,
+    bookingState.stepData.venue_selection,
+    bookingState.currentSession?.booking_data?.selected_packages
+  ]);
 
   // Payment hooks
   const {
@@ -385,22 +404,207 @@ export const PaymentStep: React.FC<PaymentStepProps> = ({
 
   // Show completion choice if quote requests are enabled and no choice is made yet
   if (config?.allow_quote_request && completionChoice === null) {
+    // Check if total is $0 (no items selected) - only show quote option
+    const hasNoItems = amounts.total <= 0;
+
+    if (hasNoItems) {
+      // No items selected - only show quote request option
+      return (
+        <Box>
+          <Typography variant="h5" gutterBottom sx={{ textAlign: 'center' }}>
+            Request a Custom Quote
+          </Typography>
+
+          <Alert severity="info" sx={{ mb: 3 }}>
+            <Typography variant="body2">
+              You haven't selected any packages or add-ons yet. To proceed, you can request a custom quote
+              and our team will prepare a personalized proposal for your event.
+            </Typography>
+          </Alert>
+
+          {/* Quote Request Card */}
+          <Card
+            sx={{
+              mb: 3,
+              border: 2,
+              borderColor: 'primary.main',
+              boxShadow: 3
+            }}
+          >
+            <CardContent sx={{ p: 3 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+                <Security color="primary" sx={{ fontSize: 40 }} />
+                <Box>
+                  <Typography variant="h5" color="primary" sx={{ fontWeight: 'bold' }}>
+                    Get a Custom Quote
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Tell us about your event and we'll create a personalized proposal
+                  </Typography>
+                </Box>
+              </Box>
+
+              <Box sx={{
+                backgroundColor: 'primary.50',
+                p: 2,
+                borderRadius: 1,
+                border: 1,
+                borderColor: 'primary.200',
+                mb: 2
+              }}>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                  <strong>What happens next:</strong>
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  • Describe your event requirements and preferences<br/>
+                  • Our team will review your request within 24 hours<br/>
+                  • Receive a detailed quote tailored to your needs<br/>
+                  • No commitment required - review at your pace
+                </Typography>
+              </Box>
+            </CardContent>
+
+            <CardActions sx={{ p: 3, pt: 0 }}>
+              <Button
+                variant="contained"
+                size="large"
+                fullWidth
+                onClick={() => {
+                  setCompletionChoice('quote');
+                  updateData({ completion_type: 'quote' });
+                }}
+                sx={{ py: 1.5, fontSize: '1.1rem', fontWeight: 'bold' }}
+              >
+                {config.quote_request_button_text || 'Request Custom Quote'}
+              </Button>
+            </CardActions>
+          </Card>
+
+          <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center' }}>
+            Want to select packages first?{' '}
+            <Typography component="span" variant="body2" color="primary" sx={{ cursor: 'pointer' }}>
+              Go back to browse available options.
+            </Typography>
+          </Typography>
+        </Box>
+      );
+    }
+
+    // Only add-ons selected (no packages) - require quote request to proceed
+    // This prevents users from securing a date with just a cheap add-on
+    if (!hasPackagesSelected && amounts.total > 0) {
+      return (
+        <Box>
+          <Typography variant="h5" gutterBottom sx={{ textAlign: 'center' }}>
+            Request a Custom Quote
+          </Typography>
+
+          <Alert severity="info" sx={{ mb: 3 }}>
+            <Typography variant="body2">
+              You've selected add-ons but no event package. To secure your date with a payment,
+              please go back and select an event package. Alternatively, you can request a custom quote
+              and our team will help you build the perfect package for your event.
+            </Typography>
+          </Alert>
+
+          {/* Current Selection Summary */}
+          <Paper sx={{ p: 2, mb: 3, backgroundColor: 'grey.50' }}>
+            <Typography variant="subtitle2" sx={{ mb: 1 }}>
+              Current Selection:
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Add-ons total: {amounts.formattedTotal}
+            </Typography>
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
+              A package is required to secure your event date with a payment.
+            </Typography>
+          </Paper>
+
+          {/* Quote Request Card */}
+          <Card
+            sx={{
+              mb: 3,
+              border: 2,
+              borderColor: 'primary.main',
+              boxShadow: 3
+            }}
+          >
+            <CardContent sx={{ p: 3 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+                <Security color="primary" sx={{ fontSize: 40 }} />
+                <Box>
+                  <Typography variant="h5" color="primary" sx={{ fontWeight: 'bold' }}>
+                    Get a Custom Quote
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Let us help you find the right package for your event
+                  </Typography>
+                </Box>
+              </Box>
+
+              <Box sx={{
+                backgroundColor: 'primary.50',
+                p: 2,
+                borderRadius: 1,
+                border: 1,
+                borderColor: 'primary.200',
+                mb: 2
+              }}>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                  <strong>What happens next:</strong>
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  • Tell us about your event and requirements<br/>
+                  • Our team will recommend the best package options<br/>
+                  • Receive a detailed quote within 24 hours<br/>
+                  • Your selected add-ons will be included in the quote
+                </Typography>
+              </Box>
+            </CardContent>
+
+            <CardActions sx={{ p: 3, pt: 0 }}>
+              <Button
+                variant="contained"
+                size="large"
+                fullWidth
+                onClick={() => {
+                  setCompletionChoice('quote');
+                  updateData({ completion_type: 'quote' });
+                }}
+                sx={{ py: 1.5, fontSize: '1.1rem', fontWeight: 'bold' }}
+              >
+                {config.quote_request_button_text || 'Request Custom Quote'}
+              </Button>
+            </CardActions>
+          </Card>
+
+          <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center' }}>
+            Want to secure your date now?{' '}
+            <Typography component="span" variant="body2" color="primary" sx={{ cursor: 'pointer' }}>
+              Go back and select a package.
+            </Typography>
+          </Typography>
+        </Box>
+      );
+    }
+
+    // Normal flow - show both payment and quote options (packages are selected)
     return (
       <Box>
         <Typography variant="h5" gutterBottom sx={{ textAlign: 'center' }}>
           Secure Your Booking
         </Typography>
-        
+
         <Typography variant="body1" color="text.secondary" sx={{ mb: 4, textAlign: 'center' }}>
           Your date is popular - reserve it before someone else does!
         </Typography>
 
         {/* Primary Option - Secure with Deposit */}
-        <Card 
-          sx={{ 
-            mb: 3, 
-            border: 2, 
-            borderColor: 'primary.main', 
+        <Card
+          sx={{
+            mb: 3,
+            border: 2,
+            borderColor: 'primary.main',
             boxShadow: 3
           }}
         >
@@ -424,7 +628,7 @@ export const PaymentStep: React.FC<PaymentStepProps> = ({
                   : 'Complete payment now for instant confirmation'
                 }
               </Typography>
-              
+
               {/* Trust Signals */}
               <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mb: 2 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -447,9 +651,9 @@ export const PaymentStep: React.FC<PaymentStepProps> = ({
                 </Box>
               </Box>
 
-              <Box sx={{ 
-                backgroundColor: 'primary.50', 
-                p: 2, 
+              <Box sx={{
+                backgroundColor: 'primary.50',
+                p: 2,
                 borderRadius: 1,
                 border: 1,
                 borderColor: 'primary.200'
@@ -479,7 +683,7 @@ export const PaymentStep: React.FC<PaymentStepProps> = ({
               )}
             </Typography>
           </CardContent>
-          
+
           <CardActions sx={{ p: 3, pt: 0 }}>
             <Button
               variant="contained"
@@ -495,7 +699,7 @@ export const PaymentStep: React.FC<PaymentStepProps> = ({
               }}
               sx={{ py: 1.5, fontSize: '1.1rem', fontWeight: 'bold' }}
             >
-              🔒 Secure My Booking
+              Secure My Booking
             </Button>
           </CardActions>
         </Card>
@@ -505,15 +709,15 @@ export const PaymentStep: React.FC<PaymentStepProps> = ({
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
             Need something unique or have special requirements?
           </Typography>
-          
-          <Button 
-            variant="outlined" 
+
+          <Button
+            variant="outlined"
             size="medium"
             onClick={() => {
               setCompletionChoice('quote');
               updateData({ completion_type: 'quote' });
             }}
-            sx={{ 
+            sx={{
               borderRadius: 2,
               px: 3,
               py: 1,
@@ -523,7 +727,7 @@ export const PaymentStep: React.FC<PaymentStepProps> = ({
           >
             {config.quote_request_button_text || 'Get Custom Quote'} →
           </Button>
-          
+
           <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
             {config.quote_request_description || 'Perfect for unique celebrations with custom requirements'}
           </Typography>
@@ -532,7 +736,7 @@ export const PaymentStep: React.FC<PaymentStepProps> = ({
         {/* Additional Trust Signals */}
         <Paper sx={{ p: 2, backgroundColor: 'grey.50', textAlign: 'center' }}>
           <Typography variant="caption" color="text.secondary">
-            🛡️ Secure SSL Payment • 💯 Satisfaction Guaranteed • ⭐ 500+ Happy Couples
+            Secure SSL Payment | Satisfaction Guaranteed | 500+ Happy Couples
           </Typography>
         </Paper>
       </Box>

@@ -65,18 +65,38 @@ class TestClientViewSetList:
         assert inactive_client.id not in client_ids
 
     def test_list_clients_filter_by_has_account(self, admin_client, user_factory):
-        """Test filtering clients by has_account."""
+        """Test filtering clients by has_account (auth_method)."""
         client_with_password = user_factory(role='CLIENT', password='testpass123')
-        client_without_password = user_factory(role='CLIENT')
-        client_without_password.set_unusable_password()
-        client_without_password.save()
+        client_with_password.auth_method = 'password'
+        client_with_password.save()
 
+        client_with_google = user_factory(role='CLIENT')
+        client_with_google.set_unusable_password()
+        client_with_google.auth_method = 'google'
+        client_with_google.save()
+
+        client_without_account = user_factory(role='CLIENT')
+        client_without_account.set_unusable_password()
+        client_without_account.auth_method = 'invitation_pending'
+        client_without_account.save()
+
+        # Test has_account=true returns password and google users
         response = admin_client.get('/api/clients/?has_account=true')
 
         assert response.status_code == status.HTTP_200_OK
         client_ids = [c['id'] for c in response.data['results']]
         assert client_with_password.id in client_ids
-        assert client_without_password.id not in client_ids
+        assert client_with_google.id in client_ids
+        assert client_without_account.id not in client_ids
+
+        # Test has_account=false returns only invitation_pending users
+        response = admin_client.get('/api/clients/?has_account=false')
+
+        assert response.status_code == status.HTTP_200_OK
+        client_ids = [c['id'] for c in response.data['results']]
+        assert client_with_password.id not in client_ids
+        assert client_with_google.id not in client_ids
+        assert client_without_account.id in client_ids
 
     def test_list_clients_search(self, admin_client, user_factory):
         """Test searching clients."""
@@ -169,7 +189,7 @@ class TestClientViewSetCreate:
         assert response.data['profile']['company'] == 'Test Company'
 
     def test_create_client_with_password(self, admin_client):
-        """Test creating a client with password."""
+        """Test creating a client with password sets auth_method to password."""
         data = {
             'email': 'newclient@example.com',
             'first_name': 'New',
@@ -183,9 +203,10 @@ class TestClientViewSetCreate:
         user = User.objects.get(email='newclient@example.com')
         assert user.has_usable_password()
         assert user.check_password('securepass123')
+        assert user.auth_method == 'password'
 
     def test_create_client_without_password(self, admin_client):
-        """Test creating a client without password sets unusable password."""
+        """Test creating a client without password sets auth_method to invitation_pending."""
         data = {
             'email': 'newclient@example.com',
             'first_name': 'New',
@@ -197,6 +218,7 @@ class TestClientViewSetCreate:
         assert response.status_code == status.HTTP_201_CREATED
         user = User.objects.get(email='newclient@example.com')
         assert not user.has_usable_password()
+        assert user.auth_method == 'invitation_pending'
 
     def test_create_client_duplicate_email_fails(self, admin_client, user_factory):
         """Test creating client with duplicate email fails."""
@@ -363,6 +385,7 @@ class TestClientViewSetSendInvitation:
         """Test sending invitation to client without account."""
         client = user_factory(role='CLIENT', is_active=False)
         client.set_unusable_password()
+        client.auth_method = 'invitation_pending'
         client.save()
 
         response = admin_client.post(f'/api/clients/{client.id}/send_invitation/')
@@ -374,6 +397,8 @@ class TestClientViewSetSendInvitation:
     def test_send_invitation_to_client_with_account_fails(self, admin_client, user_factory):
         """Test sending invitation to client with active account fails."""
         client = user_factory(role='CLIENT', is_active=True, password='testpass123')
+        client.auth_method = 'password'
+        client.save()
 
         response = admin_client.post(f'/api/clients/{client.id}/send_invitation/')
 
@@ -452,9 +477,10 @@ class TestClientInvitationViewSetAccept:
     """Tests for ClientInvitationViewSet accept action."""
 
     def test_accept_invitation(self, api_client, user_factory):
-        """Test accepting invitation successfully."""
+        """Test accepting invitation successfully sets auth_method to password."""
         client = user_factory(role='CLIENT', is_active=False)
         client.set_unusable_password()
+        client.auth_method = 'invitation_pending'
         client.save()
         admin = user_factory(admin=True)
         invitation = ClientInvitation.objects.create(
@@ -481,10 +507,11 @@ class TestClientInvitationViewSetAccept:
         assert 'user' in response.data
         assert response.data['message'] == 'Account activated successfully'
 
-        # Verify client is activated
+        # Verify client is activated with correct auth_method
         client.refresh_from_db()
         assert client.is_active is True
         assert client.check_password('newpassword123')
+        assert client.auth_method == 'password'
 
         # Verify invitation is marked as accepted
         invitation.refresh_from_db()

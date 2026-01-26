@@ -144,6 +144,10 @@ def google_login(request):
             if not user.last_name and last_name:
                 user.last_name = last_name
                 updated_fields.append('last_name')
+            # Update auth_method if user was invitation_pending (now using Google)
+            if user.auth_method == 'invitation_pending':
+                user.auth_method = 'google'
+                updated_fields.append('auth_method')
             if updated_fields:
                 user.save(update_fields=updated_fields)
 
@@ -164,6 +168,7 @@ def google_login(request):
                     first_name=first_name,
                     last_name=last_name,
                     role='CLIENT',
+                    auth_method='google',
                 )
 
                 # Ensure profile exists (should be created by signal, but verify)

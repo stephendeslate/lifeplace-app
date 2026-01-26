@@ -11,8 +11,8 @@ These serializers should be kept simple and only include essential fields.
 
 class EventTypeSerializer(serializers.ModelSerializer):
     """Basic serializer for the EventType model"""
-    
+
     class Meta:
         model = EventType
-        fields = ['id', 'name', 'description', 'is_active', 'created_at', 'updated_at']
+        fields = ['id', 'name', 'description', 'is_active', 'color', 'created_at', 'updated_at']
         read_only_fields = ['id', 'created_at', 'updated_at']

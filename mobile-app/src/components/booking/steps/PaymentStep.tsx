@@ -180,6 +180,22 @@ export function PaymentStep({
     }));
   }, [gatewaysResponse]);
 
+  // Check if packages are selected (required for payment completion)
+  const hasPackagesSelected = useMemo(() => {
+    // Check multiple possible locations for packages data
+    const packagesFromStepData = state.stepData.package_selection?.selected_packages as unknown[] | undefined;
+    const packagesFromVenueSelection = (state.stepData.venue_selection as { selected_packages?: unknown[] } | undefined)?.selected_packages;
+    const packagesFromBookingData = state.currentSession?.booking_data?.selected_packages as unknown[] | undefined;
+
+    const packages = packagesFromStepData || packagesFromVenueSelection || packagesFromBookingData || [];
+    return Array.isArray(packages) && packages.length > 0;
+  }, [state.stepData.package_selection, state.stepData.venue_selection, state.currentSession?.booking_data]);
+
+  // Check if total is zero (no items selected)
+  const hasNoItems = useMemo(() => {
+    return parseFloat(state.pricingBreakdown?.total || '0') <= 0;
+  }, [state.pricingBreakdown?.total]);
+
   // Completion choice state (payment vs quote)
   const [completionChoice, setCompletionChoice] = useState<CompletionChoice>(
     data.completion_type === 'quote' ? 'quote' : (data.completion_type === 'payment' ? 'payment' : null)
@@ -488,8 +504,126 @@ export function PaymentStep({
     );
   }
 
-  // Show completion choice screen if quote requests are enabled
-  if (allowQuoteRequest && completionChoice === null) {
+  // Scenario 1: No items selected at all ($0 total) - Quote only
+  if (hasNoItems && completionChoice === null) {
+    return (
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={styles.contentContainer}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Header */}
+        <View style={styles.headerCenter}>
+          <Text style={styles.titleCenter}>Request a Quote</Text>
+          <Text style={styles.subtitleCenter}>
+            You haven't selected any packages or add-ons yet
+          </Text>
+        </View>
+
+        {/* Info Alert */}
+        <View style={styles.quoteOnlyInfoAlert}>
+          <Info size={20} color={colors.tertiary.teal} />
+          <View style={styles.quoteOnlyInfoContent}>
+            <Text style={styles.quoteOnlyInfoTitle}>Quote Request Only</Text>
+            <Text style={styles.quoteOnlyInfoText}>
+              Since no items are selected, you can submit a quote request and our team will prepare a custom proposal for your event.
+            </Text>
+          </View>
+        </View>
+
+        {/* Quote Request Option */}
+        <TouchableOpacity
+          style={styles.primaryOptionCard}
+          onPress={() => handleCompletionChoice('quote')}
+        >
+          <View style={styles.optionHeader}>
+            <Quotes size={32} color={colors.secondary.forest} weight="duotone" />
+            <View style={styles.optionHeaderText}>
+              <Text style={styles.primaryOptionTitle}>{quoteRequestButtonText}</Text>
+              <Text style={styles.optionSubtitle}>Get a custom proposal for your event</Text>
+            </View>
+          </View>
+
+          <Text style={styles.optionDescription}>{quoteRequestDescription}</Text>
+
+          <View style={styles.nextStepsBox}>
+            <Text style={styles.nextStepsTitle}>What happens next:</Text>
+            <Text style={styles.nextStepsItem}>• Our team reviews your request</Text>
+            <Text style={styles.nextStepsItem}>• We prepare a custom quote within 24 hours</Text>
+            <Text style={styles.nextStepsItem}>• You can then review and confirm your booking</Text>
+          </View>
+
+          <View style={styles.primaryButton}>
+            <PaperPlaneTilt size={16} color={colors.neutral.white} />
+            <Text style={styles.primaryButtonText}>Submit Quote Request</Text>
+          </View>
+        </TouchableOpacity>
+      </ScrollView>
+    );
+  }
+
+  // Scenario 2: Only add-ons selected (no packages) - Quote only with different message
+  if (!hasPackagesSelected && totalAmount > 0 && completionChoice === null) {
+    return (
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={styles.contentContainer}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Header */}
+        <View style={styles.headerCenter}>
+          <Text style={styles.titleCenter}>Request a Quote</Text>
+          <Text style={styles.subtitleCenter}>
+            Complete your booking with a custom quote
+          </Text>
+        </View>
+
+        {/* Info Alert */}
+        <View style={styles.quoteOnlyInfoAlert}>
+          <Info size={20} color={colors.tertiary.teal} />
+          <View style={styles.quoteOnlyInfoContent}>
+            <Text style={styles.quoteOnlyInfoTitle}>Package Required for Payment</Text>
+            <Text style={styles.quoteOnlyInfoText}>
+              You've selected add-ons but no package. A package is required to complete a booking with payment. Submit a quote request and our team will recommend the perfect package for you.
+            </Text>
+          </View>
+        </View>
+
+        {/* Quote Request Option */}
+        <TouchableOpacity
+          style={styles.primaryOptionCard}
+          onPress={() => handleCompletionChoice('quote')}
+        >
+          <View style={styles.optionHeader}>
+            <Quotes size={32} color={colors.secondary.forest} weight="duotone" />
+            <View style={styles.optionHeaderText}>
+              <Text style={styles.primaryOptionTitle}>{quoteRequestButtonText}</Text>
+              <Text style={styles.optionSubtitle}>Get package recommendations with your add-ons</Text>
+            </View>
+          </View>
+
+          <Text style={styles.optionDescription}>
+            Our team will recommend packages that complement your selected add-ons and fit your budget.
+          </Text>
+
+          <View style={styles.nextStepsBox}>
+            <Text style={styles.nextStepsTitle}>Your selected add-ons will be included:</Text>
+            <Text style={styles.nextStepsItem}>• Estimated add-ons total: {formatCurrency(totalAmount, { currency: 'PHP' })}</Text>
+            <Text style={styles.nextStepsItem}>• Package recommendations will be added</Text>
+            <Text style={styles.nextStepsItem}>• Final quote provided within 24 hours</Text>
+          </View>
+
+          <View style={styles.primaryButton}>
+            <PaperPlaneTilt size={16} color={colors.neutral.white} />
+            <Text style={styles.primaryButtonText}>Submit Quote Request</Text>
+          </View>
+        </TouchableOpacity>
+      </ScrollView>
+    );
+  }
+
+  // Scenario 3: Show completion choice screen if quote requests are enabled and packages are selected
+  if (allowQuoteRequest && hasPackagesSelected && completionChoice === null) {
     return (
       <ScrollView
         style={styles.container}
@@ -1633,6 +1767,31 @@ const styles = StyleSheet.create({
     ...typeScale.labelMedium,
     color: colors.semantic.error,
     flex: 1,
+  },
+  // Quote-only mode styles
+  quoteOnlyInfoAlert: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: colors.tertiary.tealSubtle,
+    padding: spacing.md,
+    borderRadius: layout.borderRadius.md,
+    gap: spacing.sm,
+    marginBottom: spacing.lg,
+    borderWidth: 1,
+    borderColor: colors.tertiary.teal + '40',
+  },
+  quoteOnlyInfoContent: {
+    flex: 1,
+  },
+  quoteOnlyInfoTitle: {
+    ...typeScale.labelMedium,
+    color: colors.tertiary.tealDark,
+    fontWeight: '600',
+    marginBottom: spacing.xxs,
+  },
+  quoteOnlyInfoText: {
+    ...typeScale.bodySmall,
+    color: colors.tertiary.tealDark,
   },
 });
 

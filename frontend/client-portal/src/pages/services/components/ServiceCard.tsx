@@ -2,9 +2,7 @@
 // Modern Organic Luxury redesigned service card
 
 import React from 'react';
-import { Box, Typography, Stack, Button } from '@mui/material';
-import { ArrowForward } from '@mui/icons-material';
-import { useNavigate } from 'react-router-dom';
+import { Box, Typography, Stack } from '@mui/material';
 import { ModernCard, AnimatedElement, tokens } from '../../../design-system';
 import type { ServiceCardProps } from '../types/services.types';
 
@@ -51,12 +49,7 @@ const getServiceAccentColor = (serviceId: string) => {
  * - Responsive layout
  */
 export const ServiceCard: React.FC<ServiceCardProps> = ({ service, index = 0 }) => {
-  const navigate = useNavigate();
   const accentColors = getServiceAccentColor(service.id);
-
-  const handleLearnMore = () => {
-    navigate('/booking');
-  };
 
   return (
     <AnimatedElement animation="slideUp" delay={200 + index * 100}>
@@ -163,41 +156,6 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({ service, index = 0 }) 
               </Box>
             ))}
           </Stack>
-
-          {/* CTA Button */}
-          <Box sx={{ mt: 'auto', pt: tokens.spacing.space[4] }}>
-            <Button
-              variant="outlined"
-              fullWidth
-              endIcon={<ArrowForward />}
-              onClick={handleLearnMore}
-              aria-label={`Learn more about ${service.name}`}
-              sx={{
-                color: tokens.color.base.sage[700],
-                borderColor: tokens.color.base.sage[400],
-                borderWidth: 2,
-                borderRadius: tokens.spacing.radius.lg,
-                fontWeight: tokens.typography.weights.semibold,
-                fontSize: tokens.typography.sizes.sm,
-                textTransform: 'none',
-                px: tokens.spacing.space[4],
-                py: tokens.spacing.space[2],
-                transition: tokens.animation.transition.smooth,
-                '&:hover': {
-                  borderWidth: 2,
-                  borderColor: tokens.color.base.sage[600],
-                  backgroundColor: tokens.color.base.sage[50],
-                  transform: 'translateY(-2px)',
-                  boxShadow: tokens.shadow.elevation.md,
-                },
-                '&:active': {
-                  transform: 'translateY(0)',
-                },
-              }}
-            >
-              {service.ctaText || 'Learn More'}
-            </Button>
-          </Box>
         </Stack>
       </ModernCard>
     </AnimatedElement>

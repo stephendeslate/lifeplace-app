@@ -7,7 +7,8 @@
       "updated_at": "2025-09-06T04:13:38.662",
       "name": "Wedding",
       "description": "Celebrate your happily ever after at Alfonso and Tagaytay's beautiful wedding reception venue",
-      "is_active": true
+      "is_active": true,
+      "color": "#d81b60"
     }
   },
   {
@@ -18,7 +19,8 @@
       "updated_at": "2025-12-20T02:47:29.768",
       "name": "Camps & Retreats",
       "description": "A great way to get back in touch with God and Nature.",
-      "is_active": true
+      "is_active": true,
+      "color": "#2d5016"
     }
   },
   {
@@ -29,7 +31,8 @@
       "updated_at": "2026-01-08T04:32:08.079",
       "name": "Team Building",
       "description": "Corporate team activities and facilitation",
-      "is_active": true
+      "is_active": true,
+      "color": "#1565c0"
     }
   },
   {
@@ -40,7 +43,8 @@
       "updated_at": "2026-01-08T04:32:08.081",
       "name": "Workshops",
       "description": "Educational and training events",
-      "is_active": true
+      "is_active": true,
+      "color": "#ed6c02"
     }
   },
   {
@@ -51,7 +55,8 @@
       "updated_at": "2026-01-08T08:54:54.520",
       "name": "Life Events",
       "description": "Birthdays, anniversaries, corporate events, and other celebrations",
-      "is_active": true
+      "is_active": true,
+      "color": "#9c27b0"
     }
   }
 ]

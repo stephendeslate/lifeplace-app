@@ -54,6 +54,18 @@ class User(AbstractUser):
     )
     role = models.CharField(max_length=10, choices=ROLE_CHOICES, default='CLIENT')
 
+    AUTH_METHOD_CHOICES = [
+        ('password', 'Password'),
+        ('google', 'Google OAuth'),
+        ('invitation_pending', 'Invitation Pending'),
+    ]
+    auth_method = models.CharField(
+        max_length=20,
+        choices=AUTH_METHOD_CHOICES,
+        default='invitation_pending',
+        help_text="Authentication method: password, google, or invitation_pending"
+    )
+
     # Granular admin permissions - only applies to ADMIN role users
     admin_permissions = models.JSONField(
         default=dict,

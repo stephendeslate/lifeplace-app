@@ -25,9 +25,8 @@ class ClientListSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'date_joined', 'email', 'has_account']
         
     def get_has_account(self, obj):
-        # Check if the user has a valid password set
-        # Use Django's built-in method to check for usable password
-        return obj.has_usable_password()
+        # Check if user has completed account setup (password or Google OAuth)
+        return obj.auth_method in ('password', 'google')
 
 
 class ClientDetailSerializer(serializers.ModelSerializer):
@@ -44,9 +43,9 @@ class ClientDetailSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ['id', 'date_joined', 'email', 'events', 'has_account']
     
-    def get_has_account(self, obj):  # ADD THIS METHOD
-        # Check if the user has a valid password set
-        return obj.has_usable_password()
+    def get_has_account(self, obj):
+        # Check if user has completed account setup (password or Google OAuth)
+        return obj.auth_method in ('password', 'google')
 
 
 class ClientCreateUpdateSerializer(serializers.ModelSerializer):
@@ -89,13 +88,13 @@ class ClientCreateUpdateSerializer(serializers.ModelSerializer):
         # Create user
         user = User.objects.create_user(**validated_data)
 
-        # Handle password properly
+        # Handle password and auth_method properly
         if password:
-            # Set usable password
             user.set_password(password)
+            user.auth_method = 'password'
         else:
-            # Set unusable password for clients without accounts
             user.set_unusable_password()
+            user.auth_method = 'invitation_pending'
 
         user.save()
 
@@ -120,6 +119,7 @@ class ClientCreateUpdateSerializer(serializers.ModelSerializer):
         # Update password if provided
         if password:
             instance.set_password(password)
+            instance.auth_method = 'password'
 
         instance.save()
 

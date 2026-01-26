@@ -7,6 +7,7 @@ export interface EventType {
   name: string;
   description: string;
   is_active: boolean;
+  color: string;
   created_at: string;
   updated_at: string;
 }

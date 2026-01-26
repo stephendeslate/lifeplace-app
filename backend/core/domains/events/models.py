@@ -88,6 +88,11 @@ class EventType(BaseModel):
     name = models.CharField(max_length=100)
     description = models.TextField(blank=True)
     is_active = models.BooleanField(default=True)
+    color = models.CharField(
+        max_length=7,
+        blank=True,
+        help_text="Hex color code for UI display (e.g., #2d5016)"
+    )
 
     def __str__(self):
         return self.name

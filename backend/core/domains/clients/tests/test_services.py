@@ -454,6 +454,8 @@ class TestClientInvitationServiceSendInvitation:
     def test_send_invitation_to_active_client_with_password_fails(self, user_factory):
         """Test sending invitation to active client with password raises exception."""
         client = user_factory(role='CLIENT', is_active=True, password='testpass123')
+        client.auth_method = 'password'
+        client.save()
         admin = user_factory(admin=True)
 
         with pytest.raises(ClientAlreadyActive):

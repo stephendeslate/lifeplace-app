@@ -28,17 +28,11 @@ interface CleanEventTypeSelectionProps {
   onSelectEventType: (eventType: EventType) => Promise<void>;
 }
 
-const getEventTypeColor = (eventType: EventType) => {
-  const colors = [
-    '#2d5016', // Deep Forest Green
-    '#5a7c47', // Forest Green
-    '#ed6c02', // Orange
-    '#9c27b0', // Purple
-    '#d32f2f', // Red
-    '#7a9469', // Light Forest Green
-  ];
+const DEFAULT_COLOR = '#5a7c47'; // Forest Green fallback
 
-  return colors[eventType.id % colors.length];
+const getEventTypeColor = (eventType: EventType) => {
+  // Use the color from the API if available, otherwise use default
+  return eventType.color || DEFAULT_COLOR;
 };
 
 export const CleanEventTypeSelection: React.FC<CleanEventTypeSelectionProps> = ({
