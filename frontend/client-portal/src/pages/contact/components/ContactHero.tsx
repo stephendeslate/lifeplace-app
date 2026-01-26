@@ -184,7 +184,7 @@ export const ContactHero: React.FC = () => {
                         fontWeight: tokens.typography.weights.medium,
                       }}
                     >
-                      (02) 123-4567
+                      (046) 889 0844
                     </Typography>
                   </Box>
 
@@ -222,7 +222,7 @@ export const ContactHero: React.FC = () => {
                         fontWeight: tokens.typography.weights.medium,
                       }}
                     >
-                      info@lifeplacealfonso.com
+                      reservations.lifeplace@gmail.com
                     </Typography>
                   </Box>
                 </Stack>

@@ -48,14 +48,14 @@ export const ContactSection: React.FC<ContactSectionProps> = ({
     {
       icon: Phone,
       label: 'Phone',
-      value: '(02) 123-4567',
+      value: '(046) 889 0844',
       color: tokens.color.base.sage[600],
       delay: 300,
     },
     {
       icon: Email,
       label: 'Email',
-      value: 'info@lifeplacealfonso.com',
+      value: 'reservations.lifeplace@gmail.com',
       color: tokens.color.base.terracotta[500],
       delay: 400,
     },
