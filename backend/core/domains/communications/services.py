@@ -472,8 +472,9 @@ class CommunicationService:
                     f"Reason: {reason}"
                 )
                 print(f"⏹️ Communication blocked by user preference: {reason}")
-                # Return None but don't create a failed record - user opted out
-                return None
+                # Raise exception with details instead of returning None
+                from .exceptions import SendingFailed
+                raise SendingFailed(f"Communication blocked by user preference: {reason}")
 
         print(f"🚀 Sending communication: {template.name} to {recipient}")
         
@@ -523,7 +524,9 @@ class CommunicationService:
         except Exception as e:
             logger.error(f"Failed to render template: {str(e)}")
             print(f"❌ Failed to render template: {str(e)}")
-            return None
+            # Raise exception with details instead of returning None
+            from .exceptions import SendingFailed
+            raise SendingFailed(f"Failed to render template: {str(e)}")
         
         # Create communication record with proper subject/body
         record = CommunicationRecord.objects.create(

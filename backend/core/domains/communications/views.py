@@ -748,23 +748,30 @@ class CommunicationRecordViewSet(viewsets.ReadOnlyModelViewSet):
             }, status=status.HTTP_202_ACCEPTED)
         else:
             # Synchronous sending
-            record = communication_service.send_communication_by_template(
-                template=template,
-                recipient=recipient,
-                context_data=context_data,
-                client=client,
-                sent_by=request.user,
-                event=event
-            )
-            
-            if record:
-                return Response(
-                    CommunicationRecordSerializer(record).data,
-                    status=status.HTTP_201_CREATED
+            try:
+                record = communication_service.send_communication_by_template(
+                    template=template,
+                    recipient=recipient,
+                    context_data=context_data,
+                    client=client,
+                    sent_by=request.user,
+                    event=event
                 )
-            else:
+
+                if record:
+                    return Response(
+                        CommunicationRecordSerializer(record).data,
+                        status=status.HTTP_201_CREATED
+                    )
+                else:
+                    return Response(
+                        {'error': 'Failed to send communication: Unknown error'},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+            except Exception as e:
+                logger.error(f"send_manual failed: {str(e)}")
                 return Response(
-                    {'error': 'Failed to send communication'},
+                    {'error': str(e)},
                     status=status.HTTP_400_BAD_REQUEST
                 )
     
