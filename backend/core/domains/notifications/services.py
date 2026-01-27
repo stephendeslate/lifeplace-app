@@ -376,7 +376,7 @@ class NotificationService:
                 'custom_body': email_body,
             }
 
-            record = communication_service.send_communication_by_template(
+            record = communication_service.send_communication(
                 template_name=email_template_name,
                 recipient=notification.recipient.email,
                 context_data=context_data,
@@ -443,7 +443,7 @@ class NotificationService:
                 'custom_body': sms_content,
             }
 
-            record = communication_service.send_communication_by_template(
+            record = communication_service.send_communication(
                 template_name=sms_template_name,
                 recipient=phone_number,
                 context_data=context_data,
@@ -950,7 +950,7 @@ class NotificationDigestService:
                 'content': f'You have {digest.notification_count} unread notifications',
             }
 
-            record = communication_service.send_communication_by_template(
+            record = communication_service.send_communication(
                 template_name=digest_template_name,
                 recipient=digest.user.email,
                 context_data=context_data,
@@ -1009,7 +1009,7 @@ class NotificationDigestService:
                 'content': f'You have {digest.notification_count} unread notifications',
             }
 
-            record = communication_service.send_communication_by_template(
+            record = communication_service.send_communication(
                 template_name=sms_template_name,
                 recipient=phone_number,
                 context_data=context_data,
