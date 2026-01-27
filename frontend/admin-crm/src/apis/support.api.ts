@@ -11,6 +11,14 @@ import type {
   SupportMessage,
 } from '../types/support.types';
 
+// Paginated response type
+interface PaginatedResponse<T> {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: T[];
+}
+
 export const supportApi = {
   // List all support inquiries
   getInquiries: async (filters?: SupportFilters): Promise<SupportInquiry[]> => {
@@ -21,8 +29,8 @@ export const supportApi = {
     if (filters?.priority) params.append('priority', filters.priority);
     if (filters?.search) params.append('search', filters.search);
 
-    const response = await api.get<SupportInquiry[]>(`/messaging/admin/support/?${params.toString()}`);
-    return response.data;
+    const response = await api.get<PaginatedResponse<SupportInquiry>>(`/messaging/admin/support/?${params.toString()}`);
+    return response.data.results;
   },
 
   // Get single support inquiry detail
