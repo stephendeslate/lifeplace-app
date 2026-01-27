@@ -33,16 +33,34 @@ interface TimezoneDisplayMode {
 }
 
 /**
+ * Internal helper to parse a date string as Manila time
+ * Uses parseDateTimeAsManila for strings without timezone info
+ */
+function parseAsManila(date: string | Date): Date {
+  if (typeof date !== 'string') return date;
+  // If string has timezone info, use parseISO (it handles timezones correctly)
+  if (date.includes('+') || date.includes('Z') || date.match(/[+-]\d{2}:\d{2}$/)) {
+    return parseISO(date);
+  }
+  // Otherwise, interpret as Manila time (API returns naive datetimes in PHT)
+  return fromZonedTime(date, BUSINESS_TIMEZONE);
+}
+
+/**
  * Format a date/time for display in Philippines timezone
+ *
+ * IMPORTANT: This function interprets datetime strings WITHOUT timezone info
+ * as Philippine Time (PHT). This matches our backend which stores all datetimes
+ * as naive datetimes in PHT (USE_TZ=False, TIME_ZONE='Asia/Manila').
  */
 export function formatPhilippinesTime(
   date: string | Date,
   includeTimezone: boolean = true,
   formatString: string = 'MMM d, yyyy h:mm a'
 ): string {
-  const dateObj = typeof date === 'string' ? parseISO(date) : date;
+  const dateObj = parseAsManila(date);
   const formatted = formatInTimeZone(dateObj, BUSINESS_TIMEZONE, formatString);
-  
+
   if (includeTimezone) {
     return `${formatted} ${BUSINESS_TIMEZONE_DISPLAY}`;
   }
@@ -51,20 +69,22 @@ export function formatPhilippinesTime(
 
 /**
  * Format date/time based on user's display preferences
+ *
+ * IMPORTANT: Datetime strings without timezone info are interpreted as PHT.
  */
 export function formatWithUserPreference(
   date: string | Date,
   displayMode: TimezoneDisplayMode,
   formatString: string = 'MMM d, yyyy h:mm a'
 ): { primary: string; secondary?: string } {
-  const dateObj = typeof date === 'string' ? parseISO(date) : date;
-  
+  const dateObj = parseAsManila(date);
+
   const primary = formatPhilippinesTime(date, true, formatString);
-  
+
   if (displayMode.mode === 'business_only') {
     return { primary };
   }
-  
+
   if (displayMode.userTimezone && displayMode.userTimezone !== BUSINESS_TIMEZONE) {
     try {
       const userFormatted = formatInTimeZone(
@@ -73,7 +93,7 @@ export function formatWithUserPreference(
         formatString
       );
       const tzAbbr = formatInTimeZone(dateObj, displayMode.userTimezone, 'zzz');
-      
+
       if (displayMode.mode === 'business_with_local') {
         // Show as secondary info
         return {
@@ -90,7 +110,7 @@ export function formatWithUserPreference(
       console.error('Error formatting user timezone:', error);
     }
   }
-  
+
   return { primary };
 }
 
@@ -103,23 +123,27 @@ export function getUserTimezone(): string {
 
 /**
  * Convert datetime between timezones
+ *
+ * IMPORTANT: Datetime strings without timezone info are interpreted as PHT.
  */
 export function convertTimezone(
   date: string | Date,
   fromTimezone: string,
   toTimezone: string
 ): Date {
-  const dateObj = typeof date === 'string' ? parseISO(date) : date;
-  
+  const dateObj = parseAsManila(date);
+
   // First convert to the source timezone
   const sourceTime = toZonedTime(dateObj, fromTimezone);
-  
+
   // Then convert to target timezone
   return toZonedTime(sourceTime, toTimezone);
 }
 
 /**
  * Format dual timezone display for admin view
+ *
+ * IMPORTANT: Datetime strings without timezone info are interpreted as PHT.
  */
 export function formatDualTimezone(
   date: string | Date,
@@ -129,23 +153,23 @@ export function formatDualTimezone(
   admin: string;
   isSameDay: boolean;
 } {
-  const dateObj = typeof date === 'string' ? parseISO(date) : date;
-  
+  const dateObj = parseAsManila(date);
+
   const businessFormatted = formatInTimeZone(
     dateObj,
     BUSINESS_TIMEZONE,
     'MMM d, yyyy h:mm a'
   );
-  
+
   const adminFormatted = formatInTimeZone(
     dateObj,
     adminTimezone,
     'MMM d, yyyy h:mm a'
   );
-  
+
   const businessDate = formatInTimeZone(dateObj, BUSINESS_TIMEZONE, 'yyyy-MM-dd');
   const adminDate = formatInTimeZone(dateObj, adminTimezone, 'yyyy-MM-dd');
-  
+
   return {
     business: `${businessFormatted} ${BUSINESS_TIMEZONE_DISPLAY}`,
     admin: `${adminFormatted} ${formatInTimeZone(dateObj, adminTimezone, 'zzz')}`,
@@ -155,9 +179,11 @@ export function formatDualTimezone(
 
 /**
  * Business hours check (9 AM - 6 PM Philippines time)
+ *
+ * IMPORTANT: Datetime strings without timezone info are interpreted as PHT.
  */
 export function isWithinBusinessHours(date: Date | string): boolean {
-  const dateObj = typeof date === 'string' ? parseISO(date) : date;
+  const dateObj = parseAsManila(date);
   const philippinesTime = toZonedTime(dateObj, BUSINESS_TIMEZONE);
   const hours = philippinesTime.getHours();
   const dayOfWeek = philippinesTime.getDay();
@@ -233,20 +259,22 @@ export function getBusinessHoursStatus(): {
 
 /**
  * Format time for calendar/scheduler display
+ *
+ * IMPORTANT: Datetime strings without timezone info are interpreted as PHT.
  */
 export function formatForCalendar(
   date: string | Date,
   showBothTimezones: boolean = false,
   adminTimezone?: string
 ): string {
-  const dateObj = typeof date === 'string' ? parseISO(date) : date;
-  
+  const dateObj = parseAsManila(date);
+
   if (!showBothTimezones || !adminTimezone) {
     return formatPhilippinesTime(date, true, 'MMM d h:mm a');
   }
-  
+
   const dual = formatDualTimezone(date, adminTimezone);
-  
+
   if (dual.isSameDay) {
     return `${formatInTimeZone(dateObj, BUSINESS_TIMEZONE, 'h:mm a')} ${BUSINESS_TIMEZONE_DISPLAY} / ${formatInTimeZone(dateObj, adminTimezone, 'h:mm a zzz')}`;
   } else {
@@ -285,9 +313,11 @@ export function getTodayStringInManila(): string {
 
 /**
  * Check if a given date is "today" in Manila timezone
+ *
+ * IMPORTANT: Datetime strings without timezone info are interpreted as PHT.
  */
 export function isTodayInManila(date: Date | string): boolean {
-  const dateObj = typeof date === 'string' ? parseISO(date) : date;
+  const dateObj = parseAsManila(date);
   const todayStr = getTodayStringInManila();
   const dateStr = formatInTimeZone(dateObj, BUSINESS_TIMEZONE, 'yyyy-MM-dd');
   return todayStr === dateStr;
@@ -437,13 +467,15 @@ export function parseDateTimeAsManila(dateTimeStr: string): Date {
  * should be compared in Manila timezone context. The standard `isSameDay` compares
  * dates in the browser's local timezone, which can give incorrect results.
  *
+ * Datetime strings without timezone info are interpreted as PHT.
+ *
  * @param date1 - First date to compare
  * @param date2 - Second date to compare
  * @returns true if both dates are the same day in Manila timezone
  */
 export function isSameDayInManila(date1: Date | string, date2: Date | string): boolean {
-  const d1 = typeof date1 === 'string' ? parseISO(date1) : date1;
-  const d2 = typeof date2 === 'string' ? parseISO(date2) : date2;
+  const d1 = parseAsManila(date1);
+  const d2 = parseAsManila(date2);
 
   const d1Str = formatInTimeZone(d1, BUSINESS_TIMEZONE, 'yyyy-MM-dd');
   const d2Str = formatInTimeZone(d2, BUSINESS_TIMEZONE, 'yyyy-MM-dd');

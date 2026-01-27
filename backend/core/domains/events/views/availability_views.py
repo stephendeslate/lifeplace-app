@@ -494,14 +494,28 @@ class PublicEventAvailabilityAPIView(APIView):
             # Parse optional event type filter
             event_type_id = request.query_params.get('event_type_id')
 
-            # Query for CONFIRMED events in the date range
+            # IMPORTANT: Blocked dates must apply to ALL event types
+            # First, get ALL blocked dates regardless of event type
+            all_blocked_events = Event.objects.filter(
+                start_date__date__gte=start_date,
+                start_date__date__lte=end_date,
+                status='CONFIRMED',
+                date_blocked=True
+            ).exclude(status='CANCELLED')
+
+            # Build set of globally blocked dates (applies to ALL event types)
+            global_blocked_dates = set()
+            for event in all_blocked_events:
+                global_blocked_dates.add(event.start_date.date().isoformat())
+
+            # Query for CONFIRMED events in the date range (filtered by event_type if provided)
             events = Event.objects.filter(
                 start_date__date__gte=start_date,
                 start_date__date__lte=end_date,
                 status='CONFIRMED'
             ).exclude(status='CANCELLED').select_related('event_type')
 
-            # Apply event type filter if provided
+            # Apply event type filter if provided (for display purposes only)
             if event_type_id:
                 try:
                     events = events.filter(event_type_id=int(event_type_id))
@@ -514,20 +528,31 @@ class PublicEventAvailabilityAPIView(APIView):
             # Build date summary for availability calendar
             # Group events by date and determine if date is blocked
             date_summary = {}
+
+            # First, add all globally blocked dates to the summary
+            for blocked_date in global_blocked_dates:
+                date_summary[blocked_date] = {
+                    'date': blocked_date,
+                    'date_blocked': True,  # Globally blocked
+                    'event_count': 0,
+                    'events': [],
+                }
+
+            # Then add events from the filtered query
             for event in events:
                 event_date = event.start_date.date().isoformat()
                 if event_date not in date_summary:
                     date_summary[event_date] = {
                         'date': event_date,
-                        'date_blocked': False,
+                        'date_blocked': event_date in global_blocked_dates,  # Check global
                         'event_count': 0,
                         'events': [],
                     }
 
                 date_summary[event_date]['event_count'] += 1
 
-                # Date is blocked if ANY event on that date has date_blocked=True
-                if event.date_blocked:
+                # Ensure date is marked blocked if it's in global blocked dates
+                if event_date in global_blocked_dates:
                     date_summary[event_date]['date_blocked'] = True
 
                 date_summary[event_date]['events'].append({
@@ -554,12 +579,8 @@ class PublicEventAvailabilityAPIView(APIView):
                     'date_blocked': event.date_blocked,
                 })
 
-            # Calculate blocked dates for the calendar
-            blocked_dates = [
-                date_info['date']
-                for date_info in date_summary.values()
-                if date_info['date_blocked']
-            ]
+            # Blocked dates = global blocked dates (applies to ALL event types)
+            blocked_dates = sorted(list(global_blocked_dates))
 
             return Response({
                 'start_date': start_date.isoformat(),
