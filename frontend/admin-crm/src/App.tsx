@@ -36,7 +36,7 @@ import { CommunicationTemplates } from './pages/settings/templates/Communication
 import { EmailLayouts } from './pages/settings/templates/EmailLayouts';
 import { LegalDocumentsPage } from './pages/settings/legal';
 import { PaymentsOverview, PaymentProfile, NewPayment } from './pages/payments';
-import { SupportPage } from './pages/support';
+import { SupportPage, SupportDetailPage } from './pages/support';
 // FunnelAnalytics removed - functionality now in AnalyticsDashboard
 
 // Protected Route Component
@@ -594,6 +594,14 @@ const AppRouter: React.FC = () => {
         element={
           <ProtectedRoute>
             <SupportPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/support/:id"
+        element={
+          <ProtectedRoute>
+            <SupportDetailPage />
           </ProtectedRoute>
         }
       />
