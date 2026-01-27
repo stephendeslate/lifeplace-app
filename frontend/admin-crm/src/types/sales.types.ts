@@ -59,6 +59,11 @@ export interface EventQuote {
   discount_amount: string;
   total_amount: string;
   valid_until: string;
+  // Expiration calculated fields (matches contracts pattern)
+  is_expired?: boolean;
+  is_expiring_soon?: boolean;
+  days_until_expiry?: number | null;
+  expiry_urgency?: 'CRITICAL' | 'HIGH' | 'NORMAL' | null;
   sent_at: string | null;
   accepted_at: string | null;
   rejected_at: string | null;

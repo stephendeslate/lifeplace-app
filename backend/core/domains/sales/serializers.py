@@ -127,6 +127,12 @@ class EventQuoteSerializer(serializers.ModelSerializer):
     options = QuoteOptionSerializer(many=True, read_only=True)
     activities = QuoteActivitySerializer(many=True, read_only=True)
     status_display = serializers.CharField(source='get_status_display', read_only=True)
+
+    # Expiration calculated fields (matches contracts pattern)
+    is_expired = serializers.SerializerMethodField()
+    is_expiring_soon = serializers.SerializerMethodField()
+    days_until_expiry = serializers.SerializerMethodField()
+    expiry_urgency = serializers.SerializerMethodField()
     
     class Meta:
         model = EventQuote
@@ -136,7 +142,10 @@ class EventQuoteSerializer(serializers.ModelSerializer):
             'service_charge_amount', 'discount_amount', 'total_amount', 'valid_until', 'sent_at',
             'accepted_at', 'rejected_at', 'rejection_reason', 'notes',
             'terms_and_conditions', 'client_message', 'signature_data',
-            'line_items', 'options', 'activities', 'created_at', 'updated_at'
+            'line_items', 'options', 'activities',
+            # Expiration calculated fields
+            'is_expired', 'is_expiring_soon', 'days_until_expiry', 'expiry_urgency',
+            'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'version', 'created_at', 'updated_at']
     
@@ -151,6 +160,55 @@ class EventQuoteSerializer(serializers.ModelSerializer):
             'start_date': obj.event.start_date,
             'status': obj.event.status,
         }
+
+    def get_is_expired(self, obj):
+        """
+        Check if quote is expired.
+        Only applies to DRAFT and SENT quotes - accepted/rejected/expired quotes don't need this check.
+        """
+        if obj.status not in ['DRAFT', 'SENT']:
+            return False
+        if obj.valid_until:
+            from datetime import date
+            return date.today() > obj.valid_until
+        return False
+
+    def get_is_expiring_soon(self, obj):
+        """
+        Check if quote is expiring within 7 days.
+        """
+        if obj.status not in ['DRAFT', 'SENT'] or not obj.valid_until:
+            return False
+        from datetime import date
+        days = (obj.valid_until - date.today()).days
+        return 0 < days <= 7
+
+    def get_days_until_expiry(self, obj):
+        """
+        Get number of days until quote expires.
+        Negative values indicate already expired.
+        """
+        if obj.status not in ['DRAFT', 'SENT'] or not obj.valid_until:
+            return None
+        from datetime import date
+        return (obj.valid_until - date.today()).days
+
+    def get_expiry_urgency(self, obj):
+        """
+        Get expiry urgency level.
+        Returns 'CRITICAL' (expired or 1 day), 'HIGH' (2-3 days), 'NORMAL' (4-7 days), or None.
+        """
+        if obj.status not in ['DRAFT', 'SENT'] or not obj.valid_until:
+            return None
+        from datetime import date
+        days = (obj.valid_until - date.today()).days
+        if days <= 1:
+            return 'CRITICAL'
+        elif days <= 3:
+            return 'HIGH'
+        elif days <= 7:
+            return 'NORMAL'
+        return None
 
 
 class ClientEventQuoteSerializer(serializers.ModelSerializer):

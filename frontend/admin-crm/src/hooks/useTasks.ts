@@ -122,16 +122,23 @@ export const useTasks = () => {
 
   // Transform and combine tasks
   const tasksByDomain = useMemo<TasksByDomain>(() => {
-    const quotes = [
-      ...draftQuotes.map(transformQuoteToTask),
-      ...sentQuotes.map(transformQuoteToTask),
-    ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    // Filter out expired quotes before transformation
+    const activeQuotes = [...draftQuotes, ...sentQuotes].filter(
+      quote => !quote.is_expired
+    );
+    const quotes = activeQuotes
+      .map(transformQuoteToTask)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
-    const contracts = [
-      ...sentContracts.map(transformContractToTask),
-      ...partiallySignedContracts.map(transformContractToTask),
-    ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    // Filter out expired contracts before transformation
+    const activeContracts = [...sentContracts, ...partiallySignedContracts].filter(
+      contract => !contract.is_expired
+    );
+    const contracts = activeContracts
+      .map(transformContractToTask)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
+    // Payments are NOT filtered - overdue payments still need attention
     const payments = actionablePayments
       .map(transformPaymentToTask)
       .sort((a, b) => {
