@@ -445,6 +445,7 @@ class SupportInquiryViewSet(viewsets.ModelViewSet):
     """
     permission_classes = [IsAuthenticated]
     throttle_classes = [UserRateThrottle]
+    pagination_class = None  # Client inquiries don't need pagination
 
     def get_serializer_class(self):
         if self.action == 'create':
