@@ -749,13 +749,16 @@ class CommunicationRecordViewSet(viewsets.ReadOnlyModelViewSet):
         else:
             # Synchronous sending
             try:
+                # Skip preference check for manual admin sends - admin is intentionally
+                # sending to this specific client, regardless of their email preferences
                 record = communication_service.send_communication_by_template(
                     template=template,
                     recipient=recipient,
                     context_data=context_data,
                     client=client,
                     sent_by=request.user,
-                    event=event
+                    event=event,
+                    skip_preference_check=True
                 )
 
                 if record:
