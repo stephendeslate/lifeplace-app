@@ -4,6 +4,12 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useMemo } from 'react';
 import { availabilityApi } from '../apis/availability.api';
 import { useToastActions } from '../contexts/ToastContext';
+import {
+  parseDateStringAsManila,
+  isTodayInManila,
+  isSameMonthInManila,
+  getDayOfWeekInManila,
+} from '../utils/timezone';
 
 interface ApiError {
   response?: {
@@ -84,20 +90,22 @@ export const useCalendarAvailability = (
   });
 
   // Enhanced calendar data with additional computed properties
+  // IMPORTANT: Use Manila timezone utilities for all date comparisons
   const calendarData: CalendarDateInfo[] = useMemo(() => {
     if (!query.data || !Array.isArray(query.data)) return [];
 
+    // Parse startDate as Manila time for month comparison
+    const currentMonth = parseDateStringAsManila(startDate);
+
     return query.data.map((item: DateAvailabilityInfo) => {
-      const date = new Date(item.date);
-      const today = new Date();
-      const currentMonth = new Date(startDate);
+      // Parse the date as Manila time (PHT)
+      const date = parseDateStringAsManila(item.date);
 
       return {
         ...item,
-        isToday: date.toDateString() === today.toDateString(),
-        isCurrentMonth: date.getMonth() === currentMonth.getMonth() && 
-                       date.getFullYear() === currentMonth.getFullYear(),
-        isWeekend: date.getDay() === 0 || date.getDay() === 6,
+        isToday: isTodayInManila(date),
+        isCurrentMonth: isSameMonthInManila(date, currentMonth),
+        isWeekend: getDayOfWeekInManila(date) === 0 || getDayOfWeekInManila(date) === 6,
         hasEvents: item.total_events_count > 0,
         eventCount: item.total_events_count,
       };

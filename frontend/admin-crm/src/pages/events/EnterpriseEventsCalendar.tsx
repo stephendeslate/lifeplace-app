@@ -54,8 +54,6 @@ import {
   endOfWeek,
   addMonths,
   subMonths,
-  isSameDay,
-  parseISO,
   addWeeks,
   subWeeks,
   startOfWeek as startOfWeekDate,
@@ -70,6 +68,9 @@ import {
   isSameMonthInManila,
   getDayOfWeekInManila,
   formatInManila,
+  parseDateStringAsManila,
+  parseDateTimeAsManila,
+  isSameDayInManila,
 } from '../../utils/timezone';
 import { useNavigate } from 'react-router-dom';
 
@@ -188,11 +189,12 @@ export const EnterpriseEventsCalendar: React.FC = () => {
   );
 
   // Convert events to calendar events with parsed dates
+  // IMPORTANT: Use parseDateTimeAsManila to interpret API datetimes as PHT
   const calendarEvents: CalendarEvent[] = useMemo(() => {
     return events.map(event => ({
       ...event,
-      startDate: parseISO(event.start_date),
-      endDate: event.end_date ? parseISO(event.end_date) : null,
+      startDate: parseDateTimeAsManila(event.start_date),
+      endDate: event.end_date ? parseDateTimeAsManila(event.end_date) : null,
     }));
   }, [events]);
 
@@ -206,9 +208,10 @@ export const EnterpriseEventsCalendar: React.FC = () => {
   }, [currentDate, view]);
 
   // Get events for a specific date
+  // IMPORTANT: Use isSameDayInManila to compare dates in PHT context
   const getEventsForDate = useCallback((date: Date): CalendarEvent[] => {
     return calendarEvents.filter(event => {
-      if (isSameDay(event.startDate, date)) return true;
+      if (isSameDayInManila(event.startDate, date)) return true;
       if (event.endDate && event.startDate <= date && date <= event.endDate) return true;
       return false;
     });
@@ -418,10 +421,11 @@ export const EnterpriseEventsCalendar: React.FC = () => {
   }, []);
 
   const getEventTime = useCallback((event: CalendarEvent) => {
-    if (event.endDate && !isSameDay(event.startDate, event.endDate)) {
+    if (event.endDate && !isSameDayInManila(event.startDate, event.endDate)) {
       return 'Multi-day';
     }
-    return format(event.startDate, 'HH:mm');
+    // Format time in PHT
+    return formatInManila(event.startDate, 'HH:mm');
   }, []);
   
   const getDateCellStyle = useCallback((dateInfo: CalendarDateInfo) => {
@@ -506,7 +510,8 @@ export const EnterpriseEventsCalendar: React.FC = () => {
           {weeks.map((week, weekIndex) => (
             <Box key={weekIndex} sx={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 1, mb: 1 }}>
               {week.map((dateInfo) => {
-                const date = new Date(dateInfo.date);
+                // IMPORTANT: Use parseDateStringAsManila to interpret date as PHT midnight
+                const date = parseDateStringAsManila(dateInfo.date);
                 const dayEvents = getEventsForDate(date);
                 
                 return (
@@ -633,7 +638,8 @@ export const EnterpriseEventsCalendar: React.FC = () => {
           {/* Week Header */}
           <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 1, mb: 2 }}>
             {enhancedCalendarDates.map(dateInfo => {
-              const date = new Date(dateInfo.date);
+              // IMPORTANT: Use parseDateStringAsManila to interpret date as PHT midnight
+              const date = parseDateStringAsManila(dateInfo.date);
               return (
                 <Box key={dateInfo.date} sx={{ textAlign: 'center', p: 1 }}>
                   <Stack spacing={0.5} alignItems="center">
@@ -661,7 +667,8 @@ export const EnterpriseEventsCalendar: React.FC = () => {
           {/* Week Grid */}
           <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 1 }}>
             {enhancedCalendarDates.map(dateInfo => {
-              const date = new Date(dateInfo.date);
+              // IMPORTANT: Use parseDateStringAsManila to interpret date as PHT midnight
+              const date = parseDateStringAsManila(dateInfo.date);
               const dayEvents = getEventsForDate(date);
               
               return (

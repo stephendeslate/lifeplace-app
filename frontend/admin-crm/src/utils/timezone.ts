@@ -6,7 +6,7 @@
  */
 
 import { parseISO } from 'date-fns';
-import { toZonedTime, formatInTimeZone } from 'date-fns-tz';
+import { toZonedTime, formatInTimeZone, fromZonedTime } from 'date-fns-tz';
 
 // Business timezone constants (Philippines)
 export const BUSINESS_TIMEZONE = 'Asia/Manila';
@@ -392,4 +392,61 @@ export function getWeekDates(currentDate: Date): Date[] {
   }
 
   return dates;
+}
+
+/**
+ * Parse a date-only string (YYYY-MM-DD) as Manila time (midnight PHT)
+ *
+ * IMPORTANT: Use this instead of `new Date(dateString)` when parsing date strings
+ * from the API or calendar data. JavaScript's `new Date("YYYY-MM-DD")` interprets
+ * the date as UTC midnight, which causes incorrect day calculations in other timezones.
+ *
+ * @param dateStr - Date string in "YYYY-MM-DD" format
+ * @returns Date object representing midnight PHT on that date
+ */
+export function parseDateStringAsManila(dateStr: string): Date {
+  // Append time and PHT offset, then parse
+  // fromZonedTime interprets the datetime as being in the specified timezone
+  return fromZonedTime(`${dateStr}T00:00:00`, BUSINESS_TIMEZONE);
+}
+
+/**
+ * Parse a datetime string (without timezone) as Manila time
+ *
+ * IMPORTANT: Use this instead of `parseISO(dateTimeString)` when parsing datetime
+ * strings from the API. The API returns datetimes without timezone info, but they
+ * are stored as Philippine Time (PHT). Using parseISO would incorrectly interpret
+ * them as the browser's local timezone.
+ *
+ * @param dateTimeStr - DateTime string in "YYYY-MM-DDTHH:mm:ss" format (no timezone)
+ * @returns Date object representing that moment in PHT
+ */
+export function parseDateTimeAsManila(dateTimeStr: string): Date {
+  // If the string already has a timezone, parse it directly
+  if (dateTimeStr.includes('+') || dateTimeStr.includes('Z') || dateTimeStr.match(/[+-]\d{2}:\d{2}$/)) {
+    return parseISO(dateTimeStr);
+  }
+  // Otherwise, interpret as Manila time
+  return fromZonedTime(dateTimeStr, BUSINESS_TIMEZONE);
+}
+
+/**
+ * Check if two dates represent the same day in Manila timezone
+ *
+ * IMPORTANT: Use this instead of date-fns `isSameDay` when comparing dates that
+ * should be compared in Manila timezone context. The standard `isSameDay` compares
+ * dates in the browser's local timezone, which can give incorrect results.
+ *
+ * @param date1 - First date to compare
+ * @param date2 - Second date to compare
+ * @returns true if both dates are the same day in Manila timezone
+ */
+export function isSameDayInManila(date1: Date | string, date2: Date | string): boolean {
+  const d1 = typeof date1 === 'string' ? parseISO(date1) : date1;
+  const d2 = typeof date2 === 'string' ? parseISO(date2) : date2;
+
+  const d1Str = formatInTimeZone(d1, BUSINESS_TIMEZONE, 'yyyy-MM-dd');
+  const d2Str = formatInTimeZone(d2, BUSINESS_TIMEZONE, 'yyyy-MM-dd');
+
+  return d1Str === d2Str;
 }

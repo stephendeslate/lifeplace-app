@@ -1,6 +1,7 @@
 // frontend/admin-crm/src/apis/availability.api.ts
 
 import api from '../utils/api';
+import { parseDateStringAsManila, getDayOfWeekInManila } from '../utils/timezone';
 import type {
   DateAvailabilityInfo,
   AvailabilityRequest,
@@ -205,10 +206,11 @@ export class AvailabilityAPI {
       let availability = response.availability;
 
       // Filter out weekends if requested
+      // IMPORTANT: Use Manila timezone for day-of-week calculation
       if (options?.include_weekends === false) {
         availability = availability.filter(item => {
-          const date = new Date(item.date);
-          const dayOfWeek = date.getDay();
+          const date = parseDateStringAsManila(item.date);
+          const dayOfWeek = getDayOfWeekInManila(date);
           return dayOfWeek !== 0 && dayOfWeek !== 6; // 0 = Sunday, 6 = Saturday
         });
       }
