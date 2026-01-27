@@ -27,16 +27,14 @@ def create_notification_types(sender, **kwargs):
         logger.warning("NotificationType model not found, skipping notification type creation")
         return
     
-    # Check if notification types already exist to avoid duplicates
+    # Check if notification types table exists
     try:
-        if NotificationType.objects.exists():
-            logger.info("Notification types already exist, skipping creation")
-            return
+        NotificationType.objects.exists()
     except ProgrammingError as e:
         logger.warning(f"Cannot check NotificationType existence, table may not exist: {str(e)}")
         return
-    
-    logger.info("Creating default notification types...")
+
+    logger.info("Syncing default notification types...")
     
     try:
         from .notification_types_data import get_default_notification_types
@@ -65,7 +63,7 @@ def create_notification_types(sender, **kwargs):
                     logger.info(f"Updated notification type: {type_data['code']}")
                     updated_count += 1
         
-        logger.info(f"Successfully created {created_count} and updated {updated_count} notification types")
+        logger.info(f"Notification types synced: {created_count} created, {updated_count} updated")
     
     except Exception as e:
         logger.error(f"Error creating notification types: {str(e)}")

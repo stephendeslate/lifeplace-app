@@ -39,7 +39,10 @@ def connect_domain_signals():
         
         # Client invitation signals
         _connect_client_invitation_signals(NotificationService)
-        
+
+        # Support/messaging signals
+        _connect_support_signals(NotificationService)
+
         logger.info("Successfully connected all domain signals")
         
     except ImportError as e:
@@ -572,6 +575,110 @@ def _connect_client_invitation_signals(NotificationService):
         logger.info("ClientInvitation model not found, skipping client invitation signal connections")
     except Exception as e:
         logger.error(f"Failed to connect client invitation signals: {str(e)}")
+
+
+def _connect_support_signals(NotificationService):
+    """Connect support/messaging-related signals"""
+    if not apps.is_installed('core.domains.messaging'):
+        return
+
+    try:
+        MessageThread = apps.get_model('messaging', 'MessageThread')
+        Message = apps.get_model('messaging', 'Message')
+
+        @receiver(post_save, sender=MessageThread)
+        def support_thread_notifications(sender, instance, created, **kwargs):
+            """Generate notifications for new support inquiries"""
+            if not created or instance.thread_type != 'support':
+                return
+
+            try:
+                # Notify all admins about new support inquiry
+                admin_users = User.objects.filter(role='ADMIN', is_active=True)
+                for admin in admin_users:
+                    try:
+                        NotificationService.create_notification(
+                            recipient=admin,
+                            notification_type_code='SUPPORT_INQUIRY_CREATED',
+                            context={
+                                'subject': instance.subject,
+                                'client_name': instance.client.get_display_name(),
+                                'client_email': instance.client.email,
+                                'category': instance.get_category_display() if instance.category else 'General',
+                                'priority': instance.priority or 'normal',
+                                'action_url': f'/support/{instance.id}',
+                            },
+                            client=instance.client
+                        )
+                    except Exception as e:
+                        logger.error(f"Failed to create support inquiry notification for admin {admin.email}: {str(e)}")
+            except Exception as e:
+                logger.error(f"Error in support_thread_notifications signal: {str(e)}")
+
+        @receiver(post_save, sender=Message)
+        def support_message_notifications(sender, instance, created, **kwargs):
+            """Generate notifications for support replies"""
+            if not created:
+                return
+
+            thread = instance.thread
+            if thread.thread_type != 'support':
+                return
+
+            # Skip internal notes
+            if instance.is_internal_note:
+                return
+
+            try:
+                # If admin sent message, notify client
+                if instance.sender.role == 'ADMIN':
+                    NotificationService.create_notification(
+                        recipient=thread.client,
+                        notification_type_code='SUPPORT_INQUIRY_REPLY',
+                        context={
+                            'subject': thread.subject,
+                            'action_url': f'/client/support/{thread.id}',
+                        },
+                    )
+            except Exception as e:
+                logger.error(f"Failed to create support reply notification: {str(e)}")
+
+        @receiver(pre_save, sender=MessageThread)
+        def track_support_status_changes(sender, instance, **kwargs):
+            """Track status changes for support threads"""
+            if instance.pk and instance.thread_type == 'support':
+                try:
+                    previous = sender.objects.get(pk=instance.pk)
+                    instance._previous_status = previous.status
+                except sender.DoesNotExist:
+                    instance._previous_status = None
+
+        @receiver(post_save, sender=MessageThread)
+        def support_status_notifications(sender, instance, created, **kwargs):
+            """Notify client when support inquiry is resolved"""
+            if created or instance.thread_type != 'support':
+                return
+
+            previous_status = getattr(instance, '_previous_status', None)
+            if previous_status and previous_status != 'resolved' and instance.status == 'resolved':
+                try:
+                    NotificationService.create_notification(
+                        recipient=instance.client,
+                        notification_type_code='SUPPORT_INQUIRY_RESOLVED',
+                        context={
+                            'subject': instance.subject,
+                            'action_url': f'/client/support/{instance.id}',
+                        },
+                    )
+                except Exception as e:
+                    logger.error(f"Failed to create support resolved notification: {str(e)}")
+
+        logger.info("Successfully connected support signals")
+
+    except LookupError:
+        logger.info("MessageThread/Message models not found, skipping support signal connections")
+    except Exception as e:
+        logger.error(f"Failed to connect support signals: {str(e)}")
 
 
 # Future domain signal connections can be added here following the same pattern

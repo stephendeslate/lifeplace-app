@@ -1,6 +1,6 @@
 // frontend/admin-crm/src/types/tasks.types.ts
 
-export type TaskDomain = 'quotes' | 'contracts' | 'payments' | 'communications';
+export type TaskDomain = 'quotes' | 'contracts' | 'payments' | 'communications' | 'support';
 export type TaskPriority = 'high' | 'medium' | 'low';
 
 export interface Task {
@@ -24,6 +24,7 @@ export interface TaskCounts {
   contracts: number;
   payments: number;
   communications: number;
+  support: number;
   total: number;
 }
 
@@ -37,4 +38,5 @@ export interface TasksByDomain {
   contracts: Task[];
   payments: Task[];
   communications: Task[];
+  support: Task[];
 }

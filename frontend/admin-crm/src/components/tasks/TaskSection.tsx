@@ -9,6 +9,7 @@ import {
   Payment,
   Email,
   CheckCircle,
+  SupportAgent,
 } from '@mui/icons-material';
 import { TaskCard } from './TaskCard';
 import { ModernEmptyState } from '../common/ModernEmptyState';
@@ -25,7 +26,7 @@ interface TaskSectionProps {
   onRetryCommunication?: (id: string) => void;
 }
 
-const domainConfig: Record<TaskDomain, { label: string; icon: React.ElementType; color: 'info' | 'warning' | 'success' | 'secondary'; emptyTitle: string; emptyDescription: string }> = {
+const domainConfig: Record<TaskDomain, { label: string; icon: React.ElementType; color: 'info' | 'warning' | 'success' | 'secondary' | 'error'; emptyTitle: string; emptyDescription: string }> = {
   quotes: {
     label: 'Quotes',
     icon: RequestQuote,
@@ -53,6 +54,13 @@ const domainConfig: Record<TaskDomain, { label: string; icon: React.ElementType;
     color: 'secondary',
     emptyTitle: 'No Pending Communications',
     emptyDescription: 'All messages have been delivered. Failed or pending messages will appear here.',
+  },
+  support: {
+    label: 'Support',
+    icon: SupportAgent,
+    color: 'error',
+    emptyTitle: 'No Open Support Inquiries',
+    emptyDescription: 'All support inquiries have been resolved. New inquiries will appear here.',
   },
 };
 

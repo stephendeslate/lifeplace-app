@@ -20,6 +20,7 @@ import {
   Payment,
   Email,
   Refresh as RefreshIcon,
+  SupportAgent,
 } from '@mui/icons-material';
 import { useLayout } from '../../contexts/LayoutContext';
 import { useTasks } from '../../hooks/useTasks';
@@ -55,6 +56,7 @@ const tabConfig: Array<{ domain: TaskDomain; label: string; icon: React.ElementT
   { domain: 'contracts', label: 'Contracts', icon: Description },
   { domain: 'payments', label: 'Payments', icon: Payment },
   { domain: 'communications', label: 'Communications', icon: Email },
+  { domain: 'support', label: 'Support', icon: SupportAgent },
 ];
 
 export const TasksPage: React.FC = () => {
@@ -91,7 +93,7 @@ export const TasksPage: React.FC = () => {
     <ModernEmptyState
       icon={TasksIcon}
       title="No Pending Tasks"
-      description="You're all caught up! All quotes, contracts, payments, and communications are up to date."
+      description="You're all caught up! All quotes, contracts, payments, communications, and support inquiries are up to date."
       size="medium"
       color="success"
     />
@@ -127,6 +129,12 @@ export const TasksPage: React.FC = () => {
             <TaskSection
               domain="communications"
               tasks={tasksByDomain.communications}
+            />
+          )}
+          {counts.support > 0 && (
+            <TaskSection
+              domain="support"
+              tasks={tasksByDomain.support}
             />
           )}
         </>
@@ -226,6 +234,19 @@ export const TasksPage: React.FC = () => {
         >
           <Typography variant="body2" color="text.secondary">Payments</Typography>
           <Typography variant="h6" fontWeight="bold">{counts.payments}</Typography>
+        </Box>
+        <Box
+          sx={{
+            px: 2,
+            py: 1,
+            borderRadius: tokens.spacing.radius.md,
+            bgcolor: 'background.paper',
+            border: '1px solid',
+            borderColor: 'divider',
+          }}
+        >
+          <Typography variant="body2" color="text.secondary">Support</Typography>
+          <Typography variant="h6" fontWeight="bold">{counts.support}</Typography>
         </Box>
       </Box>
 

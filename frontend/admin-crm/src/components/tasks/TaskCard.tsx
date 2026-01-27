@@ -12,6 +12,7 @@ import {
   Description,
   Email,
   AccessTime,
+  SupportAgent,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { tokens } from '../../design-system';
@@ -30,13 +31,15 @@ const domainIcons: Record<TaskDomain, React.ElementType> = {
   contracts: Description,
   payments: Payment,
   communications: Email,
+  support: SupportAgent,
 };
 
-const domainColors: Record<TaskDomain, 'info' | 'warning' | 'success' | 'secondary'> = {
+const domainColors: Record<TaskDomain, 'info' | 'warning' | 'success' | 'secondary' | 'error'> = {
   quotes: 'info',
   contracts: 'warning',
   payments: 'success',
   communications: 'secondary',
+  support: 'error',
 };
 
 const formatTimeAgo = (dateString: string): string => {
@@ -83,6 +86,9 @@ export const TaskCard: React.FC<TaskCardProps> = ({
         break;
       case 'communications':
         navigate('/records');
+        break;
+      case 'support':
+        navigate(`/support/${task.entityId}`);
         break;
     }
   };
@@ -208,6 +214,20 @@ export const TaskCard: React.FC<TaskCardProps> = ({
               </IconButton>
             </Tooltip>
           </>
+        );
+      case 'support':
+        return (
+          <Tooltip title="View Inquiry">
+            <IconButton
+              size="small"
+              onClick={(e) => {
+                e.stopPropagation();
+                navigate(`/support/${task.entityId}`);
+              }}
+            >
+              <Visibility fontSize="small" />
+            </IconButton>
+          </Tooltip>
         );
       default:
         return null;

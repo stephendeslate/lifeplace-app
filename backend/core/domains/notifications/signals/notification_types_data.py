@@ -766,4 +766,78 @@ def get_default_notification_types():
                     'supports_email': True,
                     'supports_sms': False,
                 },
-            ]
+
+        # Support inquiry notifications
+        {
+            'code': 'SUPPORT_INQUIRY_CREATED',
+            'name': 'New Support Inquiry',
+            'description': 'Notification when a client creates a support inquiry',
+            'category': 'COMMUNICATION',
+            'icon': 'SupportAgentIcon',
+            'color': '#E91E63',
+            'priority': 'HIGH',
+            'default_title_template': 'New Support Inquiry: {{ subject }}',
+            'default_content_template': '{{ client_name }} submitted a support inquiry: {{ subject }}',
+            'default_email_template': '''
+            <p>Hello {{ recipient_name }},</p>
+            <p>A new support inquiry has been submitted:</p>
+            <ul>
+                <li><strong>From:</strong> {{ client_name }} ({{ client_email }})</li>
+                <li><strong>Subject:</strong> {{ subject }}</li>
+                <li><strong>Category:</strong> {{ category }}</li>
+                <li><strong>Priority:</strong> {{ priority }}</li>
+            </ul>
+            <p>Please respond promptly.</p>
+            {% if action_url %}<p><a href="{{ action_url }}">View Inquiry</a></p>{% endif %}
+            ''',
+            'default_sms_template': 'New support inquiry from {{ client_name }}: {{ subject }}',
+            'supports_email': True,
+            'supports_sms': False,
+        },
+        {
+            'code': 'SUPPORT_INQUIRY_REPLY',
+            'name': 'Support Reply Received',
+            'description': 'Notification when an admin replies to a support inquiry',
+            'category': 'COMMUNICATION',
+            'icon': 'ReplyIcon',
+            'color': '#2196F3',
+            'priority': 'NORMAL',
+            'default_title_template': 'Reply to Your Support Inquiry',
+            'default_content_template': 'You have received a reply to your support inquiry: {{ subject }}',
+            'default_email_template': '''
+            <p>Dear {{ recipient_name }},</p>
+            <p>You have received a reply to your support inquiry:</p>
+            <ul>
+                <li><strong>Subject:</strong> {{ subject }}</li>
+            </ul>
+            <p>Please log in to your client portal to view the full response.</p>
+            {% if action_url %}<p><a href="{{ action_url }}">View Response</a></p>{% endif %}
+            ''',
+            'default_sms_template': 'Reply received for your inquiry: {{ subject }}',
+            'supports_email': True,
+            'supports_sms': False,
+        },
+        {
+            'code': 'SUPPORT_INQUIRY_RESOLVED',
+            'name': 'Support Inquiry Resolved',
+            'description': 'Notification when a support inquiry is marked resolved',
+            'category': 'COMMUNICATION',
+            'icon': 'CheckCircleIcon',
+            'color': '#4CAF50',
+            'priority': 'NORMAL',
+            'default_title_template': 'Support Inquiry Resolved',
+            'default_content_template': 'Your support inquiry "{{ subject }}" has been resolved.',
+            'default_email_template': '''
+            <p>Dear {{ recipient_name }},</p>
+            <p>Your support inquiry has been resolved:</p>
+            <ul>
+                <li><strong>Subject:</strong> {{ subject }}</li>
+            </ul>
+            <p>If you have any further questions, please don't hesitate to contact us again.</p>
+            {% if action_url %}<p><a href="{{ action_url }}">View Inquiry</a></p>{% endif %}
+            ''',
+            'default_sms_template': 'Your inquiry "{{ subject }}" has been resolved.',
+            'supports_email': True,
+            'supports_sms': False,
+        },
+    ]

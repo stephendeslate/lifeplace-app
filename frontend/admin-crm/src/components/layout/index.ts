@@ -3,7 +3,6 @@
 // Modern layout system - single unified layout
 export { ModernAppLayout as AppLayout } from './ModernAppLayout';
 export { ModernHeader } from './ModernHeader/ModernHeader';
-export { SmartSidebar } from './SmartSidebar';
 
 // Shared components
 export { ContextualContentArea } from './ContextualContentArea';

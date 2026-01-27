@@ -10,17 +10,19 @@ import {
   Payment,
   Email,
   Warning,
+  SupportAgent,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useTasks } from '../../hooks/useTasks';
 import { tokens } from '../../design-system';
 import type { TaskDomain } from '../../types/tasks.types';
 
-const domainConfig: Record<TaskDomain, { label: string; icon: React.ElementType; color: 'info' | 'warning' | 'success' | 'secondary' }> = {
+const domainConfig: Record<TaskDomain, { label: string; icon: React.ElementType; color: 'info' | 'warning' | 'success' | 'secondary' | 'error' }> = {
   quotes: { label: 'Quotes', icon: RequestQuote, color: 'info' },
   contracts: { label: 'Contracts', icon: Description, color: 'warning' },
   payments: { label: 'Payments', icon: Payment, color: 'success' },
   communications: { label: 'Messages', icon: Email, color: 'secondary' },
+  support: { label: 'Support', icon: SupportAgent, color: 'error' },
 };
 
 export const TasksSummaryWidget: React.FC = () => {

@@ -5,11 +5,13 @@ import { useEventQuotes } from './useSales';
 import { useEventContracts } from './useContracts';
 import { usePayments } from './usePayments';
 import { useCommunications } from './useCommunications';
+import { useSupport } from './useSupport';
 import type { Task, TaskCounts, TasksByDomain, TaskPriority } from '../types/tasks.types';
 import type { EventQuote } from '../types/sales.types';
 import type { EventContract } from '../types/contracts.types';
 import type { Payment } from '../types/payments.types';
 import type { CommunicationRecord } from '../types/communications.types';
+import type { SupportInquiry } from '../types/support.types';
 
 // Helper to calculate priority based on age
 const calculatePriority = (createdAt: string): TaskPriority => {
@@ -96,6 +98,23 @@ const transformCommunicationToTask = (record: CommunicationRecord): Task => ({
   status: record.delivery_status,
 });
 
+// Transform support inquiry to task
+const transformSupportToTask = (inquiry: SupportInquiry): Task => ({
+  id: `support-${inquiry.id}`,
+  domain: 'support',
+  type: inquiry.priority === 'urgent' ? 'Urgent Inquiry' : 'Support Inquiry',
+  title: inquiry.subject,
+  description: `${inquiry.category_display} - ${inquiry.client_name}`,
+  priority: inquiry.priority === 'urgent' || inquiry.priority === 'high' ? 'high' :
+            inquiry.priority === 'normal' ? 'medium' : 'low',
+  createdAt: inquiry.created_at,
+  entityId: inquiry.id,
+  eventId: inquiry.event || undefined,
+  eventName: inquiry.event_name || undefined,
+  clientName: inquiry.client_name,
+  status: inquiry.status,
+});
+
 export const useTasks = () => {
   // Fetch quotes (DRAFT and SENT statuses)
   const { data: draftQuotes = [] } = useEventQuotes({ status: 'DRAFT' });
@@ -119,6 +138,11 @@ export const useTasks = () => {
   const { useRecords } = useCommunications();
   const { data: pendingRecords = [] } = useRecords({ status: 'PENDING' });
   const { data: failedRecords = [] } = useRecords({ status: 'FAILED' });
+
+  // Fetch support inquiries (active and waiting statuses)
+  const { useSupportInquiries } = useSupport();
+  const { data: activeSupportInquiries = [] } = useSupportInquiries({ status: 'active' });
+  const { data: waitingSupportInquiries = [] } = useSupportInquiries({ status: 'waiting' });
 
   // Transform and combine tasks
   const tasksByDomain = useMemo<TasksByDomain>(() => {
@@ -158,8 +182,17 @@ export const useTasks = () => {
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     });
 
-    return { quotes, contracts, payments, communications };
-  }, [draftQuotes, sentQuotes, sentContracts, partiallySignedContracts, actionablePayments, pendingRecords, failedRecords]);
+    const support = [...activeSupportInquiries, ...waitingSupportInquiries]
+      .map(transformSupportToTask)
+      .sort((a, b) => {
+        // Urgent/high priority first
+        if (a.priority === 'high' && b.priority !== 'high') return -1;
+        if (b.priority === 'high' && a.priority !== 'high') return 1;
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      });
+
+    return { quotes, contracts, payments, communications, support };
+  }, [draftQuotes, sentQuotes, sentContracts, partiallySignedContracts, actionablePayments, pendingRecords, failedRecords, activeSupportInquiries, waitingSupportInquiries]);
 
   // Calculate counts
   const counts = useMemo<TaskCounts>(() => ({
@@ -167,11 +200,13 @@ export const useTasks = () => {
     contracts: tasksByDomain.contracts.length,
     payments: tasksByDomain.payments.length,
     communications: tasksByDomain.communications.length,
+    support: tasksByDomain.support.length,
     total:
       tasksByDomain.quotes.length +
       tasksByDomain.contracts.length +
       tasksByDomain.payments.length +
-      tasksByDomain.communications.length,
+      tasksByDomain.communications.length +
+      tasksByDomain.support.length,
   }), [tasksByDomain]);
 
   // All tasks flattened
@@ -180,6 +215,7 @@ export const useTasks = () => {
     ...tasksByDomain.contracts,
     ...tasksByDomain.payments,
     ...tasksByDomain.communications,
+    ...tasksByDomain.support,
   ].sort((a, b) => {
     // Sort by priority first (high > medium > low)
     const priorityOrder = { high: 0, medium: 1, low: 2 };
