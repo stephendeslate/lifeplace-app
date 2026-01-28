@@ -37,6 +37,8 @@ import {
   FinancialSummaryCard,
   QuickActionRow,
 } from '@/components/dashboard';
+import { useVIPStatus } from '@/hooks/useVIP';
+import { VIPStatusBanner } from '@/components/vip';
 import { Skeleton, Card, EmptyState } from '@/components/common';
 import type { QuickActionType } from '@/components/dashboard';
 import type { User } from '@/types/auth.types';
@@ -74,6 +76,7 @@ export function ManagementLayout({
   unreadCount,
 }: ManagementLayoutProps) {
   const router = useRouter();
+  const { data: vipStatus, isLoading: vipLoading } = useVIPStatus();
 
   // Derived state
   const hasCriticalActions =
@@ -237,6 +240,16 @@ export function ManagementLayout({
           )}
         </Pressable>
       </View>
+
+      {/* VIP Status Banner */}
+      {!vipLoading && vipStatus && (
+        <View style={styles.vipBannerContainer}>
+          <VIPStatusBanner
+            status={vipStatus}
+            onPress={() => router.push('/rewards' as Href)}
+          />
+        </View>
+      )}
 
       {/* Loading State */}
       {isLoading && (
@@ -449,6 +462,9 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     paddingTop: spacing.lg,
     paddingBottom: spacing.xxl, // More breathing room
+  },
+  vipBannerContainer: {
+    marginBottom: spacing.lg,
   },
   headerContent: {
     flex: 1,

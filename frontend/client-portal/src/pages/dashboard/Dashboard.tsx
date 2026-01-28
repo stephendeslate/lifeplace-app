@@ -46,6 +46,9 @@ import { AnimatedElement } from '../../design-system/components/AnimatedElement'
 import { useAcceptQuote, useRejectQuote } from '../../hooks/useEventQuotes';
 import { QuoteRejectionDialog } from '../../components/common/QuoteRejectionDialog';
 import { useCurrencySettings } from '../../hooks/useCurrency';
+import { useVIPStatus } from '../../hooks/useVIP';
+import { VIPStatusCard } from '../../components/vip';
+import { Star as StarIcon } from '@mui/icons-material';
 
 
 // Helper function to safely format dates - validates before formatting to prevent RangeError
@@ -74,6 +77,7 @@ const Dashboard: React.FC = () => {
 
   const dashboardData = useDashboardData();
   const { data: unfinishedBookings, isLoading: isLoadingBookings } = useUnfinishedBookings();
+  const { data: vipStatus, isLoading: isVIPLoading } = useVIPStatus();
 
   // Quote action hooks
   const acceptQuoteMutation = useAcceptQuote();
@@ -653,6 +657,20 @@ const Dashboard: React.FC = () => {
                   </CardContent>
                 </GlassCard>
               </Box>
+
+              {/* VIP Rewards Section */}
+              {!isVIPLoading && vipStatus && (
+                <>
+                  <Divider />
+                  <Box>
+                    <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <StarIcon sx={{ color: 'warning.main' }} />
+                      LifePlace Rewards
+                    </Typography>
+                    <VIPStatusCard status={vipStatus} />
+                  </Box>
+                </>
+              )}
 
               <Divider />
 

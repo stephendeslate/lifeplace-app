@@ -73,6 +73,7 @@ import { EventQuotes } from '../../components/events/EventQuotes';
 import { EventContracts } from '../../components/events/EventContracts';
 import { EventInvoices } from '../../components/events/EventInvoices';
 import { EventFiles } from '../../components/events/EventFiles';
+import { ClientVIPStatusCard } from '../../components/events/ClientVIPStatusCard';
 import { InquiryDetails } from '../../components/events/InquiryDetails';
 import { NotesList } from '../../components/notes';
 import {
@@ -599,6 +600,16 @@ export const EventProfile: React.FC = () => {
             </Stack>
           </Box>
         </Box>
+
+        {/* Client VIP Status */}
+        {clientId && (
+          <Box sx={{ flex: 1, maxWidth: { lg: 280 } }}>
+            <ClientVIPStatusCard
+              clientId={clientId}
+              clientName={event.client_name}
+            />
+          </Box>
+        )}
 
         {/* Event Details */}
         <Box sx={{ flex: 1 }}>

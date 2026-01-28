@@ -205,6 +205,21 @@ export type {
 } from './explore.types';
 
 // =============================================================================
+// VIP TYPES
+// =============================================================================
+export type {
+  VIPTier,
+  VIPBenefitType,
+  VIPBenefit,
+  VIPProgressMetric,
+  VIPProgress,
+  VIPStatusType,
+  ClientVIPStatus,
+  VIPRedemptionRequest,
+  VIPRedemptionResponse,
+} from './vip.types';
+
+// =============================================================================
 // BOOKING TYPES (re-exported from booking/index.ts)
 // =============================================================================
 export * from './booking';

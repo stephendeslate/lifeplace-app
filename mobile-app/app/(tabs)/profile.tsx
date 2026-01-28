@@ -30,10 +30,12 @@ import {
   CaretRight,
   FileText,
   Calendar,
+  Star,
 } from 'phosphor-react-native';
 import Constants from 'expo-constants';
 
 import { useAuth } from '@/hooks/useAuth';
+import { useVIPStatus } from '@/hooks/useVIP';
 import { colors, spacing, typeScale, layout, shadows } from '@/theme';
 
 // External URLs
@@ -57,6 +59,7 @@ interface MenuSection {
 
 export default function ProfileScreen() {
   const { user, logout, refreshUser } = useAuth();
+  const { data: vipStatus } = useVIPStatus();
   const router = useRouter();
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
@@ -111,6 +114,19 @@ export default function ProfileScreen() {
 
   // Menu sections
   const menuSections: MenuSection[] = [
+    {
+      title: 'Rewards',
+      items: [
+        {
+          icon: Star,
+          label: 'LifePlace Rewards',
+          description: vipStatus?.current_tier?.name
+            ? `${vipStatus.current_tier.name} Member`
+            : 'View your rewards',
+          route: '/rewards' as Href,
+        },
+      ],
+    },
     {
       title: 'Account',
       items: [

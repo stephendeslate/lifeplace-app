@@ -129,11 +129,13 @@ export const vipApi = {
     tier?: number;
     status?: string;
     search?: string;
+    client?: number;
   }): Promise<ClientVIPStatusListItem[]> => {
     const params = new URLSearchParams();
     if (filters?.tier) params.append('tier', filters.tier.toString());
     if (filters?.status) params.append('status', filters.status);
     if (filters?.search) params.append('search', filters.search);
+    if (filters?.client) params.append('client', filters.client.toString());
     const response = await api.get<ClientVIPStatusListItem[] | { results: ClientVIPStatusListItem[] }>(`/vip/client-status/?${params.toString()}`);
     const data = response.data;
     return Array.isArray(data) ? data : data.results || [];

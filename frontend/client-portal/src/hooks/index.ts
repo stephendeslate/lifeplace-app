@@ -15,3 +15,6 @@ export { default as useNotificationRealtime } from './useNotificationRealtime';
 
 // Contract history hooks
 export * from './useContractHistory';
+
+// VIP hooks
+export * from './useVIP';

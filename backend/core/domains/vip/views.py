@@ -177,6 +177,11 @@ class ClientVIPStatusViewSet(viewsets.ModelViewSet):
                 client__last_name__icontains=search
             )
 
+        # Filter by client ID (for EventProfile integration)
+        client_id = self.request.query_params.get('client')
+        if client_id:
+            queryset = queryset.filter(client_id=client_id)
+
         return queryset.order_by('-created_at')
 
     @action(detail=True, methods=['post'])
