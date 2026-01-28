@@ -4,17 +4,55 @@
     "pk": 1,
     "fields": {
       "created_at": "2025-12-18T23:43:43.521",
-      "updated_at": "2025-12-18T23:43:43.521",
-      "name": "Standard",
-      "slug": "standard",
-      "description": "Default tier for all clients",
+      "updated_at": "2026-01-27T00:00:00.000",
+      "name": "Guest",
+      "slug": "guest",
+      "description": "Welcome to LifePlace! Start your journey with us.",
       "level": 0,
       "is_default": true,
       "min_total_spent": null,
       "min_completed_bookings": null,
       "min_points_required": null,
       "color": "#6B7280",
-      "icon": "",
+      "icon": "person",
+      "is_active": true
+    }
+  },
+  {
+    "model": "vip.viptier",
+    "pk": 2,
+    "fields": {
+      "created_at": "2026-01-27T00:00:00.000",
+      "updated_at": "2026-01-27T00:00:00.000",
+      "name": "Partner",
+      "slug": "partner",
+      "description": "Valued partners enjoy priority booking and exclusive perks.",
+      "level": 1,
+      "is_default": false,
+      "min_total_spent": "100000.00",
+      "min_completed_bookings": 2,
+      "min_points_required": null,
+      "color": "#3B82F6",
+      "icon": "handshake",
+      "is_active": true
+    }
+  },
+  {
+    "model": "vip.viptier",
+    "pk": 3,
+    "fields": {
+      "created_at": "2026-01-27T00:00:00.000",
+      "updated_at": "2026-01-27T00:00:00.000",
+      "name": "Premier",
+      "slug": "premier",
+      "description": "Our most valued clients with premium access and exclusive benefits.",
+      "level": 2,
+      "is_default": false,
+      "min_total_spent": "250000.00",
+      "min_completed_bookings": 4,
+      "min_points_required": null,
+      "color": "#F59E0B",
+      "icon": "star",
       "is_active": true
     }
   }

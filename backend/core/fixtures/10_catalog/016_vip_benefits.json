@@ -1,0 +1,146 @@
+[
+  {
+    "model": "vip.vipbenefit",
+    "pk": 1,
+    "fields": {
+      "created_at": "2026-01-27T00:00:00.000",
+      "updated_at": "2026-01-27T00:00:00.000",
+      "tier": 2,
+      "benefit_type": "PRIORITY_BOOKING",
+      "application_mode": "AUTOMATIC",
+      "value": null,
+      "max_uses_per_booking": null,
+      "max_uses_per_month": null,
+      "points_cost": 0,
+      "is_active": true,
+      "description": "Partner members get priority access to booking dates",
+      "display_name": "Priority Booking Access"
+    }
+  },
+  {
+    "model": "vip.vipbenefit",
+    "pk": 2,
+    "fields": {
+      "created_at": "2026-01-27T00:00:00.000",
+      "updated_at": "2026-01-27T00:00:00.000",
+      "tier": 2,
+      "benefit_type": "FREE_HOURS",
+      "application_mode": "REDEEMABLE",
+      "value": "1.00",
+      "max_uses_per_booking": 1,
+      "max_uses_per_month": 2,
+      "points_cost": 500,
+      "is_active": true,
+      "description": "Redeem for 1 free excess hour per booking",
+      "display_name": "Free Hour"
+    }
+  },
+  {
+    "model": "vip.vipbenefit",
+    "pk": 3,
+    "fields": {
+      "created_at": "2026-01-27T00:00:00.000",
+      "updated_at": "2026-01-27T00:00:00.000",
+      "tier": 3,
+      "benefit_type": "PRIORITY_BOOKING",
+      "application_mode": "AUTOMATIC",
+      "value": null,
+      "max_uses_per_booking": null,
+      "max_uses_per_month": null,
+      "points_cost": 0,
+      "is_active": true,
+      "description": "Premier members get top priority access to booking dates",
+      "display_name": "Premier Priority Booking"
+    }
+  },
+  {
+    "model": "vip.vipbenefit",
+    "pk": 4,
+    "fields": {
+      "created_at": "2026-01-27T00:00:00.000",
+      "updated_at": "2026-01-27T00:00:00.000",
+      "tier": 3,
+      "benefit_type": "FREE_HOURS",
+      "application_mode": "REDEEMABLE",
+      "value": "2.00",
+      "max_uses_per_booking": 1,
+      "max_uses_per_month": 4,
+      "points_cost": 500,
+      "is_active": true,
+      "description": "Redeem for 2 free excess hours per booking",
+      "display_name": "Free Hours (2 hrs)"
+    }
+  },
+  {
+    "model": "vip.vipbenefit",
+    "pk": 5,
+    "fields": {
+      "created_at": "2026-01-27T00:00:00.000",
+      "updated_at": "2026-01-27T00:00:00.000",
+      "tier": 3,
+      "benefit_type": "EXCLUSIVE_PACKAGE",
+      "application_mode": "AUTOMATIC",
+      "value": null,
+      "max_uses_per_booking": null,
+      "max_uses_per_month": null,
+      "points_cost": 0,
+      "is_active": true,
+      "description": "Access to Premier-exclusive packages and offerings",
+      "display_name": "Exclusive Package Access"
+    }
+  },
+  {
+    "model": "vip.vipbenefit",
+    "pk": 6,
+    "fields": {
+      "created_at": "2026-01-27T00:00:00.000",
+      "updated_at": "2026-01-27T00:00:00.000",
+      "tier": 3,
+      "benefit_type": "COMPLIMENTARY_ADDON",
+      "application_mode": "REDEEMABLE",
+      "value": null,
+      "max_uses_per_booking": 1,
+      "max_uses_per_month": 2,
+      "points_cost": 750,
+      "is_active": true,
+      "description": "Redeem for a complimentary add-on service",
+      "display_name": "Complimentary Add-on"
+    }
+  },
+  {
+    "model": "vip.vipbenefit",
+    "pk": 7,
+    "fields": {
+      "created_at": "2026-01-27T00:00:00.000",
+      "updated_at": "2026-01-27T00:00:00.000",
+      "tier": 3,
+      "benefit_type": "WAIVE_RESCHEDULING_FEE",
+      "application_mode": "AUTOMATIC",
+      "value": null,
+      "max_uses_per_booking": 1,
+      "max_uses_per_month": null,
+      "points_cost": 0,
+      "is_active": true,
+      "description": "Rescheduling fees automatically waived for Premier members",
+      "display_name": "Free Rescheduling"
+    }
+  },
+  {
+    "model": "vip.vipbenefit",
+    "pk": 8,
+    "fields": {
+      "created_at": "2026-01-27T00:00:00.000",
+      "updated_at": "2026-01-27T00:00:00.000",
+      "tier": 3,
+      "benefit_type": "WAIVE_LATE_FEE",
+      "application_mode": "AUTOMATIC",
+      "value": null,
+      "max_uses_per_booking": 1,
+      "max_uses_per_month": null,
+      "points_cost": 0,
+      "is_active": true,
+      "description": "Late payment fees automatically waived for Premier members",
+      "display_name": "Late Fee Waiver"
+    }
+  }
+]
