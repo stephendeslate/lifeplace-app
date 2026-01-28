@@ -22,6 +22,27 @@ vi.mock('../../../design-system', () => ({
       {children}
     </div>
   ),
+  Button: ({ children, variant, size, startIcon, endIcon, onClick, ariaLabel, ...props }: {
+    children: React.ReactNode;
+    variant?: string;
+    size?: string;
+    startIcon?: React.ReactNode;
+    endIcon?: React.ReactNode;
+    onClick?: () => void;
+    ariaLabel?: string;
+  }) => (
+    <button
+      data-variant={variant}
+      data-size={size}
+      onClick={onClick}
+      aria-label={ariaLabel}
+      {...props}
+    >
+      {startIcon}
+      {children}
+      {endIcon}
+    </button>
+  ),
   tokens: {
     typography: {
       styles: {
@@ -56,31 +77,6 @@ vi.mock('../../../design-system', () => ({
       },
     },
   },
-}));
-
-// Mock the shared Button component
-vi.mock('../../../../../shared/design-system/components/Button', () => ({
-  Button: ({ children, variant, size, startIcon, endIcon, onClick, ariaLabel, ...props }: {
-    children: React.ReactNode;
-    variant?: string;
-    size?: string;
-    startIcon?: React.ReactNode;
-    endIcon?: React.ReactNode;
-    onClick?: () => void;
-    ariaLabel?: string;
-  }) => (
-    <button
-      data-variant={variant}
-      data-size={size}
-      onClick={onClick}
-      aria-label={ariaLabel}
-      {...props}
-    >
-      {startIcon}
-      {children}
-      {endIcon}
-    </button>
-  ),
 }));
 
 describe('ServicesCTA', () => {

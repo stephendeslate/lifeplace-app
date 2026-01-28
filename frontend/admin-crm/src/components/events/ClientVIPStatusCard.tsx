@@ -33,7 +33,7 @@ import {
 import { useClientVIPStatusByClient, useVIPTiers } from '../../hooks/useVIP';
 import { useCurrencySettings } from '../../hooks/useCurrency';
 import { formatCurrency } from '../../utils/currency';
-import type { ClientVIPStatusListItem, VIPTierListItem } from '../../types/vip.types';
+import type { VIPTierListItem } from '../../types/vip.types';
 
 // =============================================================================
 // TYPES
@@ -461,7 +461,7 @@ export const ClientVIPStatusCard: React.FC<ClientVIPStatusCardProps> = ({
   // Format currency helper
   const formatAmount = (amount: string | number) => {
     const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
-    return formatCurrency(numAmount, currencySettings);
+    return formatCurrency(numAmount, currencySettings.defaultCurrency);
   };
 
   // Loading state
