@@ -17,15 +17,35 @@ logger = logging.getLogger(__name__)
 
 @receiver(post_save, sender=User)
 def create_notification_preferences(sender, instance, created, **kwargs):
-    """Create default notification preferences for new users"""
+    """Create default notification preferences for new users
+
+    For admin users, ensures critical notification categories are always enabled.
+    Admin notifications (new leads, events, payments) are operational and fall
+    under "legitimate interest" for GDPR - they're not opt-in marketing emails.
+    """
     if not created:
         return
-        
+
     try:
         # Import here to avoid circular imports during app initialization
         NotificationPreference = apps.get_model('notifications', 'NotificationPreference')
-        NotificationPreference.objects.create(user=instance)
-        logger.info(f"Created notification preferences for user: {instance.email}")
+        prefs = NotificationPreference.objects.create(user=instance)
+
+        # For admin users, ensure critical notification categories are explicitly enabled
+        # Model defaults should already have these as True, but we explicitly set them
+        # to protect against any future changes to model defaults
+        if instance.role == 'ADMIN':
+            prefs.email_enabled = True
+            prefs.event_email = True      # New events/leads - critical for business
+            prefs.client_email = True     # New clients
+            prefs.payment_email = True    # Payment notifications
+            prefs.contract_email = True   # Contract notifications
+            prefs.system_email = True     # System notifications
+            prefs.task_email = True       # Task assignments
+            prefs.save()
+            logger.info(f"Created notification preferences for admin with critical emails enabled: {instance.email}")
+        else:
+            logger.info(f"Created notification preferences for user: {instance.email}")
     except LookupError:
         logger.warning("NotificationPreference model not found, skipping preference creation")
     except Exception as e:

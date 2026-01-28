@@ -567,6 +567,11 @@ class EmailUnsubscribeToken(BaseModel):
 
         Returns:
             bool: True if successfully marked as used, False otherwise
+
+        Note:
+            Admin users cannot unsubscribe from ALL emails as these are
+            operational/transactional notifications necessary for business
+            operations. They can still unsubscribe from MARKETING emails.
         """
         from django.utils import timezone
         from django.db import transaction
@@ -589,11 +594,28 @@ class EmailUnsubscribeToken(BaseModel):
                 prefs.marketing_sms = False
                 prefs.marketing_push = False
                 prefs.save(update_fields=['marketing_email', 'marketing_sms', 'marketing_push', 'updated_at'])
+                logger.info(f"User {self.user.email} unsubscribed from MARKETING emails")
             elif self.category == 'ALL':
-                prefs.email_enabled = False
-                prefs.save(update_fields=['email_enabled', 'updated_at'])
-
-            logger.info(f"User {self.user.email} unsubscribed from {self.category} emails")
+                # Protect admin users from accidentally disabling critical notifications
+                # Admin notifications (new leads, events, payments) are operational and
+                # fall under "legitimate interest" for GDPR - they're not marketing
+                if self.user.role == 'ADMIN':
+                    # For admins, only disable non-critical categories
+                    prefs.marketing_email = False
+                    prefs.communication_email = False  # General communications
+                    prefs.workflow_email = False  # Workflow updates (less critical)
+                    prefs.save(update_fields=[
+                        'marketing_email', 'communication_email', 'workflow_email', 'updated_at'
+                    ])
+                    logger.info(
+                        f"Admin {self.user.email} unsubscribed from non-critical emails "
+                        f"(marketing, communication, workflow). Critical notifications remain enabled."
+                    )
+                else:
+                    # For non-admin users (clients), allow full unsubscribe
+                    prefs.email_enabled = False
+                    prefs.save(update_fields=['email_enabled', 'updated_at'])
+                    logger.info(f"User {self.user.email} unsubscribed from ALL emails")
 
         return True
 
