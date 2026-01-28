@@ -127,15 +127,15 @@ export const ModernLoginForm: React.FC<ModernLoginFormProps> = ({ onSuccess }) =
         width: '100%',
         display: 'flex',
         flexDirection: 'column',
-        gap: { xs: 3, sm: 4 },
+        gap: { xs: 2.5, sm: 3 },
         position: 'relative',
       }}
     >
       {/* Header Section */}
-      <Box 
-        sx={{ 
+      <Box
+        sx={{
           textAlign: 'center',
-          mb: { xs: 2, sm: 3 },
+          mb: { xs: 1, sm: 2 },
           position: 'relative',
         }}
       >
@@ -144,20 +144,20 @@ export const ModernLoginForm: React.FC<ModernLoginFormProps> = ({ onSuccess }) =
           sx={{
             position: 'relative',
             display: 'inline-flex',
-            mb: 3,
+            mb: 2,
           }}
         >
           <Box
             sx={{
-              p: 2.5,
+              p: 2,
               borderRadius: tokens.spacing.radius.lg,
               background: tokens.color.primary[50],
               border: `1px solid ${tokens.color.primary[200]}`,
               color: tokens.color.primary[600],
-              mb: 2,
+              mb: 1.5,
             }}
           >
-            <LoginOutlined sx={{ fontSize: '2.5rem' }} />
+            <LoginOutlined sx={{ fontSize: '2rem' }} />
           </Box>
         </Box>
 
@@ -485,10 +485,10 @@ export const ModernLoginForm: React.FC<ModernLoginFormProps> = ({ onSuccess }) =
         size="large"
         disabled={isLoading}
         sx={{
-          py: { xs: 1.5, sm: 2 },
+          py: { xs: 1.25, sm: 1.5 },
           borderRadius: tokens.spacing.radius.md,
           fontWeight: 600,
-          fontSize: '1.1rem',
+          fontSize: '1rem',
           letterSpacing: '0.025em',
           textTransform: 'none',
           position: 'relative',
@@ -547,9 +547,9 @@ export const ModernLoginForm: React.FC<ModernLoginFormProps> = ({ onSuccess }) =
       </Button>
 
       {/* Divider */}
-      <Divider 
+      <Divider
         sx={{
-          my: { xs: 1, sm: 2 },
+          my: { xs: 0.5, sm: 1 },
           '&::before, &::after': {
             borderColor: `${tokens.color.neutral[300]}60`,
           },

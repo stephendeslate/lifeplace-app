@@ -36,14 +36,14 @@ export const Login: React.FC = () => {
       sx={{
         minHeight: '100vh',
         height: '100vh',
-        width: '100vw',
+        width: '100%',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         position: 'fixed',
         top: 0,
         left: 0,
-        overflow: 'hidden',
+        overflow: 'auto',
         p: 0,
         m: 0,
         bgcolor: effectiveMode === 'dark' ? 'background.default' : 'grey.50',
@@ -73,15 +73,15 @@ export const Login: React.FC = () => {
       <Box
         sx={{
           width: '100%',
-          maxWidth: 460,
+          maxWidth: 520,
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          gap: { xs: 3, sm: 4 },
+          gap: { xs: 2.5, sm: 3 },
           position: 'relative',
           mx: 'auto',
-          py: { xs: 4, sm: 6 },
-          px: { xs: 3, sm: 4 },
+          py: { xs: 3, sm: 4 },
+          px: { xs: 2.5, sm: 3 },
           minWidth: { xs: 300, sm: 360 },
         }}
       >
@@ -91,7 +91,7 @@ export const Login: React.FC = () => {
             width: '100%',
             borderRadius: 2,
             bgcolor: 'background.paper',
-            p: { xs: 3, sm: 4 },
+            p: { xs: 2.5, sm: 3.5 },
             border: '1px solid',
             borderColor: 'divider',
           }}
@@ -103,11 +103,10 @@ export const Login: React.FC = () => {
         <Box
           sx={{
             width: '100%',
-            maxWidth: 460,
             borderRadius: 1,
             border: '1px solid',
             borderColor: 'divider',
-            p: { xs: 2.5, sm: 3 },
+            p: { xs: 2, sm: 2.5 },
             textAlign: 'center',
             bgcolor: 'background.paper',
           }}
