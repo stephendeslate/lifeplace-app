@@ -174,20 +174,16 @@ def send_contract_expiry_reminder(self, contract_id: int, days_before_expiry: in
         # Send in-app notification via NotificationService
         NotificationService.create_notification(
             recipient=client,
-            notification_type='CONTRACT_EXPIRING_SOON',
-            title=f'Contract Expires in {days_before_expiry} Day(s)',
-            message=(
-                f'Your contract for {event_date_formatted} expires on {expiry_formatted}. '
-                f'Please sign the contract before it expires to secure your booking.'
-            ),
-            related_event=contract.event,
-            priority=priority,
-            channels=['IN_APP'],  # Email handled by CommunicationService above
-            data={
+            notification_type_code='CONTRACT_EXPIRING_SOON',
+            context={
                 'contract_id': contract.id,
                 'days_remaining': days_remaining,
                 'valid_until': str(contract.valid_until),
-            }
+                'event_name': event_date_formatted,
+            },
+            delivery_methods=['IN_APP'],  # Email handled by CommunicationService above
+            event=contract.event,
+            client=client,
         )
 
         # Send admin notification about expiring contract
@@ -338,20 +334,16 @@ def send_contract_sent_notification(self, contract_id: int):
         # Send in-app notification via NotificationService
         NotificationService.create_notification(
             recipient=client,
-            notification_type='CONTRACT_SENT',
-            title='Your Contract is Ready',
-            message=(
-                f'A new contract for {event_date_formatted} is ready for your review. '
-                f'Please review and sign the contract before {valid_until_formatted}.'
-            ),
-            related_event=contract.event,
-            priority='HIGH',
-            channels=['IN_APP'],  # Email handled by CommunicationService above
-            data={
+            notification_type_code='CONTRACT_SENT',
+            context={
                 'contract_id': contract.id,
                 'event_id': contract.event.id,
                 'valid_until': str(contract.valid_until) if contract.valid_until else None,
-            }
+                'event_name': event_date_formatted,
+            },
+            delivery_methods=['IN_APP'],  # Email handled by CommunicationService above
+            event=contract.event,
+            client=client,
         )
 
         logger.info(f"Sent contract sent notification for contract {contract_id}")
@@ -430,19 +422,15 @@ def notify_contract_expired(self, contract_id: int):
         # Send in-app notification via NotificationService
         NotificationService.create_notification(
             recipient=client,
-            notification_type='CONTRACT_EXPIRED',
-            title='Contract Has Expired',
-            message=(
-                f'The contract for {event_date_formatted} expired on {expiry_formatted}. '
-                f'Please contact us if you would like to request a new contract.'
-            ),
-            related_event=contract.event,
-            priority='HIGH',
-            channels=['IN_APP'],  # Email handled by CommunicationService above
-            data={
+            notification_type_code='CONTRACT_EXPIRED',
+            context={
                 'contract_id': contract.id,
                 'valid_until': str(contract.valid_until) if contract.valid_until else None,
-            }
+                'event_name': event_date_formatted,
+            },
+            delivery_methods=['IN_APP'],  # Email handled by CommunicationService above
+            event=contract.event,
+            client=client,
         )
 
         # Send admin notification about expired contract

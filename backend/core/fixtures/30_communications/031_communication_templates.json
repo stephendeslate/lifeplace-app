@@ -610,5 +610,41 @@
       "is_system": true,
       "layout": 2
     }
+  },
+  {
+    "model": "communications.communicationtemplate",
+    "pk": 210,
+    "fields": {
+      "created_at": "2026-02-05T00:00:00",
+      "updated_at": "2026-02-05T00:00:00",
+      "name": "Questionnaire Sent to Client",
+      "channel": "EMAIL",
+      "category": "SYSTEM",
+      "context_type": "EVENT",
+      "include_client_context": false,
+      "include_event_context": false,
+      "subject_template": "Questionnaire for {{ event_name }} - {{ questionnaire_name }}",
+      "body_template": "<h2 style=\"color: #333; margin-top: 0; font-size: 22px; font-weight: 600;\">New Questionnaire to Complete</h2>\n\n<p style=\"color: #666; line-height: 1.6; font-size: 15px;\">\n    Hello {{ client_first_name }},\n</p>\n\n<p style=\"color: #666; line-height: 1.6; font-size: 15px;\">\n    A questionnaire has been sent for your upcoming event. Please complete it at your earliest convenience to help us plan your event perfectly.\n</p>\n\n<div style=\"background: #f0f8ff; padding: 20px; margin: 20px 0; border-left: 4px solid #667eea; border-radius: 4px;\">\n    <table style=\"width: 100%; border-collapse: collapse;\">\n        <tr>\n            <td style=\"padding: 8px 0; color: #666;\">Questionnaire:</td>\n            <td style=\"padding: 8px 0; color: #333; font-weight: 600; text-align: right;\">{{ questionnaire_name }}</td>\n        </tr>\n        <tr>\n            <td style=\"padding: 8px 0; color: #666;\">Event:</td>\n            <td style=\"padding: 8px 0; color: #333; font-weight: 600; text-align: right;\">{{ event_name }}</td>\n        </tr>\n        {% if event_date %}\n        <tr>\n            <td style=\"padding: 8px 0; color: #666;\">Event Date:</td>\n            <td style=\"padding: 8px 0; color: #333; text-align: right;\">{{ event_date }}</td>\n        </tr>\n        {% endif %}\n        {% if due_date %}\n        <tr>\n            <td style=\"padding: 8px 0; color: #666;\">Due Date:</td>\n            <td style=\"padding: 8px 0; color: #333; font-weight: 600; text-align: right;\">{{ due_date }}</td>\n        </tr>\n        {% endif %}\n    </table>\n</div>\n\n<p style=\"color: #666; font-size: 14px; line-height: 1.6; margin-top: 20px;\">\n    You can complete the questionnaire by logging in to your client portal.\n</p>",
+      "is_system": true,
+      "layout": 2
+    }
+  },
+  {
+    "model": "communications.communicationtemplate",
+    "pk": 211,
+    "fields": {
+      "created_at": "2026-02-05T00:00:00",
+      "updated_at": "2026-02-05T00:00:00",
+      "name": "Questionnaire Reminder",
+      "channel": "EMAIL",
+      "category": "SYSTEM",
+      "context_type": "EVENT",
+      "include_client_context": false,
+      "include_event_context": false,
+      "subject_template": "Reminder: Complete Questionnaire for {{ event_name }}",
+      "body_template": "<h2 style=\"color: #333; margin-top: 0; font-size: 22px; font-weight: 600;\">Questionnaire Reminder</h2>\n\n<p style=\"color: #666; line-height: 1.6; font-size: 15px;\">\n    Hello {{ client_first_name }},\n</p>\n\n<p style=\"color: #666; line-height: 1.6; font-size: 15px;\">\n    This is a friendly reminder to complete the questionnaire for your upcoming event. Your responses help us plan your event perfectly.\n</p>\n\n<div style=\"background: #fff3e0; padding: 20px; margin: 20px 0; border-left: 4px solid #FF9800; border-radius: 4px;\">\n    <table style=\"width: 100%; border-collapse: collapse;\">\n        <tr>\n            <td style=\"padding: 8px 0; color: #666;\">Questionnaire:</td>\n            <td style=\"padding: 8px 0; color: #333; font-weight: 600; text-align: right;\">{{ questionnaire_name }}</td>\n        </tr>\n        <tr>\n            <td style=\"padding: 8px 0; color: #666;\">Event:</td>\n            <td style=\"padding: 8px 0; color: #333; font-weight: 600; text-align: right;\">{{ event_name }}</td>\n        </tr>\n        {% if event_date %}\n        <tr>\n            <td style=\"padding: 8px 0; color: #666;\">Event Date:</td>\n            <td style=\"padding: 8px 0; color: #333; text-align: right;\">{{ event_date }}</td>\n        </tr>\n        {% endif %}\n        {% if due_date %}\n        <tr>\n            <td style=\"padding: 8px 0; color: #666;\">Due Date:</td>\n            <td style=\"padding: 8px 0; color: #333; font-weight: 600; color: #E65100; text-align: right;\">{{ due_date }}</td>\n        </tr>\n        {% endif %}\n    </table>\n</div>\n\n{% if is_overdue %}\n<div style=\"background: #fce4ec; padding: 12px 16px; margin: 16px 0; border-radius: 4px;\">\n    <p style=\"margin: 0; color: #c62828; font-weight: 600;\">This questionnaire is overdue. Please complete it as soon as possible.</p>\n</div>\n{% endif %}\n\n<p style=\"color: #666; font-size: 14px; line-height: 1.6; margin-top: 20px;\">\n    You can complete the questionnaire by logging in to your client portal.\n</p>",
+      "is_system": true,
+      "layout": 2
+    }
   }
 ]

@@ -185,16 +185,16 @@ def send_deadline_reminder(self, event_id: int, days_before_deadline: int = 1):
         # Send reminder notification
         NotificationService.create_notification(
             recipient=event.client,
-            notification_type='PAYMENT_REMINDER',
-            title=f'Payment Deadline Reminder - {days_before_deadline} day(s) remaining',
-            message=(
-                f'Your booking for {event.start_date.strftime("%B %d, %Y")} requires '
-                f'a downpayment by {event.downpayment_deadline.strftime("%B %d, %Y at %I:%M %p")}. '
-                f'Please complete your payment to secure your date.'
-            ),
-            related_event=event,
-            priority='HIGH',
-            channels=['IN_APP', 'EMAIL']
+            notification_type_code='PAYMENT_REMINDER',
+            context={
+                'event_name': event.name or event.start_date.strftime("%B %d, %Y"),
+                'event_date': event.start_date.strftime("%B %d, %Y"),
+                'deadline': event.downpayment_deadline.strftime("%B %d, %Y at %I:%M %p"),
+                'days_remaining': days_before_deadline,
+            },
+            delivery_methods=['IN_APP', 'EMAIL'],
+            event=event,
+            client=event.client,
         )
 
         logger.info(f"Sent deadline reminder for event {event_id} ({days_before_deadline} days)")
@@ -279,16 +279,15 @@ def notify_competing_event_cancelled(self, cancelled_event_id: int, blocking_eve
         # Send notification to client
         NotificationService.create_notification(
             recipient=cancelled_event.client,
-            notification_type='EVENT_CANCELLED',
-            title='Booking Cancelled - Date No Longer Available',
-            message=(
-                f'Your booking for {cancelled_event.start_date.strftime("%B %d, %Y")} has been cancelled '
-                f'because another client secured the date first. '
-                f'You can rebook for a different date through your account.'
-            ),
-            related_event=cancelled_event,
-            priority='HIGH',
-            channels=['IN_APP', 'EMAIL']
+            notification_type_code='EVENT_CANCELLED',
+            context={
+                'event_name': cancelled_event.name or cancelled_event.start_date.strftime("%B %d, %Y"),
+                'event_date': cancelled_event.start_date.strftime("%B %d, %Y"),
+                'reason': 'Another client secured the date first.',
+            },
+            delivery_methods=['IN_APP', 'EMAIL'],
+            event=cancelled_event,
+            client=cancelled_event.client,
         )
 
         logger.info(
@@ -382,16 +381,14 @@ def send_hold_expired_notification(self, event_id: int):
 
         NotificationService.create_notification(
             recipient=event.client,
-            notification_type='DATE_HOLD_EXPIRED',
-            title='Date Hold Expired',
-            message=(
-                f'Your hold on {event.start_date.strftime("%B %d, %Y")} has expired. '
-                f'The date is now available for other bookings. '
-                f'To secure this date, please complete your booking with payment.'
-            ),
-            related_event=event,
-            priority='HIGH',
-            channels=['IN_APP', 'EMAIL']
+            notification_type_code='DATE_HOLD_EXPIRED',
+            context={
+                'event_name': event.name or event.start_date.strftime("%B %d, %Y"),
+                'event_date': event.start_date.strftime("%B %d, %Y"),
+            },
+            delivery_methods=['IN_APP', 'EMAIL'],
+            event=event,
+            client=event.client,
         )
 
         logger.info(f"Sent hold expiration notification for event {event_id}")
@@ -467,15 +464,15 @@ def send_hold_expiring_reminder(self, event_id: int):
 
         NotificationService.create_notification(
             recipient=event.client,
-            notification_type='HOLD_EXPIRING_REMINDER',
-            title='Date Hold Expiring Soon',
-            message=(
-                f'Your hold on {event.start_date.strftime("%B %d, %Y")} expires in '
-                f'{int(hours_remaining)} hours. Complete your payment to secure this date.'
-            ),
-            related_event=event,
-            priority='HIGH',
-            channels=['IN_APP', 'EMAIL']
+            notification_type_code='HOLD_EXPIRING_REMINDER',
+            context={
+                'event_name': event.name or event.start_date.strftime("%B %d, %Y"),
+                'event_date': event.start_date.strftime("%B %d, %Y"),
+                'hours_remaining': int(hours_remaining),
+            },
+            delivery_methods=['IN_APP', 'EMAIL'],
+            event=event,
+            client=event.client,
         )
 
         logger.info(f"Sent hold expiring reminder for event {event_id}")
@@ -592,16 +589,15 @@ def send_event_date_reminder(self, event_id: int, days_before_event: int):
             event_name = event.name or f"Event on {event.start_date.strftime('%B %d, %Y')}"
             NotificationService.create_notification(
                 recipient=client,
-                notification_type='EVENT_REMINDER',
-                title=f'Upcoming Event Reminder - {days_before_event} day(s)',
-                message=(
-                    f'Your event "{event_name}" is scheduled for '
-                    f'{event.start_date.strftime("%B %d, %Y at %I:%M %p")}. '
-                    f'We look forward to seeing you!'
-                ),
-                related_event=event,
-                priority='HIGH' if days_before_event <= 1 else 'NORMAL',
-                channels=['IN_APP']
+                notification_type_code='EVENT_REMINDER',
+                context={
+                    'event_name': event_name,
+                    'event_date': event.start_date.strftime("%B %d, %Y at %I:%M %p"),
+                    'days_before_event': days_before_event,
+                },
+                delivery_methods=['IN_APP'],
+                event=event,
+                client=client,
             )
 
             logger.info(

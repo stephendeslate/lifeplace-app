@@ -840,4 +840,187 @@ def get_default_notification_types():
             'supports_email': True,
             'supports_sms': False,
         },
+
+        # Payment reminder notifications
+        {
+            'code': 'PAYMENT_REMINDER',
+            'name': 'Payment Deadline Reminder',
+            'description': 'Reminder about approaching payment deadline',
+            'category': 'PAYMENT',
+            'icon': 'PaymentIcon',
+            'color': '#FF9800',
+            'priority': 'HIGH',
+            'default_title_template': 'Payment Deadline Reminder',
+            'default_content_template': 'Your booking for {{ event_name }} requires payment by {{ deadline }}. Please complete your payment to secure your date.',
+            'default_email_template': '''
+            <p>Dear {{ recipient_name }},</p>
+            <p>This is a reminder that your booking requires payment:</p>
+            <ul>
+                <li><strong>Event:</strong> {{ event_name }}</li>
+                <li><strong>Event Date:</strong> {{ event_date }}</li>
+                <li><strong>Payment Deadline:</strong> {{ deadline }}</li>
+            </ul>
+            <p>Please complete your payment to secure your date.</p>
+            {% if action_url %}<p><a href="{{ action_url }}">Make Payment</a></p>{% endif %}
+            ''',
+            'default_sms_template': 'Payment reminder: {{ event_name }} deadline {{ deadline }}. Please pay to secure your date.',
+            'supports_email': True,
+            'supports_sms': True,
+        },
+
+        # Event cancellation notifications
+        {
+            'code': 'EVENT_CANCELLED',
+            'name': 'Event Cancelled',
+            'description': 'Notification when an event is cancelled',
+            'category': 'EVENT',
+            'icon': 'CancelIcon',
+            'color': '#F44336',
+            'priority': 'HIGH',
+            'default_title_template': 'Booking Cancelled',
+            'default_content_template': 'Your booking for {{ event_name }} on {{ event_date }} has been cancelled.',
+            'default_email_template': '''
+            <p>Dear {{ recipient_name }},</p>
+            <p>We regret to inform you that your booking has been cancelled:</p>
+            <ul>
+                <li><strong>Event:</strong> {{ event_name }}</li>
+                <li><strong>Date:</strong> {{ event_date }}</li>
+                {% if reason %}<li><strong>Reason:</strong> {{ reason }}</li>{% endif %}
+            </ul>
+            <p>You can rebook for a different date through your account.</p>
+            {% if action_url %}<p><a href="{{ action_url }}">View Details</a></p>{% endif %}
+            ''',
+            'default_sms_template': 'Your booking for {{ event_name }} on {{ event_date }} has been cancelled.',
+            'supports_email': True,
+            'supports_sms': True,
+        },
+
+        # Date hold expiration notifications
+        {
+            'code': 'DATE_HOLD_EXPIRED',
+            'name': 'Date Hold Expired',
+            'description': 'Notification when a temporary date hold expires',
+            'category': 'EVENT',
+            'icon': 'EventBusyIcon',
+            'color': '#F44336',
+            'priority': 'HIGH',
+            'default_title_template': 'Date Hold Expired',
+            'default_content_template': 'Your hold on {{ event_date }} has expired. The date is now available for other bookings.',
+            'default_email_template': '''
+            <p>Dear {{ recipient_name }},</p>
+            <p>Your temporary date hold has expired:</p>
+            <ul>
+                <li><strong>Event:</strong> {{ event_name }}</li>
+                <li><strong>Date:</strong> {{ event_date }}</li>
+            </ul>
+            <p>The date is now available for other bookings. To secure this date, please complete your booking with payment.</p>
+            {% if action_url %}<p><a href="{{ action_url }}">Complete Booking</a></p>{% endif %}
+            ''',
+            'default_sms_template': 'Your hold on {{ event_date }} has expired. Complete your booking to secure this date.',
+            'supports_email': True,
+            'supports_sms': True,
+        },
+        {
+            'code': 'HOLD_EXPIRING_REMINDER',
+            'name': 'Date Hold Expiring Soon',
+            'description': 'Reminder that a date hold is about to expire',
+            'category': 'EVENT',
+            'icon': 'AccessTimeIcon',
+            'color': '#FF9800',
+            'priority': 'HIGH',
+            'default_title_template': 'Date Hold Expiring Soon',
+            'default_content_template': 'Your hold on {{ event_date }} expires in {{ hours_remaining }} hours. Complete your payment to secure this date.',
+            'default_email_template': '''
+            <p>Dear {{ recipient_name }},</p>
+            <p>Your date hold is expiring soon:</p>
+            <ul>
+                <li><strong>Event:</strong> {{ event_name }}</li>
+                <li><strong>Date:</strong> {{ event_date }}</li>
+                <li><strong>Expires in:</strong> {{ hours_remaining }} hours</li>
+            </ul>
+            <p>Complete your payment now to secure this date before the hold expires.</p>
+            {% if action_url %}<p><a href="{{ action_url }}">Complete Payment</a></p>{% endif %}
+            ''',
+            'default_sms_template': 'Your hold on {{ event_date }} expires in {{ hours_remaining }} hrs. Pay now to secure your date.',
+            'supports_email': True,
+            'supports_sms': True,
+        },
+
+        # Event date reminder notifications
+        {
+            'code': 'EVENT_REMINDER',
+            'name': 'Upcoming Event Reminder',
+            'description': 'Reminder about an upcoming event date',
+            'category': 'EVENT',
+            'icon': 'NotificationsActiveIcon',
+            'color': '#2196F3',
+            'priority': 'NORMAL',
+            'default_title_template': 'Upcoming Event Reminder',
+            'default_content_template': 'Your event "{{ event_name }}" is scheduled for {{ event_date }}. We look forward to seeing you!',
+            'default_email_template': '''
+            <p>Dear {{ recipient_name }},</p>
+            <p>This is a friendly reminder about your upcoming event:</p>
+            <ul>
+                <li><strong>Event:</strong> {{ event_name }}</li>
+                <li><strong>Date:</strong> {{ event_date }}</li>
+            </ul>
+            <p>We look forward to making your event special!</p>
+            {% if action_url %}<p><a href="{{ action_url }}">View Event Details</a></p>{% endif %}
+            ''',
+            'default_sms_template': 'Reminder: {{ event_name }} on {{ event_date }}. We look forward to seeing you!',
+            'supports_email': True,
+            'supports_sms': True,
+        },
+
+        # Questionnaire notifications
+        {
+            'code': 'QUESTIONNAIRE_SENT',
+            'name': 'Questionnaire Sent',
+            'description': 'Notification when a questionnaire is sent to client',
+            'category': 'EVENT',
+            'icon': 'AssignmentIcon',
+            'color': '#3F51B5',
+            'priority': 'NORMAL',
+            'default_title_template': 'New Questionnaire to Complete',
+            'default_content_template': 'A questionnaire "{{ questionnaire_name }}" has been sent for {{ event_name }}. Please complete it at your earliest convenience.',
+            'default_email_template': '''
+            <p>Dear {{ recipient_name }},</p>
+            <p>A questionnaire has been sent for your event:</p>
+            <ul>
+                <li><strong>Questionnaire:</strong> {{ questionnaire_name }}</li>
+                <li><strong>Event:</strong> {{ event_name }}</li>
+                {% if due_date %}<li><strong>Due Date:</strong> {{ due_date }}</li>{% endif %}
+            </ul>
+            <p>Please complete the questionnaire at your earliest convenience.</p>
+            {% if action_url %}<p><a href="{{ action_url }}">Complete Questionnaire</a></p>{% endif %}
+            ''',
+            'default_sms_template': 'Questionnaire "{{ questionnaire_name }}" sent for {{ event_name }}. Please complete it soon.',
+            'supports_email': True,
+            'supports_sms': False,
+        },
+        {
+            'code': 'QUESTIONNAIRE_REMINDER',
+            'name': 'Questionnaire Reminder',
+            'description': 'Reminder to complete a pending questionnaire',
+            'category': 'EVENT',
+            'icon': 'AssignmentLateIcon',
+            'color': '#FF9800',
+            'priority': 'HIGH',
+            'default_title_template': 'Questionnaire Reminder',
+            'default_content_template': 'Reminder: Please complete the questionnaire "{{ questionnaire_name }}" for {{ event_name }}.',
+            'default_email_template': '''
+            <p>Dear {{ recipient_name }},</p>
+            <p>This is a reminder to complete your questionnaire:</p>
+            <ul>
+                <li><strong>Questionnaire:</strong> {{ questionnaire_name }}</li>
+                <li><strong>Event:</strong> {{ event_name }}</li>
+                {% if due_date %}<li><strong>Due Date:</strong> {{ due_date }}</li>{% endif %}
+            </ul>
+            <p>Please complete the questionnaire as soon as possible to help us plan your event.</p>
+            {% if action_url %}<p><a href="{{ action_url }}">Complete Questionnaire</a></p>{% endif %}
+            ''',
+            'default_sms_template': 'Reminder: Complete questionnaire "{{ questionnaire_name }}" for {{ event_name }}.',
+            'supports_email': True,
+            'supports_sms': False,
+        },
     ]

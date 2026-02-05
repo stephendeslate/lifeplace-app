@@ -321,8 +321,8 @@ class AdminInvitationService:
             # Generate context using the unified context service
             context_data = CommunicationContextService.generate_context(
                 context_type=ContextType.ADMIN,
-                admin_user=invitation.invited_by,
-                invitation=invitation,
+                user=invitation.invited_by,
+                admin_invitation=invitation,
             )
 
             # Choose template based on invitation type
