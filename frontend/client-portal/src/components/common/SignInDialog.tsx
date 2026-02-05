@@ -30,6 +30,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useToastActions } from '../../contexts/ToastContext';
 import { validateLoginForm } from '../../utils/validation';
 import { ErrorHandler } from '../../utils/errorHandler';
+import { GoogleLoginButton } from '../auth/GoogleLoginButton';
 import type { LoginCredentials } from '../../types/auth.types';
 
 interface SignInDialogProps {
@@ -119,6 +120,15 @@ export const SignInDialog: React.FC<SignInDialogProps> = ({
       setErrors({});
       onClose();
     }
+  };
+
+  const handleGoogleSuccess = () => {
+    // Reset form state
+    setFormData({ email: '', password: '', remember_me: false });
+    setErrors({});
+    // Trigger success callback and close dialog
+    onSuccess?.();
+    onClose();
   };
 
   return (
@@ -254,6 +264,12 @@ export const SignInDialog: React.FC<SignInDialogProps> = ({
                 'Sign In'
               )}
             </Button>
+
+            {/* Google Sign-In */}
+            <GoogleLoginButton
+              onSuccess={handleGoogleSuccess}
+              text="signin_with"
+            />
 
             <Typography variant="body2" color="text.secondary" textAlign="center">
               Don't have an account?{' '}

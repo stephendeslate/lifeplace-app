@@ -259,7 +259,7 @@ def cleanup_expired_account_data(self):
         expired_users = User.objects.filter(
             is_active=False,
             email__startswith='deleted_',
-            updated_at__lt=cutoff_date
+            last_login__lt=cutoff_date
         )
 
         count = expired_users.count()
@@ -346,7 +346,7 @@ def monitor_data_retention_compliance(self):
         overdue_accounts = User.objects.filter(
             is_active=False,
             email__startswith='deleted_',
-            updated_at__lt=account_cutoff
+            last_login__lt=account_cutoff
         ).count()
 
         # Calculate approaching deadline warnings (within 30 days of expiry)
@@ -362,8 +362,8 @@ def monitor_data_retention_compliance(self):
         approaching_accounts = User.objects.filter(
             is_active=False,
             email__startswith='deleted_',
-            updated_at__lt=(account_cutoff + warning_threshold),
-            updated_at__gte=account_cutoff
+            last_login__lt=(account_cutoff + warning_threshold),
+            last_login__gte=account_cutoff
         ).count()
 
         # Get total counts for reporting

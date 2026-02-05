@@ -102,7 +102,7 @@ export const GoogleLoginButton = ({
   if (isLoading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', my: 2 }}>
-        <CircularProgress size={24} sx={{ color: alpha('#fff', 0.7) }} />
+        <CircularProgress size={24} color="primary" />
       </Box>
     );
   }
@@ -126,14 +126,14 @@ export const GoogleLoginButton = ({
             sx={{
               my: 2,
               '&::before, &::after': {
-                borderColor: alpha('#fff', 0.3),
+                borderColor: alpha(theme.palette.text.primary, 0.2),
               },
             }}
           >
             <Typography
               variant="body2"
               sx={{
-                color: alpha('#fff', 0.8),
+                color: 'text.secondary',
                 px: 2,
               }}
             >
@@ -157,15 +157,14 @@ export const GoogleLoginButton = ({
                   justifyContent: 'center',
                   height: 44,
                   width: '100%',
-                  backgroundColor: alpha('#fff', 0.1),
+                  backgroundColor: alpha(theme.palette.action.hover, 0.5),
                   borderRadius: 1,
-                  backdropFilter: 'blur(10px)',
                 }}
               >
-                <CircularProgress size={24} sx={{ color: theme.palette.primary.light }} />
+                <CircularProgress size={24} color="primary" />
                 <Typography
                   variant="body2"
-                  sx={{ ml: 2, color: alpha('#fff', 0.8) }}
+                  sx={{ ml: 2, color: 'text.secondary' }}
                 >
                   Signing in...
                 </Typography>
