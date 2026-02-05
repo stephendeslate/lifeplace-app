@@ -19,6 +19,8 @@ def send_communication_async(
     client_id: int = None,
     sent_by_id: int = None,
     event_id: int = None,
+    payment_id: int = None,
+    invoice_id: int = None,
     skip_preference_check: bool = False
 ):
     """
@@ -50,6 +52,22 @@ def send_communication_async(
             except Event.DoesNotExist:
                 logger.warning(f"Event {event_id} not found for async communication")
 
+        payment = None
+        if payment_id:
+            try:
+                from core.domains.payments.models import Payment
+                payment = Payment.objects.get(id=payment_id)
+            except Exception:
+                logger.warning(f"Payment {payment_id} not found for async communication")
+
+        invoice = None
+        if invoice_id:
+            try:
+                from core.domains.payments.models import Invoice
+                invoice = Invoice.objects.get(id=invoice_id)
+            except Exception:
+                logger.warning(f"Invoice {invoice_id} not found for async communication")
+
         # Send communication
         service = CommunicationService()
         record = service.send_communication(
@@ -59,6 +77,8 @@ def send_communication_async(
             client=client,
             sent_by=sent_by,
             event=event,
+            payment=payment,
+            invoice=invoice,
             skip_preference_check=skip_preference_check
         )
 

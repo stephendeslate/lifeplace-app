@@ -592,5 +592,23 @@
       "is_system": true,
       "layout": 2
     }
+  },
+  {
+    "model": "communications.communicationtemplate",
+    "pk": 209,
+    "fields": {
+      "created_at": "2026-02-05T00:00:00",
+      "updated_at": "2026-02-05T00:00:00",
+      "name": "New Lead Admin Notification",
+      "channel": "EMAIL",
+      "category": "SYSTEM",
+      "context_type": "EVENT",
+      "include_client_context": false,
+      "include_event_context": false,
+      "subject_template": "[New Lead] {{ event_name }} - {{ client_name }}",
+      "body_template": "<h2 style=\"color: #333; margin-top: 0; font-size: 22px; font-weight: 600;\">New Quote Request Received</h2>\n\n<p style=\"color: #666; line-height: 1.6; font-size: 15px;\">\n    A new quote request has been submitted through the booking flow. Please review and prepare a quote for the client.\n</p>\n\n<div style=\"background: #f0f8ff; padding: 20px; margin: 20px 0; border-left: 4px solid #667eea; border-radius: 4px;\">\n    <table style=\"width: 100%; border-collapse: collapse;\">\n        <tr>\n            <td style=\"padding: 8px 0; color: #666;\">Client:</td>\n            <td style=\"padding: 8px 0; color: #333; font-weight: 600; text-align: right;\">{{ client_name }}</td>\n        </tr>\n        <tr>\n            <td style=\"padding: 8px 0; color: #666;\">Email:</td>\n            <td style=\"padding: 8px 0; color: #333; text-align: right;\">{{ client_email }}</td>\n        </tr>\n        {% if client_phone %}\n        <tr>\n            <td style=\"padding: 8px 0; color: #666;\">Phone:</td>\n            <td style=\"padding: 8px 0; color: #333; text-align: right;\">{{ client_phone }}</td>\n        </tr>\n        {% endif %}\n        <tr>\n            <td style=\"padding: 8px 0; color: #666;\">Event Type:</td>\n            <td style=\"padding: 8px 0; color: #333; font-weight: 600; text-align: right;\">{{ event_name }}</td>\n        </tr>\n        {% if event_date %}\n        <tr>\n            <td style=\"padding: 8px 0; color: #666;\">Event Date:</td>\n            <td style=\"padding: 8px 0; color: #333; font-weight: 600; text-align: right;\">{{ event_date }}</td>\n        </tr>\n        {% endif %}\n        {% if venue_name %}\n        <tr>\n            <td style=\"padding: 8px 0; color: #666;\">Venue:</td>\n            <td style=\"padding: 8px 0; color: #333; text-align: right;\">{{ venue_name }}</td>\n        </tr>\n        {% endif %}\n        {% if total_amount_formatted %}\n        <tr>\n            <td style=\"padding: 8px 0; color: #666;\">Estimated Value:</td>\n            <td style=\"padding: 8px 0; color: #333; font-weight: 600; text-align: right;\">{{ total_amount_formatted }}</td>\n        </tr>\n        {% endif %}\n    </table>\n</div>\n\n{% if client_message %}\n<div style=\"margin: 20px 0; padding: 15px; background-color: #f8f9fa; border-radius: 4px;\">\n    <p style=\"margin: 0 0 5px 0; color: #666; font-size: 13px; font-weight: 600;\">Client Message:</p>\n    <p style=\"margin: 0; color: #333; font-style: italic; line-height: 1.6;\">\"{{ client_message }}\"</p>\n</div>\n{% endif %}\n\n<p style=\"color: #666; font-size: 14px; line-height: 1.6; margin-top: 20px;\">\n    Log in to the admin dashboard to review this lead and prepare a quote.\n</p>",
+      "is_system": true,
+      "layout": 2
+    }
   }
 ]

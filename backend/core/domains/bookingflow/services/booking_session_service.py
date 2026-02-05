@@ -560,6 +560,12 @@ class BookingSessionService:
                     except Exception as e:
                         logger.warning(f"Failed to queue quote request acknowledgment: {e}")
 
+                    # Notify admin users about the new lead (async)
+                    try:
+                        BookingSessionService._send_admin_new_lead_notification(session, event)
+                    except Exception as e:
+                        logger.warning(f"Failed to queue admin new lead notification: {e}")
+
                 elif completion_type == 'payment':
                     logger.info(f"Processing payment completion for session {session.session_id}")
 
@@ -736,6 +742,61 @@ class BookingSessionService:
         except Exception as e:
             logger.error(f"Failed to send quote request acknowledgment: {e}")
             # Don't raise exception as quote was created successfully
+
+    @staticmethod
+    def _send_admin_new_lead_notification(session, event):
+        """Send email notification to admin users when a new quote request is submitted.
+
+        This ensures admins are directly notified about new leads via email,
+        complementing the in-app notification created by the EVENT_CREATED signal.
+        """
+        from core.domains.communications.services import CommunicationService
+        from core.domains.communications.context_service import (
+            CommunicationContextService, ContextType
+        )
+        from core.domains.users.models import User
+
+        try:
+            admin_emails = list(
+                User.objects.filter(role='ADMIN', is_active=True)
+                .exclude(email='')
+                .values_list('email', flat=True)
+            )
+
+            if not admin_emails:
+                logger.warning("No admin users found to notify about new lead")
+                return
+
+            comm_service = CommunicationService()
+
+            # Generate context using the centralized context service
+            context_data = CommunicationContextService.generate_context(
+                context_type=ContextType.EVENT,
+                client=session.client,
+                event=event,
+            )
+
+            # Add custom context specific to admin notification
+            metadata = BookingSessionService._extract_booking_metadata(session)
+            context_data['client_message'] = metadata.get('combined_message', '')
+
+            for admin_email in admin_emails:
+                try:
+                    comm_service.send_communication(
+                        template_name='New Lead Admin Notification',
+                        recipient=admin_email,
+                        context_data=context_data,
+                        use_async=True,
+                        event=event,
+                    )
+                except Exception as e:
+                    logger.warning(f"Failed to send new lead admin notification to {admin_email}: {e}")
+
+            logger.info(f"Queued new lead admin notifications to {len(admin_emails)} admin(s) for event {event.id}")
+
+        except Exception as e:
+            logger.error(f"Failed to send admin new lead notifications: {e}")
+            # Don't raise - admin notification failure should not block the booking flow
 
     @staticmethod
     def _send_booking_confirmation(session, event):
