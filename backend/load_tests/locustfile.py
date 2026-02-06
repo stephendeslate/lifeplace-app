@@ -222,7 +222,7 @@ class AuthenticatedClientUser(HttpUser):
         """
         View client's events.
 
-        Endpoint: GET /api/events/events/
+        Endpoint: GET /api/events/client/events/
         Based on: frontend/client-portal/src/apis/events.api.ts
         """
         if not self.rate_tracker.can_make_request():
@@ -230,10 +230,10 @@ class AuthenticatedClientUser(HttpUser):
 
         headers = self.token_manager.get_auth_headers()
         with self.client.get(
-            "/api/events/events/",
+            "/api/events/client/events/",
             headers=headers,
             catch_response=True,
-            name="/api/events/events/ [client]"
+            name="/api/events/client/events/ [client]"
         ) as response:
             self.rate_tracker.record_call()
             if response.status_code == 200:
@@ -254,7 +254,7 @@ class AuthenticatedClientUser(HttpUser):
         """
         View client's invoices.
 
-        Endpoint: GET /api/payments/invoices/
+        Endpoint: GET /api/payments/client/invoices/
         Based on: frontend/client-portal/src/apis/financial.api.ts
         """
         if not self.rate_tracker.can_make_request():
@@ -262,10 +262,10 @@ class AuthenticatedClientUser(HttpUser):
 
         headers = self.token_manager.get_auth_headers()
         with self.client.get(
-            "/api/payments/invoices/",
+            "/api/payments/client/invoices/",
             headers=headers,
             catch_response=True,
-            name="/api/payments/invoices/ [client]"
+            name="/api/payments/client/invoices/ [client]"
         ) as response:
             self.rate_tracker.record_call()
             if response.status_code == 200:
@@ -280,7 +280,7 @@ class AuthenticatedClientUser(HttpUser):
         """
         View client's quotes.
 
-        Endpoint: GET /api/sales/quotes/
+        Endpoint: GET /api/sales/client/quotes/
         Based on: frontend/client-portal/src/apis/quotes.api.ts
         """
         if not self.rate_tracker.can_make_request():
@@ -288,10 +288,10 @@ class AuthenticatedClientUser(HttpUser):
 
         headers = self.token_manager.get_auth_headers()
         with self.client.get(
-            "/api/sales/quotes/",
+            "/api/sales/client/quotes/",
             headers=headers,
             catch_response=True,
-            name="/api/sales/quotes/ [client]"
+            name="/api/sales/client/quotes/ [client]"
         ) as response:
             self.rate_tracker.record_call()
             if response.status_code == 200:
