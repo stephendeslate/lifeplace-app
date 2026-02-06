@@ -595,10 +595,11 @@ def secure_logout(request):
             token.blacklist()
             
             # Log security event
-            security_logger.log_security_event(
-                event_type='logout',
+            security_logger.log_event(
+                SecurityEventType.LOGOUT,
+                f"User {request.user.email} logged out securely",
+                request=request,
                 user=request.user,
-                ip_address=request.META.get('REMOTE_ADDR'),
                 details={'method': 'secure_logout_with_blacklist'}
             )
             
@@ -653,10 +654,11 @@ def logout_all_devices(request):
                 continue
         
         # Log security event
-        security_logger.log_security_event(
-            event_type='logout_all_devices',
+        security_logger.log_event(
+            SecurityEventType.LOGOUT,
+            f"User {user.email} logged out from all devices",
+            request=request,
             user=user,
-            ip_address=request.META.get('REMOTE_ADDR'),
             details={
                 'tokens_blacklisted': blacklisted_count,
                 'method': 'logout_all_devices'
