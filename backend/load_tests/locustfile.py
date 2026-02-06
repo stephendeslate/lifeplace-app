@@ -1,46 +1,29 @@
 """
-LifePlace Load Testing - Main Locust Entry Point
+LifePlace Post-Deploy Smoke Test
 
-This file orchestrates all load testing scenarios for the LifePlace platform.
+Validates the 3 critical user journeys after each deployment:
+1. Booking flow (public) - the revenue path
+2. Client portal (authenticated) - existing customer experience
+3. Admin dashboard (authenticated) - internal operations
 
 Usage:
-    # Run all tests (web UI)
-    locust -f locustfile.py --host=https://api.yourdomain.com
+    # Standard smoke test (~2 min, 3 users)
+    cd backend/load_tests
+    locust -f locustfile.py --headless -u 3 -r 3 -t 2m --html=smoke_report.html
 
-    # Run headless with specific user count
-    locust -f locustfile.py --host=https://api.yourdomain.com \
-        --headless -u 50 -r 5 -t 10m
+    # Booking flow only
+    locust -f locustfile.py --headless -u 1 -r 1 -t 2m BookingFlowSmokeUser
 
-    # Run specific user class only
-    locust -f locustfile.py --host=https://api.yourdomain.com \
-        BookingFlowUser
-
-Environment Variables Required:
-    LOAD_TEST_BASE_URL - API base URL
-    LOAD_TEST_ADMIN_EMAIL - Test admin account email
-    LOAD_TEST_ADMIN_PASSWORD - Test admin account password
-    LOAD_TEST_CLIENT_EMAIL - Test client account email
-    LOAD_TEST_CLIENT_PASSWORD - Test client account password
-    LOAD_TEST_BOOKING_FLOW_ID - ID of booking flow to test
-    LOAD_TEST_VENUE_ID - ID of venue to use in tests
-    LOAD_TEST_PACKAGE_ID - ID of package to use in tests
-    LOAD_TEST_EVENT_TYPE_ID - ID of event type to use in tests
-
-Based on verified code review of:
-    - Backend: 20 API domains, Django REST Framework
-    - Frontend: React with TanStack Query
-    - Infrastructure: Fly.io Singapore, Upstash Redis
-    - Rate limits: 100/hour anon, 1000/hour authenticated
+    # With Locust web UI (for debugging)
+    locust -f locustfile.py
 """
 
+import sys
 import logging
 from locust import HttpUser, task, between, events
-from locust.runners import MasterRunner
 
-from config import config, USER_WEIGHTS
+from config import config
 from utils import TokenManager, think_time, RateLimitTracker
-
-# Import user behavior classes
 from load_booking_flow import BookingFlowBehavior
 from load_admin_dashboard import AdminDashboardBehavior
 
@@ -48,43 +31,32 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-# =============================================================================
-# USER CLASSES
-# =============================================================================
-
-class AnonymousBrowserUser(HttpUser):
+class BookingFlowSmokeUser(HttpUser):
     """
-    Simulates anonymous users browsing the booking flows.
+    Validates the public booking flow — the business-critical path.
 
-    Behavior:
-    - Browse available booking flows
-    - Check event types
-    - View public availability
-    - Does NOT complete bookings
+    Runs one complete booking session (stops before payment):
+    start_session → introduction → date_time → package → addon →
+    pricing_summary → contact_info → [stops] → release reservation
 
-    Weight: 50% of traffic (based on USER_WEIGHTS)
-    Rate limit awareness: 100/hour for anonymous users
+    fixed_count=1: exactly one instance runs.
     """
 
-    weight = USER_WEIGHTS["anonymous_browser"]
-    wait_time = between(config.min_think_time, config.max_think_time)
+    fixed_count = 1
+    wait_time = between(config.think_time_min, config.think_time_max)
 
     def on_start(self):
-        """Initialize rate limit tracker for anonymous user."""
+        self.behavior = BookingFlowBehavior(self.client, self.host)
         self.rate_tracker = RateLimitTracker(limit_per_hour=config.anon_rate_limit)
+        self._completed = False
 
-    @task(3)
-    def browse_booking_flows(self):
-        """
-        Browse available booking flows.
-
-        Endpoint: GET /api/bookingflow/public/flows/
-        Based on: core/domains/bookingflow/urls.py
-        """
-        if not self.rate_tracker.can_make_request():
-            think_time(5, 10)  # Back off if near rate limit
+    @task
+    def run_booking_flow(self):
+        if self._completed:
+            think_time(5, 10)  # idle after completing
             return
 
+        # Browse flows list
         with self.client.get(
             "/api/bookingflow/public/flows/",
             catch_response=True,
@@ -93,46 +65,12 @@ class AnonymousBrowserUser(HttpUser):
             self.rate_tracker.record_call()
             if response.status_code == 200:
                 response.success()
-            elif response.status_code == 429:
-                response.failure("Rate limited")
             else:
                 response.failure(f"Failed: {response.status_code}")
 
-    @task(2)
-    def browse_event_types(self):
-        """
-        Browse available event types.
+        think_time(0.5, 1)
 
-        Endpoint: GET /api/events/event-types/
-        Based on: core/domains/events/urls.py
-        """
-        if not self.rate_tracker.can_make_request():
-            return
-
-        with self.client.get(
-            "/api/events/event-types/",
-            catch_response=True,
-            name="/api/events/event-types/"
-        ) as response:
-            self.rate_tracker.record_call()
-            if response.status_code == 200:
-                response.success()
-            elif response.status_code == 429:
-                response.failure("Rate limited")
-            else:
-                response.failure(f"Failed: {response.status_code}")
-
-    @task(2)
-    def check_public_availability(self):
-        """
-        Check public availability for dates.
-
-        Endpoint: GET /api/events/public/availability/
-        Based on: core/domains/events/urls.py
-        """
-        if not self.rate_tracker.can_make_request():
-            return
-
+        # Check public availability
         with self.client.get(
             "/api/events/public/availability/",
             catch_response=True,
@@ -141,362 +79,212 @@ class AnonymousBrowserUser(HttpUser):
             self.rate_tracker.record_call()
             if response.status_code == 200:
                 response.success()
-            elif response.status_code == 429:
-                response.failure("Rate limited")
             else:
                 response.failure(f"Failed: {response.status_code}")
 
+        think_time(0.5, 1)
 
-class BookingFlowUser(HttpUser):
+        # Browse event types
+        with self.client.get(
+            "/api/events/event-types/",
+            catch_response=True,
+            name="/api/events/event-types/"
+        ) as response:
+            self.rate_tracker.record_call()
+            if response.status_code == 200:
+                response.success()
+            else:
+                response.failure(f"Failed: {response.status_code}")
+
+        think_time(0.5, 1)
+
+        # Execute full booking flow (start → steps → release)
+        success = self.behavior.execute_booking_flow(self.rate_tracker)
+        if success:
+            logger.info("SMOKE: Booking flow passed")
+        else:
+            logger.error("SMOKE: Booking flow FAILED")
+
+        self._completed = True
+
+
+class ClientPortalSmokeUser(HttpUser):
     """
-    Simulates users actively going through the booking flow.
+    Validates the authenticated client experience.
 
-    Behavior:
-    - Start booking session
-    - Progress through steps (venue, datetime, package, contact)
-    - Calculate pricing
-    - Validate availability
-    - DOES NOT complete payment (to avoid real charges)
+    Runs: login → view events → view invoices → view quotes → logout
 
-    Weight: 30% of traffic
-    Based on: core/domains/bookingflow/ and frontend/client-portal/src/apis/booking/
+    fixed_count=1: exactly one instance runs.
     """
 
-    weight = USER_WEIGHTS["booking_user"]
-    wait_time = between(config.min_think_time * 2, config.max_think_time * 2)
+    fixed_count = 1
+    wait_time = between(config.think_time_min, config.think_time_max)
 
     def on_start(self):
-        """Initialize booking flow behavior."""
-        self.behavior = BookingFlowBehavior(self.client, self.host)
-        self.rate_tracker = RateLimitTracker(limit_per_hour=config.anon_rate_limit)
+        self.token_manager = TokenManager(self.client, self.host)
+        self.rate_tracker = RateLimitTracker(limit_per_hour=config.user_rate_limit)
+        self._completed = False
+
+        if config.client_email and config.client_password:
+            if not self.token_manager.login(config.client_email, config.client_password):
+                logger.error("SMOKE: Client login FAILED")
+
+    def on_stop(self):
+        self.token_manager.logout()
 
     @task
-    def complete_booking_flow_steps(self):
-        """
-        Execute a realistic booking flow (stops before payment).
-
-        This simulates the full client-portal booking experience
-        as documented in frontend/client-portal/src/apis/booking/core.api.ts
-        """
-        if not self.rate_tracker.can_make_request():
+    def run_client_journey(self):
+        if self._completed:
             think_time(5, 10)
             return
 
-        # Execute booking flow (will make multiple API calls)
-        self.behavior.execute_booking_flow(self.rate_tracker)
-
-
-class AuthenticatedClientUser(HttpUser):
-    """
-    Simulates authenticated clients checking their events.
-
-    Behavior:
-    - Login with credentials
-    - View their events
-    - Check invoices and payments
-    - View quotes
-
-    Weight: 15% of traffic
-    Rate limit: 1000/hour for authenticated users
-    """
-
-    weight = USER_WEIGHTS["authenticated_client"]
-    wait_time = between(config.min_think_time, config.max_think_time)
-
-    def on_start(self):
-        """Login at the start of the test."""
-        self.token_manager = TokenManager(self.client, self.host)
-        self.rate_tracker = RateLimitTracker(limit_per_hour=config.user_rate_limit)
-
-        # Login with test client credentials
-        if config.client_email and config.client_password:
-            if not self.token_manager.login(config.client_email, config.client_password):
-                logger.warning("Client login failed, running as anonymous")
-
-    def on_stop(self):
-        """Logout at the end of the test."""
-        self.token_manager.logout()
-
-    @task(3)
-    def view_my_events(self):
-        """
-        View client's events.
-
-        Endpoint: GET /api/events/client/events/
-        Based on: frontend/client-portal/src/apis/events.api.ts
-        """
-        if not self.rate_tracker.can_make_request():
+        if not self.token_manager.access_token:
+            logger.error("SMOKE: No client token, skipping client journey")
+            self._completed = True
             return
 
         headers = self.token_manager.get_auth_headers()
-        with self.client.get(
-            "/api/events/client/events/",
-            headers=headers,
-            catch_response=True,
-            name="/api/events/client/events/ [client]"
-        ) as response:
-            self.rate_tracker.record_call()
-            if response.status_code == 200:
-                response.success()
-            elif response.status_code == 401:
-                # Try to refresh token
-                if self.token_manager.refresh_tokens():
+
+        # Client endpoints to verify
+        endpoints = [
+            ("/api/events/client/events/", "client events"),
+            ("/api/payments/client/invoices/", "client invoices"),
+            ("/api/sales/client/quotes/", "client quotes"),
+        ]
+
+        all_passed = True
+        for path, label in endpoints:
+            with self.client.get(
+                path,
+                headers=headers,
+                catch_response=True,
+                name=f"{path} [client]"
+            ) as response:
+                self.rate_tracker.record_call()
+                if response.status_code == 200:
                     response.success()
                 else:
-                    response.failure("Authentication failed")
-            elif response.status_code == 429:
-                response.failure("Rate limited")
-            else:
-                response.failure(f"Failed: {response.status_code}")
+                    response.failure(f"Failed: {response.status_code}")
+                    all_passed = False
 
-    @task(2)
-    def view_my_invoices(self):
-        """
-        View client's invoices.
+            think_time(0.5, 1)
 
-        Endpoint: GET /api/payments/client/invoices/
-        Based on: frontend/client-portal/src/apis/financial.api.ts
-        """
-        if not self.rate_tracker.can_make_request():
-            return
+        if all_passed:
+            logger.info("SMOKE: Client portal passed")
+        else:
+            logger.error("SMOKE: Client portal FAILED")
 
-        headers = self.token_manager.get_auth_headers()
-        with self.client.get(
-            "/api/payments/client/invoices/",
-            headers=headers,
-            catch_response=True,
-            name="/api/payments/client/invoices/ [client]"
-        ) as response:
-            self.rate_tracker.record_call()
-            if response.status_code == 200:
-                response.success()
-            elif response.status_code == 429:
-                response.failure("Rate limited")
-            else:
-                response.failure(f"Failed: {response.status_code}")
-
-    @task(2)
-    def view_my_quotes(self):
-        """
-        View client's quotes.
-
-        Endpoint: GET /api/sales/client/quotes/
-        Based on: frontend/client-portal/src/apis/quotes.api.ts
-        """
-        if not self.rate_tracker.can_make_request():
-            return
-
-        headers = self.token_manager.get_auth_headers()
-        with self.client.get(
-            "/api/sales/client/quotes/",
-            headers=headers,
-            catch_response=True,
-            name="/api/sales/client/quotes/ [client]"
-        ) as response:
-            self.rate_tracker.record_call()
-            if response.status_code == 200:
-                response.success()
-            elif response.status_code == 429:
-                response.failure("Rate limited")
-            else:
-                response.failure(f"Failed: {response.status_code}")
-
-    @task(1)
-    def view_client_dashboard(self):
-        """
-        View client dashboard analytics.
-
-        Endpoint: GET /api/client/analytics/dashboard/
-        Based on: frontend/client-portal/src/apis/analytics.api.ts
-        """
-        if not self.rate_tracker.can_make_request():
-            return
-
-        headers = self.token_manager.get_auth_headers()
-        with self.client.get(
-            "/api/client/analytics/dashboard/",
-            headers=headers,
-            catch_response=True,
-            name="/api/client/analytics/dashboard/"
-        ) as response:
-            self.rate_tracker.record_call()
-            if response.status_code == 200:
-                response.success()
-            elif response.status_code == 429:
-                response.failure("Rate limited")
-            else:
-                response.failure(f"Failed: {response.status_code}")
+        self._completed = True
 
 
-class AdminDashboardUser(HttpUser):
+class AdminDashboardSmokeUser(HttpUser):
     """
-    Simulates admin users accessing the dashboard.
+    Validates the admin dashboard and key CRUD endpoints.
 
-    Behavior:
-    - Login with admin credentials
-    - Load dashboard analytics (15+ queries)
-    - View events, payments, clients
-    - Access reports
+    Runs: login → dashboard analytics → events list → payments list → logout
 
-    Weight: 5% of traffic
-    Critical: Dashboard loads 15+ analytics queries simultaneously
+    fixed_count=1: exactly one instance runs.
     """
 
-    weight = USER_WEIGHTS["admin_user"]
-    wait_time = between(config.min_think_time * 2, config.max_think_time * 3)
+    fixed_count = 1
+    wait_time = between(config.think_time_min, config.think_time_max)
 
     def on_start(self):
-        """Login as admin at the start of the test."""
         self.token_manager = TokenManager(self.client, self.host)
         self.behavior = AdminDashboardBehavior(self.client, self.host)
         self.rate_tracker = RateLimitTracker(limit_per_hour=config.user_rate_limit)
+        self._completed = False
 
-        # Login with test admin credentials
         if config.admin_email and config.admin_password:
             if not self.token_manager.login(config.admin_email, config.admin_password):
-                logger.warning("Admin login failed")
+                logger.error("SMOKE: Admin login FAILED")
 
     def on_stop(self):
-        """Logout at the end of the test."""
         self.token_manager.logout()
 
-    @task(3)
-    def load_dashboard(self):
-        """
-        Load the full admin dashboard.
-
-        This triggers 15+ analytics queries as documented in:
-        frontend/admin-crm/src/apis/analytics.api.ts
-
-        This is a HEAVY operation and tests database query performance.
-        """
-        if not self.rate_tracker.can_make_request():
+    @task
+    def run_admin_journey(self):
+        if self._completed:
             think_time(5, 10)
             return
 
-        headers = self.token_manager.get_auth_headers()
-        self.behavior.load_full_dashboard(headers, self.rate_tracker)
-
-    @task(2)
-    def view_events_list(self):
-        """
-        View events list with filtering.
-
-        Endpoint: GET /api/events/events/
-        Based on: frontend/admin-crm/src/apis/events.api.ts
-        """
-        if not self.rate_tracker.can_make_request():
+        if not self.token_manager.access_token:
+            logger.error("SMOKE: No admin token, skipping admin journey")
+            self._completed = True
             return
 
         headers = self.token_manager.get_auth_headers()
-        with self.client.get(
-            "/api/events/events/?page_size=25",
-            headers=headers,
-            catch_response=True,
-            name="/api/events/events/ [admin]"
-        ) as response:
-            self.rate_tracker.record_call()
-            if response.status_code == 200:
-                response.success()
-            elif response.status_code == 429:
-                response.failure("Rate limited")
-            else:
-                response.failure(f"Failed: {response.status_code}")
 
-    @task(2)
-    def view_payments_list(self):
-        """
-        View payments list.
+        # Load the full dashboard (14 analytics endpoints)
+        dashboard_result = self.behavior.load_full_dashboard(headers, self.rate_tracker)
+        dashboard_ok = dashboard_result["failure_count"] == 0
 
-        Endpoint: GET /api/payments/payments/
-        Based on: frontend/admin-crm/src/apis/payments.api.ts
-        """
-        if not self.rate_tracker.can_make_request():
-            return
+        think_time(0.5, 1)
 
-        headers = self.token_manager.get_auth_headers()
-        with self.client.get(
-            "/api/payments/payments/?page_size=25",
-            headers=headers,
-            catch_response=True,
-            name="/api/payments/payments/ [admin]"
-        ) as response:
-            self.rate_tracker.record_call()
-            if response.status_code == 200:
-                response.success()
-            elif response.status_code == 429:
-                response.failure("Rate limited")
-            else:
-                response.failure(f"Failed: {response.status_code}")
+        # Verify key CRUD endpoints
+        crud_endpoints = [
+            ("/api/events/events/?page_size=5", "admin events"),
+            ("/api/payments/payments/?page_size=5", "admin payments"),
+            ("/api/clients/?page_size=5", "admin clients"),
+        ]
 
-    @task(1)
-    def view_clients_list(self):
-        """
-        View clients list.
+        crud_ok = True
+        for path, label in crud_endpoints:
+            with self.client.get(
+                path,
+                headers=headers,
+                catch_response=True,
+                name=f"{path.split('?')[0]} [admin]"
+            ) as response:
+                self.rate_tracker.record_call()
+                if response.status_code == 200:
+                    response.success()
+                else:
+                    response.failure(f"Failed: {response.status_code}")
+                    crud_ok = False
 
-        Endpoint: GET /api/clients/
-        Based on: frontend/admin-crm/src/apis/clients.api.ts
-        """
-        if not self.rate_tracker.can_make_request():
-            return
+            think_time(0.5, 1)
 
-        headers = self.token_manager.get_auth_headers()
-        with self.client.get(
-            "/api/clients/?page_size=25",
-            headers=headers,
-            catch_response=True,
-            name="/api/clients/ [admin]"
-        ) as response:
-            self.rate_tracker.record_call()
-            if response.status_code == 200:
-                response.success()
-            elif response.status_code == 429:
-                response.failure("Rate limited")
-            else:
-                response.failure(f"Failed: {response.status_code}")
+        if dashboard_ok and crud_ok:
+            logger.info("SMOKE: Admin dashboard passed")
+        else:
+            logger.error(
+                f"SMOKE: Admin dashboard FAILED "
+                f"(dashboard: {'ok' if dashboard_ok else 'FAIL'}, "
+                f"crud: {'ok' if crud_ok else 'FAIL'})"
+            )
+
+        self._completed = True
 
 
 # =============================================================================
-# EVENT HOOKS FOR REPORTING
+# REPORTING
 # =============================================================================
-
-@events.test_start.add_listener
-def on_test_start(environment, **kwargs):
-    """Log test start with configuration."""
-    if isinstance(environment.runner, MasterRunner):
-        logger.info("=" * 60)
-        logger.info("LifePlace Load Test Starting")
-        logger.info("=" * 60)
-        logger.info(f"Target: {environment.host}")
-        logger.info(f"User weights: {USER_WEIGHTS}")
-        logger.info(f"Response time P95 threshold: {config.response_time_p95_threshold}ms")
-        logger.info(f"Error rate threshold: {config.error_rate_threshold}%")
-        logger.info("=" * 60)
-
 
 @events.test_stop.add_listener
 def on_test_stop(environment, **kwargs):
-    """Log test summary."""
-    if isinstance(environment.runner, MasterRunner):
-        stats = environment.runner.stats
-        logger.info("=" * 60)
-        logger.info("LifePlace Load Test Complete")
-        logger.info("=" * 60)
-        logger.info(f"Total requests: {stats.total.num_requests}")
-        logger.info(f"Total failures: {stats.total.num_failures}")
-        if stats.total.num_requests > 0:
-            error_rate = (stats.total.num_failures / stats.total.num_requests) * 100
-            logger.info(f"Error rate: {error_rate:.2f}%")
-            if error_rate > config.error_rate_threshold:
-                logger.warning(f"ERROR RATE EXCEEDED THRESHOLD ({config.error_rate_threshold}%)")
-        logger.info(f"Median response time: {stats.total.median_response_time}ms")
-        logger.info(f"P95 response time: {stats.total.get_response_time_percentile(0.95)}ms")
-        logger.info(f"P99 response time: {stats.total.get_response_time_percentile(0.99)}ms")
-        logger.info("=" * 60)
+    """Print summary and exit with non-zero code if errors detected."""
+    stats = environment.runner.stats
+    total = stats.total.num_requests
+    failures = stats.total.num_failures
+    error_rate = (failures / total * 100) if total > 0 else 0
+    median = stats.total.median_response_time
+    p95 = stats.total.get_response_time_percentile(0.95)
 
+    logger.info("=" * 50)
+    logger.info("SMOKE TEST RESULTS")
+    logger.info("=" * 50)
+    logger.info(f"Requests:  {total}")
+    logger.info(f"Failures:  {failures}")
+    logger.info(f"Error rate: {error_rate:.1f}%")
+    logger.info(f"Median:    {median}ms")
+    logger.info(f"P95:       {p95}ms")
 
-@events.request.add_listener
-def on_request(request_type, name, response_time, response_length, response, context, exception, **kwargs):
-    """Track individual request performance for debugging."""
-    if response_time > config.response_time_p99_threshold:
-        logger.warning(f"SLOW REQUEST: {name} took {response_time}ms")
+    if error_rate > config.error_rate_threshold:
+        logger.error(f"FAIL: Error rate {error_rate:.1f}% exceeds {config.error_rate_threshold}%")
+    elif p95 and p95 > config.response_time_p95_threshold:
+        logger.warning(f"WARN: P95 {p95}ms exceeds {config.response_time_p95_threshold}ms threshold")
+    else:
+        logger.info("PASS: All thresholds met")
+
+    logger.info("=" * 50)

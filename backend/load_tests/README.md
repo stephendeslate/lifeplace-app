@@ -1,330 +1,90 @@
-# LifePlace Load Testing
+# LifePlace Smoke Tests
 
-Comprehensive load and stress testing for the LifePlace event management platform.
+Post-deploy smoke tests that validate the 3 critical user journeys against production.
 
-## Overview
+## What it tests
 
-This load testing suite is designed based on verified code review of the LifePlace codebase, targeting:
+| Scenario | What it validates | Requests |
+|---|---|---|
+| **Booking flow** | Public flow list, availability, event types, full booking session (start, steps, release) | ~15 |
+| **Client portal** | JWT login, view events/invoices/quotes | ~5 |
+| **Admin dashboard** | JWT login, 14 analytics endpoints, events/payments/clients list | ~20 |
 
-- **Backend**: Django REST Framework with 20 API domains
-- **Frontend**: React applications (admin-crm, client-portal)
-- **Infrastructure**: Fly.io Singapore, Upstash Redis, Fly Postgres
-- **Target Scale**: 25-50 concurrent users (medium venue business)
+Total: ~40 requests in ~2 minutes. Well within rate limits (100/hr anon, 1000/hr auth).
 
-## Quick Start
-
-### 1. Install Dependencies
+## Quick start
 
 ```bash
 cd backend/load_tests
 pip install -r requirements.txt
+
+# Run all 3 scenarios (~2 min)
+locust -f locustfile.py --headless -u 3 -r 3 -t 2m --html=smoke_report.html
+
+# Run just the booking flow
+locust -f locustfile.py --headless -u 1 -r 1 -t 2m BookingFlowSmokeUser
+
+# Run with Locust web UI (localhost:8089)
+locust -f locustfile.py
 ```
 
-### 2. Configure Environment
+## Configuration
 
-Create a `.env` file or set environment variables:
+Copy `.env.example` to `.env` and fill in:
 
+```
+LOAD_TEST_BASE_URL=https://lifeplace-api.fly.dev
+LOAD_TEST_ADMIN_EMAIL=loadtest-admin@example.com
+LOAD_TEST_ADMIN_PASSWORD=<password>
+LOAD_TEST_CLIENT_EMAIL=loadtest-client@example.com
+LOAD_TEST_CLIENT_PASSWORD=<password>
+LOAD_TEST_BOOKING_FLOW_ID=10
+LOAD_TEST_PACKAGE_ID=30
+LOAD_TEST_EVENT_TYPE_ID=7
+```
+
+Test accounts must exist in production. Create via `fly ssh console`:
 ```bash
-# Required
-export LOAD_TEST_BASE_URL="https://api.yourdomain.com"
-
-# Test credentials (create dedicated test accounts)
-export LOAD_TEST_ADMIN_EMAIL="loadtest-admin@yourdomain.com"
-export LOAD_TEST_ADMIN_PASSWORD="your-secure-password"
-export LOAD_TEST_CLIENT_EMAIL="loadtest-client@yourdomain.com"
-export LOAD_TEST_CLIENT_PASSWORD="your-secure-password"
-
-# Optional - IDs for booking flow testing
-export LOAD_TEST_BOOKING_FLOW_ID="your-booking-flow-uuid"
-export LOAD_TEST_VENUE_ID="your-venue-uuid"
-export LOAD_TEST_PACKAGE_ID="your-package-uuid"
-export LOAD_TEST_EVENT_TYPE_ID="your-event-type-uuid"
-
-# WebSocket (if different from API URL)
-export LOAD_TEST_WS_URL="wss://api.yourdomain.com"
+python manage.py shell -c "
+from core.domains.users.models import User
+User.objects.create_user(email='loadtest-admin@example.com', password='...', role='ADMIN')
+User.objects.create_user(email='loadtest-client@example.com', password='...', role='CLIENT')
+"
 ```
 
-### 3. Run Tests
+Entity IDs (booking flow, package, event type) come from the production database.
 
-**With Web UI (recommended for first run):**
-```bash
-locust -f locustfile.py --host=https://api.yourdomain.com
+## Reading results
+
+A passing test looks like:
 ```
-Then open http://localhost:8089 in your browser.
-
-**Headless mode (for CI/CD):**
-```bash
-locust -f locustfile.py --host=https://api.yourdomain.com \
-    --headless -u 50 -r 5 -t 10m
-```
-
-## Test Scenarios
-
-### Scenario 1: Baseline Test
-Establish current performance baseline.
-
-```bash
-locust -f locustfile.py --host=https://api.yourdomain.com \
-    --headless -u 10 -r 2 -t 5m
+SMOKE: Booking flow passed
+SMOKE: Client portal passed
+SMOKE: Admin dashboard passed
+==================================================
+SMOKE TEST RESULTS
+==================================================
+Requests:  42
+Failures:  0
+Error rate: 0.0%
+Median:    210ms
+P95:       430ms
+PASS: All thresholds met
+==================================================
 ```
 
-### Scenario 2: Normal Load
-Simulate typical business hours traffic.
+Any `SMOKE: ... FAILED` line indicates a broken endpoint that needs investigation.
 
-```bash
-locust -f locustfile.py --host=https://api.yourdomain.com \
-    --headless -u 25 -r 5 -t 10m
-```
-
-### Scenario 3: Peak Load
-Simulate promotional period or popular event booking.
-
-```bash
-locust -f locustfile.py --host=https://api.yourdomain.com \
-    --headless -u 50 -r 5 -t 15m
-```
-
-### Scenario 4: Stress Test
-Push beyond expected capacity to find breaking points.
-
-```bash
-locust -f locustfile.py --host=https://api.yourdomain.com \
-    --headless -u 100 -r 10 -t 5m
-```
-
-### Scenario 5: Soak Test
-Long-duration test for memory leaks and resource exhaustion.
-
-```bash
-locust -f locustfile.py --host=https://api.yourdomain.com \
-    --headless -u 25 -r 5 -t 1h
-```
-
-## User Classes
-
-The test simulates four types of users based on frontend API analysis:
-
-| User Type | Weight | Behavior |
-|-----------|--------|----------|
-| `AnonymousBrowserUser` | 50% | Browses booking flows, checks availability |
-| `BookingFlowUser` | 30% | Completes booking flow (stops before payment) |
-| `AuthenticatedClientUser` | 15% | Views events, invoices, quotes |
-| `AdminDashboardUser` | 5% | Loads dashboard analytics (15+ queries) |
-
-### Run Specific User Class
-
-```bash
-# Only booking flow users
-locust -f locustfile.py BookingFlowUser --host=https://api.yourdomain.com
-
-# Only admin dashboard users
-locust -f locustfile.py AdminDashboardUser --host=https://api.yourdomain.com
-```
-
-## Critical Endpoints Tested
-
-Based on code review of frontend API calls:
-
-### Public (High Traffic)
-- `GET /api/bookingflow/public/flows/` - List booking flows
-- `POST /api/bookingflow/public/flows/{id}/start_session/` - Create session
-- `PATCH /api/bookingflow/public/flows/session/{id}/update/` - Update session
-- `POST /api/bookingflow/public/flows/session/{id}/validate-availability/` - Check availability
-- `POST /api/bookingflow/public/flows/session/{id}/calculate-pricing/` - Calculate pricing
-
-### Authenticated Client
-- `GET /api/events/events/` - Client's events
-- `GET /api/payments/invoices/` - Client's invoices
-- `GET /api/sales/quotes/` - Client's quotes
-
-### Admin Dashboard (Heavy Queries)
-- `GET /api/analytics/dashboard/` - Main KPIs
-- `GET /api/analytics/sales/bookings/` - Booking summary
-- `GET /api/analytics/events/attendance/` - Attendance metrics
-- ... and 12 more analytics endpoints
-
-## WebSocket Testing
-
-Test WebSocket connections separately:
-
-```bash
-cd backend/load_tests
-python test_websocket.py
-```
-
-This tests:
-- Connection establishment
-- Concurrent connections (50+)
-- Reconnection handling
-- Message broadcasting
-
-## Performance Thresholds
-
-Based on your infrastructure (Fly.io ~$24-41/month):
-
-| Metric | Target | Warning |
-|--------|--------|---------|
-| Response Time P95 | < 500ms | > 500ms |
-| Response Time P99 | < 1000ms | > 1000ms |
-| Error Rate | < 1% | > 1% |
-| Throughput | 50-100 RPS | < 50 RPS |
-
-## Rate Limiting
-
-The tests are aware of your rate limits (from `settings.py`):
-
-| Type | Limit | Test Behavior |
-|------|-------|---------------|
-| Anonymous | 100/hour | Backs off at 90% capacity |
-| Authenticated | 1000/hour | Higher request rate allowed |
-
-## Test Data Setup
-
-For accurate testing, create dedicated test accounts:
-
-```python
-# In Django shell
-from django.contrib.auth import get_user_model
-User = get_user_model()
-
-# Create test admin
-User.objects.create_user(
-    email='loadtest-admin@yourdomain.com',
-    password='secure-password',
-    role='ADMIN',
-    is_staff=True
-)
-
-# Create test client
-User.objects.create_user(
-    email='loadtest-client@yourdomain.com',
-    password='secure-password',
-    role='CLIENT'
-)
-```
-
-## Production Testing Safety
-
-When testing against production:
-
-1. **Use dedicated test accounts** - Don't use real admin/client accounts
-2. **Test during low-traffic periods** - Early morning or late night
-3. **Start with baseline load** - 10 users first, then increase
-4. **Monitor error rates** - Stop if errors exceed 5%
-5. **Skip payment completion** - Tests stop before actual payment
-6. **Release reservations** - Tests clean up date reservations
-
-## Interpreting Results
-
-### Locust Web UI Metrics
-
-- **RPS**: Requests per second (throughput)
-- **Response Times**: P50, P95, P99 percentiles
-- **Failures**: Failed requests count and percentage
-- **Users**: Current number of simulated users
-
-### Key Indicators
-
-| Indicator | Healthy | Concerning |
-|-----------|---------|------------|
-| P95 Response Time | < 500ms | > 1000ms |
-| Error Rate | < 1% | > 5% |
-| RPS Growing | Increases with users | Plateaus early |
-
-### Common Issues
-
-**High Response Times:**
-- Database queries need optimization
-- Check N+1 query patterns
-- Verify caching is working
-
-**High Error Rates:**
-- Rate limiting triggered (429 errors)
-- Database connection exhaustion
-- Memory pressure on server
-
-**RPS Plateau:**
-- Server CPU maxed out
-- Database connection pool exhausted
-- Worker processes saturated
-
-## File Structure
+## Files
 
 ```
 backend/load_tests/
-├── __init__.py
-├── README.md              # This file
-├── requirements.txt       # Dependencies
-├── config.py              # Configuration and constants
-├── utils.py               # JWT handling, helpers
-├── locustfile.py          # Main Locust entry point
-├── test_booking_flow.py   # Booking flow tests
-├── test_admin_dashboard.py # Admin analytics tests
-└── test_websocket.py      # WebSocket stress tests
+├── locustfile.py           # Entry point: 3 smoke test user scenarios
+├── load_booking_flow.py    # Booking session behavior (dynamic step-driven)
+├── load_admin_dashboard.py # Admin dashboard analytics endpoints
+├── utils.py                # JWT auth, rate limit tracking, test data generators
+├── config.py               # Configuration from .env
+├── .env                    # Credentials and IDs (not committed)
+├── .env.example            # Template
+└── requirements.txt        # locust, python-dotenv, websocket-client
 ```
-
-## CI/CD Integration
-
-Add to your GitHub Actions workflow:
-
-```yaml
-load-test:
-  runs-on: ubuntu-latest
-  needs: [deploy-staging]
-  steps:
-    - uses: actions/checkout@v4
-
-    - name: Install dependencies
-      run: |
-        cd backend/load_tests
-        pip install -r requirements.txt
-
-    - name: Run baseline load test
-      run: |
-        locust -f backend/load_tests/locustfile.py \
-          --host=${{ secrets.STAGING_API_URL }} \
-          --headless -u 10 -r 2 -t 2m \
-          --html=load-test-report.html
-      env:
-        LOAD_TEST_ADMIN_EMAIL: ${{ secrets.LOAD_TEST_ADMIN_EMAIL }}
-        LOAD_TEST_ADMIN_PASSWORD: ${{ secrets.LOAD_TEST_ADMIN_PASSWORD }}
-
-    - name: Upload report
-      uses: actions/upload-artifact@v4
-      with:
-        name: load-test-report
-        path: load-test-report.html
-```
-
-## Troubleshooting
-
-### "Connection refused"
-- Verify the API URL is correct
-- Check if the server is running
-- Verify firewall rules allow connections
-
-### "401 Unauthorized"
-- Check test account credentials
-- Verify accounts exist and are active
-- Check JWT token expiration handling
-
-### "429 Too Many Requests"
-- Rate limiting is working correctly
-- Reduce user count or add think time
-- Tests automatically back off at 90% rate limit
-
-### "WebSocket connection failed"
-- Verify WebSocket URL (wss:// vs ws://)
-- Check if Daphne is running (not just Django runserver)
-- Verify CORS/Origin settings
-
-## References
-
-- [Locust Documentation](https://docs.locust.io/)
-- [Django REST Framework Testing](https://www.django-rest-framework.org/api-guide/testing/)
-- [WebSocket Client Python](https://websocket-client.readthedocs.io/)
-
----
-
-*Load testing configuration based on verified code review of the LifePlace codebase.*
-*Last updated: January 2026*

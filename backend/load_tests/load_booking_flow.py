@@ -1,34 +1,15 @@
 """
-Booking Flow Load Testing
+Booking Flow Smoke Test Behavior
 
-Tests the complete booking flow as experienced by clients.
+Drives one complete booking session through the API, stopping before payment.
+This is the business-critical path: it's how clients book events.
 
-Based on verified code review of:
-- Backend: core/domains/bookingflow/views/booking_session_views.py
-- Backend: core/domains/bookingflow/services/booking_session_service.py
-
-The booking flow is driven dynamically by the API. After starting a session,
-the response includes the current_step with its ID and type. Each update call
-must include the step_id and advances the session to the next step.
-
-API contract for session updates:
+API contract:
     PATCH /api/bookingflow/public/flows/session/{id}/update/
-    {
-        "step_id": <BookingFlowStep.id>,
-        "step_data": { ... step-specific fields ... },
-        "mark_completed": true
-    }
-
-Critical endpoints:
-- POST /api/bookingflow/public/flows/{id}/start_session/
-- PATCH /api/bookingflow/public/flows/session/{id}/update/
-- POST /api/bookingflow/public/flows/session/{id}/validate-availability/
-- POST /api/bookingflow/public/flows/session/{id}/calculate-pricing/
-- POST /api/bookingflow/public/flows/session/{id}/release-reservation/
+    {"step_id": <id>, "step_data": {...}, "mark_completed": true}
 """
 
 import logging
-import random
 from typing import Optional, Dict, Any
 
 from config import config
@@ -341,60 +322,3 @@ class BookingFlowBehavior:
             return True
 
 
-class BookingFlowStressTest:
-    """
-    Stress test specific booking flow operations.
-
-    Focuses on the most performance-critical endpoints:
-    - Session creation (DB write)
-    - Availability validation (date locking)
-    - Pricing calculation (complex computation)
-    """
-
-    def __init__(self, client, base_url: str):
-        self.client = client
-        self.base_url = base_url
-
-    def stress_session_creation(self, iterations: int = 100) -> Dict[str, Any]:
-        """Stress test session creation endpoint."""
-        results = {
-            "total": iterations,
-            "success": 0,
-            "failures": 0,
-            "response_times": [],
-        }
-
-        booking_flow_id = config.booking_flow_id
-
-        for _ in range(iterations):
-            with self.client.post(
-                f"/api/bookingflow/public/flows/{booking_flow_id}/start_session/",
-                json={},
-                catch_response=True,
-                name="[STRESS] start_session"
-            ) as response:
-                results["response_times"].append(response.elapsed.total_seconds() * 1000)
-
-                if response.status_code in [200, 201]:
-                    results["success"] += 1
-                    response.success()
-                else:
-                    results["failures"] += 1
-                    response.failure(f"Failed: {response.status_code}")
-
-        return results
-
-    def stress_availability_check(self, iterations: int = 100) -> Dict[str, Any]:
-        """Stress test availability validation."""
-        results = {
-            "total": iterations,
-            "success": 0,
-            "failures": 0,
-            "conflicts": 0,
-            "response_times": [],
-        }
-
-        # This would need active sessions to test properly
-        # Implementation depends on having valid session IDs
-
-        return results
