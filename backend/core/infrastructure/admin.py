@@ -4,13 +4,15 @@ Admin interface for infrastructure models
 Provides management interface for:
 - Dead Letter Queue (Failed Tasks)
 - Circuit Breaker States
+- System Health Snapshots
+- Deployments
 """
 from django.contrib import admin
 from django.utils.html import format_html
 from django.utils import timezone
 from django.contrib import messages
 
-from .models import FailedTask, CircuitBreakerState
+from .models import FailedTask, CircuitBreakerState, SystemHealthSnapshot, Deployment
 
 
 @admin.register(FailedTask)
@@ -306,3 +308,116 @@ class CircuitBreakerStateAdmin(admin.ModelAdmin):
             f"Reset {count} circuit breaker(s) to CLOSED state.",
             messages.SUCCESS
         )
+
+
+@admin.register(SystemHealthSnapshot)
+class SystemHealthSnapshotAdmin(admin.ModelAdmin):
+    list_display = [
+        'date',
+        'error_count',
+        'celery_success_rate',
+        'open_circuit_breakers',
+        'broker_healthy',
+    ]
+    list_filter = [
+        'broker_healthy',
+        ('date', admin.DateFieldListFilter),
+    ]
+    readonly_fields = [
+        'date', 'error_count', 'pending_review_count',
+        'celery_tasks_failed', 'celery_success_rate',
+        'cache_hit_ratio', 'cache_memory_used_bytes',
+        'total_queue_depth', 'queue_depth_breakdown',
+        'open_circuit_breakers', 'circuit_breaker_states',
+        'broker_ping_ms', 'broker_healthy',
+        'raw_health_data', 'created_at', 'updated_at',
+    ]
+    ordering = ['-date']
+    date_hierarchy = 'date'
+
+
+@admin.register(Deployment)
+class DeploymentAdmin(admin.ModelAdmin):
+    list_display = [
+        'git_sha_short',
+        'service',
+        'status_badge',
+        'deploy_duration_display',
+        'lead_time_display',
+        'caused_incident',
+        'created_at',
+    ]
+    list_filter = [
+        'service',
+        'status',
+        'environment',
+        'caused_incident',
+        ('created_at', admin.DateFieldListFilter),
+    ]
+    search_fields = ['git_sha', 'commit_message']
+    readonly_fields = [
+        'id', 'git_sha', 'git_sha_short', 'commit_message', 'commit_timestamp',
+        'service', 'environment', 'github_run_id', 'github_run_url',
+        'triggered_by', 'deploy_started_at', 'deploy_finished_at',
+        'deploy_duration_seconds', 'lead_time_seconds',
+        'created_at', 'updated_at',
+    ]
+    fieldsets = (
+        ('Git Information', {
+            'fields': ('id', 'git_sha', 'git_sha_short', 'commit_message', 'commit_timestamp'),
+        }),
+        ('Deployment', {
+            'fields': ('service', 'environment', 'status', 'triggered_by'),
+        }),
+        ('CI/CD', {
+            'fields': ('github_run_id', 'github_run_url'),
+        }),
+        ('Timing', {
+            'fields': (
+                'deploy_started_at', 'deploy_finished_at',
+                'deploy_duration_seconds', 'lead_time_seconds',
+            ),
+        }),
+        ('Incident Tracking', {
+            'fields': (
+                'caused_incident', 'incident_detected_at', 'incident_resolved_at',
+                'incident_notes', 'mttr_seconds',
+            ),
+        }),
+        ('Timestamps', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',),
+        }),
+    )
+    ordering = ['-created_at']
+    date_hierarchy = 'created_at'
+
+    def status_badge(self, obj):
+        colors = {
+            'SUCCESS': '#28a745',
+            'FAILURE': '#dc3545',
+            'ROLLBACK': '#ffc107',
+        }
+        color = colors.get(obj.status, '#6c757d')
+        text_color = 'black' if obj.status == 'ROLLBACK' else 'white'
+        return format_html(
+            '<span style="background-color: {}; color: {}; padding: 3px 8px; '
+            'border-radius: 3px; font-size: 11px;">{}</span>',
+            color, text_color, obj.get_status_display()
+        )
+    status_badge.short_description = 'Status'
+
+    def deploy_duration_display(self, obj):
+        if obj.deploy_duration_seconds is None:
+            return '-'
+        minutes = obj.deploy_duration_seconds // 60
+        seconds = obj.deploy_duration_seconds % 60
+        return f"{minutes}m {seconds}s"
+    deploy_duration_display.short_description = 'Duration'
+
+    def lead_time_display(self, obj):
+        if obj.lead_time_seconds is None:
+            return '-'
+        from core.infrastructure.services import DORAMetricsService
+        return DORAMetricsService._humanize_seconds(obj.lead_time_seconds)
+    lead_time_display.short_description = 'Lead Time'

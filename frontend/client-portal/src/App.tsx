@@ -1,6 +1,6 @@
 // frontend/client-portal/src/App.tsx
 
-import React, { Suspense } from 'react';
+import React, { Suspense, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { Box, CircularProgress, Typography } from '@mui/material';
 import { AppProviders } from './providers/AppProviders';
@@ -10,6 +10,12 @@ import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { TestModeBanner } from './components/common/TestModeBanner';
 import { PublicLayout, BookingLayout, ClientLayout } from './components/layout';
 import { ProtectedRoute } from './components/auth';
+
+// GA4 analytics
+import { initGA4, GA4Events } from './utils/ga4';
+import { usePageTracking } from './hooks/usePageTracking';
+import { hasAnalyticsConsent } from './components/common/CookieConsent';
+const CookieConsent = React.lazy(() => import('./components/common/CookieConsent').then(m => ({ default: m.CookieConsent })));
 
 // Critical path imports - keep static for performance
 import { Home } from './pages/home';
@@ -84,11 +90,25 @@ const AppRouter: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
+  // GA4 page tracking
+  usePageTracking();
+
+  // Initialize GA4 if user has consented to analytics cookies
+  useEffect(() => {
+    if (hasAnalyticsConsent()) {
+      initGA4();
+    }
+    // Listen for consent changes
+    const handleConsent = () => initGA4();
+    window.addEventListener('cookie-consent-analytics', handleConsent);
+    return () => window.removeEventListener('cookie-consent-analytics', handleConsent);
+  }, []);
+
   // Handle successful login/register
   const handleAuthSuccess = () => {
     const from = (location.state as { from?: { pathname: string } })?.from?.pathname || '/dashboard';
     navigate(from, { replace: true });
-    
+
     if (from !== '/dashboard') {
       showInfo('Redirected', 'You have been redirected to your requested page.');
     }
@@ -98,9 +118,10 @@ const AppRouter: React.FC = () => {
   const handleNavigateToHome = () => navigate('/');
   const handleNavigateToLogin = () => navigate('/login');
   const handleNavigateToRegister = () => navigate('/register');
-  
+
   // Updated booking handler - direct navigation to booking flow
   const handleNavigateToBooking = () => {
+    GA4Events.ctaClicked('book_now', location.pathname);
     navigate('/booking');
   };
 
@@ -460,6 +481,9 @@ const App: React.FC = () => {
           <AppRouter />
         </Router>
       </ErrorBoundary>
+      <Suspense fallback={null}>
+        <CookieConsent />
+      </Suspense>
     </AppProviders>
   );
 };

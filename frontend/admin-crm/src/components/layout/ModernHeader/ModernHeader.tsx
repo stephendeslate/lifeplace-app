@@ -42,6 +42,7 @@ import {
   Close,
   CalendarMonth,
   School as TourIcon,
+  Speed as SpeedIcon,
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useLayout } from '../../../contexts/LayoutContext';
@@ -62,6 +63,7 @@ const navigationItems = [
   { label: 'Calendar', path: '/calendar', icon: CalendarMonth },
   { label: 'Clients', path: '/clients', icon: People },
   { label: 'Payments', path: '/payments', icon: Payment },
+  { label: 'Metrics', path: '/metrics', icon: SpeedIcon },
   { label: 'Settings', path: '/settings', icon: Settings },
 ];
 

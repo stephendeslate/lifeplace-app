@@ -52,4 +52,9 @@ urlpatterns = [
     path('questionnaires/summary/', views.questionnaire_summary, name='questionnaire-summary'),
     path('questionnaires/<int:questionnaire_id>/heatmap/', views.questionnaire_field_heatmap, name='questionnaire-heatmap'),
     path('questionnaires/problem-fields/', views.questionnaire_problem_fields, name='questionnaire-problems'),
+
+    # Metric Snapshots
+    path('snapshots/kpis/', views.kpi_snapshots, name='kpi-snapshots'),
+    path('snapshots/kpis/summary/', views.kpi_snapshot_summary, name='kpi-snapshot-summary'),
+    path('snapshots/health/', views.system_health_snapshots, name='system-health-snapshots'),
 ]

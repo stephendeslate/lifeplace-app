@@ -128,6 +128,7 @@ jobs:
       env:
         VITE_API_URL: https://lifeplace-api.fly.dev
         VITE_APP_ENV: test
+        VITE_SENTRY_RELEASE: "${{ matrix.app }}@${{ github.sha }}"
       run: |
         cd frontend/${{ matrix.app }}
         npm run build
@@ -163,9 +164,20 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
+      with:
+        fetch-depth: 2
 
     - name: Setup Fly.io CLI
       uses: superfly/flyctl-actions/setup-flyctl@master
+
+    - name: Record deploy start time
+      id: deploy_timing
+      run: echo "start_time=$(date -u +%Y-%m-%dT%H:%M:%S)" >> $GITHUB_OUTPUT
+
+    - name: Set Sentry release on Fly.io
+      run: |
+        cd backend
+        flyctl secrets set SENTRY_RELEASE="lifeplace-api@${{ github.sha }}" --stage
 
     - name: Deploy to Fly.io
       run: |
@@ -179,9 +191,70 @@ jobs:
         curl -f https://lifeplace-api.fly.dev/health/ || exit 1
         echo "✅ Backend health check passed"
 
-  # Job 4: Deployment Summary
+    - name: Record deployment
+      if: always()
+      env:
+        DEPLOY_SECRET: ${{ secrets.DEPLOY_SECRET }}
+      run: |
+        DEPLOY_STATUS="SUCCESS"
+        if [ "${{ job.status }}" != "success" ]; then
+          DEPLOY_STATUS="FAILURE"
+        fi
+        COMMIT_MSG=$(git log -1 --pretty=%s | head -c 500)
+        COMMIT_TS=$(git log -1 --pretty=%aI)
+
+        # Record deployment via API (silently fail if endpoint not yet deployed)
+        curl -sf -X POST https://lifeplace-api.fly.dev/api/infrastructure/record-deploy/ \
+          -H "X-Deploy-Secret: ${DEPLOY_SECRET}" \
+          -H "Content-Type: application/json" \
+          -d "{
+            \"git_sha\": \"${{ github.sha }}\",
+            \"commit_message\": \"${COMMIT_MSG}\",
+            \"commit_timestamp\": \"${COMMIT_TS}\",
+            \"service\": \"backend\",
+            \"environment\": \"production\",
+            \"github_run_id\": \"${{ github.run_id }}\",
+            \"github_run_url\": \"https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}\",
+            \"triggered_by\": \"${{ github.event_name }}\",
+            \"deploy_started_at\": \"${{ steps.deploy_timing.outputs.start_time }}\",
+            \"status\": \"${DEPLOY_STATUS}\"
+          }" || echo "Deploy recording skipped (endpoint may not be deployed yet)"
+
+  # Job 4: Create Sentry Releases
+  sentry-release:
+    needs: [deploy-backend]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Install Sentry CLI
+      run: curl -sL https://sentry.io/get-cli/ | bash
+
+    - name: Create Sentry releases and associate commits
+      env:
+        SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+        SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+      run: |
+        VERSION="${{ github.sha }}"
+
+        for PROJECT in lifeplace-api admin-crm client-portal; do
+          RELEASE="${PROJECT}@${VERSION}"
+
+          sentry-cli releases new "$RELEASE" --project "$PROJECT" || true
+          sentry-cli releases set-commits "$RELEASE" --auto --project "$PROJECT" || true
+          sentry-cli releases finalize "$RELEASE" --project "$PROJECT" || true
+
+          echo "✅ Created Sentry release: $RELEASE"
+        done
+
+  # Job 5: Deployment Summary
   notify:
-    needs: [test-backend, test-frontend, deploy-backend]
+    needs: [test-backend, test-frontend, deploy-backend, sentry-release]
     runs-on: ubuntu-latest
     if: always() && github.ref == 'refs/heads/main' && github.event_name == 'push'
 
@@ -194,6 +267,7 @@ jobs:
         echo "Backend Tests:    ${{ needs.test-backend.result }}"
         echo "Frontend Tests:   ${{ needs.test-frontend.result }}"
         echo "Backend Deploy:   ${{ needs.deploy-backend.result }}"
+        echo "Sentry Release:   ${{ needs.sentry-release.result }}"
         echo "Frontend Deploy:  Handled by Cloudflare Pages (Git integration)"
         echo ""
         echo "URLs:"

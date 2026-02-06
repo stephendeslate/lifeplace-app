@@ -54,6 +54,7 @@ app.conf.update(
         'core.domains.sales.tasks.*': {'queue': 'sales'},
         'core.domains.security.tasks.*': {'queue': 'notifications'},
         'core.domains.payments.tasks.*': {'queue': 'payments'},
+        'core.infrastructure.tasks.*': {'queue': 'notifications'},
         'sales.*': {'queue': 'sales'},
     },
     
@@ -237,6 +238,11 @@ app.conf.update(
             'schedule': 60 * 60,  # Hourly
             'options': {'queue': 'analytics'}
         },
+        'snapshot-daily-kpis': {
+            'task': 'core.domains.analytics.tasks.snapshot_daily_kpis',
+            'schedule': 24 * 60 * 60,  # Daily
+            'options': {'queue': 'analytics'}
+        },
         # Data retention cleanup tasks
         'cleanup-security-logs': {
             'task': 'core.domains.security.tasks.cleanup_security_logs',
@@ -335,6 +341,12 @@ app.conf.beat_schedule['monitor-dead-letter-queue'] = {
 
 app.conf.beat_schedule['cleanup-old-failed-tasks'] = {
     'task': 'core.infrastructure.tasks.cleanup_old_failed_tasks',
+    'schedule': 24 * 60 * 60,  # Daily
+    'options': {'queue': 'notifications'}
+}
+
+app.conf.beat_schedule['snapshot-system-health'] = {
+    'task': 'core.infrastructure.tasks.snapshot_system_health',
     'schedule': 24 * 60 * 60,  # Daily
     'options': {'queue': 'notifications'}
 }

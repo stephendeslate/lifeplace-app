@@ -414,3 +414,173 @@ class CircuitBreakerState(models.Model):
             defaults=defaults
         )
         return obj
+
+
+class SystemHealthSnapshot(models.Model):
+    """
+    Daily snapshot of system health metrics.
+    Tracks DLQ, Celery, cache, and circuit breaker health over time.
+    """
+    date = models.DateField(unique=True, db_index=True)
+
+    # DLQ metrics
+    error_count = models.PositiveIntegerField(
+        default=0,
+        help_text="DLQ failures on this date"
+    )
+    pending_review_count = models.PositiveIntegerField(
+        default=0,
+        help_text="DLQ tasks pending review as of snapshot"
+    )
+
+    # Celery health
+    celery_tasks_failed = models.PositiveIntegerField(default=0)
+    celery_success_rate = models.DecimalField(
+        max_digits=5, decimal_places=2, default=100.00
+    )
+
+    # Cache metrics
+    cache_hit_ratio = models.DecimalField(
+        max_digits=5, decimal_places=2, null=True, blank=True
+    )
+    cache_memory_used_bytes = models.BigIntegerField(null=True, blank=True)
+
+    # Queue metrics
+    total_queue_depth = models.PositiveIntegerField(default=0)
+    queue_depth_breakdown = models.JSONField(
+        default=dict, blank=True,
+        help_text="Per-queue depth breakdown"
+    )
+
+    # Circuit breaker metrics
+    open_circuit_breakers = models.PositiveIntegerField(default=0)
+    circuit_breaker_states = models.JSONField(
+        default=dict, blank=True,
+        help_text="Service name to state mapping"
+    )
+
+    # Broker health
+    broker_ping_ms = models.DecimalField(
+        max_digits=8, decimal_places=2, null=True, blank=True
+    )
+    broker_healthy = models.BooleanField(default=True)
+
+    # Raw data for future-proofing
+    raw_health_data = models.JSONField(default=dict, blank=True)
+
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-date']
+        verbose_name = 'System Health Snapshot'
+        verbose_name_plural = 'System Health Snapshots'
+
+    def __str__(self):
+        return f"Health {self.date}: {self.error_count} errors, {self.celery_success_rate}% success"
+
+
+class Deployment(models.Model):
+    """
+    Tracks production deployments for DORA metrics calculation.
+    Records are created by CI/CD pipeline via API or management command.
+    """
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+
+    # Git information
+    git_sha = models.CharField(max_length=40, db_index=True)
+    git_sha_short = models.CharField(max_length=8, blank=True)
+    commit_message = models.TextField(blank=True)
+    commit_timestamp = models.DateTimeField(
+        null=True, blank=True,
+        help_text="When the commit was authored (for lead time calculation)"
+    )
+
+    # Deployment metadata
+    SERVICE_CHOICES = [
+        ('backend', 'Backend API'),
+        ('admin-crm', 'Admin CRM'),
+        ('client-portal', 'Client Portal'),
+    ]
+    service = models.CharField(max_length=50, choices=SERVICE_CHOICES, db_index=True)
+    environment = models.CharField(max_length=50, default='production', db_index=True)
+
+    # CI/CD metadata
+    github_run_id = models.CharField(max_length=100, blank=True)
+    github_run_url = models.URLField(max_length=500, blank=True)
+    triggered_by = models.CharField(
+        max_length=50, blank=True,
+        help_text="push, workflow_dispatch, etc."
+    )
+
+    # Timing
+    deploy_started_at = models.DateTimeField(null=True, blank=True)
+    deploy_finished_at = models.DateTimeField(null=True, blank=True)
+    deploy_duration_seconds = models.PositiveIntegerField(
+        null=True, blank=True,
+        help_text="Auto-calculated from started/finished"
+    )
+    lead_time_seconds = models.PositiveIntegerField(
+        null=True, blank=True,
+        help_text="Time from commit to deploy finish"
+    )
+
+    # Status
+    STATUS_CHOICES = [
+        ('SUCCESS', 'Success'),
+        ('FAILURE', 'Failure'),
+        ('ROLLBACK', 'Rollback'),
+    ]
+    status = models.CharField(
+        max_length=10, choices=STATUS_CHOICES, default='SUCCESS', db_index=True
+    )
+
+    # Incident tracking (for Change Failure Rate + MTTR)
+    caused_incident = models.BooleanField(default=False)
+    incident_detected_at = models.DateTimeField(null=True, blank=True)
+    incident_resolved_at = models.DateTimeField(null=True, blank=True)
+    incident_notes = models.TextField(blank=True)
+    mttr_seconds = models.PositiveIntegerField(
+        null=True, blank=True,
+        help_text="Mean time to recovery in seconds"
+    )
+
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'Deployment'
+        verbose_name_plural = 'Deployments'
+        indexes = [
+            models.Index(fields=['service', '-created_at']),
+            models.Index(fields=['environment', '-created_at']),
+            models.Index(fields=['status', '-created_at']),
+        ]
+
+    def __str__(self):
+        return f"{self.service} {self.git_sha_short} ({self.status}) - {self.created_at}"
+
+    def save(self, *args, **kwargs):
+        # Auto-populate short SHA
+        if self.git_sha and not self.git_sha_short:
+            self.git_sha_short = self.git_sha[:8]
+
+        # Auto-calculate deploy duration
+        if self.deploy_started_at and self.deploy_finished_at:
+            delta = self.deploy_finished_at - self.deploy_started_at
+            self.deploy_duration_seconds = int(delta.total_seconds())
+
+        # Auto-calculate lead time (commit to deploy finish)
+        if self.commit_timestamp and self.deploy_finished_at:
+            delta = self.deploy_finished_at - self.commit_timestamp
+            self.lead_time_seconds = int(delta.total_seconds())
+
+        # Auto-calculate MTTR
+        if self.incident_detected_at and self.incident_resolved_at:
+            delta = self.incident_resolved_at - self.incident_detected_at
+            self.mttr_seconds = int(delta.total_seconds())
+
+        super().save(*args, **kwargs)

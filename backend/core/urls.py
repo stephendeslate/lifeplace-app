@@ -44,6 +44,7 @@ urlpatterns = [
     path('api/messaging/', include('core.domains.messaging.urls')),
     path('api/vip/', include('core.domains.vip.urls')),
     path('api/security/', include('core.domains.security.urls')),
+    path('api/infrastructure/', include('core.infrastructure.urls')),
     # Client-specific endpoint routing for frontend compatibility
     path('api/client/', include('core.domains.events.client_urls')),
 ]

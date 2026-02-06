@@ -22,6 +22,9 @@ import { WalkthroughProvider } from './contexts/WalkthroughContext';
 // Analytics imports - New simplified dashboard
 import { AnalyticsDashboard } from './pages/analytics';
 
+// Metrics dashboard
+import { MetricsDashboard } from './pages/metrics';
+
 // Enhanced Settings imports
 import { EnhancedSettingsLayout } from './pages/settings/EnhancedSettingsLayout';
 import { EnhancedSettings } from './pages/settings/EnhancedSettings';
@@ -184,6 +187,16 @@ const AppRouter: React.FC = () => {
       />
       {/* Legacy routes redirect to main analytics */}
       <Route path="/analytics/*" element={<Navigate to="/analytics" replace />} />
+
+      {/* Metrics Dashboard - Platform Impact, System Health, DORA */}
+      <Route
+        path="/metrics"
+        element={
+          <ProtectedRoute>
+            <MetricsDashboard />
+          </ProtectedRoute>
+        }
+      />
 
       {/* Event Management Routes */}
       <Route

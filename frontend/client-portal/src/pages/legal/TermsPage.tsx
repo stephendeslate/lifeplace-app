@@ -4,6 +4,7 @@ import React from 'react';
 import { Box, Typography, Container, CircularProgress, Alert, Paper } from '@mui/material';
 import { SEO } from '../../hooks/useSEO';
 import { useLegalDocument } from '../../hooks/useLegalDocument';
+import { formatPhilippinesTime } from '../../utils/timezone';
 
 export const TermsPage: React.FC = () => {
   const { document, isLoading, error } = useLegalDocument('TERMS_OF_SERVICE');
@@ -58,7 +59,7 @@ export const TermsPage: React.FC = () => {
         </Typography>
         {document.effective_date && (
           <Typography variant="body2" color="text.secondary" gutterBottom sx={{ mb: 3 }}>
-            Effective: {new Date(document.effective_date).toLocaleDateString()}
+            Effective: {formatPhilippinesTime(document.effective_date, false, 'MMMM d, yyyy')}
           </Typography>
         )}
         <Box

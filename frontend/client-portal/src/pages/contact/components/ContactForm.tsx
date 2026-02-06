@@ -59,6 +59,8 @@ export const ContactForm: React.FC = () => {
 
     try {
       await inquiryApi.submitInquiry(formData);
+      // Track successful contact form submission
+      import('../../../utils/ga4').then(({ GA4Events }) => GA4Events.contactFormSubmitted());
 
       setSubmitStatus('success');
       setFormData({

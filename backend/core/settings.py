@@ -18,6 +18,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 ENV = os.getenv('ENV', 'development')
 IS_PRODUCTION = ENV == 'production'
 
+# Deploy secret for CI/CD deployment recording API
+DEPLOY_SECRET = os.getenv('DEPLOY_SECRET', '')
+
 # Check if we're running collectstatic during Docker build
 import sys
 IS_COLLECTING_STATIC = len(sys.argv) > 1 and 'collectstatic' in sys.argv
@@ -859,7 +862,7 @@ if SENTRY_DSN and IS_PRODUCTION:
         ],
         # Set traces_sample_rate to 1.0 to capture 100% of transactions for performance monitoring.
         # Adjust this value in production to reduce overhead.
-        traces_sample_rate=0.05,  # 5% of requests for performance monitoring
+        traces_sample_rate=0.2,  # 20% of requests for performance monitoring
 
         # Capture 100% of errors
         sample_rate=1.0,
@@ -874,7 +877,7 @@ if SENTRY_DSN and IS_PRODUCTION:
         send_default_pii=False,
 
         # Performance monitoring
-        profiles_sample_rate=0.05,  # 5% of transactions for profiling
+        profiles_sample_rate=0.2,  # 20% of transactions for profiling
     )
 
     print(f"✅ Sentry initialized for environment: {ENV}")

@@ -4,9 +4,11 @@ Infrastructure Celery tasks
 Tasks for:
 - Dead Letter Queue monitoring and cleanup
 - Circuit breaker health checks
+- System health snapshots
 """
 import logging
 from datetime import timedelta
+from decimal import Decimal
 
 from celery import shared_task
 from django.utils import timezone
@@ -220,3 +222,169 @@ def check_circuit_breaker_health(self):
     except Exception as e:
         logger.error(f"Circuit breaker health check failed: {e}")
         raise
+
+
+@shared_task(bind=True, max_retries=3)
+def snapshot_system_health(self, date_str=None):
+    """
+    Capture a daily system health snapshot.
+    Defaults to yesterday. Uses update_or_create for idempotency.
+
+    Collects: DLQ metrics, circuit breaker states, cache stats, broker health.
+    Each metric collection is wrapped in try/except so partial failures
+    don't prevent the snapshot.
+    """
+    from .models import FailedTask, CircuitBreakerState, SystemHealthSnapshot
+
+    if date_str:
+        date = timezone.datetime.strptime(date_str, '%Y-%m-%d').date()
+    else:
+        date = (timezone.now() - timedelta(days=1)).date()
+
+    raw_data = {}
+    snapshot_data = {}
+
+    # DLQ metrics
+    try:
+        day_start = timezone.datetime.combine(date, timezone.datetime.min.time())
+        day_end = timezone.datetime.combine(date, timezone.datetime.max.time())
+
+        error_count = FailedTask.objects.filter(
+            failed_at__gte=day_start,
+            failed_at__lte=day_end,
+        ).count()
+        pending_review_count = FailedTask.objects.filter(
+            status='PENDING_REVIEW'
+        ).count()
+
+        snapshot_data['error_count'] = error_count
+        snapshot_data['pending_review_count'] = pending_review_count
+        raw_data['dlq'] = {
+            'error_count': error_count,
+            'pending_review_count': pending_review_count,
+        }
+    except Exception as e:
+        logger.warning(f"Failed to collect DLQ metrics for {date}: {e}")
+        snapshot_data['error_count'] = 0
+        snapshot_data['pending_review_count'] = 0
+
+    # Circuit breaker states
+    try:
+        breakers = CircuitBreakerState.objects.all()
+        cb_states = {}
+        open_count = 0
+        for cb in breakers:
+            cb_states[cb.service_name] = cb.state
+            if cb.state == 'OPEN':
+                open_count += 1
+
+        snapshot_data['open_circuit_breakers'] = open_count
+        snapshot_data['circuit_breaker_states'] = cb_states
+        raw_data['circuit_breakers'] = cb_states
+    except Exception as e:
+        logger.warning(f"Failed to collect circuit breaker metrics for {date}: {e}")
+        snapshot_data['open_circuit_breakers'] = 0
+        snapshot_data['circuit_breaker_states'] = {}
+
+    # Redis/broker health
+    try:
+        from django.core.cache import cache
+        import time
+
+        start_time = time.monotonic()
+        cache.set('_health_ping', '1', timeout=10)
+        cache.get('_health_ping')
+        ping_ms = (time.monotonic() - start_time) * 1000
+
+        snapshot_data['broker_healthy'] = True
+        snapshot_data['broker_ping_ms'] = Decimal(str(round(ping_ms, 2)))
+        raw_data['broker'] = {'ping_ms': round(ping_ms, 2), 'healthy': True}
+
+        # Cache memory info (if available via Redis)
+        try:
+            from django_redis import get_redis_connection
+            redis_conn = get_redis_connection("default")
+            info = redis_conn.info('memory')
+            snapshot_data['cache_memory_used_bytes'] = info.get('used_memory', 0)
+            raw_data['cache_memory'] = info.get('used_memory', 0)
+        except Exception:
+            pass  # Not using django-redis or redis not available
+
+    except Exception as e:
+        logger.warning(f"Failed to collect broker metrics for {date}: {e}")
+        snapshot_data['broker_healthy'] = False
+        snapshot_data['broker_ping_ms'] = None
+
+    # Celery task success rate (estimated from DLQ)
+    try:
+        # We estimate based on DLQ failures vs a known task count
+        # Since we don't have exact task execution counts, we base on failures
+        failed_count = snapshot_data.get('error_count', 0)
+        # A rough success rate: if 0 failures, 100%; degrade from there
+        if failed_count == 0:
+            snapshot_data['celery_tasks_failed'] = 0
+            snapshot_data['celery_success_rate'] = Decimal('100.00')
+        else:
+            snapshot_data['celery_tasks_failed'] = failed_count
+            # Conservative estimate: assume ~1000 tasks/day baseline
+            estimated_total = max(failed_count * 10, 1000)
+            success_rate = ((estimated_total - failed_count) / estimated_total) * 100
+            snapshot_data['celery_success_rate'] = Decimal(str(round(success_rate, 2)))
+        raw_data['celery'] = {
+            'failed': failed_count,
+            'success_rate': float(snapshot_data['celery_success_rate']),
+        }
+    except Exception as e:
+        logger.warning(f"Failed to calculate Celery success rate for {date}: {e}")
+        snapshot_data['celery_tasks_failed'] = 0
+        snapshot_data['celery_success_rate'] = Decimal('100.00')
+
+    snapshot_data['raw_health_data'] = raw_data
+
+    try:
+        snapshot, created = SystemHealthSnapshot.objects.update_or_create(
+            date=date,
+            defaults=snapshot_data,
+        )
+        action = 'Created' if created else 'Updated'
+        logger.info(
+            f"{action} system health snapshot for {date}: "
+            f"{snapshot_data.get('error_count', 0)} errors, "
+            f"{snapshot_data.get('open_circuit_breakers', 0)} open breakers"
+        )
+        return {'date': str(date), 'action': action.lower()}
+
+    except Exception as e:
+        logger.error(f"Failed to save system health snapshot for {date}: {e}")
+        raise self.retry(exc=e)
+
+
+@shared_task(bind=True, max_retries=3)
+def backfill_system_health_snapshots(self, start_date_str, end_date_str):
+    """
+    Backfill system health snapshots for a date range.
+
+    Args:
+        start_date_str: Start date (YYYY-MM-DD)
+        end_date_str: End date (YYYY-MM-DD)
+    """
+    start = timezone.datetime.strptime(start_date_str, '%Y-%m-%d').date()
+    end = timezone.datetime.strptime(end_date_str, '%Y-%m-%d').date()
+
+    current = start
+    results = {'success': [], 'failed': []}
+
+    while current <= end:
+        try:
+            snapshot_system_health(date_str=current.isoformat())
+            results['success'].append(current.isoformat())
+        except Exception as e:
+            results['failed'].append({'date': current.isoformat(), 'error': str(e)})
+            logger.error(f"Failed to backfill health snapshot for {current}: {e}")
+        current += timedelta(days=1)
+
+    logger.info(
+        f"Health snapshot backfill complete: {len(results['success'])} success, "
+        f"{len(results['failed'])} failed"
+    )
+    return results

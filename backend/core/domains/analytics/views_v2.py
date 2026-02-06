@@ -525,3 +525,147 @@ def questionnaire_problem_fields(request):
         start_date, end_date, threshold
     )
     return Response(data)
+
+
+# ============================================================================
+# METRIC SNAPSHOTS
+# ============================================================================
+
+@api_view(['GET'])
+@permission_classes([IsAdminUser])
+def kpi_snapshots(request):
+    """
+    Historical KPI snapshots with date range filter.
+
+    Query params:
+        - start_date: ISO date string (default: 30 days ago)
+        - end_date: ISO date string (default: today)
+        - fields: Comma-separated list of fields to include (optional)
+    """
+    from .models import DailyKPISnapshot
+
+    start_date, end_date = parse_date_range(request)
+    fields_param = request.query_params.get('fields')
+
+    snapshots = DailyKPISnapshot.objects.filter(
+        date__gte=start_date.date() if hasattr(start_date, 'date') else start_date,
+        date__lte=end_date.date() if hasattr(end_date, 'date') else end_date,
+    ).order_by('date')
+
+    all_fields = [
+        'date', 'total_bookings', 'confirmed_bookings', 'completed_bookings',
+        'cancelled_bookings', 'event_revenue', 'total_revenue', 'avg_booking_value',
+        'new_clients', 'booking_sessions', 'completed_sessions', 'conversion_rate',
+        'cumulative_revenue', 'cumulative_bookings', 'cumulative_clients',
+        'revenue_change_pct', 'bookings_change_pct',
+    ]
+
+    if fields_param:
+        requested = [f.strip() for f in fields_param.split(',')]
+        selected = ['date'] + [f for f in requested if f in all_fields and f != 'date']
+    else:
+        selected = all_fields
+
+    data = list(snapshots.values(*selected))
+
+    # Convert Decimal fields to float for JSON serialization
+    for row in data:
+        for key, val in row.items():
+            if hasattr(val, 'quantize'):  # Decimal
+                row[key] = float(val)
+
+    return Response({
+        'count': len(data),
+        'snapshots': data,
+    })
+
+
+@api_view(['GET'])
+@permission_classes([IsAdminUser])
+def kpi_snapshot_summary(request):
+    """
+    Latest cumulative KPI totals + recent trend deltas.
+    """
+    from .models import DailyKPISnapshot
+
+    latest = DailyKPISnapshot.objects.order_by('-date').first()
+    if not latest:
+        return Response({'message': 'No snapshots available'}, status=status.HTTP_404_NOT_FOUND)
+
+    # 7-day and 30-day trend (compare latest cumulative vs N days ago)
+    seven_days_ago = DailyKPISnapshot.objects.filter(
+        date__lte=latest.date - timedelta(days=7)
+    ).order_by('-date').first()
+
+    thirty_days_ago = DailyKPISnapshot.objects.filter(
+        date__lte=latest.date - timedelta(days=30)
+    ).order_by('-date').first()
+
+    def calc_delta(current, previous, field):
+        if not previous:
+            return None
+        curr_val = float(getattr(current, field, 0) or 0)
+        prev_val = float(getattr(previous, field, 0) or 0)
+        if prev_val == 0:
+            return None
+        return round((curr_val - prev_val) / prev_val * 100, 2)
+
+    return Response({
+        'latest_date': latest.date,
+        'cumulative_revenue': float(latest.cumulative_revenue),
+        'cumulative_bookings': latest.cumulative_bookings,
+        'cumulative_clients': latest.cumulative_clients,
+        'latest_conversion_rate': float(latest.conversion_rate),
+        'trends_7d': {
+            'revenue_pct': calc_delta(latest, seven_days_ago, 'cumulative_revenue'),
+            'bookings_pct': calc_delta(latest, seven_days_ago, 'cumulative_bookings'),
+            'clients_pct': calc_delta(latest, seven_days_ago, 'cumulative_clients'),
+        },
+        'trends_30d': {
+            'revenue_pct': calc_delta(latest, thirty_days_ago, 'cumulative_revenue'),
+            'bookings_pct': calc_delta(latest, thirty_days_ago, 'cumulative_bookings'),
+            'clients_pct': calc_delta(latest, thirty_days_ago, 'cumulative_clients'),
+        },
+    })
+
+
+@api_view(['GET'])
+@permission_classes([IsAdminUser])
+def system_health_snapshots(request):
+    """
+    Historical system health snapshots.
+
+    Query params:
+        - start_date: ISO date string (default: 30 days ago)
+        - end_date: ISO date string (default: today)
+    """
+    from core.infrastructure.models import SystemHealthSnapshot
+
+    start_date, end_date = parse_date_range(request)
+
+    snapshots = SystemHealthSnapshot.objects.filter(
+        date__gte=start_date.date() if hasattr(start_date, 'date') else start_date,
+        date__lte=end_date.date() if hasattr(end_date, 'date') else end_date,
+    ).order_by('date')
+
+    data = []
+    for s in snapshots:
+        data.append({
+            'date': s.date,
+            'error_count': s.error_count,
+            'pending_review_count': s.pending_review_count,
+            'celery_tasks_failed': s.celery_tasks_failed,
+            'celery_success_rate': float(s.celery_success_rate),
+            'cache_hit_ratio': float(s.cache_hit_ratio) if s.cache_hit_ratio else None,
+            'cache_memory_used_bytes': s.cache_memory_used_bytes,
+            'total_queue_depth': s.total_queue_depth,
+            'open_circuit_breakers': s.open_circuit_breakers,
+            'circuit_breaker_states': s.circuit_breaker_states,
+            'broker_healthy': s.broker_healthy,
+            'broker_ping_ms': float(s.broker_ping_ms) if s.broker_ping_ms else None,
+        })
+
+    return Response({
+        'count': len(data),
+        'snapshots': data,
+    })

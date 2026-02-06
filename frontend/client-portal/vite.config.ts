@@ -2,11 +2,27 @@
 
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import { sentryVitePlugin } from '@sentry/vite-plugin'
 import path from 'path'
 
 export default defineConfig({
   plugins: [
-    react()
+    react(),
+    ...(process.env.SENTRY_AUTH_TOKEN
+      ? [
+          sentryVitePlugin({
+            org: process.env.SENTRY_ORG,
+            project: 'client-portal',
+            authToken: process.env.SENTRY_AUTH_TOKEN,
+            release: {
+              name: process.env.VITE_SENTRY_RELEASE,
+            },
+            sourcemaps: {
+              filesToDeleteAfterUpload: ['./dist/**/*.map'],
+            },
+          }),
+        ]
+      : []),
   ],
   resolve: {
     alias: {
@@ -19,7 +35,7 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     assetsDir: 'assets',
-    sourcemap: false,
+    sourcemap: 'hidden',
     minify: 'esbuild',
     target: 'es2020',
     cssCodeSplit: true,

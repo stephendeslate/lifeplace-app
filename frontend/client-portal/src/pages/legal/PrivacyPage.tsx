@@ -5,6 +5,7 @@ import { Box, Typography, Container, CircularProgress, Alert, Paper } from '@mui
 import DOMPurify from 'dompurify';
 import { SEO } from '../../hooks/useSEO';
 import { useLegalDocument } from '../../hooks/useLegalDocument';
+import { formatPhilippinesTime } from '../../utils/timezone';
 
 export const PrivacyPage: React.FC = () => {
   const { document, isLoading, error } = useLegalDocument('PRIVACY_POLICY');
@@ -59,7 +60,7 @@ export const PrivacyPage: React.FC = () => {
         </Typography>
         {document.effective_date && (
           <Typography variant="body2" color="text.secondary" gutterBottom sx={{ mb: 3 }}>
-            Effective: {new Date(document.effective_date).toLocaleDateString()}
+            Effective: {formatPhilippinesTime(document.effective_date, false, 'MMMM d, yyyy')}
           </Typography>
         )}
         <Box
