@@ -465,8 +465,8 @@ For clients in different timezones, convert to your local time on the client sid
 COMMUNICATION_DAILY_RECIPIENT_LIMIT = 1000
 
 # Communications webhook security settings
-# In production, require webhook signature verification (default: True in production)
-COMMUNICATIONS_ENFORCE_WEBHOOK_SIGNATURE = not DEBUG
+# Require webhook signature verification (default: True in production, unless explicitly disabled)
+COMMUNICATIONS_ENFORCE_WEBHOOK_SIGNATURE = os.getenv('COMMUNICATIONS_ENFORCE_WEBHOOK_SIGNATURE', str(not DEBUG)).lower() in ('true', '1', 'yes')
 
 # Brevo webhook secret (should be set in environment for production)
 BREVO_WEBHOOK_SECRET = os.getenv('BREVO_WEBHOOK_SECRET', None)
