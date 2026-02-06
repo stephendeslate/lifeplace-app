@@ -345,7 +345,7 @@ def detect_orphaned_payments():
         stale_pending_cutoff = now - timedelta(hours=1)
         stale_pending = Payment.objects.filter(
             status='PENDING',
-            created__lt=stale_pending_cutoff
+            created_at__lt=stale_pending_cutoff
         ).select_related('event', 'invoice')
 
         for payment in stale_pending:
@@ -353,7 +353,7 @@ def detect_orphaned_payments():
                 'payment_id': payment.id,
                 'payment_number': payment.payment_number,
                 'amount': str(payment.amount),
-                'created': payment.created.isoformat(),
+                'created_at': payment.created_at.isoformat(),
                 'event_id': payment.event_id,
             })
 
@@ -361,7 +361,7 @@ def detect_orphaned_payments():
         stale_processing_cutoff = now - timedelta(minutes=30)
         stale_processing = Payment.objects.filter(
             status='PROCESSING',
-            created__lt=stale_processing_cutoff
+            created_at__lt=stale_processing_cutoff
         ).select_related('event', 'invoice')
 
         for payment in stale_processing:
@@ -369,7 +369,7 @@ def detect_orphaned_payments():
                 'payment_id': payment.id,
                 'payment_number': payment.payment_number,
                 'amount': str(payment.amount),
-                'created': payment.created.isoformat(),
+                'created_at': payment.created_at.isoformat(),
                 'event_id': payment.event_id,
             })
 
@@ -377,7 +377,7 @@ def detect_orphaned_payments():
         missing_transactions_cutoff = now - timedelta(hours=2)
         completed_without_transactions = Payment.objects.filter(
             status='COMPLETED',
-            created__lt=missing_transactions_cutoff
+            created_at__lt=missing_transactions_cutoff
         ).exclude(
             id__in=PaymentTransaction.objects.values_list('payment_id', flat=True)
         )
@@ -387,7 +387,7 @@ def detect_orphaned_payments():
                 'payment_id': payment.id,
                 'payment_number': payment.payment_number,
                 'amount': str(payment.amount),
-                'created': payment.created.isoformat(),
+                'created_at': payment.created_at.isoformat(),
             })
 
         # Calculate totals
@@ -465,7 +465,7 @@ def reconcile_payments_with_stripe():
         cutoff_time = timezone.now() - timedelta(hours=24)
         transactions = PaymentTransaction.objects.filter(
             gateway=stripe_gateway,
-            created__gte=cutoff_time,
+            created_at__gte=cutoff_time,
             transaction_id__isnull=False
         ).select_related('payment')[:100]  # Limit to 100 per run
 

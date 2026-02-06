@@ -41,8 +41,8 @@ from config import config, USER_WEIGHTS
 from utils import TokenManager, think_time, RateLimitTracker
 
 # Import user behavior classes
-from test_booking_flow import BookingFlowBehavior
-from test_admin_dashboard import AdminDashboardBehavior
+from load_booking_flow import BookingFlowBehavior
+from load_admin_dashboard import AdminDashboardBehavior
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

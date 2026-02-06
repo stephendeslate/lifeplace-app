@@ -13,7 +13,7 @@ from django.db import transaction
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.cache import cache_control
 from rest_framework import status
-from rest_framework.decorators import api_view, permission_classes, throttle_classes
+from rest_framework.decorators import api_view, authentication_classes, permission_classes, throttle_classes
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
@@ -32,6 +32,7 @@ security_logger = SecurityLogger()
 
 @csrf_exempt
 @api_view(['POST'])
+@authentication_classes([])
 @permission_classes([AllowAny])
 @throttle_classes([LoginRateThrottle])
 @cache_control(no_cache=True, no_store=True, must_revalidate=True)
@@ -228,6 +229,7 @@ def google_login(request):
 
 
 @api_view(['GET'])
+@authentication_classes([])
 @permission_classes([AllowAny])
 def google_client_id(request):
     """
