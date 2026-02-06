@@ -145,15 +145,14 @@ def generate_test_contact_info() -> Dict[str, Any]:
     """
     Generate fake contact info for booking flow tests.
 
-    Based on ContactInfoStep requirements from bookingflow.
+    Based on ContactInfoStep validation in booking_session_service.py:2074-2106.
+    Required fields: full_name, email, phone (based on step config).
     """
     timestamp = int(time.time() * 1000)
     return {
-        "first_name": f"LoadTest{timestamp}",
-        "last_name": "User",
+        "full_name": f"LoadTest User {timestamp}",
         "email": f"loadtest+{timestamp}@example.com",
         "phone": f"+63912345{random.randint(1000, 9999)}",
-        "notes": "Load test booking - please ignore",
     }
 
 
@@ -162,7 +161,8 @@ def generate_test_event_datetime() -> Dict[str, str]:
     Generate a test date/time for booking.
 
     Uses dates 30+ days in the future to avoid conflicts.
-    Based on DateTimeStep requirements.
+    Based on date_time step validation in booking_session_service.py:1939-1983.
+    Required field: start_date (YYYY-MM-DD format).
     """
     # Pick a date 30-60 days in the future
     future_days = random.randint(30, 60)
@@ -172,9 +172,9 @@ def generate_test_event_datetime() -> Dict[str, str]:
     start_hour = random.choice([10, 14, 18])
 
     return {
-        "event_date": event_date.strftime("%Y-%m-%d"),
-        "start_time": f"{start_hour:02d}:00:00",
-        "end_time": f"{start_hour + 4:02d}:00:00",  # 4-hour event
+        "start_date": event_date.strftime("%Y-%m-%d"),
+        "start_time": f"{start_hour:02d}:00",
+        "end_time": f"{start_hour + 4:02d}:00",
     }
 
 
