@@ -84,7 +84,7 @@ class PricingBreakdown:
 
     def __post_init__(self):
         """Calculate totals from line items"""
-        self.subtotal = sum(item.line_total for item in self.line_items)
+        self.subtotal = sum((item.line_total for item in self.line_items), Decimal('0.00'))
         if self.applied_vip_benefits is None:
             self.applied_vip_benefits = []
         # Tax, service charge, and discount calculations happen separately via apply_* methods
@@ -664,8 +664,8 @@ class PricingCalculationService:
     @staticmethod
     def calculate_pricing_breakdown(pricing_line_items: List[PricingLineItem]) -> PricingBreakdown:
         """Calculate pricing breakdown from PricingLineItem objects"""
-        subtotal = sum(item.line_total for item in pricing_line_items)
-        tax_amount = sum(item.line_total * (item.tax_rate / 100) for item in pricing_line_items)
+        subtotal = sum((item.line_total for item in pricing_line_items), Decimal('0.00'))
+        tax_amount = sum((item.line_total * (item.tax_rate / 100) for item in pricing_line_items), Decimal('0.00'))
         total_amount = subtotal + tax_amount
         
         return PricingBreakdown(

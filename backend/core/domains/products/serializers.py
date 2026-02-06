@@ -183,7 +183,9 @@ class ProductOptionSerializer(serializers.ModelSerializer):
 
         # For packages, try to get image from primary venue
         if obj.type == 'PACKAGE' and hasattr(obj, 'package_venues'):
-            primary_venue = obj.package_venues.filter(is_primary=True).first()
+            # Use .all() to leverage prefetch cache instead of .filter() which bypasses it
+            package_venues = list(obj.package_venues.all())
+            primary_venue = next((pv for pv in package_venues if pv.is_primary), None)
             if primary_venue and primary_venue.venue.featured_image:
                 request = self.context.get('request')
                 if request:
@@ -191,7 +193,7 @@ class ProductOptionSerializer(serializers.ModelSerializer):
                 return primary_venue.venue.featured_image.url
 
             # If no primary, try first venue
-            first_venue = obj.package_venues.first()
+            first_venue = package_venues[0] if package_venues else None
             if first_venue and first_venue.venue.featured_image:
                 request = self.context.get('request')
                 if request:
@@ -214,7 +216,8 @@ class ProductOptionSerializer(serializers.ModelSerializer):
             gallery = []
             request = self.context.get('request')
 
-            for pv in obj.package_venues.select_related('venue').order_by('access_order'):
+            # Use .all() + Python sort to leverage prefetch cache
+            for pv in sorted(obj.package_venues.all(), key=lambda pv: (pv.access_order or 0)):
                 venue = pv.venue
                 # Add venue's featured image
                 if venue.featured_image:
@@ -249,7 +252,8 @@ class ProductOptionSerializer(serializers.ModelSerializer):
         venues = []
         request = self.context.get('request')
 
-        for pv in obj.package_venues.select_related('venue').order_by('access_order'):
+        # Use .all() + Python sort to leverage prefetch cache
+        for pv in sorted(obj.package_venues.all(), key=lambda pv: (pv.access_order or 0)):
             venue = pv.venue
 
             # Build featured image URL using the same pattern as RentableVenueSerializer

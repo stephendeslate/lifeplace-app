@@ -64,6 +64,8 @@ class VenueSelectionStepConfigurationSerializer(serializers.ModelSerializer):
 
     def get_available_venues_details(self, obj):
         """Get detailed venue information for available venues"""
+        from django.db.models import Prefetch
+        from core.domains.venues.models import VenueEventTypeConfiguration
         from core.domains.venues.serializers import (
             RentableVenueSerializer,
             RentableVenueWithEventTypeSerializer,
@@ -74,6 +76,19 @@ class VenueSelectionStepConfigurationSerializer(serializers.ModelSerializer):
         event_type_id = None
         if obj.step and obj.step.booking_flow and obj.step.booking_flow.event_type:
             event_type_id = obj.step.booking_flow.event_type_id
+
+        # Prefetch related data to eliminate N+1 queries
+        venues = venues.select_related('venue_operating_rules')
+        if event_type_id:
+            venues = venues.prefetch_related(
+                Prefetch(
+                    'event_type_configs',
+                    queryset=VenueEventTypeConfiguration.objects.filter(
+                        event_type_id=event_type_id
+                    ),
+                    to_attr='_prefetched_event_type_configs'
+                )
+            )
 
         # Build context with request (for absolute URLs) and event_type_id (for pricing)
         context = {**self.context, 'event_type_id': event_type_id}
@@ -252,7 +267,10 @@ class AddonSelectionStepConfigurationSerializer(serializers.ModelSerializer):
                         type='PRODUCT',
                         is_active=True,
                         event_types__id=event_type_id
-                    ).distinct().order_by('sort_order', 'name')
+                    ).distinct().prefetch_related(
+                        'event_types',
+                        'package_venues__venue',
+                    ).order_by('sort_order', 'name')
                     return ProductOptionSerializer(addons, many=True, context=self.context).data
 
             # Fall back to configured available_addons

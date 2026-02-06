@@ -100,24 +100,30 @@ def record_deployment_api(request):
             status=status.HTTP_403_FORBIDDEN,
         )
 
+    def _make_naive(dt):
+        """Strip timezone info to match USE_TZ=False convention."""
+        if dt is not None and dt.tzinfo is not None:
+            return dt.replace(tzinfo=None)
+        return dt
+
     data = request.data
     try:
-        # Parse timestamps
+        # Parse timestamps (strip tzinfo to stay consistent with USE_TZ=False)
         commit_ts = None
         if data.get('commit_timestamp'):
             try:
-                commit_ts = timezone.datetime.fromisoformat(
+                commit_ts = _make_naive(timezone.datetime.fromisoformat(
                     data['commit_timestamp'].replace('Z', '+00:00')
-                )
+                ))
             except (ValueError, AttributeError):
                 pass
 
         deploy_started = None
         if data.get('deploy_started_at'):
             try:
-                deploy_started = timezone.datetime.fromisoformat(
+                deploy_started = _make_naive(timezone.datetime.fromisoformat(
                     data['deploy_started_at'].replace('Z', '+00:00')
-                )
+                ))
             except (ValueError, AttributeError):
                 pass
 

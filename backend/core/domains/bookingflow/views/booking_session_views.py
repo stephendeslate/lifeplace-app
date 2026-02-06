@@ -9,7 +9,8 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
 from decimal import Decimal
-from core.domains.products.models import ProductOption
+from django.db.models import Prefetch, Count, Q
+from core.domains.products.models import ProductOption, ProductCategory
 from core.domains.products.services import DiscountService
 
 import logging
@@ -200,11 +201,15 @@ class PublicBookingFlowViewSet(viewsets.ReadOnlyModelViewSet):
     
     def get_queryset(self):
         event_type_id = self.request.query_params.get('event_type')
+        annotated_categories = ProductCategory.objects.annotate(
+            _products_count=Count('products', filter=Q(products__is_active=True)),
+            _children_count=Count('children', filter=Q(children__is_active=True)),
+        )
         queryset = BookingFlow.objects.filter(is_active=True).select_related(
             'event_type'
         ).prefetch_related(
             'steps',
-            # Add comprehensive prefetch for all step configurations
+            # Step configurations
             'steps__package_config',
             'steps__addon_config',
             'steps__pricing_config',
@@ -214,11 +219,23 @@ class PublicBookingFlowViewSet(viewsets.ReadOnlyModelViewSet):
             'steps__introduction_config',
             'steps__datetime_config',
             'steps__questionnaire_config',
-            # Prefetch ManyToMany relationships
-            'steps__package_config__available_categories',
+            'steps__venue_selection_config',
+            # Categories with count annotations to avoid N+1 COUNT queries
+            Prefetch(
+                'steps__package_config__available_categories',
+                queryset=annotated_categories,
+            ),
+            Prefetch(
+                'steps__addon_config__available_categories',
+                queryset=annotated_categories,
+            ),
+            # Packages/addons with their nested relationships
             'steps__package_config__available_packages',
-            'steps__addon_config__available_categories',
             'steps__addon_config__available_addons',
+            'steps__package_config__available_packages__event_types',
+            'steps__addon_config__available_addons__event_types',
+            'steps__package_config__available_packages__package_venues__venue',
+            'steps__addon_config__available_addons__package_venues__venue',
             'steps__questionnaire_config__questionnaire_items__questionnaire',
         )
         

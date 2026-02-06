@@ -526,7 +526,12 @@ class RentableVenueWithEventTypeSerializer(serializers.ModelSerializer):
         if not event_type_id:
             return None
 
-        # Use prefetched data if available
+        # Use list-based prefetch (from Prefetch with to_attr)
+        if hasattr(obj, '_prefetched_event_type_configs'):
+            configs = obj._prefetched_event_type_configs
+            return configs[0] if configs else None
+
+        # Use single-object prefetch fallback
         if hasattr(obj, '_prefetched_event_type_config'):
             return obj._prefetched_event_type_config
 
