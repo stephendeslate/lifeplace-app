@@ -18,8 +18,8 @@ Usage:
     locust -f locustfile.py
 """
 
-import sys
 import logging
+from datetime import datetime, timedelta
 from locust import HttpUser, task, between, events
 
 from config import config
@@ -70,9 +70,11 @@ class BookingFlowSmokeUser(HttpUser):
 
         think_time(0.5, 1)
 
-        # Check public availability
+        # Check public availability (requires start_date & end_date)
+        today = datetime.now()
+        avail_params = f"start_date={today.strftime('%Y-%m-%d')}&end_date={(today + timedelta(days=60)).strftime('%Y-%m-%d')}"
         with self.client.get(
-            "/api/events/public/availability/",
+            f"/api/events/public/availability/?{avail_params}",
             catch_response=True,
             name="/api/events/public/availability/"
         ) as response:
