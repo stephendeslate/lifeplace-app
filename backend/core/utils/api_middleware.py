@@ -10,7 +10,7 @@ from typing import Optional
 
 from django.conf import settings
 from django.core.cache import cache
-from django.http import HttpRequest, HttpResponse, JsonResponse
+from django.http import HttpRequest, HttpResponse, JsonResponse, StreamingHttpResponse
 from django.utils.cache import get_conditional_response
 from django.utils.http import quote_etag
 
@@ -139,6 +139,11 @@ class IdempotencyMiddleware:
         Cache the response for future idempotent requests.
         """
         try:
+            # Skip streaming responses (FileResponse, etc.) — accessing
+            # .content would read the entire stream into memory.
+            if isinstance(response, StreamingHttpResponse):
+                return
+
             # Only cache JSON responses
             content_type = response.get('Content-Type', '')
             if 'application/json' not in content_type:

@@ -197,29 +197,29 @@ def confirm_password_reset(request, token_id):
         }, status=status.HTTP_400_BAD_REQUEST)
 
     try:
-        # Get and validate token
-        try:
-            reset_token = PasswordResetToken.objects.select_related('user').get(id=token_id)
-        except PasswordResetToken.DoesNotExist:
-            logger.warning(f"Invalid password reset token from IP {client_ip}: {token_id}")
-            return Response({
-                'detail': 'Invalid or expired reset token'
-            }, status=status.HTTP_400_BAD_REQUEST)
-
-        # Check if token is valid
-        if not reset_token.is_valid():
-            if reset_token.is_used:
-                logger.warning(f"Already used password reset token from IP {client_ip}: {token_id}")
-                return Response({
-                    'detail': 'This reset link has already been used'
-                }, status=status.HTTP_400_BAD_REQUEST)
-            else:
-                logger.warning(f"Expired password reset token from IP {client_ip}: {token_id}")
-                return Response({
-                    'detail': 'This reset link has expired'
-                }, status=status.HTTP_400_BAD_REQUEST)
-
         with transaction.atomic():
+            # Fetch token with row-level lock to prevent concurrent use
+            try:
+                reset_token = PasswordResetToken.objects.select_for_update().select_related('user').get(id=token_id)
+            except PasswordResetToken.DoesNotExist:
+                logger.warning(f"Invalid password reset token from IP {client_ip}: {token_id}")
+                return Response({
+                    'detail': 'Invalid or expired reset token'
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+            # Check if token is valid (under lock, preventing TOCTOU race)
+            if not reset_token.is_valid():
+                if reset_token.is_used:
+                    logger.warning(f"Already used password reset token from IP {client_ip}: {token_id}")
+                    return Response({
+                        'detail': 'This reset link has already been used'
+                    }, status=status.HTTP_400_BAD_REQUEST)
+                else:
+                    logger.warning(f"Expired password reset token from IP {client_ip}: {token_id}")
+                    return Response({
+                        'detail': 'This reset link has expired'
+                    }, status=status.HTTP_400_BAD_REQUEST)
+
             # Update user password
             user = reset_token.user
             user.set_password(password)

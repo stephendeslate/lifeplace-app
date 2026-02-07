@@ -770,7 +770,7 @@ class EventFile(BaseModel):
         on_delete=models.SET_NULL, 
         null=True
     )
-    version = models.PositiveIntegerField(default=1)
+    version = models.PositiveIntegerField(default=1, db_index=True)
     is_public = models.BooleanField(default=False)  # Whether client can view
 
     class Meta:

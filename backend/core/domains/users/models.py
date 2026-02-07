@@ -191,6 +191,15 @@ class UserProfile(BaseModel):
         return f"Profile for {self.user.email}"
 
 
+class AdminInvitationManager(models.Manager):
+    def delete_expired(self):
+        """Delete expired and unaccepted invitations."""
+        return self.filter(
+            is_accepted=False,
+            expires_at__lt=timezone.now(),
+        ).delete()
+
+
 class AdminInvitation(BaseModel):
     """Invitations for new admin users or upgrading existing CLIENT users to ADMIN"""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -217,6 +226,8 @@ class AdminInvitation(BaseModel):
         help_text="Admin permissions to assign when invitation is accepted"
     )
     expires_at = models.DateTimeField()
+
+    objects = AdminInvitationManager()
 
     def save(self, *args, **kwargs):
         if not self.expires_at:
@@ -364,10 +375,11 @@ class ConsentRecord(BaseModel):
 
     @staticmethod
     def _get_client_ip(request):
-        """Extract client IP from request"""
-        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
-        if x_forwarded_for:
-            return x_forwarded_for.split(',')[0].strip()
+        """Extract client IP from request.
+
+        Uses REMOTE_ADDR which is set to the real client IP by
+        TrustedProxyMiddleware (respects NUM_PROXIES setting).
+        """
         return request.META.get('REMOTE_ADDR')
 
     @staticmethod

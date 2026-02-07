@@ -502,18 +502,24 @@ class Payment(BaseModel):
 
         is_new = self.pk is None
         old_status = None
+        old_amount = None
 
-        # Track status changes for existing records
+        # Track status and amount changes for existing records
         if not is_new:
             try:
                 old_instance = Payment.objects.get(pk=self.pk)
                 old_status = old_instance.status
+                old_amount = old_instance.amount
             except Payment.DoesNotExist:
                 pass
 
         super().save(*args, **kwargs)
-        # Update event payment status
-        self.event.update_payment_status()
+
+        # Only update event payment status when payment-relevant fields change
+        status_changed = is_new or old_status != self.status
+        amount_changed = is_new or old_amount != self.amount
+        if status_changed or amount_changed:
+            self.event.update_payment_status()
 
         # Trigger workflow ONLY when payment transitions to COMPLETED
         # (not on every save, and not if already was completed)
