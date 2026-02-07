@@ -107,7 +107,7 @@ export const CookieConsent: React.FC = () => {
     <Snackbar
       open={open}
       TransitionComponent={SlideTransition}
-      anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
       sx={{
         bottom: { xs: 0, sm: 24 },
         left: { xs: 0, sm: 24 },
