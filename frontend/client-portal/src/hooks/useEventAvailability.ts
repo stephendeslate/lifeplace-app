@@ -1,6 +1,6 @@
 // frontend/client-portal/src/hooks/useEventAvailability.ts
 
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import { startOfMonth, endOfMonth, format } from 'date-fns';
 import { eventsApi } from '../apis/events.api';
 
@@ -48,8 +48,10 @@ interface UseEventAvailabilityResult {
   blockedDates: string[];
   /** Date summary with availability status per date */
   dateSummary: DateSummaryData[];
-  /** Loading state */
+  /** Loading state (true only on initial load with no cached data) */
   isLoading: boolean;
+  /** Fetching state (true whenever a fetch is in progress, including background refetches) */
+  isFetching: boolean;
   /** Error state (boolean) */
   isError: boolean;
   /** Error object */
@@ -90,6 +92,7 @@ export const useEventAvailability = ({
     enabled,
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes (previously cacheTime)
+    placeholderData: keepPreviousData, // Keep showing old month's data while fetching new month
   });
 
   return {
@@ -97,6 +100,7 @@ export const useEventAvailability = ({
     blockedDates: query.data?.blocked_dates ?? [],
     dateSummary: query.data?.date_summary ?? [],
     isLoading: query.isLoading,
+    isFetching: query.isFetching,
     isError: query.isError,
     error: query.error,
   };

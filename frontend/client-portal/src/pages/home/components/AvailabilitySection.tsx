@@ -41,7 +41,7 @@ export const AvailabilitySection: React.FC<AvailabilitySectionProps> = ({
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 
   // Fetch event availability data for the current month
-  const { data: availabilityEvents = [], isLoading, isError } = useEventAvailability({
+  const { data: availabilityEvents = [], isLoading, isFetching, isError } = useEventAvailability({
     currentMonth,
     enabled: true,
   });
@@ -129,7 +129,7 @@ export const AvailabilitySection: React.FC<AvailabilitySectionProps> = ({
               <ModernCard variant="elevated" size="large" hover={false}>
                 <Stack spacing={tokens.spacing.space[4]}>
 
-                  {/* Loading State */}
+                  {/* Initial Loading State (first load only) */}
                   {isLoading && (
                     <Box sx={{
                       display: 'flex',
@@ -158,16 +158,36 @@ export const AvailabilitySection: React.FC<AvailabilitySectionProps> = ({
                     </Alert>
                   )}
 
-                  {/* Calendar - only show when not in error state */}
+                  {/* Calendar - always rendered once initial load completes (never unmounts on month change) */}
                   {!isError && !isLoading && (
-                    <EventAvailabilityCalendar
-                      events={calendarEvents}
-                      selectedDate={selectedDate || undefined}
-                      onDateSelect={handleDateSelect}
-                      onMonthChange={handleMonthChange}
-                      minAdvanceBookingDays={minAdvanceBookingDays}
-                      maxAdvanceBookingDays={maxAdvanceBookingDays}
-                    />
+                    <Box sx={{ position: 'relative' }}>
+                      <EventAvailabilityCalendar
+                        events={calendarEvents}
+                        selectedDate={selectedDate || undefined}
+                        onDateSelect={handleDateSelect}
+                        onMonthChange={handleMonthChange}
+                        minAdvanceBookingDays={minAdvanceBookingDays}
+                        maxAdvanceBookingDays={maxAdvanceBookingDays}
+                      />
+                      {/* Subtle loading overlay when fetching new month data */}
+                      {isFetching && (
+                        <Box sx={{
+                          position: 'absolute',
+                          inset: 0,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          backgroundColor: 'rgba(255, 255, 255, 0.5)',
+                          borderRadius: tokens.spacing.radius.lg,
+                          zIndex: 1,
+                        }}>
+                          <CircularProgress
+                            sx={{ color: tokens.color.base.sage[500] }}
+                            size={32}
+                          />
+                        </Box>
+                      )}
+                    </Box>
                   )}
 
                   {/* CTA Button */}
