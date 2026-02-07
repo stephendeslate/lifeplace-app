@@ -1,5 +1,6 @@
 // frontend/admin-crm/src/components/contracts/AdminContractSigningDialog.tsx
 import React, { useState, useCallback, useEffect } from 'react';
+import { sanitizeHTML } from '../../utils/security';
 import {
   Dialog,
   DialogTitle,
@@ -240,7 +241,7 @@ export const AdminContractSigningDialog: React.FC<AdminContractSigningDialogProp
                 }}
               >
                 <div
-                  dangerouslySetInnerHTML={{ __html: contract.content }}
+                  dangerouslySetInnerHTML={{ __html: sanitizeHTML(contract.content, 'preview') }}
                   style={{
                     fontSize: '0.875rem',
                     lineHeight: 1.5,

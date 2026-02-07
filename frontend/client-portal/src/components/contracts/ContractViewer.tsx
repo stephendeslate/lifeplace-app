@@ -18,6 +18,7 @@ import {
   Warning as ExpiredIcon,
 } from '@mui/icons-material';
 import type { Contract } from '../../types/contracts.types';
+import { sanitizeHTML } from '../../utils/security';
 import { contractUtils } from '../../apis/contracts.api';
 
 interface ContractViewerProps {
@@ -277,7 +278,7 @@ export const ContractViewer: React.FC<ContractViewerProps> = ({
                 },
               },
             }}
-            dangerouslySetInnerHTML={{ __html: contract.content }}
+            dangerouslySetInnerHTML={{ __html: sanitizeHTML(contract.content, 'content') }}
           />
         </Paper>
       )}

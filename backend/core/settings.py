@@ -653,7 +653,7 @@ FIELD_ENCRYPTION_KEY = os.getenv('FIELD_ENCRYPTION_KEY')  # Dedicated encryption
 ENCRYPTION_SALT = os.getenv('ENCRYPTION_SALT')  # Unique salt for encryption
 
 # Email configuration
-DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'stephendeslate@gmail.com')
+DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'noreply@lifeplace.com')
 EMAIL_BACKEND = os.getenv('EMAIL_BACKEND', 'django.core.mail.backends.console.EmailBackend')
 
 # Email configuration for development
