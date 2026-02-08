@@ -618,7 +618,6 @@ export const WorkflowTemplateDetails: React.FC = () => {
                         isLoading={isLoadingStages}
                         onEdit={handleEditStage}
                         onDelete={handleDeleteStage}
-                        onReorder={() => setReorderDialogOpen(true)}
                         isDeleting={isDeletingStage}
                       />
                     )}
