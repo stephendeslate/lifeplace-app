@@ -1007,14 +1007,15 @@ class Refund(BaseModel):
             from core.domains.events.models import EventTimeline
             EventTimeline.objects.create(
                 event=self.payment.event,
-                action_type='PAYMENT_RECEIVED',  # We could add a specific REFUND type
-                description=f"Refund of ${self.amount} processed",
+                action_type='SYSTEM_UPDATE',
+                description=f"Refund of {self.currency} {self.amount} processed",
                 actor=self.refunded_by,
                 is_public=True,
                 action_data={
                     'refund_id': self.id,
                     'payment_id': self.payment.id,
                     'amount': str(self.amount),
+                    'currency': self.currency,
                     'reason': self.reason
                 }
             )

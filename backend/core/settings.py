@@ -354,8 +354,7 @@ REST_FRAMEWORK = {
     'PAGE_SIZE': 25,  # Default page size
     'DEFAULT_RENDERER_CLASSES': [
         'rest_framework.renderers.JSONRenderer',
-        'rest_framework.renderers.BrowsableAPIRenderer',  # This enables the browsable API
-    ],
+    ] + (['rest_framework.renderers.BrowsableAPIRenderer'] if DEBUG else []),
     # SECURITY FIX: Default throttle classes - ensures ALL endpoints have rate limiting
     'DEFAULT_THROTTLE_CLASSES': [
         'rest_framework.throttling.AnonRateThrottle',
@@ -645,7 +644,6 @@ CLIENT_FRONTEND_URL = os.getenv('CLIENT_FRONTEND_URL', 'https://lifeplace.dev') 
 
 # Brevo Configuration
 BREVO_API_KEY = os.getenv('BREVO_API_KEY')
-BREVO_WEBHOOK_SECRET = os.getenv('BREVO_WEBHOOK_SECRET')  # Secret for webhook signature verification
 DEFAULT_FROM_NAME = os.getenv('DEFAULT_FROM_NAME', 'LifePlace')
 
 # Encryption Configuration

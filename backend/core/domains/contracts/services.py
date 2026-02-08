@@ -153,81 +153,104 @@ class ContractTemplateService:
         return content
     
     @staticmethod
+    def _validate_signature_data_uri(data_uri: str) -> bool:
+        """Validate that signature data is a safe base64 data URI for an image."""
+        if not data_uri or not isinstance(data_uri, str):
+            return False
+        # Only allow image data URIs (PNG, JPEG, SVG+XML, WebP)
+        import re
+        pattern = r'^data:image/(png|jpeg|jpg|svg\+xml|webp);base64,[A-Za-z0-9+/=\s]+$'
+        return bool(re.match(pattern, data_uri.strip()))
+
+    @staticmethod
     def _replace_signature_placeholders(content, contract_signatures):
         """
-        Replace signature placeholders with HTML img tags or pending text
-        
+        Replace signature placeholders with HTML img tags or pending text.
+
+        SECURITY: All user-controlled values are HTML-escaped before
+        interpolation to prevent stored XSS attacks.
+
         Args:
             content: The contract content with placeholders
             contract_signatures: QuerySet or list of ContractSignature objects
-            
+
         Returns:
             Content with signature placeholders replaced
         """
+        import html as html_module
+
         # Convert to dict for easy lookup by role
         signatures_by_role = {}
         if contract_signatures:
             for signature in contract_signatures:
                 signatures_by_role[signature.role] = signature
-        
+
         # Define signature roles and their display names
         signature_roles = {
             'CLIENT': 'Client',
-            'COMPANY_REP': 'Company Representative', 
+            'COMPANY_REP': 'Company Representative',
             'WITNESS': 'Witness',
             'GUARDIAN': 'Legal Guardian',
             'PARTNER': 'Business Partner',
             'OTHER': 'Other'
         }
-        
+
         for role, role_display in signature_roles.items():
             # Handle signature image placeholder
             signature_placeholder = f"{{{{ SIGNATURE_{role} }}}}"
             if signature_placeholder in content:
                 if role in signatures_by_role:
-                    # Replace with signature image
                     signature = signatures_by_role[role]
-                    signature_html = f'''<img src="{signature.signature_data}" 
-                        class="contract-signature" 
-                        alt="Signature by {signature.signer_name}" 
-                        style="max-width: 200px; height: 60px; border-bottom: 1px solid #000; display: inline-block; vertical-align: bottom;" />'''
+                    # SECURITY FIX (P0-XSS-001): Validate data URI and escape signer_name
+                    safe_name = html_module.escape(signature.signer_name or '')
+                    if ContractTemplateService._validate_signature_data_uri(signature.signature_data):
+                        signature_html = (
+                            f'<img src="{signature.signature_data}" '
+                            f'class="contract-signature" '
+                            f'alt="Signature by {safe_name}" '
+                            f'style="max-width: 200px; height: 60px; border-bottom: 1px solid #000; '
+                            f'display: inline-block; vertical-align: bottom;" />'
+                        )
+                    else:
+                        logger.warning(f"Invalid signature data URI for role {role}, using fallback")
+                        signature_html = f'<span class="signature-pending">[ SIGNATURE DATA INVALID ]</span>'
                     content = content.replace(signature_placeholder, signature_html)
                 else:
                     # Replace with pending text
                     pending_text = f'<span class="signature-pending">[ {role_display.upper()} SIGNATURE PENDING ]</span>'
                     content = content.replace(signature_placeholder, pending_text)
-            
+
             # Handle signature date placeholder
             date_placeholder = f"{{{{ {role.lower()}_signature_date }}}}"
             if date_placeholder in content:
                 if role in signatures_by_role:
-                    # Format the signature date
                     signature = signatures_by_role[role]
                     formatted_date = signature.signed_at.strftime('%B %d, %Y')
                     content = content.replace(date_placeholder, formatted_date)
                 else:
-                    # Replace with pending text
                     content = content.replace(date_placeholder, '[ DATE PENDING ]')
-            
+
             # Handle signer name placeholder
             name_placeholder = f"{{{{ {role.lower()}_signer_name }}}}"
             if name_placeholder in content:
                 if role in signatures_by_role:
                     signature = signatures_by_role[role]
-                    content = content.replace(name_placeholder, signature.signer_name)
+                    # SECURITY FIX (P0-XSS-001): HTML-escape signer name
+                    content = content.replace(name_placeholder, html_module.escape(signature.signer_name or ''))
                 else:
                     content = content.replace(name_placeholder, '[ NAME PENDING ]')
-            
+
             # Handle signer title placeholder
             title_placeholder = f"{{{{ {role.lower()}_signer_title }}}}"
             if title_placeholder in content:
                 if role in signatures_by_role:
                     signature = signatures_by_role[role]
-                    signer_title = signature.signer_title or ''
+                    # SECURITY FIX (P0-XSS-001): HTML-escape signer title
+                    signer_title = html_module.escape(signature.signer_title or '')
                     content = content.replace(title_placeholder, signer_title)
                 else:
                     content = content.replace(title_placeholder, '[ TITLE PENDING ]')
-        
+
         return content
     
     @staticmethod

@@ -14,6 +14,7 @@ from reportlab.platypus.doctemplate import PageTemplate, BaseDocTemplate
 from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT, TA_JUSTIFY
 from reportlab.pdfgen import canvas
 from reportlab.lib.utils import ImageReader
+import html as html_module
 import re
 import base64
 from io import BytesIO
@@ -98,10 +99,16 @@ class ContractPDFService:
         story.append(Spacer(1, 20))
         
         # Contract Information Table
+        # SECURITY FIX (P0-XSS-002): Escape user-controlled values to prevent
+        # ReportLab markup injection in PDF rendering
+        event_name = html_module.escape(
+            contract.event.name if hasattr(contract.event, 'name') else f"Event #{contract.event.id}"
+        )
+        template_name = html_module.escape(contract.template.name)
         contract_info_data = [
             ['Contract ID:', f"#{contract.id}"],
-            ['Event:', contract.event.name if hasattr(contract.event, 'name') else f"Event #{contract.event.id}"],
-            ['Template:', contract.template.name],
+            ['Event:', event_name],
+            ['Template:', template_name],
             ['Status:', contract.get_status_display()],
             ['Created:', contract.created_at.strftime("%B %d, %Y")],
         ]

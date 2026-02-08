@@ -233,12 +233,15 @@ class StripeWebhookHandler(BaseWebhookHandler):
             from ..models import PaymentTransaction
 
             # Find the payment transaction
-            transaction = PaymentTransaction.objects.filter(
+            # SECURITY FIX (P0-WEBHOOK-001): Renamed variable to avoid shadowing
+            # django.db.transaction (imported at module level), which caused
+            # AttributeError at runtime when calling transaction.atomic()
+            payment_txn = PaymentTransaction.objects.filter(
                 transaction_id=transaction_id,
                 gateway__code='stripe'
             ).first()
 
-            if not transaction:
+            if not payment_txn:
                 logger.warning(f"No payment transaction found for Stripe intent {transaction_id}")
                 return WebhookProcessingResult(
                     success=True,
@@ -249,9 +252,19 @@ class StripeWebhookHandler(BaseWebhookHandler):
 
             # Update transaction status
             with transaction.atomic():
-                transaction.status = 'COMPLETED'
-                transaction.response_data = raw_data
-                transaction.save()
+                # Re-fetch with lock to prevent concurrent webhook processing
+                payment_txn = PaymentTransaction.objects.select_for_update().get(pk=payment_txn.pk)
+                if payment_txn.status == 'COMPLETED':
+                    return WebhookProcessingResult(
+                        success=True,
+                        message="Payment already completed",
+                        payment_id=payment_txn.payment_id,
+                        transaction_id=transaction_id,
+                        action_taken='duplicate_ignored'
+                    )
+                payment_txn.status = 'COMPLETED'
+                payment_txn.response_data = raw_data
+                payment_txn.save()
 
                 # This will trigger payment completion via model save method
                 # which handles state machine transitions
@@ -261,7 +274,7 @@ class StripeWebhookHandler(BaseWebhookHandler):
             return WebhookProcessingResult(
                 success=True,
                 message="Payment marked as completed",
-                payment_id=transaction.payment.id,
+                payment_id=payment_txn.payment_id,
                 transaction_id=transaction_id,
                 action_taken='payment_completed'
             )
@@ -279,12 +292,14 @@ class StripeWebhookHandler(BaseWebhookHandler):
         try:
             from ..models import PaymentTransaction
 
-            transaction = PaymentTransaction.objects.filter(
+            # SECURITY FIX (P0-WEBHOOK-001): Renamed to avoid shadowing
+            # django.db.transaction module import
+            payment_txn = PaymentTransaction.objects.filter(
                 transaction_id=transaction_id,
                 gateway__code='stripe'
             ).first()
 
-            if not transaction:
+            if not payment_txn:
                 return WebhookProcessingResult(
                     success=True,
                     message="Payment transaction not found",
@@ -295,15 +310,24 @@ class StripeWebhookHandler(BaseWebhookHandler):
             failure_reason = self._extract_failure_reason(raw_data)
 
             with transaction.atomic():
-                transaction.status = 'FAILED'
-                transaction.error_message = failure_reason
-                transaction.response_data = raw_data
-                transaction.save()
+                payment_txn = PaymentTransaction.objects.select_for_update().get(pk=payment_txn.pk)
+                if payment_txn.status == 'FAILED':
+                    return WebhookProcessingResult(
+                        success=True,
+                        message="Payment already marked as failed",
+                        payment_id=payment_txn.payment_id,
+                        transaction_id=transaction_id,
+                        action_taken='duplicate_ignored'
+                    )
+                payment_txn.status = 'FAILED'
+                payment_txn.error_message = failure_reason
+                payment_txn.response_data = raw_data
+                payment_txn.save()
 
             return WebhookProcessingResult(
                 success=True,
                 message="Payment marked as failed",
-                payment_id=transaction.payment.id,
+                payment_id=payment_txn.payment_id,
                 transaction_id=transaction_id,
                 action_taken='payment_failed'
             )
@@ -321,12 +345,14 @@ class StripeWebhookHandler(BaseWebhookHandler):
         try:
             from ..models import PaymentTransaction
 
-            transaction = PaymentTransaction.objects.filter(
+            # SECURITY FIX (P0-WEBHOOK-001): Renamed to avoid shadowing
+            # django.db.transaction module import
+            payment_txn = PaymentTransaction.objects.filter(
                 transaction_id=transaction_id,
                 gateway__code='stripe'
             ).first()
 
-            if not transaction:
+            if not payment_txn:
                 return WebhookProcessingResult(
                     success=True,
                     message="Payment transaction not found",
@@ -334,14 +360,23 @@ class StripeWebhookHandler(BaseWebhookHandler):
                 )
 
             with transaction.atomic():
-                transaction.status = 'CANCELLED'
-                transaction.response_data = raw_data
-                transaction.save()
+                payment_txn = PaymentTransaction.objects.select_for_update().get(pk=payment_txn.pk)
+                if payment_txn.status == 'CANCELLED':
+                    return WebhookProcessingResult(
+                        success=True,
+                        message="Payment already cancelled",
+                        payment_id=payment_txn.payment_id,
+                        transaction_id=transaction_id,
+                        action_taken='duplicate_ignored'
+                    )
+                payment_txn.status = 'CANCELLED'
+                payment_txn.response_data = raw_data
+                payment_txn.save()
 
             return WebhookProcessingResult(
                 success=True,
                 message="Payment marked as cancelled",
-                payment_id=transaction.payment.id,
+                payment_id=payment_txn.payment_id,
                 transaction_id=transaction_id,
                 action_taken='payment_cancelled'
             )
@@ -386,13 +421,13 @@ class StripeWebhookHandler(BaseWebhookHandler):
 
             # Find the related payment transaction
             payment = None
-            transaction = PaymentTransaction.objects.filter(
+            payment_txn = PaymentTransaction.objects.filter(
                 transaction_id__in=[transaction_id, charge_id],
                 gateway__code='stripe'
             ).first()
 
-            if transaction:
-                payment = transaction.payment
+            if payment_txn:
+                payment = payment_txn.payment
 
             # Get or create the gateway
             gateway = PaymentGateway.objects.filter(code='stripe').first()
