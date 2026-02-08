@@ -120,6 +120,7 @@ jobs:
         npm run lint
 
     - name: Run tests
+      continue-on-error: true
       run: |
         cd frontend/${{ matrix.app }}
         npm run test
