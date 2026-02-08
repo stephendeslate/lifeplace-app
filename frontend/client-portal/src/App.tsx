@@ -83,6 +83,17 @@ const ClientLayoutWrapper: React.FC<{ children: React.ReactNode }> = ({ children
   );
 };
 
+// Scroll to top on route change
+const ScrollToTop: React.FC = () => {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+
+  return null;
+};
+
 // Main app router component
 const AppRouter: React.FC = () => {
   const { isLoading, isAuthenticated } = useAuth();
@@ -478,6 +489,7 @@ const App: React.FC = () => {
       <TestModeBanner />
       <ErrorBoundary>
         <Router>
+          <ScrollToTop />
           <AppRouter />
         </Router>
       </ErrorBoundary>
