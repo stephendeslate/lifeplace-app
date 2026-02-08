@@ -101,7 +101,7 @@ vi.mock('../../../design-system', () => ({
 
 // Mock the shared Button component
 vi.mock('../../../../../shared/design-system', () => ({
-  Button: ({ children, onClick, disabled, loading, type, endIcon, fullWidth, ariaLabel }: any) => (
+  Button: ({ children, onClick, disabled, loading, type, endIcon, fullWidth, ariaLabel }: Record<string, unknown>) => (
     <button
       onClick={onClick}
       disabled={disabled || loading}
@@ -200,7 +200,7 @@ describe('ContactForm', () => {
     it('should submit form successfully with valid data', async () => {
       const user = userEvent.setup();
       const mockSubmit = vi.mocked(inquiryApi.submitInquiry);
-      mockSubmit.mockResolvedValueOnce({ success: true } as any);
+      mockSubmit.mockResolvedValueOnce({ success: true } as unknown as Awaited<ReturnType<typeof inquiryApi.submitInquiry>>);
 
       render(<ContactForm />);
 
@@ -236,7 +236,7 @@ describe('ContactForm', () => {
       const user = userEvent.setup();
       const mockSubmit = vi.mocked(inquiryApi.submitInquiry);
       mockSubmit.mockImplementation(
-        () => new Promise((resolve) => setTimeout(() => resolve({ success: true } as any), 100))
+        () => new Promise((resolve) => setTimeout(() => resolve({ success: true } as unknown as Awaited<ReturnType<typeof inquiryApi.submitInquiry>>), 100))
       );
 
       render(<ContactForm />);
@@ -258,7 +258,7 @@ describe('ContactForm', () => {
     it('should clear form after successful submission', async () => {
       const user = userEvent.setup();
       const mockSubmit = vi.mocked(inquiryApi.submitInquiry);
-      mockSubmit.mockResolvedValueOnce({ success: true } as any);
+      mockSubmit.mockResolvedValueOnce({ success: true } as unknown as Awaited<ReturnType<typeof inquiryApi.submitInquiry>>);
 
       render(<ContactForm />);
 

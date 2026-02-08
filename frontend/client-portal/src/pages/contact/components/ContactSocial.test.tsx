@@ -125,7 +125,7 @@ describe('ContactSocial', () => {
       const user = userEvent.setup();
       render(<ContactSocial />);
 
-      const facebookLink = screen.getByLabelText('Follow us on Facebook');
+      screen.getByLabelText('Follow us on Facebook');
       await user.tab();
 
       // Check if any social link can receive focus
@@ -230,7 +230,7 @@ describe('ContactSocial', () => {
 
   describe('Animation', () => {
     it('wraps elements with AnimatedElement', () => {
-      const { container } = render(<ContactSocial />);
+      render(<ContactSocial />);
       // With mocked AnimatedElement, children are still rendered
       expect(screen.getByText('Follow Us on Social Media')).toBeInTheDocument();
     });
@@ -246,7 +246,7 @@ describe('ContactSocial', () => {
 
   describe('User Interaction', () => {
     it('handles click on Facebook link', async () => {
-      const user = userEvent.setup();
+      userEvent.setup();
       render(<ContactSocial />);
 
       const facebookLink = screen.getByLabelText('Follow us on Facebook');

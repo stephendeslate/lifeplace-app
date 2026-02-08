@@ -154,7 +154,7 @@ describe('SocialProofSection', () => {
 
   describe('Responsive Design', () => {
     it('renders stat cards in a grid layout', () => {
-      const { container } = render(<SocialProofSection />);
+      render(<SocialProofSection />);
 
       // Stats should be in a grid container
       expect(screen.getByText('Events Hosted')).toBeInTheDocument();

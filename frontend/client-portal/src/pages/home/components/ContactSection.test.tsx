@@ -16,7 +16,7 @@ vi.mock('../../../design-system/components/AnimatedElement', () => ({
 
 // Mock shared design system Button
 vi.mock('../../../design-system', () => ({
-  Button: ({ children, onClick, variant, size, endIcon, ariaLabel, ...props }: any) => (
+  Button: ({ children, onClick, variant, size, endIcon, ariaLabel, ...props }: Record<string, unknown>) => (
     <button
       onClick={onClick}
       data-variant={variant}
@@ -40,7 +40,7 @@ describe('ContactSection', () => {
 
   describe('Rendering', () => {
     it('should render the section heading', () => {
-      (useAuth as any).mockReturnValue({ isAuthenticated: false });
+      vi.mocked(useAuth).mockReturnValue({ isAuthenticated: false });
 
       render(
         <ContactSection
@@ -53,7 +53,7 @@ describe('ContactSection', () => {
     });
 
     it('should render the section description', () => {
-      (useAuth as any).mockReturnValue({ isAuthenticated: false });
+      vi.mocked(useAuth).mockReturnValue({ isAuthenticated: false });
 
       render(
         <ContactSection
@@ -68,7 +68,7 @@ describe('ContactSection', () => {
     });
 
     it('should render all three contact cards', () => {
-      (useAuth as any).mockReturnValue({ isAuthenticated: false });
+      vi.mocked(useAuth).mockReturnValue({ isAuthenticated: false });
 
       render(
         <ContactSection
@@ -88,7 +88,7 @@ describe('ContactSection', () => {
     });
 
     it('should render the primary CTA button', () => {
-      (useAuth as any).mockReturnValue({ isAuthenticated: false });
+      vi.mocked(useAuth).mockReturnValue({ isAuthenticated: false });
 
       render(
         <ContactSection
@@ -106,7 +106,7 @@ describe('ContactSection', () => {
 
   describe('Authentication States', () => {
     it('should show "Create Account" button when user is not authenticated', () => {
-      (useAuth as any).mockReturnValue({ isAuthenticated: false });
+      vi.mocked(useAuth).mockReturnValue({ isAuthenticated: false });
 
       render(
         <ContactSection
@@ -121,7 +121,7 @@ describe('ContactSection', () => {
     });
 
     it('should NOT show "Create Account" button when user is authenticated', () => {
-      (useAuth as any).mockReturnValue({ isAuthenticated: true });
+      vi.mocked(useAuth).mockReturnValue({ isAuthenticated: true });
 
       render(
         <ContactSection
@@ -134,7 +134,7 @@ describe('ContactSection', () => {
     });
 
     it('should always show "Get In Touch" button regardless of auth state', () => {
-      (useAuth as any).mockReturnValue({ isAuthenticated: true });
+      vi.mocked(useAuth).mockReturnValue({ isAuthenticated: true });
 
       render(
         <ContactSection
@@ -149,7 +149,7 @@ describe('ContactSection', () => {
 
   describe('User Interactions', () => {
     it('should call onNavigateToBooking when primary CTA is clicked', () => {
-      (useAuth as any).mockReturnValue({ isAuthenticated: false });
+      vi.mocked(useAuth).mockReturnValue({ isAuthenticated: false });
 
       render(
         <ContactSection
@@ -165,7 +165,7 @@ describe('ContactSection', () => {
     });
 
     it('should call onNavigateToRegister when "Create Account" is clicked', () => {
-      (useAuth as any).mockReturnValue({ isAuthenticated: false });
+      vi.mocked(useAuth).mockReturnValue({ isAuthenticated: false });
 
       render(
         <ContactSection
@@ -181,7 +181,7 @@ describe('ContactSection', () => {
     });
 
     it('should handle missing callback functions gracefully', () => {
-      (useAuth as any).mockReturnValue({ isAuthenticated: false });
+      vi.mocked(useAuth).mockReturnValue({ isAuthenticated: false });
 
       render(<ContactSection />);
 
@@ -194,7 +194,7 @@ describe('ContactSection', () => {
 
   describe('Accessibility', () => {
     it('should have proper heading hierarchy', () => {
-      (useAuth as any).mockReturnValue({ isAuthenticated: false });
+      vi.mocked(useAuth).mockReturnValue({ isAuthenticated: false });
 
       render(
         <ContactSection
@@ -208,7 +208,7 @@ describe('ContactSection', () => {
     });
 
     it('should have aria-labels on buttons', () => {
-      (useAuth as any).mockReturnValue({ isAuthenticated: false });
+      vi.mocked(useAuth).mockReturnValue({ isAuthenticated: false });
 
       render(
         <ContactSection
@@ -222,7 +222,7 @@ describe('ContactSection', () => {
     });
 
     it('should render contact information as readable text', () => {
-      (useAuth as any).mockReturnValue({ isAuthenticated: false });
+      vi.mocked(useAuth).mockReturnValue({ isAuthenticated: false });
 
       render(
         <ContactSection
@@ -238,7 +238,7 @@ describe('ContactSection', () => {
     });
 
     it('should have proper semantic structure with section element', () => {
-      (useAuth as any).mockReturnValue({ isAuthenticated: false });
+      vi.mocked(useAuth).mockReturnValue({ isAuthenticated: false });
 
       const { container } = render(
         <ContactSection
@@ -255,7 +255,7 @@ describe('ContactSection', () => {
 
   describe('Design System Integration', () => {
     it('should use terracotta variant for primary button', () => {
-      (useAuth as any).mockReturnValue({ isAuthenticated: false });
+      vi.mocked(useAuth).mockReturnValue({ isAuthenticated: false });
 
       render(
         <ContactSection
@@ -269,7 +269,7 @@ describe('ContactSection', () => {
     });
 
     it('should use secondary variant for Create Account button', () => {
-      (useAuth as any).mockReturnValue({ isAuthenticated: false });
+      vi.mocked(useAuth).mockReturnValue({ isAuthenticated: false });
 
       render(
         <ContactSection
@@ -283,7 +283,7 @@ describe('ContactSection', () => {
     });
 
     it('should use large size for all buttons', () => {
-      (useAuth as any).mockReturnValue({ isAuthenticated: false });
+      vi.mocked(useAuth).mockReturnValue({ isAuthenticated: false });
 
       render(
         <ContactSection
@@ -299,7 +299,7 @@ describe('ContactSection', () => {
     });
 
     it('should render arrow icon on primary button', () => {
-      (useAuth as any).mockReturnValue({ isAuthenticated: false });
+      vi.mocked(useAuth).mockReturnValue({ isAuthenticated: false });
 
       render(
         <ContactSection
@@ -316,7 +316,7 @@ describe('ContactSection', () => {
 
   describe('Contact Information', () => {
     it('should display correct location information', () => {
-      (useAuth as any).mockReturnValue({ isAuthenticated: false });
+      vi.mocked(useAuth).mockReturnValue({ isAuthenticated: false });
 
       render(
         <ContactSection
@@ -330,7 +330,7 @@ describe('ContactSection', () => {
     });
 
     it('should display correct phone information', () => {
-      (useAuth as any).mockReturnValue({ isAuthenticated: false });
+      vi.mocked(useAuth).mockReturnValue({ isAuthenticated: false });
 
       render(
         <ContactSection
@@ -344,7 +344,7 @@ describe('ContactSection', () => {
     });
 
     it('should display correct email information', () => {
-      (useAuth as any).mockReturnValue({ isAuthenticated: false });
+      vi.mocked(useAuth).mockReturnValue({ isAuthenticated: false });
 
       render(
         <ContactSection

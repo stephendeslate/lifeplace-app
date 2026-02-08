@@ -1,7 +1,7 @@
 // pages/home/components/VenuesSection.test.tsx
 
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, within } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { VenuesSection } from './VenuesSection';
 
@@ -187,9 +187,6 @@ describe('VenuesSection', () => {
   describe('Icons', () => {
     it('renders icons for each venue', () => {
       const { container } = render(<VenuesSection />);
-
-      // Find all icon containers
-      const iconContainers = container.querySelectorAll('svg[data-testid]');
 
       // Should have icons for Church, Hotel, Home, Landscape, Nature, Groups
       // MUI icons automatically get data-testid attributes

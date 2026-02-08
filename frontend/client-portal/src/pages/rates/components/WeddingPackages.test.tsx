@@ -251,7 +251,7 @@ describe('WeddingPackages', () => {
 
   describe('Accessibility', () => {
     it('has proper heading hierarchy', () => {
-      const { container } = render(<WeddingPackages />);
+      render(<WeddingPackages />);
 
       // Main heading should be h2 level (via typography tokens)
       const mainHeading = screen.getByText('Wedding Packages');

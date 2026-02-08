@@ -141,7 +141,7 @@ describe('ServicesCTA', () => {
 
       // Mock window.location.href
       const originalLocation = window.location;
-      delete (window as any).location;
+      delete (window as unknown as Record<string, unknown>).location;
       window.location = { ...originalLocation, href: '' } as Location;
 
       render(<ServicesCTA />);
@@ -204,7 +204,7 @@ describe('ServicesCTA', () => {
     });
 
     it('renders Phone icon in Call Us button', () => {
-      const { container } = render(<ServicesCTA />);
+      render(<ServicesCTA />);
       const bookButton = screen.getByRole('button', { name: /book your event at lifeplace alfonso/i });
       const callButton = screen.getByRole('button', { name: /call lifeplace alfonso/i });
 
@@ -228,7 +228,7 @@ describe('ServicesCTA', () => {
     });
 
     it('has proper heading hierarchy', () => {
-      const { container } = render(<ServicesCTA />);
+      render(<ServicesCTA />);
       const heading = screen.getByText('Ready to Plan Your Event?');
 
       // Check that heading exists (MUI Typography doesn't always create h2 element)
