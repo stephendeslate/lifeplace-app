@@ -38,7 +38,7 @@ import {
 } from '@mui/icons-material';
 import { format, isPast, differenceInDays } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
-import { useInvoices } from '../../hooks/usePayments';
+import { useInvoices, useDownloadInvoicePdf, useSendInvoice } from '../../hooks/usePayments';
 import type { Event } from '../../types/events.types';
 import type { Invoice, InvoiceStatus } from '../../types/payments.types';
 import { formatCurrency } from '../../utils/currency';
@@ -115,6 +115,9 @@ export const EventInvoices: React.FC<EventInvoicesProps> = ({ event }) => {
     refetchInvoices,
   } = useInvoices({ event_id: event.id });
 
+  const downloadPdfMutation = useDownloadInvoicePdf();
+  const sendInvoiceMutation = useSendInvoice();
+
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, invoice: Invoice) => {
     setAnchorEl(event.currentTarget);
     setSelectedInvoice(invoice);
@@ -142,6 +145,20 @@ export const EventInvoices: React.FC<EventInvoicesProps> = ({ event }) => {
   const handleRecordPayment = (_invoice: Invoice) => {
     // Navigate to payments page to record a payment
     navigate(`/payments/new`);
+  };
+
+  const handleDownloadPdf = () => {
+    if (selectedInvoice) {
+      downloadPdfMutation.mutate(selectedInvoice.id);
+      handleMenuClose();
+    }
+  };
+
+  const handleSendInvoice = () => {
+    if (selectedInvoice) {
+      sendInvoiceMutation.mutate(selectedInvoice.id);
+      handleMenuClose();
+    }
   };
 
   const handleDeleteInvoice = () => {
@@ -360,27 +377,19 @@ export const EventInvoices: React.FC<EventInvoicesProps> = ({ event }) => {
             <ListItemText>Record Payment</ListItemText>
           </MenuItem>
         )}
-        <Tooltip title="Coming soon">
-          <span>
-            <MenuItem disabled>
-              <ListItemIcon>
-                <DownloadIcon fontSize="small" />
-              </ListItemIcon>
-              <ListItemText>Download PDF</ListItemText>
-            </MenuItem>
-          </span>
-        </Tooltip>
+        <MenuItem onClick={handleDownloadPdf} disabled={downloadPdfMutation.isPending}>
+          <ListItemIcon>
+            <DownloadIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>Download PDF</ListItemText>
+        </MenuItem>
         {selectedInvoice?.status === 'DRAFT' && (
-          <Tooltip title="Coming soon">
-            <span>
-              <MenuItem disabled>
-                <ListItemIcon>
-                  <SendIcon fontSize="small" />
-                </ListItemIcon>
-                <ListItemText>Send to Client</ListItemText>
-              </MenuItem>
-            </span>
-          </Tooltip>
+          <MenuItem onClick={handleSendInvoice} disabled={sendInvoiceMutation.isPending}>
+            <ListItemIcon>
+              <SendIcon fontSize="small" />
+            </ListItemIcon>
+            <ListItemText>Send to Client</ListItemText>
+          </MenuItem>
         )}
         {selectedInvoice?.status === 'DRAFT' && (
           <MenuItem onClick={handleDeleteInvoice} disabled={isDeletingInvoice}>
