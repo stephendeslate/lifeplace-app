@@ -1,0 +1,288 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`ContactInfo > matches snapshot 1`] = `
+<div>
+  <section
+    class="MuiBox-root css-i9hcv"
+  >
+    <div
+      class="MuiBox-root css-zst8dr"
+    >
+      <div
+        class="MuiStack-root css-1vln7bc-MuiStack-root"
+      >
+        <div
+          class="MuiBox-root css-i9o3jq"
+        >
+          <div
+            class="MuiStack-root css-a76xbi-MuiStack-root"
+          >
+            <p
+              class="MuiTypography-root MuiTypography-body1 css-va2bnv-MuiTypography-root"
+            >
+              Get in Touch
+            </p>
+            <p
+              class="MuiTypography-root MuiTypography-body1 css-1niuv6r-MuiTypography-root"
+            >
+              Reach out to us through any of these channels. We're ready to help you plan your perfect event.
+            </p>
+          </div>
+        </div>
+        <div
+          class="MuiBox-root css-1mqu9yu"
+        >
+          <div
+            class="MuiBox-root css-i9o3jq"
+          >
+            <div
+              class="MuiBox-root css-hy6w4r"
+            >
+              <div
+                class="MuiStack-root css-8mcjw0-MuiStack-root"
+              >
+                <div
+                  class="MuiBox-root css-hpf7ff"
+                >
+                  <svg
+                    aria-hidden="true"
+                    class="MuiSvgIcon-root MuiSvgIcon-fontSizeMedium css-l0dsfk-MuiSvgIcon-root"
+                    data-testid="PhoneIcon"
+                    focusable="false"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02z"
+                    />
+                  </svg>
+                </div>
+                <div
+                  class="MuiBox-root css-0"
+                >
+                  <p
+                    class="MuiTypography-root MuiTypography-body1 css-1rar2cj-MuiTypography-root"
+                  >
+                    Phone Numbers
+                  </p>
+                  <div
+                    class="MuiStack-root css-jfdv4h-MuiStack-root"
+                  >
+                    <p
+                      class="MuiTypography-root MuiTypography-body1 css-13xuw63-MuiTypography-root"
+                    >
+                      (046) 889 0844
+                    </p>
+                    <p
+                      class="MuiTypography-root MuiTypography-body1 css-13xuw63-MuiTypography-root"
+                    >
+                      +63 993 526 0943
+                    </p>
+                    <p
+                      class="MuiTypography-root MuiTypography-body1 css-13xuw63-MuiTypography-root"
+                    >
+                      (0962) 275 3145
+                    </p>
+                  </div>
+                </div>
+                <div
+                  class="MuiBox-root css-19dwcx2"
+                >
+                  <a
+                    class="MuiButtonBase-root MuiButton-root MuiButton-outlined MuiButton-outlinedPrimary MuiButton-sizeMedium MuiButton-outlinedSizeMedium MuiButton-colorPrimary MuiButton-root MuiButton-outlined MuiButton-outlinedPrimary MuiButton-sizeMedium MuiButton-outlinedSizeMedium MuiButton-colorPrimary css-w2g9mj-MuiButtonBase-root-MuiButton-root"
+                    href="tel:+639935260943"
+                    tabindex="0"
+                  >
+                    Call Now
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div
+            class="MuiBox-root css-i9o3jq"
+          >
+            <div
+              class="MuiBox-root css-hy6w4r"
+            >
+              <div
+                class="MuiStack-root css-8mcjw0-MuiStack-root"
+              >
+                <div
+                  class="MuiBox-root css-i8athr"
+                >
+                  <svg
+                    aria-hidden="true"
+                    class="MuiSvgIcon-root MuiSvgIcon-fontSizeMedium css-1ylg4cv-MuiSvgIcon-root"
+                    data-testid="EmailIcon"
+                    focusable="false"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2m0 4-8 5-8-5V6l8 5 8-5z"
+                    />
+                  </svg>
+                </div>
+                <div
+                  class="MuiBox-root css-0"
+                >
+                  <p
+                    class="MuiTypography-root MuiTypography-body1 css-1rar2cj-MuiTypography-root"
+                  >
+                    Email Address
+                  </p>
+                  <div
+                    class="MuiStack-root css-jfdv4h-MuiStack-root"
+                  >
+                    <p
+                      class="MuiTypography-root MuiTypography-body1 css-13xuw63-MuiTypography-root"
+                    >
+                      reservations.lifeplace@gmail.com
+                    </p>
+                  </div>
+                </div>
+                <div
+                  class="MuiBox-root css-19dwcx2"
+                >
+                  <a
+                    class="MuiButtonBase-root MuiButton-root MuiButton-outlined MuiButton-outlinedPrimary MuiButton-sizeMedium MuiButton-outlinedSizeMedium MuiButton-colorPrimary MuiButton-root MuiButton-outlined MuiButton-outlinedPrimary MuiButton-sizeMedium MuiButton-outlinedSizeMedium MuiButton-colorPrimary css-w2g9mj-MuiButtonBase-root-MuiButton-root"
+                    href="mailto:reservations.lifeplace@gmail.com"
+                    tabindex="0"
+                  >
+                    Send Email
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div
+            class="MuiBox-root css-i9o3jq"
+          >
+            <div
+              class="MuiBox-root css-hy6w4r"
+            >
+              <div
+                class="MuiStack-root css-8mcjw0-MuiStack-root"
+              >
+                <div
+                  class="MuiBox-root css-hpf7ff"
+                >
+                  <svg
+                    aria-hidden="true"
+                    class="MuiSvgIcon-root MuiSvgIcon-fontSizeMedium css-l0dsfk-MuiSvgIcon-root"
+                    data-testid="LocationOnIcon"
+                    focusable="false"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7m0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5"
+                    />
+                  </svg>
+                </div>
+                <div
+                  class="MuiBox-root css-0"
+                >
+                  <p
+                    class="MuiTypography-root MuiTypography-body1 css-1rar2cj-MuiTypography-root"
+                  >
+                    Address
+                  </p>
+                  <div
+                    class="MuiStack-root css-jfdv4h-MuiStack-root"
+                  >
+                    <p
+                      class="MuiTypography-root MuiTypography-body1 css-13xuw63-MuiTypography-root"
+                    >
+                      Patutong Malaki North
+                    </p>
+                    <p
+                      class="MuiTypography-root MuiTypography-body1 css-13xuw63-MuiTypography-root"
+                    >
+                      Alfonso, Cavite 4120
+                    </p>
+                    <p
+                      class="MuiTypography-root MuiTypography-body1 css-13xuw63-MuiTypography-root"
+                    >
+                      Philippines
+                    </p>
+                  </div>
+                </div>
+                <div
+                  class="MuiBox-root css-19dwcx2"
+                >
+                  <a
+                    class="MuiButtonBase-root MuiButton-root MuiButton-outlined MuiButton-outlinedPrimary MuiButton-sizeMedium MuiButton-outlinedSizeMedium MuiButton-colorPrimary MuiButton-root MuiButton-outlined MuiButton-outlinedPrimary MuiButton-sizeMedium MuiButton-outlinedSizeMedium MuiButton-colorPrimary css-w2g9mj-MuiButtonBase-root-MuiButton-root"
+                    href="https://maps.google.com/?q=Patutong+Malaki+North+Alfonso+Cavite"
+                    rel="noopener noreferrer"
+                    tabindex="0"
+                    target="_blank"
+                  >
+                    Get Directions
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div
+            class="MuiBox-root css-i9o3jq"
+          >
+            <div
+              class="MuiBox-root css-hy6w4r"
+            >
+              <div
+                class="MuiStack-root css-8mcjw0-MuiStack-root"
+              >
+                <div
+                  class="MuiBox-root css-i8athr"
+                >
+                  <svg
+                    aria-hidden="true"
+                    class="MuiSvgIcon-root MuiSvgIcon-fontSizeMedium css-1ylg4cv-MuiSvgIcon-root"
+                    data-testid="AccessTimeIcon"
+                    focusable="false"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2M12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8"
+                    />
+                    <path
+                      d="M12.5 7H11v6l5.25 3.15.75-1.23-4.5-2.67z"
+                    />
+                  </svg>
+                </div>
+                <div
+                  class="MuiBox-root css-0"
+                >
+                  <p
+                    class="MuiTypography-root MuiTypography-body1 css-1rar2cj-MuiTypography-root"
+                  >
+                    Office Hours
+                  </p>
+                  <div
+                    class="MuiStack-root css-jfdv4h-MuiStack-root"
+                  >
+                    <p
+                      class="MuiTypography-root MuiTypography-body1 css-13xuw63-MuiTypography-root"
+                    >
+                      Monday - Sunday
+                    </p>
+                    <p
+                      class="MuiTypography-root MuiTypography-body1 css-13xuw63-MuiTypography-root"
+                    >
+                      8:00 AM - 6:00 PM
+                    </p>
+                    <p
+                      class="MuiTypography-root MuiTypography-body1 css-13xuw63-MuiTypography-root"
+                    >
+                      Available for inquiries
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+`;

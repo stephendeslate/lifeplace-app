@@ -65,7 +65,7 @@ export class PaymentApi {
     const value = this.safeParseAmount(depositValue);
 
     if (depositType === 'PERCENTAGE') {
-      return (total * value) / 100;
+      return Math.round((total * value)) / 100;
     }
 
     return value;
