@@ -81,8 +81,9 @@ class IdempotencyMiddleware:
         # Process the request
         response = self.get_response(request)
 
-        # Cache the response (only for successful responses or client errors)
-        if 200 <= response.status_code < 500:
+        # Only cache successful responses — caching 4xx errors would prevent
+        # clients from recovering by retrying with the same idempotency key.
+        if 200 <= response.status_code < 300:
             self._cache_response(cache_key, response, idempotency_key)
 
         return response

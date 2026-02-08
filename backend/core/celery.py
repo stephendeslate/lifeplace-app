@@ -259,6 +259,12 @@ app.conf.update(
             'schedule': 7 * 24 * 60 * 60,  # Weekly
             'options': {'queue': 'notifications'}
         },
+        # JWT blacklist cleanup — purge expired blacklisted tokens
+        'flush-expired-jwt-tokens': {
+            'task': 'core.domains.users.tasks.flush_expired_jwt_tokens',
+            'schedule': 24 * 60 * 60,  # Daily
+            'options': {'queue': 'notifications'}
+        },
     },
 )
 

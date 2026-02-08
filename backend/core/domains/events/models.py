@@ -499,9 +499,10 @@ class Event(BaseModel):
     @property
     def notes(self):
         """Get all notes for this event"""
-        Note = ContentType.objects.get(app_label='notes', model='note').model_class()
+        from core.domains.notes.models import Note
+        event_ct = ContentType.objects.get_for_model(self)
         return Note.objects.filter(
-            content_type=ContentType.objects.get_for_model(self),
+            content_type=event_ct,
             object_id=self.id
         )
         
