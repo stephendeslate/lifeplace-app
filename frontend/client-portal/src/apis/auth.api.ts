@@ -38,6 +38,13 @@ export const authApi = {
   },
 
   /**
+   * Logout - blacklist refresh token on the backend
+   */
+  logout: async (refreshToken: string): Promise<void> => {
+    await api.post('/users/logout/', { refresh: refreshToken });
+  },
+
+  /**
    * Refresh access token using refresh token
    * Backend may return a new refresh token when rotation is enabled
    */

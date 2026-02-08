@@ -20,7 +20,6 @@ import {
   AdminPanelSettings,
   Lock,
   Person,
-  Email,
 } from '@mui/icons-material';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
@@ -30,10 +29,8 @@ import { storage } from '../../utils/storage';
 
 interface InvitationData {
   id: string;
-  email: string;
   first_name: string;
   last_name: string;
-  invited_by: string;
   expires_at: string;
   is_accepted: boolean;
 }
@@ -296,7 +293,7 @@ export const AcceptInvitation: React.FC = () => {
             <Box sx={{ mb: 4 }}>
               <Alert severity="info" sx={{ mb: 3 }}>
                 <Typography variant="body2">
-                  You've been invited by <strong>{invitation.invited_by}</strong> to join as an administrator.
+                  You've been invited to join as an administrator.
                 </Typography>
               </Alert>
 
@@ -309,17 +306,6 @@ export const AcceptInvitation: React.FC = () => {
                     </Typography>
                     <Typography variant="body2">
                       {invitation.first_name} {invitation.last_name}
-                    </Typography>
-                  </Box>
-                </Box>
-                <Box display="flex" alignItems="center" gap={2}>
-                  <Email color="action" />
-                  <Box>
-                    <Typography variant="subtitle2" color="text.secondary">
-                      Email
-                    </Typography>
-                    <Typography variant="body2">
-                      {invitation.email}
                     </Typography>
                   </Box>
                 </Box>

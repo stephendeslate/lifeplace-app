@@ -20,6 +20,7 @@ import {
 import type { Contract } from '../../types/contracts.types';
 import { sanitizeHTML } from '../../utils/security';
 import { contractUtils } from '../../apis/contracts.api';
+import { formatPhilippinesTime } from '../../utils/timezone';
 
 interface ContractViewerProps {
   contract: Contract;
@@ -56,13 +57,7 @@ export const ContractViewer: React.FC<ContractViewerProps> = ({
 
   const formatDate = (dateString: string | null) => {
     if (!dateString) return 'Not set';
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
+    return formatPhilippinesTime(dateString, true, 'MMMM d, yyyy h:mm a');
   };
 
   return (

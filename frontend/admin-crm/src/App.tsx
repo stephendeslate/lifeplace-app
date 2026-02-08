@@ -1,46 +1,64 @@
 // frontend/admin-crm/src/App.tsx
-// UPDATED: Added comprehensive analytics routes and error boundary
 
-import React from 'react';
+import React, { Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AppProviders } from './providers/AppProviders';
 import { Box, CircularProgress, Typography } from '@mui/material';
 import { useAuth } from './contexts/AuthContext';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
-import { Login, AcceptInvitation, ForgotPassword, ResetPassword } from './pages/auth';
-import { Dashboard } from './pages/dashboard';
-import { ClientsOverview, ClientProfile, NewClient } from './pages/clients';
-import { EventsOverview, EventProfile, EventsCalendar, NewEvent } from './pages/events';
-import { ContractEdit, ContractView, ContractSign } from './pages/contracts';
-import { NotFound } from './pages/NotFound';
-import { TasksPage } from './pages/tasks';
-import { CommunicationRecords } from './pages/records';
-import { NotificationsPage } from './pages/notifications';
 import { AppLayout } from './components/layout';
 import { WalkthroughProvider } from './contexts/WalkthroughContext';
 
-// Analytics imports - New simplified dashboard
-import { AnalyticsDashboard } from './pages/analytics';
+// Critical path - keep static imports
+import { Login, AcceptInvitation, ForgotPassword, ResetPassword } from './pages/auth';
+import { Dashboard } from './pages/dashboard';
+import { NotFound } from './pages/NotFound';
 
-// Metrics dashboard
-import { MetricsDashboard } from './pages/metrics';
-
-// Enhanced Settings imports
-import { EnhancedSettingsLayout } from './pages/settings/EnhancedSettingsLayout';
-import { EnhancedSettings } from './pages/settings/EnhancedSettings';
-import { AccountSettings, AdminUsers, CompanySettings, GuidedTours } from './pages/settings/account';
-import { Notifications } from './pages/settings/account/Notifications';
-import { BookingFlows, BookingFlowDetails, EventTypes, BookingFlowPreviewPage } from './pages/settings/booking';
-import { ContractTemplates, QuestionnaireTemplates, WorkflowTemplates, WorkflowTemplateDetails, WorkflowWebhooks } from './pages/settings/templates';
-import { ProductsPackages, Payments, Sales } from './pages/settings/commerce';
-import { CurrencyTaxes } from './pages/settings/commerce/CurrencyTaxes';
-import { VIPProgram } from './pages/settings/vip/VIPProgram';
-import { CommunicationTemplates } from './pages/settings/templates/CommunicationTemplates';
-import { EmailLayouts } from './pages/settings/templates/EmailLayouts';
-import { LegalDocumentsPage } from './pages/settings/legal';
-import { PaymentsOverview, PaymentProfile, NewPayment } from './pages/payments';
-import { SupportPage, SupportDetailPage } from './pages/support';
-// FunnelAnalytics removed - functionality now in AnalyticsDashboard
+// Route-level code splitting with React.lazy
+const ClientsOverview = React.lazy(() => import('./pages/clients').then(m => ({ default: m.ClientsOverview })));
+const ClientProfile = React.lazy(() => import('./pages/clients').then(m => ({ default: m.ClientProfile })));
+const NewClient = React.lazy(() => import('./pages/clients').then(m => ({ default: m.NewClient })));
+const EventsOverview = React.lazy(() => import('./pages/events').then(m => ({ default: m.EventsOverview })));
+const EventProfile = React.lazy(() => import('./pages/events').then(m => ({ default: m.EventProfile })));
+const EventsCalendar = React.lazy(() => import('./pages/events').then(m => ({ default: m.EventsCalendar })));
+const NewEvent = React.lazy(() => import('./pages/events').then(m => ({ default: m.NewEvent })));
+const ContractEdit = React.lazy(() => import('./pages/contracts').then(m => ({ default: m.ContractEdit })));
+const ContractView = React.lazy(() => import('./pages/contracts').then(m => ({ default: m.ContractView })));
+const ContractSign = React.lazy(() => import('./pages/contracts').then(m => ({ default: m.ContractSign })));
+const TasksPage = React.lazy(() => import('./pages/tasks').then(m => ({ default: m.TasksPage })));
+const CommunicationRecords = React.lazy(() => import('./pages/records').then(m => ({ default: m.CommunicationRecords })));
+const NotificationsPage = React.lazy(() => import('./pages/notifications').then(m => ({ default: m.NotificationsPage })));
+const AnalyticsDashboard = React.lazy(() => import('./pages/analytics').then(m => ({ default: m.AnalyticsDashboard })));
+const MetricsDashboard = React.lazy(() => import('./pages/metrics').then(m => ({ default: m.MetricsDashboard })));
+const PaymentsOverview = React.lazy(() => import('./pages/payments').then(m => ({ default: m.PaymentsOverview })));
+const PaymentProfile = React.lazy(() => import('./pages/payments').then(m => ({ default: m.PaymentProfile })));
+const NewPayment = React.lazy(() => import('./pages/payments').then(m => ({ default: m.NewPayment })));
+const SupportPage = React.lazy(() => import('./pages/support').then(m => ({ default: m.SupportPage })));
+const SupportDetailPage = React.lazy(() => import('./pages/support').then(m => ({ default: m.SupportDetailPage })));
+const EnhancedSettingsLayout = React.lazy(() => import('./pages/settings/EnhancedSettingsLayout').then(m => ({ default: m.EnhancedSettingsLayout })));
+const EnhancedSettings = React.lazy(() => import('./pages/settings/EnhancedSettings').then(m => ({ default: m.EnhancedSettings })));
+const AccountSettings = React.lazy(() => import('./pages/settings/account').then(m => ({ default: m.AccountSettings })));
+const AdminUsers = React.lazy(() => import('./pages/settings/account').then(m => ({ default: m.AdminUsers })));
+const CompanySettings = React.lazy(() => import('./pages/settings/account').then(m => ({ default: m.CompanySettings })));
+const GuidedTours = React.lazy(() => import('./pages/settings/account').then(m => ({ default: m.GuidedTours })));
+const Notifications = React.lazy(() => import('./pages/settings/account/Notifications').then(m => ({ default: m.Notifications })));
+const BookingFlows = React.lazy(() => import('./pages/settings/booking').then(m => ({ default: m.BookingFlows })));
+const BookingFlowDetails = React.lazy(() => import('./pages/settings/booking').then(m => ({ default: m.BookingFlowDetails })));
+const EventTypes = React.lazy(() => import('./pages/settings/booking').then(m => ({ default: m.EventTypes })));
+const BookingFlowPreviewPage = React.lazy(() => import('./pages/settings/booking').then(m => ({ default: m.BookingFlowPreviewPage })));
+const ContractTemplates = React.lazy(() => import('./pages/settings/templates').then(m => ({ default: m.ContractTemplates })));
+const QuestionnaireTemplates = React.lazy(() => import('./pages/settings/templates').then(m => ({ default: m.QuestionnaireTemplates })));
+const WorkflowTemplates = React.lazy(() => import('./pages/settings/templates').then(m => ({ default: m.WorkflowTemplates })));
+const WorkflowTemplateDetails = React.lazy(() => import('./pages/settings/templates').then(m => ({ default: m.WorkflowTemplateDetails })));
+const WorkflowWebhooks = React.lazy(() => import('./pages/settings/templates').then(m => ({ default: m.WorkflowWebhooks })));
+const CommunicationTemplates = React.lazy(() => import('./pages/settings/templates/CommunicationTemplates').then(m => ({ default: m.CommunicationTemplates })));
+const EmailLayouts = React.lazy(() => import('./pages/settings/templates/EmailLayouts').then(m => ({ default: m.EmailLayouts })));
+const ProductsPackages = React.lazy(() => import('./pages/settings/commerce').then(m => ({ default: m.ProductsPackages })));
+const Payments = React.lazy(() => import('./pages/settings/commerce').then(m => ({ default: m.Payments })));
+const Sales = React.lazy(() => import('./pages/settings/commerce').then(m => ({ default: m.Sales })));
+const CurrencyTaxes = React.lazy(() => import('./pages/settings/commerce/CurrencyTaxes').then(m => ({ default: m.CurrencyTaxes })));
+const VIPProgram = React.lazy(() => import('./pages/settings/vip/VIPProgram').then(m => ({ default: m.VIPProgram })));
+const LegalDocumentsPage = React.lazy(() => import('./pages/settings/legal').then(m => ({ default: m.LegalDocumentsPage })));
 
 // Protected Route Component
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -132,9 +150,17 @@ const SettingsRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =>
 };
 
 
+// Suspense fallback for lazy-loaded routes
+const PageLoader = () => (
+  <Box display="flex" alignItems="center" justifyContent="center" minHeight="50vh">
+    <CircularProgress />
+  </Box>
+);
+
 // Main App Router Component
 const AppRouter: React.FC = () => {
   return (
+    <Suspense fallback={<PageLoader />}>
     <Routes>
       {/* Public Routes */}
       <Route
@@ -626,6 +652,7 @@ const AppRouter: React.FC = () => {
       {/* 404 Not Found - Better for SEO than redirect */}
       <Route path="*" element={<NotFound />} />
     </Routes>
+    </Suspense>
   );
 };
 

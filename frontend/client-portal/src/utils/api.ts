@@ -82,66 +82,84 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
+// Token refresh mutex to prevent concurrent refresh requests
+let isRefreshing = false;
+let failedQueue: Array<{
+  resolve: (token: string) => void;
+  reject: (err: unknown) => void;
+}> = [];
+
+const processQueue = (error: unknown, token: string | null = null) => {
+  failedQueue.forEach((promise) => {
+    if (token) promise.resolve(token);
+    else promise.reject(error);
+  });
+  failedQueue = [];
+};
+
 // Add response interceptor to handle token refresh
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
 
-    // If the error is 401 and not a retry, attempt to refresh token
     if (error.response?.status === 401 && !originalRequest._retry) {
-      
       // Check if this is a public endpoint - if so, don't try to refresh or redirect
       if (isPublicEndpoint(originalRequest.url)) {
-        // For public endpoints, just return the error without redirecting
         if (import.meta.env.DEV) console.warn('Public endpoint returned 401, this might indicate a backend configuration issue');
         return Promise.reject(error);
       }
 
       // If we're on a booking page, don't redirect to login immediately
-      // Booking should work for guests
       if (isBookingPage()) {
         if (import.meta.env.DEV) console.warn('401 error on booking page, continuing without authentication');
         return Promise.reject(error);
       }
 
+      if (isRefreshing) {
+        // Another refresh is in-flight — queue this request
+        return new Promise<string>((resolve, reject) => {
+          failedQueue.push({ resolve, reject });
+        }).then((token) => {
+          originalRequest.headers.Authorization = `Bearer ${token}`;
+          return api(originalRequest);
+        });
+      }
+
       originalRequest._retry = true;
+      isRefreshing = true;
 
       try {
         const tokens = storage.getTokens();
 
         if (!tokens?.refresh) {
-          // No refresh token, clear tokens
           storage.clearAuth();
-          // Don't redirect from interceptor - let React Router handle this
+          processQueue(error, null);
           return Promise.reject(error);
         }
 
-        // Get the appropriate API URL for token refresh
         const apiUrl = getBaseUrl();
-
-        // Attempt to refresh the token
         const response = await axios.post(`${apiUrl}/users/token/refresh/`, {
           refresh: tokens.refresh,
         });
 
         const data = response.data as { access?: string };
         if (data.access) {
-          // Save new tokens
           storage.setTokens({
             access: data.access,
             refresh: tokens.refresh,
           });
 
-          // Retry the original request with new token
+          processQueue(null, data.access);
           originalRequest.headers.Authorization = `Bearer ${data.access}`;
           return api(originalRequest);
         }
-      } catch {
-        // If refresh fails, clear tokens
+      } catch (refreshError) {
+        processQueue(refreshError, null);
         storage.clearAuth();
-        // Don't redirect from interceptor - let React Router handle this
         return Promise.reject(error);
+      } finally {
+        isRefreshing = false;
       }
     }
 

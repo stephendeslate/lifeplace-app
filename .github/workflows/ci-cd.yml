@@ -112,17 +112,17 @@ jobs:
     - name: Run TypeScript check
       run: |
         cd frontend/${{ matrix.app }}
-        npm run type-check || echo "type-check script not found, skipping"
+        npm run type-check
 
     - name: Run linting
       run: |
         cd frontend/${{ matrix.app }}
-        npm run lint || echo "lint warnings/errors found but continuing build"
+        npm run lint
 
     - name: Run tests
       run: |
         cd frontend/${{ matrix.app }}
-        npm run test || echo "test script not found or tests failed, continuing"
+        npm run test
 
     - name: Build application
       env:

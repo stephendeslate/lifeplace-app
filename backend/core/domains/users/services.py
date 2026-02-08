@@ -1,4 +1,5 @@
 # backend/core/domains/users/services.py
+import logging
 import uuid
 from datetime import timedelta
 
@@ -6,6 +7,8 @@ from django.conf import settings
 from django.db.models import Q
 from django.utils import timezone
 from rest_framework_simplejwt.tokens import RefreshToken
+
+logger = logging.getLogger(__name__)
 
 from .exceptions import (
     EmailAlreadyExists,
@@ -133,10 +136,7 @@ class AdminInvitationService:
             invited_by: User who is sending the invitation
             permissions: Optional dict of admin permissions to assign on acceptance
         """
-        import logging
         from .permissions_constants import validate_permissions
-
-        logger = logging.getLogger(__name__)
 
         # Check if user with email already exists
         existing_user = None
@@ -181,11 +181,10 @@ class AdminInvitationService:
         # Try to send invitation email - but don't fail if it doesn't work
         try:
             AdminInvitationService._send_invitation_email(invitation)
-            print(f"✅ {'Upgrade' if is_upgrade else 'New'} invitation created and email sent to {email}")
+            logger.info(f"{'Upgrade' if is_upgrade else 'New'} invitation created and email sent")
         except Exception as e:
             # Log the error but don't prevent invitation creation
-            print(f"⚠️ Invitation created for {email} but email sending failed: {str(e)}")
-            logger.error(f"Failed to send invitation email to {email}: {str(e)}")
+            logger.error(f"Invitation created but email sending failed: {str(e)}")
 
         return invitation
     
@@ -198,10 +197,7 @@ class AdminInvitationService:
         1. New user invitation → create new ADMIN user
         2. Upgrade invitation → upgrade existing CLIENT to ADMIN and set password
         """
-        import logging
         from core.utils.security_logging import SecurityLogger
-
-        logger = logging.getLogger(__name__)
         security_logger = SecurityLogger()
 
         try:
@@ -305,10 +301,6 @@ class AdminInvitationService:
         - 'Admin Invitation' for new admin users
         - 'Admin Role Upgrade' for existing CLIENT users being upgraded to ADMIN
         """
-        import logging
-
-        logger = logging.getLogger(__name__)
-
         try:
             # Import here to avoid circular imports
             from core.domains.communications.services import CommunicationService
@@ -342,26 +334,18 @@ class AdminInvitationService:
             )
 
             if record:
-                print(f"✅ {template_name} email sent successfully via Brevo to {invitation.email}")
-                print(f"   Record ID: {record.id}")
-                print(f"   External ID: {record.external_message_id}")
-                logger.info(f"{template_name} email sent to {invitation.email} - Record ID: {record.id}")
+                logger.info(f"{template_name} email sent - Record ID: {record.id}")
                 return True
             else:
-                error_msg = f"Communication service returned None - email not sent to {invitation.email}"
-                print(f"❌ {error_msg}")
+                error_msg = "Communication service returned None - email not sent"
                 logger.error(error_msg)
                 raise Exception(error_msg)
 
         except ImportError:
             # Communications domain not available
-            error_msg = f"Communications domain not available for {invitation.email}"
-            print(f"❌ {error_msg}")
-            logger.error(error_msg)
+            logger.error("Communications domain not available")
             raise Exception("Communications service not available")
         except Exception as e:
             # Re-raise the exception so the caller can handle it
-            error_msg = f"Failed to send invitation via communication service: {str(e)}"
-            print(f"❌ {error_msg}")
-            logger.error(error_msg)
+            logger.error(f"Failed to send invitation via communication service: {str(e)}")
             raise e

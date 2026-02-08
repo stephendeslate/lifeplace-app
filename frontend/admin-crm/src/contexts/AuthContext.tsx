@@ -101,8 +101,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  // Logout function
+  // Logout function - blacklist refresh token on backend
   const logout = () => {
+    const tokens = storage.getTokens();
+    if (tokens?.refresh) {
+      authApi.logout(tokens.refresh).catch(() => {});
+    }
     storage.clearAuth();
     setUser(null);
   };

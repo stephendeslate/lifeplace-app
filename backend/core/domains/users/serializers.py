@@ -158,6 +158,15 @@ class AdminPermissionsSerializer(serializers.Serializer):
     can_delete_records = serializers.BooleanField(required=False, default=False)
 
 
+class PublicAdminInvitationSerializer(serializers.ModelSerializer):
+    """Limited serializer for unauthenticated GET requests to invitation detail."""
+
+    class Meta:
+        model = AdminInvitation
+        fields = ['id', 'first_name', 'last_name', 'is_accepted', 'expires_at']
+        read_only_fields = ['id', 'first_name', 'last_name', 'is_accepted', 'expires_at']
+
+
 class AdminInvitationSerializer(serializers.ModelSerializer):
     invited_by = serializers.StringRelatedField(read_only=True)
     permissions = serializers.JSONField(required=False, default=dict)

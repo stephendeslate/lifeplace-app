@@ -24,6 +24,8 @@ vi.mock('../../apis/auth.api', () => ({
   authApi: {
     login: vi.fn(),
     register: vi.fn(),
+    googleLogin: vi.fn(),
+    logout: vi.fn().mockResolvedValue(undefined),
     getCurrentUser: vi.fn(),
     refreshToken: vi.fn(),
   },

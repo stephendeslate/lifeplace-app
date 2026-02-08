@@ -37,6 +37,7 @@ from .serializers import (
     AdminInvitationSerializer,
     AdminPermissionsSerializer,
     AvatarUploadSerializer,
+    PublicAdminInvitationSerializer,
     UserCreateSerializer,
     UserSerializer,
 )
@@ -518,7 +519,13 @@ class AdminInvitationDetailAPIView(generics.RetrieveDestroyAPIView):
         if self.request.method == 'DELETE':
             return [IsAdmin()]
         return [permissions.AllowAny()]
-        
+
+    def get_serializer_class(self):
+        """Use limited serializer for unauthenticated GET requests."""
+        if self.request.method == 'GET' and not (self.request.user and self.request.user.is_authenticated):
+            return PublicAdminInvitationSerializer
+        return AdminInvitationSerializer
+
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
         

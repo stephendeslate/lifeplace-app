@@ -4,8 +4,8 @@ import React from 'react';
 import { Box, Typography, Container, CircularProgress, Alert, Paper } from '@mui/material';
 import { SEO } from '../../hooks/useSEO';
 import { useLegalDocument } from '../../hooks/useLegalDocument';
-import DOMPurify from 'dompurify';
 import { formatPhilippinesTime } from '../../utils/timezone';
+import { sanitizeHTML } from '../../utils/security';
 
 export const TermsPage: React.FC = () => {
   const { document, isLoading, error } = useLegalDocument('TERMS_OF_SERVICE');
@@ -69,7 +69,7 @@ export const TermsPage: React.FC = () => {
             '& h1, & h2, & h3, & h4': { mt: 3, mb: 1 },
             '& ul, & ol': { pl: 3 }
           }}
-          dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(document.content) }}
+          dangerouslySetInnerHTML={{ __html: sanitizeHTML(document.content, 'content') }}
         />
       </Paper>
       </Container>

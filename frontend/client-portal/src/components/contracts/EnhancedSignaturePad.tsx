@@ -135,7 +135,11 @@ export const EnhancedSignaturePad: React.FC<EnhancedSignaturePadProps> = ({
         return;
       }
 
-      const currentIsEmpty = signaturePad.isEmpty();
+      // Check for minimum signature content (not just any pixel)
+      const data = signaturePad.toData();
+      const hasMinimumContent = data.length >= 2 ||
+        (data.length === 1 && data[0].points.length >= 5);
+      const currentIsEmpty = signaturePad.isEmpty() || !hasMinimumContent;
       setIsEmpty(currentIsEmpty);
 
       if (!currentIsEmpty) {
@@ -181,7 +185,11 @@ export const EnhancedSignaturePad: React.FC<EnhancedSignaturePadProps> = ({
         data.pop();
         padRef.current.fromData(data);
 
-        const currentIsEmpty = padRef.current.isEmpty();
+        // Re-check minimum content after undo
+        const remainingData = padRef.current.toData();
+        const hasMinimumContent = remainingData.length >= 2 ||
+          (remainingData.length === 1 && remainingData[0].points.length >= 5);
+        const currentIsEmpty = padRef.current.isEmpty() || !hasMinimumContent;
         setIsEmpty(currentIsEmpty);
 
         if (!currentIsEmpty) {
@@ -194,11 +202,16 @@ export const EnhancedSignaturePad: React.FC<EnhancedSignaturePadProps> = ({
     }
   }, []);
 
-  // Complete signature
+  // Complete signature - verify minimum content before completing
   const handleComplete = useCallback(() => {
     if (padRef.current && !isEmpty && onSignatureComplete) {
-      const signatureData = padRef.current.toDataURL('image/png');
-      onSignatureComplete(signatureData);
+      const data = padRef.current.toData();
+      const hasMinimumContent = data.length >= 2 ||
+        (data.length === 1 && data[0].points.length >= 5);
+      if (hasMinimumContent) {
+        const signatureData = padRef.current.toDataURL('image/png');
+        onSignatureComplete(signatureData);
+      }
     }
   }, [isEmpty, onSignatureComplete]);
 

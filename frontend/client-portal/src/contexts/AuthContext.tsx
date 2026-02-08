@@ -107,22 +107,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  // Logout function with proper cleanup
+  // Logout function with proper cleanup - blacklist refresh token on backend
   const logout = () => {
+    const tokens = storage.getTokens();
+    if (tokens?.refresh) {
+      authApi.logout(tokens.refresh).catch(() => {});
+    }
+
     // Clear auth but preserve user preferences and non-sensitive data
     storage.clearAuth();
-    
+
     // Clear user-specific data but keep preferences
     const cartItems = storage.getCart();
     if (cartItems.length > 0) {
-      // Optionally prompt user to save cart or clear it
       storage.clearCart();
     }
-    
+
     setUser(null);
-    
-    // Optional: Clear all user data on logout
-    // storage.clearUserData();
   };
 
   // Update user data

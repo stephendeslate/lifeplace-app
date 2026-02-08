@@ -44,23 +44,26 @@ export const authApi = {
   },
 
   /**
-   * Get invitation details (public endpoint)
+   * Logout - blacklist refresh token on the backend
+   */
+  logout: async (refreshToken: string): Promise<void> => {
+    await api.post('/users/logout/', { refresh: refreshToken });
+  },
+
+  /**
+   * Get invitation details (public endpoint - returns limited fields)
    */
   getInvitation: async (invitationId: string): Promise<{
     id: string;
-    email: string;
     first_name: string;
     last_name: string;
-    invited_by: string;
     expires_at: string;
     is_accepted: boolean;
   }> => {
     const response = await api.get<{
       id: string;
-      email: string;
       first_name: string;
       last_name: string;
-      invited_by: string;
       expires_at: string;
       is_accepted: boolean;
     }>(`/users/invitations/${invitationId}/`);

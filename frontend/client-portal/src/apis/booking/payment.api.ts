@@ -47,6 +47,12 @@ export class PaymentApi {
 
   // Payment processing helpers
 
+  private static safeParseAmount(value: string | number): number {
+    const num = typeof value === 'string' ? parseFloat(value) : value;
+    if (!Number.isFinite(num) || num < 0) return 0;
+    return num;
+  }
+
   /**
    * Calculate deposit amount based on configuration
    */
@@ -55,13 +61,13 @@ export class PaymentApi {
     depositType: 'PERCENTAGE' | 'FIXED',
     depositValue: string | number
   ): number {
-    const total = typeof totalAmount === 'string' ? parseFloat(totalAmount) : totalAmount;
-    const value = typeof depositValue === 'string' ? parseFloat(depositValue) : depositValue;
+    const total = this.safeParseAmount(totalAmount);
+    const value = this.safeParseAmount(depositValue);
 
     if (depositType === 'PERCENTAGE') {
       return (total * value) / 100;
     }
-    
+
     return value;
   }
 
@@ -72,9 +78,9 @@ export class PaymentApi {
     totalAmount: string | number,
     depositAmount: string | number
   ): number {
-    const total = typeof totalAmount === 'string' ? parseFloat(totalAmount) : totalAmount;
-    const deposit = typeof depositAmount === 'string' ? parseFloat(depositAmount) : depositAmount;
-    
+    const total = this.safeParseAmount(totalAmount);
+    const deposit = this.safeParseAmount(depositAmount);
+
     return Math.max(0, total - deposit);
   }
 
@@ -82,8 +88,8 @@ export class PaymentApi {
    * Format amount for display
    */
   static formatAmount(amount: string | number, currency: string = 'PHP'): string {
-    const num = typeof amount === 'string' ? parseFloat(amount) : amount;
-    
+    const num = this.safeParseAmount(amount);
+
     if (currency === 'PHP') {
       return new Intl.NumberFormat('en-PH', {
         style: 'currency',
@@ -91,7 +97,7 @@ export class PaymentApi {
         minimumFractionDigits: 2,
       }).format(num);
     }
-    
+
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: currency,
