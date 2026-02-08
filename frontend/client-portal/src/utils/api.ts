@@ -2,6 +2,7 @@
 
 import axios from "axios";
 import { storage } from "./storage";
+import { updateServerClockOffset } from "./serverClock";
 
 // Get base URL based on environment
 const getBaseUrl = () => {
@@ -13,21 +14,13 @@ const getBaseUrl = () => {
   return import.meta.env.VITE_API_URL || "http://localhost:8000/api";
 };
 
-// Function to get CSRF token from cookies
-const getCsrfToken = () => {
-  return document.cookie
-    .split("; ")
-    .find((row) => row.startsWith("csrftoken="))
-    ?.split("=")[1];
-};
-
 // Create axios instance
 const api = axios.create({
   baseURL: getBaseUrl(),
   headers: {
     "Content-Type": "application/json",
   },
-  withCredentials: true, // Important for CSRF cookies to be included
+  withCredentials: true,
 });
 
 // Check if a URL is for a public endpoint that doesn't require authentication
@@ -59,22 +52,12 @@ const isBookingPage = (): boolean => {
 };
 
 
-// Add request interceptor to add authorization header and CSRF token
+// Add request interceptor to add authorization header
 api.interceptors.request.use(
   (config) => {
-    // Add Authorization header if token exists (but not required for public endpoints)
     const tokens = storage.getTokens();
     if (tokens?.access && config.headers) {
       config.headers.Authorization = `Bearer ${tokens.access}`;
-    }
-
-    // Add CSRF token for unsafe methods
-    const unsafeMethods = ["post", "put", "patch", "delete"];
-    if (config.method && unsafeMethods.includes(config.method.toLowerCase()) && config.headers) {
-      const csrfToken = getCsrfToken();
-      if (csrfToken) {
-        config.headers["X-CSRFToken"] = csrfToken;
-      }
     }
 
     return config;
@@ -97,9 +80,12 @@ const processQueue = (error: unknown, token: string | null = null) => {
   failedQueue = [];
 };
 
-// Add response interceptor to handle token refresh
+// Add response interceptor to handle token refresh and sync server clock
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    updateServerClockOffset(response.headers?.['date'] ?? null);
+    return response;
+  },
   async (error) => {
     const originalRequest = error.config;
 

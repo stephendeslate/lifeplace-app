@@ -211,7 +211,6 @@ export interface WorkflowStageTableProps {
   isLoading: boolean;
   onEdit: (stage: WorkflowStage) => void;
   onDelete: (id: number) => void;
-  onReorder: (stages: WorkflowStage[]) => void;
   onTrigger?: (stage: WorkflowStage) => void;
   isDeleting: boolean;
 }

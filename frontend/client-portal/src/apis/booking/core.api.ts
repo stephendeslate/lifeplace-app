@@ -1,6 +1,7 @@
 // frontend/client-portal/src/apis/booking/core.api.ts
 
 import api from '../../utils/api';
+import { getServerNow } from '../../utils/serverClock';
 import type {
   EventType,
   BookingFlow,
@@ -235,14 +236,14 @@ export class BookingCoreApi {
   // Session management helpers
 
   /**
-   * Check if session is expired
+   * Check if session is expired (uses server-adjusted clock)
    */
   static isSessionExpired(expiresAt: string): boolean {
-    return new Date(expiresAt) <= new Date();
+    return new Date(expiresAt).getTime() <= getServerNow();
   }
 
   /**
-   * Get session time remaining
+   * Get session time remaining (uses server-adjusted clock)
    */
   static getSessionTimeRemaining(expiresAt: string): {
     hours: number;
@@ -250,7 +251,7 @@ export class BookingCoreApi {
     expired: boolean;
   } {
     const expiryTime = new Date(expiresAt).getTime();
-    const currentTime = new Date().getTime();
+    const currentTime = getServerNow();
     const diffMs = expiryTime - currentTime;
 
     if (diffMs <= 0) {

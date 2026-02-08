@@ -360,19 +360,27 @@ export const EventInvoices: React.FC<EventInvoicesProps> = ({ event }) => {
             <ListItemText>Record Payment</ListItemText>
           </MenuItem>
         )}
-        <MenuItem onClick={() => { /* TODO: Implement PDF download */ }}>
-          <ListItemIcon>
-            <DownloadIcon fontSize="small" />
-          </ListItemIcon>
-          <ListItemText>Download PDF</ListItemText>
-        </MenuItem>
+        <Tooltip title="Coming soon">
+          <span>
+            <MenuItem disabled>
+              <ListItemIcon>
+                <DownloadIcon fontSize="small" />
+              </ListItemIcon>
+              <ListItemText>Download PDF</ListItemText>
+            </MenuItem>
+          </span>
+        </Tooltip>
         {selectedInvoice?.status === 'DRAFT' && (
-          <MenuItem onClick={() => { /* TODO: Implement send invoice */ }}>
-            <ListItemIcon>
-              <SendIcon fontSize="small" />
-            </ListItemIcon>
-            <ListItemText>Send to Client</ListItemText>
-          </MenuItem>
+          <Tooltip title="Coming soon">
+            <span>
+              <MenuItem disabled>
+                <ListItemIcon>
+                  <SendIcon fontSize="small" />
+                </ListItemIcon>
+                <ListItemText>Send to Client</ListItemText>
+              </MenuItem>
+            </span>
+          </Tooltip>
         )}
         {selectedInvoice?.status === 'DRAFT' && (
           <MenuItem onClick={handleDeleteInvoice} disabled={isDeletingInvoice}>

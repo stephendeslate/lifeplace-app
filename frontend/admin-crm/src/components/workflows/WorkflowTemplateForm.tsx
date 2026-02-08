@@ -362,7 +362,6 @@ export const WorkflowTemplateForm: React.FC<WorkflowTemplateFormProps> = ({
                 isLoading={false}
                 onEdit={handleEditStage}
                 onDelete={handleDeleteStage}
-                onReorder={() => {}} // TODO: Implement reordering
                 onTrigger={handleTriggerClick}
                 isDeleting={isDeletingStage}
               />

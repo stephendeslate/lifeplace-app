@@ -23,39 +23,21 @@ const getBaseUrl = () => {
   return import.meta.env.VITE_API_URL || "http://localhost:8000/api";
 };
 
-// Function to get CSRF token from cookies
-const getCsrfToken = () => {
-  return document.cookie
-    .split("; ")
-    .find((row) => row.startsWith("csrftoken="))
-    ?.split("=")[1];
-};
-
 // Create axios instance
 const api = axios.create({
   baseURL: getBaseUrl(),
   headers: {
     "Content-Type": "application/json",
   },
-  withCredentials: true, // Important for CSRF cookies to be included
+  withCredentials: true,
 });
 
-// Add request interceptor to add authorization header and CSRF token
+// Add request interceptor to add authorization header
 api.interceptors.request.use(
   (config) => {
-    // Add Authorization header if token exists
     const tokens = storage.getTokens();
     if (tokens?.access && config.headers) {
       config.headers.Authorization = `Bearer ${tokens.access}`;
-    }
-
-    // Add CSRF token for unsafe methods
-    const unsafeMethods = ["post", "put", "patch", "delete"];
-    if (config.method && unsafeMethods.includes(config.method.toLowerCase()) && config.headers) {
-      const csrfToken = getCsrfToken();
-      if (csrfToken) {
-        config.headers["X-CSRFToken"] = csrfToken;
-      }
     }
 
     return config;

@@ -250,62 +250,78 @@ class Storage {
   }
 
   // Cart management
+
+  /**
+   * Run a callback with a cross-tab lock on cart storage.
+   * Uses Web Locks API where available to prevent read-modify-write
+   * race conditions across browser tabs.
+   */
+  private async withCartLock<T>(fn: () => T): Promise<T> {
+    if (navigator.locks) {
+      return navigator.locks.request('lifeplace_cart_lock', () => fn());
+    }
+    return fn();
+  }
+
   getCart(): CartItem[] {
     const cart = localStorage.getItem(STORAGE_KEYS.CART);
     const items = this.safeJsonParse(cart, []);
-    
+
     // Filter out expired items
     const now = new Date().toISOString();
-    const validItems = items.filter((item: CartItem) => 
+    const validItems = items.filter((item: CartItem) =>
       !item.expiresAt || item.expiresAt > now
     );
-    
+
     // Update storage if items were filtered
     if (validItems.length !== items.length) {
       this.safeJsonStringify(STORAGE_KEYS.CART, validItems);
     }
-    
+
     return validItems;
   }
 
-  addToCart(item: Omit<CartItem, 'id' | 'addedAt'>): void {
-    const cart = this.getCart();
-    
-    // Check if item already exists (same event and ticket type)
-    const existingIndex = cart.findIndex(cartItem => 
-      cartItem.eventId === item.eventId && cartItem.ticketType === item.ticketType
-    );
-    
-    if (existingIndex >= 0) {
-      // Update quantity
-      cart[existingIndex].quantity += item.quantity;
-    } else {
-      // Add new item
-      const newItem: CartItem = {
-        ...item,
-        id: `cart_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
-        addedAt: new Date().toISOString(),
-      };
-      cart.push(newItem);
-    }
-    
-    this.safeJsonStringify(STORAGE_KEYS.CART, cart);
-  }
+  async addToCart(item: Omit<CartItem, 'id' | 'addedAt'>): Promise<void> {
+    await this.withCartLock(() => {
+      const cart = this.getCart();
 
-  updateCartItem(id: string, updates: Partial<CartItem>): void {
-    const cart = this.getCart();
-    const index = cart.findIndex(item => item.id === id);
-    
-    if (index >= 0) {
-      cart[index] = { ...cart[index], ...updates };
+      const existingIndex = cart.findIndex(cartItem =>
+        cartItem.eventId === item.eventId && cartItem.ticketType === item.ticketType
+      );
+
+      if (existingIndex >= 0) {
+        cart[existingIndex].quantity += item.quantity;
+      } else {
+        const newItem: CartItem = {
+          ...item,
+          id: `cart_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+          addedAt: new Date().toISOString(),
+        };
+        cart.push(newItem);
+      }
+
       this.safeJsonStringify(STORAGE_KEYS.CART, cart);
-    }
+    });
   }
 
-  removeFromCart(id: string): void {
-    const cart = this.getCart();
-    const updated = cart.filter(item => item.id !== id);
-    this.safeJsonStringify(STORAGE_KEYS.CART, updated);
+  async updateCartItem(id: string, updates: Partial<CartItem>): Promise<void> {
+    await this.withCartLock(() => {
+      const cart = this.getCart();
+      const index = cart.findIndex(item => item.id === id);
+
+      if (index >= 0) {
+        cart[index] = { ...cart[index], ...updates };
+        this.safeJsonStringify(STORAGE_KEYS.CART, cart);
+      }
+    });
+  }
+
+  async removeFromCart(id: string): Promise<void> {
+    await this.withCartLock(() => {
+      const cart = this.getCart();
+      const updated = cart.filter(item => item.id !== id);
+      this.safeJsonStringify(STORAGE_KEYS.CART, updated);
+    });
   }
 
   clearCart(): void {

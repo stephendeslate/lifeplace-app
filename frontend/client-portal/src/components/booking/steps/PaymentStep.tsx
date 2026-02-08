@@ -171,7 +171,7 @@ export const PaymentStep: React.FC<PaymentStepProps> = ({
 
     let depositAmount = 0;
     if (config?.accept_deposit) {
-      depositAmount = (total * depositPercentage) / 100;
+      depositAmount = Math.round(total * depositPercentage) / 100;
     }
 
     const dueNow = paymentData.payment_type === 'DEPOSIT' ? depositAmount : total;

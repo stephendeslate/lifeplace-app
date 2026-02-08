@@ -70,6 +70,15 @@ const SSL_PINS: SSLPinConfig = {
   },
 };
 
+// Placeholder hash patterns that must be replaced before production
+const PLACEHOLDER_HASHES = ['sha256/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=', 'sha256/BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB='];
+
+function hasPlaceholderHashes(): boolean {
+  return Object.values(SSL_PINS).some(config =>
+    config.publicKeyHashes.some(hash => PLACEHOLDER_HASHES.includes(hash))
+  );
+}
+
 // =============================================================================
 // INITIALIZATION
 // =============================================================================
@@ -89,6 +98,13 @@ export async function initSSLPinning(): Promise<SSLPinningResult> {
     return { success: true };
   }
 
+  // Block production builds with placeholder certificate hashes
+  if (hasPlaceholderHashes()) {
+    const msg = 'SSL pinning has placeholder certificate hashes. Replace them with real hashes before releasing to production.';
+    sslLogger.error(msg);
+    return { success: false, error: msg };
+  }
+
   try {
     // Dynamic import to avoid issues in development
     const { initializeSslPinning } = await import(
@@ -104,8 +120,6 @@ export async function initSSLPinning(): Promise<SSLPinningResult> {
       error instanceof Error ? error.message : 'Unknown error';
     sslLogger.error('Initialization failed -', errorMessage);
 
-    // In production, we might want to block the app if pinning fails
-    // For now, we log the error and return failure status
     return {
       success: false,
       error: errorMessage,
