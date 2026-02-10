@@ -1,281 +1,239 @@
 # LifePlace - Event Management Platform
 
-A comprehensive full-stack event management platform designed for event businesses to manage their entire workflow from initial client contact through event completion.
+A production-deployed, full-stack event management platform built as a solo developer. LifePlace replaces manual booking processes and third-party CRMs for an event venue business in the Philippines, handling the entire workflow from client inquiry through event completion.
 
-## 🚀 Features
+**Live:** [Client Portal](https://lifeplace.dev) | [Admin CRM](https://admin.lifeplace.dev)
 
-- **Multi-Step Booking Flows**: Customizable booking journeys with dynamic forms
-- **Client Management**: Complete client lifecycle management with communications tracking
-- **Event Management**: Full event lifecycle from planning to completion
-- **Payment Processing**: Integrated Stripe payment processing with invoicing and quotes
-- **Workflow Automation**: Automated workflow stages and task management
-- **Analytics & Reporting**: Comprehensive analytics and custom reporting
-- **Dynamic Questionnaires**: Flexible form builder for client requirements
-- **Contract Management**: Template-based contract generation and management
-- **Communication Hub**: Centralized email/SMS communications with templates
-- **Notification System**: Real-time in-app notifications and alerts
+## Tech Stack
 
-## 🏗️ Architecture
+**Backend:** Django 5.2 &middot; Django REST Framework &middot; PostgreSQL &middot; Celery &middot; Redis &middot; Daphne (ASGI/WebSocket)
 
-### Backend - Django REST API
-- **Framework**: Django 5.2.1 with Django REST Framework
-- **Database**: PostgreSQL with psycopg2
-- **Authentication**: JWT tokens via djangorestframework-simplejwt
-- **Task Queue**: Celery for async processing
-- **Payments**: Stripe SDK integration
-- **Architecture**: Domain-Driven Design (DDD)
+**Frontend:** React 19 &middot; TypeScript 5.8 &middot; Material UI v7 &middot; TanStack Query v5 &middot; Vite 6
 
-### Frontend - Dual React Applications
-- **Admin CRM**: Internal management dashboard
-- **Client Portal**: Customer-facing booking and event portal
-- **Framework**: React 19 with TypeScript
-- **UI Library**: Material-UI (MUI) v7
-- **State Management**: TanStack Query v5 for server state
-- **Build Tool**: Vite
-- **Testing**: Vitest with React Testing Library
+**Mobile:** React Native 0.81 &middot; Expo 54 &middot; Zustand &middot; Expo Router
 
-## 📁 Project Structure
+**Payments:** Stripe SDK &middot; Webhook signature verification &middot; Circuit breaker resilience
+
+**Infrastructure:** Fly.io &middot; Cloudflare Pages &middot; Cloudflare R2 &middot; Upstash Redis &middot; GitHub Actions CI/CD &middot; Sentry
+
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                         Cloudflare Pages                            │
+│              Admin CRM (React)    Client Portal (React)             │
+└──────────────────────────┬──────────────────────────────────────────┘
+                           │
+┌──────────────────────────▼──────────────────────────────────────────┐
+│                      Fly.io (Singapore)                             │
+│  ┌─────────────────┐  ┌──────────────┐  ┌───────────────────────┐  │
+│  │  Django REST API │  │ Daphne ASGI  │  │  Celery Workers (4Q)  │  │
+│  │  (Gunicorn)      │  │ (WebSocket)  │  │  + Beat Scheduler     │  │
+│  └────────┬─────────┘  └──────────────┘  └───────────┬───────────┘  │
+│           │                                          │              │
+│  ┌────────▼─────────┐  ┌──────────────┐  ┌──────────▼───────────┐  │
+│  │   PostgreSQL      │  │ Upstash Redis│  │   Cloudflare R2      │  │
+│  │   (122 models)    │  │ (Cache/Queue)│  │   (File Storage)     │  │
+│  └──────────────────┘  └──────────────┘  └──────────────────────┘  │
+└─────────────────────────────────────────────────────────────────────┘
+                           │
+┌──────────────────────────▼──────────────────────────────────────────┐
+│                    React Native Mobile App                          │
+│         Expo 54 · Biometrics · Push Notifications · Offline Queue   │
+└─────────────────────────────────────────────────────────────────────┘
+
+External Services: Stripe (Payments) · Brevo (Email/SMS) · Sentry (Monitoring)
+```
+
+## Backend — Domain-Driven Design
+
+The backend is organized into 20 isolated domain modules, each with its own models, serializers, views, services, signals, and tests:
+
+| Domain | Purpose |
+|--------|---------|
+| **bookingflow** | Multi-step booking engine with 10 configurable step types, session management, reservation tokens |
+| **payments** | Stripe integration, invoices, quotes, refunds, payment plans, encrypted gateway config |
+| **events** | Event lifecycle (Lead → Confirmed → Completed → Cancelled), venue assignment, timeline |
+| **workflows** | Automation engine with time-based/event-based triggers, email/SMS/webhook actions |
+| **communications** | Brevo email/SMS integration, template engine, delivery tracking, webhook processing |
+| **contracts** | Template-based generation, digital signatures, expiry tracking, reminders |
+| **clients** | Client management, CSV import/export, portal invitations, communication history |
+| **users** | JWT auth with token rotation, Google OAuth, admin invitations, granular permissions |
+| **notifications** | In-app + push notifications, channels, badge management, delivery stats |
+| **analytics** | Booking conversion tracking, KPI dashboards, DORA metrics |
+| **questionnaires** | Dynamic form builder with conditional logic |
+| **products** | Product catalog, pricing tiers, add-on management |
+| **sales** | Quote generation and management |
+| **venues** | Venue management, availability calendar, operating rules |
+| **vendors** | Vendor management |
+| **vip** | 3-tier loyalty rewards program |
+| **notes** | Internal notes system |
+| **settings** | Application-wide configuration |
+| **security** | Security event logging, audit trails |
+| **messaging** | Real-time WebSocket messaging |
+
+### Key Backend Features
+
+- **48 automated Celery tasks** across dedicated queues (payments, communications, notifications, workflows)
+- **Field-level AES encryption** (Fernet + PBKDF2 with 100K iterations) for payment gateway secrets
+- **Circuit breaker pattern** for Stripe API resilience
+- **Dead Letter Queue** for permanently failed background tasks
+- **Idempotency middleware** preventing duplicate operations (24hr TTL, user-scoped)
+- **ETag caching** and conditional GET support
+- **Rate limiting** on all endpoints (configurable per-feature)
+- **Webhook signature verification** for Stripe (SDK-based) and Brevo (HMAC-SHA256, timing-safe)
+- **Philippines DPA compliance**: consent records, data subject access requests, data retention policies, privacy request processing
+- **Security event logging** with 18 event types and risk scoring
+- **OpenAPI documentation** via drf-spectacular (Swagger UI + ReDoc)
+
+## Frontend — Admin CRM
+
+Internal dashboard for managing all business operations:
+
+- 24 API service modules, 39 React Query hooks, 31 TypeScript type definition files
+- Rich text editing (TipTap), drag-and-drop workflows (XYFlow), analytics charts (Recharts)
+- Dark/light theme with system preference detection
+- DOMPurify-based XSS sanitization on all rendered HTML
+- Lazy-loaded routes with strategic Vite code splitting
+
+## Frontend — Client Portal
+
+Customer-facing booking and event portal:
+
+- Multi-step booking flow with real-time availability and reservation-based concurrency control
+- Stripe Elements payment integration (PCI-DSS compliant)
+- Contract viewing and digital signature capture
+- WCAG 2.1 Level AA accessibility (font scaling, high contrast, reduced motion, keyboard navigation, skip links, screen reader optimization)
+- Single-timezone architecture (Asia/Manila PHT) with dedicated utilities
+
+## Mobile App — React Native
+
+Client mobile application:
+
+- **Biometric authentication** (Face ID / Fingerprint) via expo-local-authentication
+- **Secure token storage** (expo-secure-store with WHEN_UNLOCKED_THIS_DEVICE_ONLY)
+- **SSL certificate pinning** (react-native-ssl-public-key-pinning)
+- **Root/jailbreak detection** (freeRASP with Frida/Xposed detection)
+- **Push notifications** with per-channel Android notification channels
+- **Offline mutation queue** — requests queued when offline, processed on reconnect
+- **Deep linking** (lifeplace:// scheme + Universal Links)
+- **Session timeout** with 5-minute warning and extension
+
+## Security
+
+- JWT authentication with token rotation and blacklisting
+- Dedicated JWT signing key (separate from Django SECRET_KEY)
+- Granular role-based permissions (10+ admin permission keys)
+- CSRF, HSTS (1 year), X-Frame-Options DENY, CSP headers
+- Trusted proxy middleware preventing IP spoofing
+- Input sanitization and validation middleware
+- Admin action audit logging with risk scoring
+- Encrypted payment gateway configuration (AES-128 at rest)
+- No raw SQL queries — all database access through Django ORM
+- Sentry error monitoring (production only, no PII)
+
+## Testing & CI/CD
+
+- **222 test files** across all platforms (Django TestCase, Vitest, Jest)
+- **Locust load tests** with 3 critical path smoke test scenarios
+- **Maestro E2E tests** for mobile (iOS simulator)
+- **Pre-commit hooks**: Ruff, Bandit (security), ESLint, TypeScript checks, Django system checks, conventional commits
+- **GitHub Actions CI/CD**: Backend tests (PostgreSQL 16), frontend matrix builds (type-check → lint → test → build), automated Fly.io deployment, Sentry release tracking
+
+## Project Structure
 
 ```
 lifeplace-app/
-├── backend/                    # Django REST API
-│   ├── core/                  # Django project core
-│   │   ├── domains/          # Domain-driven architecture
-│   │   │   ├── analytics/    # Event tracking & reporting
-│   │   │   ├── bookingflow/  # Multi-step booking engine
-│   │   │   ├── clients/      # Client management
-│   │   │   ├── communications/ # Email/SMS messaging
-│   │   │   ├── contracts/    # Contract generation
-│   │   │   ├── events/       # Event lifecycle management
-│   │   │   ├── notes/        # Internal notes system
-│   │   │   ├── notifications/ # In-app notifications
-│   │   │   ├── payments/     # Payment processing
-│   │   │   ├── products/     # Product catalog & pricing
-│   │   │   ├── questionnaires/ # Dynamic form builder
-│   │   │   ├── sales/        # Quote generation
-│   │   │   ├── users/        # Authentication & users
-│   │   │   └── workflows/    # Workflow automation
-│   │   └── settings.py       # Django configuration
-│   ├── requirements.txt      # Python dependencies
-│   └── manage.py            # Django management
+├── backend/                     # Django REST API
+│   ├── core/
+│   │   ├── domains/            # 20 domain modules (DDD)
+│   │   ├── infrastructure/     # Circuit breaker, DLQ models
+│   │   └── utils/              # Encryption, permissions, security, middleware
+│   ├── load_tests/             # Locust smoke tests
+│   ├── Dockerfile              # Production container (non-root user)
+│   ├── fly.toml                # Fly.io deployment config
+│   └── requirements.txt        # Python dependencies
 ├── frontend/
-│   ├── admin-crm/           # Admin dashboard app
-│   │   ├── src/
-│   │   │   ├── components/  # Reusable components
-│   │   │   ├── pages/       # Page components
-│   │   │   ├── hooks/       # Custom React hooks
-│   │   │   ├── apis/        # API integration layer
-│   │   │   ├── types/       # TypeScript definitions
-│   │   │   └── utils/       # Utility functions
-│   │   └── package.json
-│   └── client-portal/       # Customer portal app
-│       ├── src/
-│       │   ├── components/  # Reusable components
-│       │   ├── pages/       # Page components
-│       │   ├── hooks/       # Custom React hooks
-│       │   ├── apis/        # API integration layer
-│       │   └── types/       # TypeScript definitions
-│       └── package.json
-└── README.md               # This file
+│   ├── admin-crm/              # Admin dashboard (React + TypeScript)
+│   └── client-portal/          # Client portal (React + TypeScript)
+├── mobile-app/                  # React Native + Expo client app
+│   ├── app/                    # Expo Router file-based routes
+│   ├── src/                    # Components, hooks, APIs, stores, services
+│   └── .maestro/               # E2E test flows
+├── docs/                        # Architecture decisions, testing strategies, compliance
+│   ├── architecture/           # ADR-001: Timezone handling
+│   ├── testing/                # Testing strategy documents
+│   └── compliance/             # DPA compliance documentation
+└── .github/workflows/           # CI/CD pipelines
 ```
 
-## 🛠️ Tech Stack
+## Codebase Stats
 
-### Backend Dependencies
-- **Django 5.2.1** - Web framework
-- **Django REST Framework 3.16.0** - API framework
-- **PostgreSQL** (psycopg2-binary) - Database
-- **Celery 5.5.3** - Async task processing
-- **Stripe 12.2.0** - Payment processing
-- **JWT Authentication** - Token-based auth
-- **Gunicorn** - WSGI server
-- **WhiteNoise** - Static file serving
+| Metric | Count |
+|--------|-------|
+| Total commits | 701 |
+| Python source files | 557 |
+| TypeScript/TSX files | 1,324 |
+| Python lines of code | ~189K |
+| TypeScript lines of code | ~354K |
+| Database models | 122 |
+| Database migrations | 214 |
+| Automated Celery tasks | 48 |
+| Test files | 222 |
+| Backend domains | 20 |
 
-### Frontend Dependencies
-- **React 19** - UI library
-- **TypeScript 5.8** - Type safety
-- **Material-UI v7** - Component library
-- **TanStack Query v5** - Server state management
-- **React Router v7** - Client-side routing
-- **Axios** - HTTP client
-- **Stripe.js** - Payment forms (client-portal)
-- **TipTap** - Rich text editing (admin-crm)
-- **Recharts** - Analytics charts
-
-## 🚦 Getting Started
+## Getting Started
 
 ### Prerequisites
 - Python 3.12+
 - Node.js 18+
 - PostgreSQL
-- Git
+- Redis
 
 ### Backend Setup
 
 ```bash
-# Clone the repository
-git clone <repository-url>
-cd lifeplace-app
-
-# Backend setup
 cd backend
+python -m venv venv && source venv/bin/activate
 pip install -r requirements.txt
 
-# Create .env file with required variables:
-# DATABASE_URL=postgresql://username:password@localhost/dbname
-# SECRET_KEY=your-django-secret-key
-# DEBUG=True
-# ALLOWED_HOSTS=localhost,127.0.0.1
-# CSRF_TRUSTED_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
-# STRIPE_SECRET_KEY=your-stripe-secret-key
-# STRIPE_PUBLIC_KEY=your-stripe-public-key
-
-# Run migrations
+# Create .env (see .env.example)
 python manage.py migrate
-
-# Create superuser
 python manage.py createsuperuser
-
-# Start development server
-python manage.py runserver
+daphne -p 8000 core.asgi:application    # WebSocket support
+# or: python manage.py runserver         # HTTP only
 ```
 
 ### Frontend Setup
 
-#### Admin CRM
-```bash
-cd frontend/admin-crm
-npm install
-
-# Create .env file:
-# VITE_API_URL=http://localhost:8000
-# VITE_STRIPE_PUBLIC_KEY=your-stripe-public-key
-
-npm run dev  # Starts on http://localhost:3000
-```
-
-#### Client Portal
-```bash
-cd frontend/client-portal
-npm install
-
-# Create .env file:
-# VITE_API_URL=http://localhost:8000
-# VITE_STRIPE_PUBLIC_KEY=your-stripe-public-key
-
-npm run dev  # Starts on http://localhost:3001
-```
-
-## 📋 Available Scripts
-
-### Backend
-```bash
-python manage.py runserver      # Start development server
-python manage.py makemigrations # Create database migrations
-python manage.py migrate        # Apply database migrations
-python manage.py shell          # Django shell
-python manage.py collectstatic  # Collect static files
-```
-
-### Frontend (both apps)
-```bash
-npm run dev          # Start development server
-npm run build        # Build for production
-npm run preview      # Preview production build
-npm run test         # Run tests
-npm run test:watch   # Run tests in watch mode
-npm run lint         # Run ESLint
-npm run type-check   # TypeScript type checking
-```
-
-## 🏢 Core Domains
-
-### Analytics
-Event tracking, conversion analytics, and custom reporting system.
-
-### Booking Flow
-Multi-step booking process with configurable steps:
-- Introduction & Welcome
-- Contact Information
-- Date & Time Selection
-- Package Selection
-- Add-ons Selection
-- Questionnaire
-- Pricing Summary
-- Payment Processing
-- Review & Confirmation
-
-### Client Management
-Complete client lifecycle management with communication history and event tracking.
-
-### Event Management
-Full event lifecycle from initial inquiry through completion with workflow automation.
-
-### Payment Processing
-Comprehensive payment system with Stripe integration, invoicing, quotes, and payment plans.
-
-### Workflow Engine
-Automated workflow stages with task management and progress tracking.
-
-## 🔐 Environment Variables
-
-### Backend (.env)
-```
-DATABASE_URL=postgresql://username:password@localhost/dbname
-SECRET_KEY=your-django-secret-key
-DEBUG=True
-ALLOWED_HOSTS=localhost,127.0.0.1
-CSRF_TRUSTED_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
-STRIPE_SECRET_KEY=sk_test_...
-STRIPE_PUBLIC_KEY=pk_test_...
-```
-
-### Frontend (.env for both apps)
-```
-VITE_API_URL=http://localhost:8000
-VITE_STRIPE_PUBLIC_KEY=pk_test_...
-```
-
-## 🧪 Testing
-
-### Backend
-```bash
-cd backend
-python manage.py test
-```
-
-### Frontend
 ```bash
 # Admin CRM
 cd frontend/admin-crm
-npm run test
+npm install
+npm run dev          # http://localhost:5173
 
 # Client Portal
 cd frontend/client-portal
-npm run test
+npm install
+npm run dev          # http://localhost:5174
 ```
 
-## 🚀 Deployment
+### Mobile App
 
-The application is configured for deployment with:
-- **Backend**: Gunicorn WSGI server with WhiteNoise for static files
-- **Frontend**: Static builds can be served from any CDN or static hosting
-- **Database**: PostgreSQL production setup
-- **Environment**: Production environment variables
+```bash
+cd mobile-app
+npm install
+npx expo start
+```
 
-## 📄 License
+## Documentation
 
-This project is proprietary software. All rights reserved.
+- [ADR-001: Timezone Handling](docs/architecture/ADR-001-timezone-handling.md) — Single-timezone architecture decision
+- [Testing Strategy](docs/testing/) — Backend, frontend, and mobile testing architecture plans
+- [Pre-Production Checklist](docs/PRE_PRODUCTION_TODOS.md) — External service configuration
+- [Production Services Guide](docs/PRODUCTION_SERVICES_GUIDE.md) — Backend services overview
+- API Documentation: `/api/docs/` (Swagger UI) and `/api/docs/redoc/` (ReDoc) on running backend
 
-## 🤝 Contributing
+## License
 
-This is a private repository. Please follow the established coding standards:
-- Follow existing code patterns and conventions
-- Use TypeScript for all new frontend code
-- Follow Django best practices for backend development
-- Write tests for new functionality
-- Use the established domain-driven architecture
-
-## 📞 Support
-
-For support and questions, please contact the development team.
+Proprietary software. All rights reserved.
