@@ -182,6 +182,7 @@ const defaultProduct: ProductOption = {
   is_active: true,
   is_featured: false,
   allow_multiple: false,
+  maximum_quantity: null,
   requires_approval: false,
   minimum_hours: null,
   maximum_hours: null,

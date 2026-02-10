@@ -70,7 +70,6 @@ export {
   useProduct,
   useProductsByIds,
   useDiscounts,
-  useValidateDiscountCode,
   useValidatePackageSelection,
   useUpdatePackageSelection,
   useValidateAddonSelection,
@@ -170,8 +169,6 @@ export {
 // Pricing
 export {
   useCalculatePricing as useCalculateSessionPricing,
-  useApplyDiscountCode,
-  useRemoveDiscountCode,
   useValidatePricingSummary,
   useUpdatePricingSummary,
   usePackagesTotal,

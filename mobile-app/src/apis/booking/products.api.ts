@@ -50,6 +50,7 @@ export interface ProductOption {
   excess_hour_price: string | null;
   minimum_quantity: number;
   maximum_quantity: number | null;
+  allow_multiple: boolean;
   is_active: boolean;
   is_featured?: boolean;
   sort_order: number;
@@ -278,18 +279,6 @@ export const ProductsAPI = {
   getDiscounts: async (): Promise<Discount[]> => {
     const response = await api.get<Discount[]>('/products/discounts/', {
       params: { is_active: true },
-    });
-    return response.data;
-  },
-
-  /**
-   * Validate discount code.
-   *
-   * POST /products/discounts/validate/
-   */
-  validateDiscountCode: async (code: string): Promise<Discount> => {
-    const response = await api.post<Discount>('/products/discounts/validate/', {
-      code: code,
     });
     return response.data;
   },

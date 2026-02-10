@@ -153,15 +153,6 @@ export function useDiscounts() {
 // =============================================================================
 
 /**
- * Validate discount code.
- */
-export function useValidateDiscountCode() {
-  return useMutation({
-    mutationFn: (code: string) => ProductsAPI.validateDiscountCode(code),
-  });
-}
-
-/**
  * Validate package selection step data.
  */
 export function useValidatePackageSelection() {

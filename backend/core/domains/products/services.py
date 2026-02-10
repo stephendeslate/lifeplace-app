@@ -340,6 +340,44 @@ class DiscountService:
             raise DiscountNotFound()
     
     @staticmethod
+    def validate_discount_code(code, order_amount=None, order_hours=None):
+        """
+        Validate a discount code through all business rules.
+
+        Returns:
+            tuple: (Discount or None, error_message or None, error_type or None)
+        """
+        # Step 1: Look up by code + active
+        try:
+            discount = Discount.objects.prefetch_related(
+                'applicable_products', 'applicable_categories'
+            ).get(code__iexact=code, is_active=True)
+        except Discount.DoesNotExist:
+            return None, "Discount code not found.", "discount_not_found"
+
+        # Step 2: Check date validity
+        today = timezone.now().date()
+        if today < discount.valid_from:
+            return None, "This discount is not yet active.", "discount_not_active"
+        if discount.valid_until and today > discount.valid_until:
+            return None, "This discount has expired.", "discount_expired"
+
+        # Step 3: Check global usage limit
+        if discount.max_uses and discount.current_uses >= discount.max_uses:
+            return None, "This discount has reached its usage limit.", "discount_usage_limit_reached"
+
+        # Step 4: Check minimum order requirements
+        if discount.minimum_order_amount and order_amount is not None:
+            if order_amount < discount.minimum_order_amount:
+                return None, f"Minimum order of ₱{discount.minimum_order_amount:,.2f} required for this discount.", "minimum_order_requirement_not_met"
+
+        if discount.minimum_hours and order_hours is not None:
+            if order_hours < discount.minimum_hours:
+                return None, f"Minimum {discount.minimum_hours} hours required for this discount.", "minimum_hours_requirement_not_met"
+
+        return discount, None, None
+
+    @staticmethod
     def create_discount(discount_data):
         """Create a new discount"""
         # Check if discount code already exists (if provided)

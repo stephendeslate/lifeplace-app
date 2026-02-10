@@ -30,6 +30,7 @@ import {
 } from '@mui/icons-material';
 import { useBooking } from '../../../contexts/BookingContext';
 import { useSimplePricing } from '../../../hooks/booking/useSimplePricing';
+import { BookingCoreApi } from '../../../apis/booking/core.api';
 import { useCurrencySettings } from '../../../hooks/useCurrency';
 import { formatPhilippinesTime } from '../../../utils/timezone';
 import type {
@@ -175,25 +176,36 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pricing, hasItems, calculatingPricing]);
 
-  // Handle discount code application
+  // Handle discount code application — validates via pricing API before applying
   const handleApplyDiscount = async () => {
     if (!discountCodeInput.trim()) return;
-    
+
     setValidatingDiscount(true);
     setDiscountError(null);
-    
+
     try {
-      // Here you would validate the discount code via API
-      // For now, just simulate a successful application
-      const newStepData = {
-        ...stepData,
-        applied_discount_code: discountCodeInput.trim()
-      };
-      onDataChange(newStepData);
-      setDiscountCodeInput('');
-      recalculate();
+      const codeToValidate = discountCodeInput.trim();
+      const sessionId = state.currentSession?.session_id;
+      if (!sessionId) return;
+
+      const result = await BookingCoreApi.calculatePricing(
+        sessionId,
+        codeToValidate,
+        venueAdditionalHours
+      );
+
+      if (result.discount_error) {
+        setDiscountError(result.discount_error);
+      } else {
+        // Discount accepted — apply to step data (hook auto-recalculates)
+        onDataChange({
+          ...stepData,
+          applied_discount_code: codeToValidate,
+        });
+        setDiscountCodeInput('');
+      }
     } catch (_error) {
-      setDiscountError('Invalid discount code');
+      setDiscountError('Unable to validate discount code. Please try again.');
     } finally {
       setValidatingDiscount(false);
     }

@@ -103,6 +103,10 @@ class ProductOption(BaseModel):
     is_active = models.BooleanField(default=True)
     is_featured = models.BooleanField(default=False)
     allow_multiple = models.BooleanField(default=False, help_text="Allow multiple quantities per booking")
+    maximum_quantity = models.PositiveIntegerField(
+        null=True, blank=True,
+        help_text="Maximum quantity per booking when allow_multiple is enabled (null = unlimited)"
+    )
     requires_approval = models.BooleanField(default=False, help_text="Requires admin approval before booking")
 
     # Time-based configuration

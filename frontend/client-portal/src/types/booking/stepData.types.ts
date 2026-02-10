@@ -168,6 +168,8 @@ export interface PricingCalculation {
     amount: string;
   };
   line_items?: PricingLineItem[];
+  discount_error?: string;
+  discount_error_type?: string;
 }
 
 // ReviewStepData removed - functionality moved to PricingSummaryStepData

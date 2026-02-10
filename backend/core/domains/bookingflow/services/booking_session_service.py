@@ -1912,10 +1912,11 @@ class BookingSessionService:
                 try:
                     from core.domains.products.services import DiscountService
                     discount_code = step_data['applied_discount_code']
-                    discount = DiscountService.validate_discount_code(discount_code)
-                    if not discount or not discount.is_active:
-                        errors['applied_discount_code'] = ["Invalid or expired discount code"]
+                    discount, error_msg, _ = DiscountService.validate_discount_code(discount_code)
+                    if not discount:
+                        errors['applied_discount_code'] = [error_msg or "Invalid or expired discount code"]
                 except Exception as e:
+                    logger.error(f"Error validating discount code: {e}", exc_info=True)
                     errors['applied_discount_code'] = ["Unable to validate discount code"]
 
             # Validate terms acceptance (consolidated from review step)
@@ -2056,6 +2057,26 @@ class BookingSessionService:
                             errors['selected_packages'] = errors.get('selected_packages', [])
                             errors['selected_packages'].append(f"Package {package['product_id']} is not available for selection")
 
+                # Per-package quantity validation against allow_multiple and maximum_quantity
+                for package in selected:
+                    product_id = package.get('product_id')
+                    quantity = package.get('quantity', 1)
+                    if product_id and quantity > 1:
+                        try:
+                            product = ProductOption.objects.get(id=product_id)
+                            if not product.allow_multiple:
+                                errors['selected_packages'] = errors.get('selected_packages', [])
+                                errors['selected_packages'].append(
+                                    f"'{product.name}' does not allow multiple quantities"
+                                )
+                            elif product.maximum_quantity and quantity > product.maximum_quantity:
+                                errors['selected_packages'] = errors.get('selected_packages', [])
+                                errors['selected_packages'].append(
+                                    f"'{product.name}' allows a maximum quantity of {product.maximum_quantity}"
+                                )
+                        except ProductOption.DoesNotExist:
+                            pass
+
             elif step.step_type == 'addon_selection':
                 selected = step_data.get('selected_addons', [])
                 if config.min_selection and len(selected) < config.min_selection:
@@ -2070,7 +2091,27 @@ class BookingSessionService:
                         if 'product_id' in addon and addon['product_id'] not in available_addon_ids:
                             errors['selected_addons'] = errors.get('selected_addons', [])
                             errors['selected_addons'].append(f"Addon {addon['product_id']} is not available for selection")
-                            
+
+                # Per-addon quantity validation against allow_multiple and maximum_quantity
+                for addon in selected:
+                    product_id = addon.get('product_id')
+                    quantity = addon.get('quantity', 1)
+                    if product_id and quantity > 1:
+                        try:
+                            product = ProductOption.objects.get(id=product_id)
+                            if not product.allow_multiple:
+                                errors['selected_addons'] = errors.get('selected_addons', [])
+                                errors['selected_addons'].append(
+                                    f"'{product.name}' does not allow multiple quantities"
+                                )
+                            elif product.maximum_quantity and quantity > product.maximum_quantity:
+                                errors['selected_addons'] = errors.get('selected_addons', [])
+                                errors['selected_addons'].append(
+                                    f"'{product.name}' allows a maximum quantity of {product.maximum_quantity}"
+                                )
+                        except ProductOption.DoesNotExist:
+                            pass
+
             elif step.step_type == 'contact_info':
                 # Enhanced validation for contact_info that considers authenticated users
                 

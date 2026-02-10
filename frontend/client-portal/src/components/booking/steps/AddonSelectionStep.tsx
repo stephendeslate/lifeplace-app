@@ -158,9 +158,12 @@ export const AddonSelectionStep: React.FC<AddonSelectionStepProps> = ({
 
   // Handle quantity change - Fixed to use addon_id
   const handleQuantityChange = useCallback((addonId: number, delta: number) => {
+    const addonConfig = availableAddons.find(a => a.id === addonId);
+    const maxQty = addonConfig?.maximum_quantity ?? Infinity;
+
     const newSelectedAddons = selectedAddons.map(addon => {
       if (addon.product_id === addonId) {
-        const newQuantity = Math.max(1, addon.quantity + delta);
+        const newQuantity = Math.max(1, Math.min(maxQty, addon.quantity + delta));
         return { ...addon, quantity: newQuantity };
       }
       return addon;
@@ -168,7 +171,7 @@ export const AddonSelectionStep: React.FC<AddonSelectionStepProps> = ({
 
     // Only update data, don't trigger navigation
     onDataChange(buildCompleteData(newSelectedAddons));
-  }, [selectedAddons, onDataChange, buildCompleteData]);
+  }, [selectedAddons, availableAddons, onDataChange, buildCompleteData]);
 
   // Effect to update venue hours when they change (without changing addons)
   React.useEffect(() => {
@@ -443,7 +446,7 @@ export const AddonSelectionStep: React.FC<AddonSelectionStepProps> = ({
                               {isSelected ? 'Remove' : 'Add'}
                             </Button>
                             
-                            {isSelected && (
+                            {isSelected && addon.allow_multiple && (
                               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                 <IconButton
                                   size="small"
@@ -458,9 +461,15 @@ export const AddonSelectionStep: React.FC<AddonSelectionStepProps> = ({
                                 <IconButton
                                   size="small"
                                   onClick={() => handleQuantityChange(addon.id, 1)}
+                                  disabled={addon.maximum_quantity ? (selectedAddon?.quantity ?? 1) >= addon.maximum_quantity : false}
                                 >
                                   <Add />
                                 </IconButton>
+                                {addon.maximum_quantity && (
+                                  <Typography variant="caption" color="text.secondary">
+                                    max {addon.maximum_quantity}
+                                  </Typography>
+                                )}
                               </Box>
                             )}
                           </Box>

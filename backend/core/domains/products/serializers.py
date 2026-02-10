@@ -125,7 +125,7 @@ class ProductOptionSerializer(serializers.ModelSerializer):
             'pricing_model', 'pricing_model_display', 'pricing_unit', 'pricing_unit_display',
             'base_price', 'currency',
             'is_tax_inclusive',  # Indicates if base_price already includes tax
-            'type', 'type_display', 'is_active', 'is_featured', 'allow_multiple', 'requires_approval',
+            'type', 'type_display', 'is_active', 'is_featured', 'allow_multiple', 'maximum_quantity', 'requires_approval',
             'minimum_hours', 'maximum_hours', 'advance_booking_days', 'maximum_booking_days',
             'event_days', 'minimum_guests', 'maximum_guests',
             'sku', 'sort_order', 'event_types', 'event_type_ids', 'event_type_names',
@@ -295,6 +295,15 @@ class ProductOptionSerializer(serializers.ModelSerializer):
         max_booking_days = data.get('maximum_booking_days')
         if max_booking_days and advance_days > max_booking_days:
             raise serializers.ValidationError({'maximum_booking_days': 'Maximum booking days must be greater than advance booking days'})
+
+        # Validate maximum_quantity constraints
+        allow_multiple = data.get('allow_multiple', getattr(self.instance, 'allow_multiple', False) if self.instance else False)
+        maximum_quantity = data.get('maximum_quantity')
+        if maximum_quantity is not None:
+            if not allow_multiple:
+                raise serializers.ValidationError({'maximum_quantity': 'Maximum quantity is only applicable when "Allow Multiple" is enabled'})
+            if maximum_quantity < 2:
+                raise serializers.ValidationError({'maximum_quantity': 'Maximum quantity must be at least 2'})
 
         return data
 

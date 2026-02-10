@@ -39,7 +39,7 @@ class ProductOptionAdmin(admin.ModelAdmin):
             'description': 'If "Tax Inclusive" is checked, the base price already includes tax and no additional tax will be applied. Tax rate is configured globally in Currency & Taxes settings.'
         }),
         ('Configuration', {
-            'fields': ('is_active', 'is_featured', 'allow_multiple', 'requires_approval')
+            'fields': ('is_active', 'is_featured', 'allow_multiple', 'maximum_quantity', 'requires_approval')
         }),
         ('Time Constraints', {
             'fields': ('minimum_hours', 'maximum_hours'),

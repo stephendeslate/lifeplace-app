@@ -12,7 +12,9 @@ Tests:
 
 import pytest
 from decimal import Decimal
+from datetime import timedelta
 from unittest.mock import patch, MagicMock
+from django.utils import timezone
 
 from core.domains.sales.pricing_service import (
     PricingCalculationService,
@@ -98,7 +100,8 @@ def discount(db):
         code='TEST10',
         discount_type='PERCENTAGE',
         value=Decimal('10.00'),
-        is_active=True
+        is_active=True,
+        valid_from=timezone.now().date(),
     )
 
 
@@ -111,7 +114,8 @@ def fixed_discount(db):
         code='FIXED500',
         discount_type='FIXED',
         value=Decimal('500.00'),
-        is_active=True
+        is_active=True,
+        valid_from=timezone.now().date(),
     )
 
 
@@ -534,7 +538,8 @@ class TestPricingCalculationServiceDiscounts:
             code='LARGE',
             discount_type='FIXED',
             value=Decimal('50000.00'),  # Larger than subtotal
-            is_active=True
+            is_active=True,
+            valid_from=timezone.now().date(),
         )
 
         items = [
@@ -573,6 +578,129 @@ class TestPricingCalculationServiceDiscounts:
 
         assert breakdown.discount_amount == Decimal('500.00')  # 10% of 5000
         assert breakdown.applied_discount == discount
+
+    def test_invalid_discount_code_sets_error(self, product_option, default_tax_rate):
+        """Test that an invalid discount code populates discount_error on breakdown."""
+        booking_data = {
+            'selected_packages': [
+                {
+                    'product_id': product_option.id,
+                    'name': product_option.name,
+                    'price': float(product_option.base_price),
+                    'quantity': 1
+                }
+            ],
+            'selected_addons': [],
+            'applied_discount_code': 'NONEXISTENT'
+        }
+
+        breakdown = PricingCalculationService.calculate_from_booking_data(booking_data)
+
+        # Pricing should still calculate correctly
+        assert breakdown.subtotal == Decimal('5000.00')
+        assert breakdown.total_amount > Decimal('0')
+        # Discount should not be applied
+        assert breakdown.discount_amount == Decimal('0')
+        assert breakdown.applied_discount is None
+        # Error fields should be set
+        assert breakdown.discount_error is not None
+        assert 'not found' in breakdown.discount_error.lower()
+        assert breakdown.discount_error_type == 'discount_not_found'
+
+    def test_expired_discount_code_sets_error(self, product_option, default_tax_rate):
+        """Test that an expired discount code populates discount_error on breakdown."""
+        from core.domains.products.models import Discount
+
+        expired_discount = Discount.objects.create(
+            name='Expired Discount',
+            code='EXPIRED10',
+            discount_type='PERCENTAGE',
+            value=Decimal('10.00'),
+            is_active=True,
+            valid_from=(timezone.now() - timedelta(days=30)).date(),
+            valid_until=(timezone.now() - timedelta(days=1)).date(),
+        )
+
+        booking_data = {
+            'selected_packages': [
+                {
+                    'product_id': product_option.id,
+                    'name': product_option.name,
+                    'price': float(product_option.base_price),
+                    'quantity': 1
+                }
+            ],
+            'selected_addons': [],
+            'applied_discount_code': 'EXPIRED10'
+        }
+
+        breakdown = PricingCalculationService.calculate_from_booking_data(booking_data)
+
+        assert breakdown.discount_amount == Decimal('0')
+        assert breakdown.discount_error is not None
+        assert 'expired' in breakdown.discount_error.lower()
+        assert breakdown.discount_error_type == 'discount_expired'
+
+    def test_valid_discount_code_no_error(self, product_option, discount, default_tax_rate):
+        """Test that a valid discount code has no discount_error."""
+        booking_data = {
+            'selected_packages': [
+                {
+                    'product_id': product_option.id,
+                    'name': product_option.name,
+                    'price': float(product_option.base_price),
+                    'quantity': 1
+                }
+            ],
+            'selected_addons': [],
+            'applied_discount_code': discount.code
+        }
+
+        breakdown = PricingCalculationService.calculate_from_booking_data(booking_data)
+
+        assert breakdown.discount_amount > Decimal('0')
+        assert breakdown.discount_error is None
+        assert breakdown.discount_error_type is None
+
+    def test_no_discount_code_no_error(self, product_option, default_tax_rate):
+        """Test that no discount code results in no discount_error."""
+        booking_data = {
+            'selected_packages': [
+                {
+                    'product_id': product_option.id,
+                    'name': product_option.name,
+                    'price': float(product_option.base_price),
+                    'quantity': 1
+                }
+            ],
+            'selected_addons': [],
+        }
+
+        breakdown = PricingCalculationService.calculate_from_booking_data(booking_data)
+
+        assert breakdown.discount_error is None
+        assert breakdown.discount_error_type is None
+
+    def test_promo_code_field_extracted(self, product_option, discount, default_tax_rate):
+        """Test that promo_code field is recognized as a discount code."""
+        booking_data = {
+            'selected_packages': [
+                {
+                    'product_id': product_option.id,
+                    'name': product_option.name,
+                    'price': float(product_option.base_price),
+                    'quantity': 1
+                }
+            ],
+            'selected_addons': [],
+            'promo_code': discount.code
+        }
+
+        breakdown = PricingCalculationService.calculate_from_booking_data(booking_data)
+
+        assert breakdown.discount_amount > Decimal('0')
+        assert breakdown.applied_discount == discount
+        assert breakdown.discount_error is None
 
 
 @pytest.mark.django_db

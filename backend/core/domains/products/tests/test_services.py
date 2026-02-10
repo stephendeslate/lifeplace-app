@@ -655,6 +655,147 @@ class TestDiscountService:
 
 
 @pytest.mark.django_db
+class TestDiscountServiceValidateCode:
+    """Tests for DiscountService.validate_discount_code()."""
+
+    def test_valid_code_returns_discount(self, discount_factory):
+        """Test that a valid, active code returns the discount object."""
+        discount = discount_factory(code='VALID10')
+
+        result, error_msg, error_type = DiscountService.validate_discount_code('VALID10')
+
+        assert result is not None
+        assert result.id == discount.id
+        assert error_msg is None
+        assert error_type is None
+
+    def test_valid_code_case_insensitive(self, discount_factory):
+        """Test that code lookup is case-insensitive."""
+        discount = discount_factory(code='SUMMER25')
+
+        result, error_msg, error_type = DiscountService.validate_discount_code('summer25')
+
+        assert result is not None
+        assert result.id == discount.id
+        assert error_msg is None
+
+    def test_nonexistent_code_returns_not_found(self, db):
+        """Test that a non-existent code returns discount_not_found error."""
+        result, error_msg, error_type = DiscountService.validate_discount_code('DOESNOTEXIST')
+
+        assert result is None
+        assert 'not found' in error_msg.lower()
+        assert error_type == 'discount_not_found'
+
+    def test_inactive_code_returns_not_found(self, discount_factory):
+        """Test that an inactive code is treated as not found."""
+        discount_factory(code='INACTIVE', inactive=True)
+
+        result, error_msg, error_type = DiscountService.validate_discount_code('INACTIVE')
+
+        assert result is None
+        assert error_type == 'discount_not_found'
+
+    def test_expired_code_returns_expired(self, discount_factory):
+        """Test that an expired code returns discount_expired error."""
+        discount_factory(code='OLDCODE', expired=True)
+
+        result, error_msg, error_type = DiscountService.validate_discount_code('OLDCODE')
+
+        assert result is None
+        assert 'expired' in error_msg.lower()
+        assert error_type == 'discount_expired'
+
+    def test_future_code_returns_not_active(self, discount_factory):
+        """Test that a not-yet-active code returns discount_not_active error."""
+        discount_factory(code='FUTURE', future=True)
+
+        result, error_msg, error_type = DiscountService.validate_discount_code('FUTURE')
+
+        assert result is None
+        assert 'not yet active' in error_msg.lower()
+        assert error_type == 'discount_not_active'
+
+    def test_maxed_out_code_returns_usage_limit(self, discount_factory):
+        """Test that a code at max uses returns usage limit error."""
+        discount_factory(code='MAXED', maxed_out=True)
+
+        result, error_msg, error_type = DiscountService.validate_discount_code('MAXED')
+
+        assert result is None
+        assert 'usage limit' in error_msg.lower()
+        assert error_type == 'discount_usage_limit_reached'
+
+    def test_minimum_order_not_met(self, discount_factory):
+        """Test that minimum order check fails when order amount is too low."""
+        discount_factory(code='MINORDER', with_minimum_order=True)  # min 5000
+
+        result, error_msg, error_type = DiscountService.validate_discount_code(
+            'MINORDER', order_amount=Decimal('2000.00')
+        )
+
+        assert result is None
+        assert 'minimum order' in error_msg.lower()
+        assert error_type == 'minimum_order_requirement_not_met'
+
+    def test_minimum_order_met(self, discount_factory):
+        """Test that minimum order check passes when order amount is sufficient."""
+        discount = discount_factory(code='MINORDER', with_minimum_order=True)  # min 5000
+
+        result, error_msg, error_type = DiscountService.validate_discount_code(
+            'MINORDER', order_amount=Decimal('6000.00')
+        )
+
+        assert result is not None
+        assert result.id == discount.id
+        assert error_msg is None
+
+    def test_minimum_hours_not_met(self, discount_factory):
+        """Test that minimum hours check fails when hours are too low."""
+        discount_factory(code='MINHOURS', with_minimum_hours=True)  # min 4 hours
+
+        result, error_msg, error_type = DiscountService.validate_discount_code(
+            'MINHOURS', order_hours=2
+        )
+
+        assert result is None
+        assert 'minimum' in error_msg.lower() and 'hours' in error_msg.lower()
+        assert error_type == 'minimum_hours_requirement_not_met'
+
+    def test_minimum_hours_met(self, discount_factory):
+        """Test that minimum hours check passes when hours are sufficient."""
+        discount = discount_factory(code='MINHOURS', with_minimum_hours=True)  # min 4 hours
+
+        result, error_msg, error_type = DiscountService.validate_discount_code(
+            'MINHOURS', order_hours=5
+        )
+
+        assert result is not None
+        assert result.id == discount.id
+        assert error_msg is None
+
+    def test_order_amount_not_checked_when_not_provided(self, discount_factory):
+        """Test that minimum order check is skipped when order_amount is None."""
+        discount = discount_factory(code='MINORDER', with_minimum_order=True)
+
+        # Should pass because order_amount is not provided
+        result, error_msg, error_type = DiscountService.validate_discount_code('MINORDER')
+
+        assert result is not None
+        assert result.id == discount.id
+
+    def test_order_hours_not_checked_when_not_provided(self, discount_factory):
+        """Test that minimum hours check is skipped when order_hours is None."""
+        discount = discount_factory(code='MINHOURS', with_minimum_hours=True)
+
+        # Should pass because order_hours is not provided
+        result, error_msg, error_type = DiscountService.validate_discount_code('MINHOURS')
+
+        assert result is not None
+        assert result.id == discount.id
+
+
+@pytest.mark.django_db
 class TestCustomPackageService:
     """Tests for CustomPackageService."""
 

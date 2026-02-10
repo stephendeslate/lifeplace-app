@@ -271,6 +271,8 @@ export interface PricingCalculation {
   formattedBalance?: string;
   lineItems: PricingLineItem[];
   venueExcessHours?: VenueExcessHours[];
+  discount_error?: string;
+  discount_error_type?: string;
 }
 
 /**

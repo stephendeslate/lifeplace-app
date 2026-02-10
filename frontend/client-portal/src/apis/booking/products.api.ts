@@ -198,16 +198,6 @@ export class ProductsApi {
     return response.data;
   }
 
-  /**
-   * Validate discount code
-   */
-  static async validateDiscountCode(code: string): Promise<Discount> {
-    const response = await api.post<Discount>('/products/discounts/validate/', {
-      code: code
-    });
-    return response.data;
-  }
-
   // Price calculation helpers
 
   /**

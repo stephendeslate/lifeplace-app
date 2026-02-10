@@ -39,6 +39,7 @@ import { colors, spacing, typeScale, layout, shadows } from '@/theme';
 import { useBookingContext } from '@/contexts/BookingContext';
 import { formatCurrency } from '@/utils/currency';
 import { useSimplePricing } from '@/hooks/booking/useSimplePricing';
+import { BookingCoreAPI } from '@/apis/booking';
 import { usePaymentPlanSettings } from '@/hooks/usePaymentPlanSettings';
 import { format, parseISO } from 'date-fns';
 import { logger } from '@/utils/logger';
@@ -188,20 +189,38 @@ export function PricingSummaryStep({
     });
   }, [data, onDataChange]);
 
-  // Handle promo code application
-  const handleApplyPromoCode = useCallback(() => {
+  // Handle promo code application — validates via pricing API before applying
+  const handleApplyPromoCode = useCallback(async () => {
     if (!promoCodeInput.trim()) return;
 
     setPromoError(null);
-    // For now, just apply the code - in production this would validate via API
-    onDataChange({
-      ...data,
-      promo_code: promoCodeInput.trim(),
-      applied_discount_code: promoCodeInput.trim(),
-    });
-    setPromoCodeInput('');
-    recalculate?.();
-  }, [promoCodeInput, data, onDataChange, recalculate]);
+
+    const codeToValidate = promoCodeInput.trim();
+    const currentSessionId = state.currentSession?.session_id;
+    if (!currentSessionId) return;
+
+    try {
+      const result = await BookingCoreAPI.calculatePricing(
+        currentSessionId,
+        codeToValidate,
+        venueAdditionalHours
+      );
+
+      if (result.discount_error) {
+        setPromoError(result.discount_error);
+      } else {
+        // Discount accepted — apply to step data (hook auto-recalculates)
+        onDataChange({
+          ...data,
+          promo_code: codeToValidate,
+          applied_discount_code: codeToValidate,
+        });
+        setPromoCodeInput('');
+      }
+    } catch (_error) {
+      setPromoError('Unable to validate promo code. Please try again.');
+    }
+  }, [promoCodeInput, data, onDataChange, state.currentSession?.session_id, venueAdditionalHours]);
 
   // Handle promo code removal
   const handleRemovePromoCode = useCallback(() => {

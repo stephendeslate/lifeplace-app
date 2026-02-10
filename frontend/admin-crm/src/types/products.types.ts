@@ -54,6 +54,7 @@ export interface ProductOption {
   is_active: boolean;
   is_featured: boolean;
   allow_multiple: boolean;
+  maximum_quantity: number | null;
   requires_approval: boolean;
   minimum_hours: number | null;
   maximum_hours: number | null;
@@ -87,6 +88,7 @@ export interface CreateProductData {
   is_active?: boolean;
   is_featured?: boolean;
   allow_multiple?: boolean;
+  maximum_quantity?: number | null;
   requires_approval?: boolean;
   minimum_hours?: number | null;
   maximum_hours?: number | null;
@@ -117,6 +119,7 @@ export interface ProductFormData {
   is_active: boolean;
   is_featured: boolean;
   allow_multiple: boolean;
+  maximum_quantity: string;
   requires_approval: boolean;
   minimum_hours: string;
   maximum_hours: string;

@@ -83,7 +83,8 @@ const PackageCard: React.FC<PackageCardProps> = ({
   }, [pkg, onSelect, isSelected, canSelectMore, selectionType, announceToScreenReader]);
 
   const handleQuantityChange = useCallback((change: number) => {
-    const newQuantity = Math.max(0, selectedQuantity + change);
+    const maxQty = pkg.maximum_quantity ?? Infinity;
+    const newQuantity = Math.max(0, Math.min(maxQty, selectedQuantity + change));
     onQuantityChange(pkg, newQuantity);
     announceToScreenReader(`Updated ${pkg.name} quantity to ${newQuantity}`);
   }, [pkg, selectedQuantity, onQuantityChange, announceToScreenReader]);
@@ -255,8 +256,8 @@ const PackageCard: React.FC<PackageCardProps> = ({
             )}
           </Box>
 
-          {/* Quantity selector for multiple selection */}
-          {selectionType === 'MULTIPLE' && isSelected && (
+          {/* Quantity selector for multiple selection (only when package allows multiple quantities) */}
+          {selectionType === 'MULTIPLE' && isSelected && pkg.allow_multiple && (
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2, mb: 2 }}>
               <IconButton
                 size="small"
@@ -281,6 +282,7 @@ const PackageCard: React.FC<PackageCardProps> = ({
                   e.stopPropagation();
                   handleQuantityChange(1);
                 }}
+                disabled={pkg.maximum_quantity ? selectedQuantity >= pkg.maximum_quantity : false}
                 sx={{
                   backgroundColor: alpha('#fff', 0.1),
                   '&:hover': { backgroundColor: alpha('#fff', 0.2) }
@@ -288,6 +290,11 @@ const PackageCard: React.FC<PackageCardProps> = ({
               >
                 <AddIcon />
               </IconButton>
+              {pkg.maximum_quantity && (
+                <Typography variant="caption" sx={{ color: alpha('#fff', 0.7) }}>
+                  max {pkg.maximum_quantity}
+                </Typography>
+              )}
             </Box>
           )}
 

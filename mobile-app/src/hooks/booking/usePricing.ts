@@ -5,7 +5,7 @@
  */
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { BookingCoreAPI, ProductsAPI } from '@/apis/booking';
+import { BookingCoreAPI } from '@/apis/booking';
 import { useToast } from '@/contexts/ToastContext';
 import { formatCurrency } from '@/utils/currency';
 import type {
@@ -56,69 +56,6 @@ export function useCalculatePricing() {
       const err = error as { response?: { data?: { detail?: string } } };
       const message = err.response?.data?.detail || 'Failed to calculate pricing.';
       showToast(message, 'error');
-    },
-  });
-}
-
-/**
- * Apply discount code.
- */
-export function useApplyDiscountCode() {
-  const { showToast } = useToast();
-  const calculatePricing = useCalculatePricing();
-
-  return useMutation({
-    mutationFn: async ({
-      sessionId,
-      discountCode,
-      venueAdditionalHours,
-    }: {
-      sessionId: string;
-      discountCode: string;
-      venueAdditionalHours?: Record<string, number>;
-    }) => {
-      // First validate the discount code
-      const discount = await ProductsAPI.validateDiscountCode(discountCode);
-
-      // Then calculate pricing with the discount
-      const pricing = await BookingCoreAPI.calculatePricing(
-        sessionId,
-        discountCode,
-        venueAdditionalHours
-      );
-
-      return { discount, pricing };
-    },
-    onSuccess: (response) => {
-      showToast(
-        `Discount applied: ${response.discount.name}`,
-        'success'
-      );
-    },
-    onError: (error: unknown) => {
-      const err = error as { response?: { data?: { detail?: string } } };
-      const message = err.response?.data?.detail || 'Invalid discount code.';
-      showToast(message, 'error');
-    },
-  });
-}
-
-/**
- * Remove discount code.
- */
-export function useRemoveDiscountCode() {
-  const calculatePricing = useCalculatePricing();
-
-  return useMutation({
-    mutationFn: async ({
-      sessionId,
-      venueAdditionalHours,
-    }: {
-      sessionId: string;
-      venueAdditionalHours?: Record<string, number>;
-    }) => {
-      // Recalculate pricing without discount
-      return BookingCoreAPI.calculatePricing(sessionId, undefined, venueAdditionalHours);
     },
   });
 }

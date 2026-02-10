@@ -636,15 +636,22 @@ class PublicBookingFlowViewSet(viewsets.ReadOnlyModelViewSet):
                 }
                 line_items_data.append(line_item_dict)
 
-            return Response({
+            response_data = {
                 'subtotal': str(pricing_breakdown.subtotal.quantize(Decimal('0.01'))),
                 'tax': str(pricing_breakdown.tax_amount.quantize(Decimal('0.01'))),
                 'tax_rate': str(pricing_breakdown.tax_rate.quantize(Decimal('0.01'))),
                 'discount': str(pricing_breakdown.discount_amount.quantize(Decimal('0.01'))),
                 'total': str(pricing_breakdown.total_amount.quantize(Decimal('0.01'))),
                 'discount_details': discount_details,
-                'line_items': line_items_data
-            })
+                'line_items': line_items_data,
+            }
+
+            # Include discount validation error if present
+            if pricing_breakdown.discount_error:
+                response_data['discount_error'] = pricing_breakdown.discount_error
+                response_data['discount_error_type'] = pricing_breakdown.discount_error_type
+
+            return Response(response_data)
             
         except BookingSession.DoesNotExist:
             return Response(

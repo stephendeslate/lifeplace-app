@@ -45,6 +45,7 @@ export const useSimplePricing = (
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [discountError, setDiscountError] = useState<string | null>(null);
 
   // Use ref to track tax rate for comparison without causing re-renders
   // This prevents the infinite loop where setTaxRate -> state change -> callback recreate -> effect trigger
@@ -78,6 +79,7 @@ export const useSimplePricing = (
 
     setLoading(true);
     setError(null);
+    setDiscountError(null);
 
     try {
       const result = await BookingCoreApi.calculatePricing(
@@ -112,6 +114,10 @@ export const useSimplePricing = (
         lineItems: result.line_items || [],
         discountDetails: result.discount_details,
       });
+
+      if (result.discount_error) {
+        setDiscountError(result.discount_error);
+      }
     } catch (err) {
       setError('Failed to calculate pricing');
       if (import.meta.env.DEV) console.error('Pricing calculation error:', err);
@@ -156,6 +162,7 @@ export const useSimplePricing = (
     pricing,
     loading,
     error,
+    discountError,
     hasItems,
     totalItemCount,
     recalculate: calculatePricing,

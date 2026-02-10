@@ -57,6 +57,7 @@ const defaultFormData: ProductFormData = {
   is_active: true,
   is_featured: false,
   allow_multiple: false,
+  maximum_quantity: '',
   requires_approval: false,
   minimum_hours: '',
   maximum_hours: '',
@@ -101,6 +102,7 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
           is_active: editingProduct.is_active ?? true,
           is_featured: editingProduct.is_featured ?? false,
           allow_multiple: editingProduct.allow_multiple ?? false,
+          maximum_quantity: editingProduct.maximum_quantity?.toString() || '',
           requires_approval: editingProduct.requires_approval ?? false,
           minimum_hours: editingProduct.minimum_hours?.toString() || '',
           maximum_hours: editingProduct.maximum_hours?.toString() || '',
@@ -147,6 +149,8 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
     setFormData(prev => ({
       ...prev,
       [field]: event.target.checked,
+      // Clear maximum_quantity when allow_multiple is turned off
+      ...(field === 'allow_multiple' && !event.target.checked ? { maximum_quantity: '' } : {}),
     }));
   };
 
@@ -219,6 +223,8 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
       is_active: formData.is_active,
       is_featured: formData.is_featured,
       allow_multiple: formData.allow_multiple,
+      maximum_quantity: formData.allow_multiple && formData.maximum_quantity
+        ? parseInt(formData.maximum_quantity) : null,
       requires_approval: formData.requires_approval,
       minimum_hours: formData.minimum_hours ? parseInt(formData.minimum_hours) : null,
       maximum_hours: formData.maximum_hours ? parseInt(formData.maximum_hours) : null,
@@ -703,6 +709,24 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
                     />
                   </Box>
                 </Box>
+                {formData.allow_multiple && (
+                  <Box display="flex" flexDirection={{ xs: 'column', sm: 'row' }} gap={2}>
+                    <Box flex={1}>
+                      <TextField
+                        fullWidth
+                        label="Maximum Quantity (Optional)"
+                        value={formData.maximum_quantity}
+                        onChange={handleInputChange('maximum_quantity')}
+                        type="number"
+                        helperText="Leave blank for unlimited. Must be at least 2."
+                        InputProps={{ inputProps: { min: 2 } }}
+                      />
+                    </Box>
+                    <Box flex={1}>
+                      {/* Empty box for alignment */}
+                    </Box>
+                  </Box>
+                )}
                 <Box display="flex" flexDirection={{ xs: 'column', sm: 'row' }} gap={2}>
                   <Box flex={1}>
                     <TextField

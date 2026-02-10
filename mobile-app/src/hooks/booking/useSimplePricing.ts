@@ -74,6 +74,7 @@ export const useSimplePricing = (
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [discountError, setDiscountError] = useState<string | null>(null);
 
   // Check if we have items to price
   const hasItems = selectedPackages.length > 0 || selectedAddons.length > 0;
@@ -116,6 +117,7 @@ export const useSimplePricing = (
 
     setLoading(true);
     setError(null);
+    setDiscountError(null);
 
     try {
       const result = await BookingCoreAPI.calculatePricing(
@@ -173,6 +175,12 @@ export const useSimplePricing = (
       };
 
       setPricing(newPricing);
+
+      // Check for discount validation error from API
+      const discountErrorFromApi = resultAny.discount_error as string | undefined;
+      if (discountErrorFromApi) {
+        setDiscountError(discountErrorFromApi);
+      }
 
       // Sync pricing to context
       if (actions.setPricingBreakdown) {
@@ -286,6 +294,7 @@ export const useSimplePricing = (
     // State
     loading,
     error,
+    discountError,
     hasItems,
     totalItemCount,
 

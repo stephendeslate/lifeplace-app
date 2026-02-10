@@ -161,7 +161,8 @@ export function AddonSelectionStep({
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
     const currentQty = getAddonQuantity(addon.id);
-    const newQty = Math.max(0, currentQty + delta);
+    const maxQty = addon.allow_multiple ? (addon.maximum_quantity ?? Infinity) : 1;
+    const newQty = Math.max(0, Math.min(maxQty, currentQty + delta));
 
     let newSelection: SelectedAddon[];
 
@@ -517,21 +518,43 @@ function AddonCard({ addon, quantity, onQuantityChange, showTax = false }: Addon
           {/* Quantity Controls */}
           <View style={styles.quantityControls}>
             {isSelected ? (
-              <>
+              addon.allow_multiple ? (
+                <>
+                  <TouchableOpacity
+                    style={styles.quantityButton}
+                    onPress={() => onQuantityChange(-1)}
+                  >
+                    <Minus size={16} color={colors.primary.black} weight="bold" />
+                  </TouchableOpacity>
+                  <Text style={styles.quantityText}>{quantity}</Text>
+                  <TouchableOpacity
+                    style={[
+                      styles.quantityButton,
+                      addon.maximum_quantity && quantity >= addon.maximum_quantity
+                        ? styles.quantityButtonDisabled
+                        : undefined,
+                    ]}
+                    onPress={() => onQuantityChange(1)}
+                    disabled={addon.maximum_quantity ? quantity >= addon.maximum_quantity : false}
+                  >
+                    <Plus
+                      size={16}
+                      color={addon.maximum_quantity && quantity >= addon.maximum_quantity
+                        ? colors.neutral.gray
+                        : colors.primary.black}
+                      weight="bold"
+                    />
+                  </TouchableOpacity>
+                </>
+              ) : (
                 <TouchableOpacity
-                  style={styles.quantityButton}
+                  style={styles.addedButton}
                   onPress={() => onQuantityChange(-1)}
                 >
-                  <Minus size={16} color={colors.primary.black} weight="bold" />
+                  <Check size={16} color={colors.neutral.white} weight="bold" />
+                  <Text style={styles.addedButtonText}>Added</Text>
                 </TouchableOpacity>
-                <Text style={styles.quantityText}>{quantity}</Text>
-                <TouchableOpacity
-                  style={styles.quantityButton}
-                  onPress={() => onQuantityChange(1)}
-                >
-                  <Plus size={16} color={colors.primary.black} weight="bold" />
-                </TouchableOpacity>
-              </>
+              )
             ) : (
               <TouchableOpacity
                 style={styles.addButton}
@@ -763,6 +786,23 @@ const styles = StyleSheet.create({
     ...typeScale.labelSmall,
     color: colors.neutral.white,
     fontWeight: '600',
+  },
+  addedButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.secondary.forest,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.sm,
+    borderRadius: layout.borderRadius.sm,
+    gap: spacing.xxs,
+  },
+  addedButtonText: {
+    ...typeScale.labelSmall,
+    color: colors.neutral.white,
+    fontWeight: '600',
+  },
+  quantityButtonDisabled: {
+    opacity: 0.4,
   },
   skipHint: {
     marginTop: spacing.md,

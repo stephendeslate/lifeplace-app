@@ -81,6 +81,8 @@ class PricingBreakdown:
     total_amount: Decimal = Decimal('0.00')
     applied_discount: Optional[Discount] = None
     applied_vip_benefits: List[str] = None  # List of applied VIP benefit descriptions
+    discount_error: Optional[str] = None
+    discount_error_type: Optional[str] = None
 
     def __post_init__(self):
         """Calculate totals from line items"""
@@ -255,12 +257,18 @@ class PricingCalculationService:
         # Apply discount if present
         discount_code = PricingCalculationService._extract_discount_code(booking_data)
         if discount_code:
-            try:
-                discount = Discount.objects.get(code=discount_code, is_active=True)
+            from core.domains.products.services import DiscountService
+            discount, error_msg, error_type = DiscountService.validate_discount_code(
+                code=discount_code,
+                order_amount=breakdown.subtotal,
+            )
+            if discount:
                 PricingCalculationService.apply_discount(breakdown, discount)
                 logger.info(f"Applied discount: {discount_code} - ₱{breakdown.discount_amount}")
-            except Discount.DoesNotExist:
-                logger.warning(f"Discount code not found: {discount_code}")
+            else:
+                breakdown.discount_error = error_msg
+                breakdown.discount_error_type = error_type
+                logger.warning(f"Discount validation failed for '{discount_code}': {error_msg}")
 
         # Apply VIP benefits if client is provided
         if client:
@@ -321,15 +329,22 @@ class PricingCalculationService:
     @staticmethod
     def _extract_discount_code(booking_data: Dict[str, Any]) -> Optional[str]:
         """Extract discount code from booking data"""
-        # Check root level first
-        if 'applied_discount_code' in booking_data:
+        # Check root level first (preferred field name)
+        if booking_data.get('applied_discount_code'):
             return booking_data['applied_discount_code']
-        
+
+        # Fallback: check promo_code at root level (mobile-app compat)
+        if booking_data.get('promo_code'):
+            return booking_data['promo_code']
+
         # Check in step data
         for step_key, step_data in booking_data.items():
-            if isinstance(step_data, dict) and 'applied_discount_code' in step_data:
-                return step_data['applied_discount_code']
-        
+            if isinstance(step_data, dict):
+                if step_data.get('applied_discount_code'):
+                    return step_data['applied_discount_code']
+                if step_data.get('promo_code'):
+                    return step_data['promo_code']
+
         return None
     
     @staticmethod
@@ -365,6 +380,13 @@ class PricingCalculationService:
                     product = ProductOption.objects.get(id=product_id)
                     tax_rate = get_tax_rate_for_product(product)
                     logger.info(f"Package {name}: tax_rate={tax_rate}% (is_tax_inclusive={product.is_tax_inclusive})")
+                    # Defensive quantity clamping based on product constraints
+                    if not product.allow_multiple and quantity > 1:
+                        logger.warning(f"Package {name}: quantity {quantity} clamped to 1 (allow_multiple=False)")
+                        quantity = 1
+                    elif product.allow_multiple and product.maximum_quantity and quantity > product.maximum_quantity:
+                        logger.warning(f"Package {name}: quantity {quantity} clamped to {product.maximum_quantity}")
+                        quantity = product.maximum_quantity
                 except ProductOption.DoesNotExist:
                     tax_rate = get_default_tax_rate()
                     logger.warning(f"Product {product_id} not found, using default tax_rate={tax_rate}%")
@@ -434,13 +456,20 @@ class PricingCalculationService:
             price = Decimal(str(addon_data.get('price', 0)))
             product_id = addon_data.get('product_id')
 
-            # Determine tax rate using product's tax_rate with global fallback
+            # Determine tax rate and validate quantity using product constraints
             tax_rate = Decimal('0.00')
             if product_id and product_id != -1:
                 try:
                     product = ProductOption.objects.get(id=product_id)
                     tax_rate = get_tax_rate_for_product(product)
                     logger.info(f"Add-on {name}: tax_rate={tax_rate}% (from product)")
+                    # Defensive quantity clamping based on product constraints
+                    if not product.allow_multiple and quantity > 1:
+                        logger.warning(f"Add-on {name}: quantity {quantity} clamped to 1 (allow_multiple=False)")
+                        quantity = 1
+                    elif product.allow_multiple and product.maximum_quantity and quantity > product.maximum_quantity:
+                        logger.warning(f"Add-on {name}: quantity {quantity} clamped to {product.maximum_quantity}")
+                        quantity = product.maximum_quantity
                 except ProductOption.DoesNotExist:
                     tax_rate = get_default_tax_rate()
                     logger.warning(f"Product {product_id} not found, using default tax_rate={tax_rate}%")

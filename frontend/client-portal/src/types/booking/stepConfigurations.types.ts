@@ -230,6 +230,7 @@ export interface ProductOption {
   is_active: boolean;
   is_featured: boolean;
   allow_multiple: boolean;
+  maximum_quantity: number | null;
   requires_approval: boolean;
   minimum_hours: number | null;
   maximum_hours: number | null;

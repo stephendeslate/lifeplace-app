@@ -3,7 +3,7 @@
 import logging
 from decimal import Decimal
 from django.db import models
-from django.db.models import OuterRef, Subquery
+from django.db.models import OuterRef, Prefetch, Subquery
 from django.db.models.functions import Coalesce
 from django.http import HttpResponse
 from django.utils import timezone
@@ -18,6 +18,7 @@ from .models import (
     Invoice,
     Payment,
     PaymentMethod,
+    PaymentTransaction,
     Refund,
 )
 from .serializers import (
@@ -71,8 +72,13 @@ class ClientPaymentViewSet(viewsets.ReadOnlyModelViewSet):
             'processed_by',
             'quote',
             'invoice',
+        ).defer(
+            'payment_method__gateway__config',  # Avoid decrypting gateway secrets not needed for display
         ).prefetch_related(
-            'transactions__gateway',  # Include gateway information for transaction-based inference
+            Prefetch(
+                'transactions',
+                queryset=PaymentTransaction.objects.select_related('gateway').defer('gateway__config'),
+            ),
             'notifications',
             'refunds'
         )
@@ -528,7 +534,7 @@ class ClientPaymentMethodViewSet(viewsets.ModelViewSet):
         else:
             queryset = PaymentMethod.objects.filter(user=self.request.user)
 
-        return queryset.select_related('user', 'gateway').order_by('-is_default', '-created_at')
+        return queryset.select_related('user', 'gateway').defer('gateway__config').order_by('-is_default', '-created_at')
 
     def create(self, request, *args, **kwargs):
         """Create a new payment method"""
