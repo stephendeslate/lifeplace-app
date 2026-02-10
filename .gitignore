@@ -1,6 +1,12 @@
 # Ignore files and directories that should not be tracked by Git
+
+# Environment files (may contain secrets)
 .env
+.env.local
 .env.production
+**/.env
+**/.env.local
+**/.env.production
 
 # Python
 __pycache__/
@@ -8,21 +14,35 @@ __pycache__/
 *$py.class
 *.so
 
+# Virtual environments
+venv/
+backend/venv/
+
 # Celery Beat
 celerybeat-schedule*
+
+# Database files
+*.sqlite3
 
 # Media uploads (test artifacts)
 backend/media/
 
-# Mobile app environment files (contains API keys)
-mobile-app/.env
-mobile-app/.env.local
-mobile-app/.env.production
+# Django collected static files
+backend/staticfiles/
+
+# macOS
+.DS_Store
+
+# Test coverage
+coverage/
+**/coverage/
+*.lcov
+
+# Export scripts and output
 export_files.py
 export_concatenated_files.py
 export/
 export-concatenated/
 
-# Test coverage
-coverage/
-*.lcov
+# Load test reports
+backend/load_tests/*_report.html
