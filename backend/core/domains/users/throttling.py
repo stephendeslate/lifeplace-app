@@ -14,8 +14,8 @@ class DSRBaseThrottle(UserRateThrottle):
     """Base throttle class for Data Subject Rights endpoints"""
 
     def allow_request(self, request, view):
-        """Skip throttling in development mode"""
-        if settings.DEBUG:
+        """Skip throttling in development/load test mode"""
+        if settings.DEBUG or settings.LOAD_TEST_MODE:
             return True
         return super().allow_request(request, view)
 

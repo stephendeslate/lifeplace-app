@@ -20,8 +20,8 @@ class CommunicationBaseThrottle(UserRateThrottle):
     """Base throttle class for communication endpoints with debug mode support"""
 
     def allow_request(self, request, view):
-        """Skip throttling in development mode if configured"""
-        if settings.DEBUG and getattr(settings, 'COMMUNICATION_THROTTLE_DISABLED', True):
+        """Skip throttling in development/load test mode if configured"""
+        if getattr(settings, 'COMMUNICATION_THROTTLE_DISABLED', False):
             return True
         return super().allow_request(request, view)
 
@@ -108,7 +108,7 @@ class CommunicationAdminThrottle(CommunicationBaseThrottle):
 
     def allow_request(self, request, view):
         """Allow higher limits for admin users"""
-        if settings.DEBUG:
+        if settings.DEBUG or settings.LOAD_TEST_MODE:
             return True
 
         # Staff users get higher limits
@@ -133,8 +133,8 @@ class WebhookThrottle(AnonRateThrottle):
     rate = '200/hour'
 
     def allow_request(self, request, view):
-        """Skip throttling in development mode"""
-        if settings.DEBUG:
+        """Skip throttling in development/load test mode"""
+        if settings.DEBUG or settings.LOAD_TEST_MODE:
             return True
         return super().allow_request(request, view)
 

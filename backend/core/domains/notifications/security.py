@@ -272,10 +272,10 @@ class NotificationRateLimiter:
 class NotificationThrottle(UserRateThrottle):
     """Custom throttle for notification API endpoints"""
     scope = 'notifications'
-    
+
     def allow_request(self, request, view):
-        """Skip throttling in development mode"""
-        if settings.DEBUG:
+        """Skip throttling in development/load test mode"""
+        if settings.DEBUG or settings.LOAD_TEST_MODE:
             return True
         return super().allow_request(request, view)
     
@@ -296,10 +296,10 @@ class NotificationThrottle(UserRateThrottle):
 class NotificationAdminThrottle(UserRateThrottle):
     """Higher rate limits for admin users"""
     scope = 'notifications_admin'
-    
+
     def allow_request(self, request, view):
-        """Skip throttling in development mode, allow higher limits for admin users"""
-        if settings.DEBUG:
+        """Skip throttling in development/load test mode, allow higher limits for admin users"""
+        if settings.DEBUG or settings.LOAD_TEST_MODE:
             return True
         
         if request.user and request.user.is_authenticated and request.user.is_staff:

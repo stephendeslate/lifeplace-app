@@ -14,11 +14,10 @@ logger = logging.getLogger(__name__)
 
 class LoginRateThrottle(AnonRateThrottle):
     """Rate limiting for login attempts"""
-    
+
     def __init__(self):
         super().__init__()
-        # Disable throttling in development
-        if settings.DEBUG:
+        if settings.DEBUG or settings.LOAD_TEST_MODE:
             self.rate = '999999/hour'
         else:
             self.rate = '10/hour'  # 10 login attempts per hour per IP
@@ -26,11 +25,10 @@ class LoginRateThrottle(AnonRateThrottle):
 
 class RegistrationRateThrottle(AnonRateThrottle):
     """Rate limiting for registration attempts"""
-    
+
     def __init__(self):
         super().__init__()
-        # Disable throttling in development
-        if settings.DEBUG:
+        if settings.DEBUG or settings.LOAD_TEST_MODE:
             self.rate = '999999/hour'
         else:
             self.rate = '5/hour'  # 5 registrations per hour per IP
@@ -41,8 +39,7 @@ class AdminActionThrottle(UserRateThrottle):
 
     def __init__(self):
         super().__init__()
-        # Disable throttling in development
-        if settings.DEBUG:
+        if settings.DEBUG or settings.LOAD_TEST_MODE:
             self.rate = '999999/hour'
         else:
             self.rate = '200/hour'  # 200 admin actions per hour per user
@@ -56,7 +53,7 @@ class InvitationAcceptRateThrottle(AnonRateThrottle):
 
     def __init__(self):
         super().__init__()
-        if settings.DEBUG:
+        if settings.DEBUG or settings.LOAD_TEST_MODE:
             self.rate = '999999/hour'
         else:
             self.rate = '5/hour'  # 5 invitation accept attempts per hour per IP

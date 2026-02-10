@@ -42,6 +42,10 @@ if not SECRET_KEY:
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DEBUG', 'False') == 'True'
 
+# Load test mode: disables rate limiting without enabling DEBUG.
+# Usage: fly secrets set LOAD_TEST_MODE=true (then unset after testing)
+LOAD_TEST_MODE = os.getenv('LOAD_TEST_MODE', 'False') == 'True'
+
 ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '').split(',') if os.getenv('ALLOWED_HOSTS') else []
 
 # Add common development hosts
@@ -365,33 +369,33 @@ REST_FRAMEWORK = {
         'rest_framework.throttling.AnonRateThrottle',
         'rest_framework.throttling.UserRateThrottle',
     ],
-    # Throttling rates - disabled in development
+    # Throttling rates - disabled in development and load test mode
     'DEFAULT_THROTTLE_RATES': {
-        'analytics': '999999/hour' if DEBUG else '1000/hour',
-        'public_tracking': '999999/hour' if DEBUG else '100/hour',
-        'admin_analytics': '999999/hour' if DEBUG else '2000/hour',
-        'anon': '999999/hour' if DEBUG else '100/hour',
-        'user': '999999/hour' if DEBUG else '1000/hour',
-        'notifications': '999999/hour' if DEBUG else '200/hour',
-        'notifications_admin': '999999/hour' if DEBUG else '500/hour',
+        'analytics': '999999/hour' if DEBUG or LOAD_TEST_MODE else '1000/hour',
+        'public_tracking': '999999/hour' if DEBUG or LOAD_TEST_MODE else '100/hour',
+        'admin_analytics': '999999/hour' if DEBUG or LOAD_TEST_MODE else '2000/hour',
+        'anon': '999999/hour' if DEBUG or LOAD_TEST_MODE else '100/hour',
+        'user': '999999/hour' if DEBUG or LOAD_TEST_MODE else '1000/hour',
+        'notifications': '999999/hour' if DEBUG or LOAD_TEST_MODE else '200/hour',
+        'notifications_admin': '999999/hour' if DEBUG or LOAD_TEST_MODE else '500/hour',
         # Communications domain throttle rates
-        'communications_manual_send': '999999/min' if DEBUG else '60/min',
-        'communications_bulk_send': '999999/hour' if DEBUG else '10/hour',
-        'communications_preview': '999999/min' if DEBUG else '30/min',
-        'communications_admin': '999999/hour' if DEBUG else '500/hour',
-        'communications_webhook': '999999/hour' if DEBUG else '200/hour',
+        'communications_manual_send': '999999/min' if DEBUG or LOAD_TEST_MODE else '60/min',
+        'communications_bulk_send': '999999/hour' if DEBUG or LOAD_TEST_MODE else '10/hour',
+        'communications_preview': '999999/min' if DEBUG or LOAD_TEST_MODE else '30/min',
+        'communications_admin': '999999/hour' if DEBUG or LOAD_TEST_MODE else '500/hour',
+        'communications_webhook': '999999/hour' if DEBUG or LOAD_TEST_MODE else '200/hour',
         # DPA Compliance throttle rates
-        'data_export': '999999/day' if DEBUG else '1/day',  # Limit data exports to 1/day
-        'data_access': '999999/hour' if DEBUG else '10/hour',  # Limit data access requests
-        'account_deletion': '999999/day' if DEBUG else '1/day',  # Limit deletion requests
-        'data_correction': '999999/day' if DEBUG else '5/day',  # Limit correction requests
-        'processing_objection': '999999/day' if DEBUG else '3/day',  # Limit objection requests
-        'consent_management': '999999/hour' if DEBUG else '20/hour',  # Limit consent operations
+        'data_export': '999999/day' if DEBUG or LOAD_TEST_MODE else '1/day',  # Limit data exports to 1/day
+        'data_access': '999999/hour' if DEBUG or LOAD_TEST_MODE else '10/hour',  # Limit data access requests
+        'account_deletion': '999999/day' if DEBUG or LOAD_TEST_MODE else '1/day',  # Limit deletion requests
+        'data_correction': '999999/day' if DEBUG or LOAD_TEST_MODE else '5/day',  # Limit correction requests
+        'processing_objection': '999999/day' if DEBUG or LOAD_TEST_MODE else '3/day',  # Limit objection requests
+        'consent_management': '999999/hour' if DEBUG or LOAD_TEST_MODE else '20/hour',  # Limit consent operations
     },
 }
 
-# Communications throttle disabled in debug mode by default
-COMMUNICATION_THROTTLE_DISABLED = DEBUG
+# Communications throttle disabled in debug/load test mode by default
+COMMUNICATION_THROTTLE_DISABLED = DEBUG or LOAD_TEST_MODE
 
 # =============================================================================
 # DRF-SPECTACULAR (OpenAPI) SETTINGS
