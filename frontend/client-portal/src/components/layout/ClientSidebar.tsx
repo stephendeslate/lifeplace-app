@@ -88,12 +88,6 @@ const navigationItems: NavigationItem[] = [
     path: '/documents',
     icon: <DocumentsIcon />,
   },
-  {
-    id: 'booking',
-    label: 'Book New Event',
-    path: '/booking',
-    icon: <BookingIcon />,
-  },
 ];
 
 const secondaryItems: NavigationItem[] = [
@@ -230,38 +224,38 @@ export const ClientSidebar: React.FC<ClientSidebarProps> = ({
         flexDirection: 'column',
       }}
     >
-      {/* Header */}
+      {/* Book New Event */}
       <AnimatedElement animation="fadeIn" delay={50}>
         <Box sx={{ p: 2, pt: 3 }}>
           <GlassCard
             variant="light"
             intensity="subtle"
+            onClick={() => handleNavigation('/booking')}
             sx={{
               p: 2,
               textAlign: 'center',
               border: `1px solid ${alpha('#fff', 0.15)}`,
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              '&:hover': {
+                backgroundColor: alpha(theme.palette.primary.main, 0.08),
+                transform: 'translateY(-1px)',
+              },
             }}
           >
-            <Typography
-              variant="h6"
-              sx={{
-                fontWeight: 600,
-                color: theme.palette.primary.main,
-                fontSize: '1rem',
-              }}
-            >
-              Client Portal
-            </Typography>
-            <Typography
-              variant="caption"
-              sx={{
-                color: alpha(theme.palette.text.secondary, 0.8),
-                display: 'block',
-                mt: 0.5,
-              }}
-            >
-              Manage your events
-            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
+              <BookingIcon sx={{ color: theme.palette.primary.main }} />
+              <Typography
+                variant="h6"
+                sx={{
+                  fontWeight: 600,
+                  color: theme.palette.primary.main,
+                  fontSize: '1rem',
+                }}
+              >
+                Book New Event
+              </Typography>
+            </Box>
           </GlassCard>
         </Box>
       </AnimatedElement>
