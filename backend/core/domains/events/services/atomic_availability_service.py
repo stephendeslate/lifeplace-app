@@ -16,7 +16,7 @@ from datetime import timedelta
 from typing import Dict, Optional
 import uuid
 
-from django.db import transaction
+from django.db import connection, transaction
 from django.utils import timezone
 
 from ..models import Event, DateReservation
@@ -92,6 +92,15 @@ class AtomicAvailabilityService:
         }
 
         try:
+            # Acquire advisory lock keyed on the date to serialize concurrent
+            # reservation attempts for the same date. Without this, two sessions
+            # can simultaneously pass the "existing reservation" check below and
+            # both create reservations. The lock is released when the transaction
+            # (from @transaction.atomic) commits or rolls back.
+            date_lock_key = int(check_date.strftime('%Y%m%d'))
+            with connection.cursor() as cursor:
+                cursor.execute('SELECT pg_advisory_xact_lock(%s)', [date_lock_key])
+
             # Step 1: Check for existing reservation from THIS session
             # (allows retry without creating duplicate reservations)
             existing_own_reservation = DateReservation.objects.filter(
@@ -205,11 +214,16 @@ class AtomicAvailabilityService:
             ).first()
 
             if not reservation:
-                result['error'] = "Reservation not found"
+                # Reservation not found — treat as already released (idempotent).
+                # This handles concurrent release calls and retries gracefully.
+                result['success'] = True
+                logger.info(f"Reservation {reservation_token} not found, treating as already released")
                 return result
 
             if reservation.status != 'PENDING':
-                result['error'] = f"Reservation is already {reservation.status}"
+                # Already released/confirmed/expired — return success (idempotent)
+                result['success'] = True
+                logger.info(f"Reservation {reservation_token} is already {reservation.status}")
                 return result
 
             reservation.status = 'RELEASED'

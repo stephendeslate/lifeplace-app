@@ -9,23 +9,23 @@
  * Phase 13: Security Hardening
  */
 
-import { securityLogger as logger } from '@/utils/logger';
+import { securityLogger as logger } from "@/utils/logger";
 
 // =============================================================================
 // TYPES
 // =============================================================================
 
 export type ThreatType =
-  | 'privilegedAccess'
-  | 'hooks'
-  | 'appIntegrity'
-  | 'simulator'
-  | 'debug'
-  | 'deviceBinding'
-  | 'unofficialStore'
-  | 'secureHardwareNotAvailable'
-  | 'passcode'
-  | 'obfuscationIssues';
+  | "privilegedAccess"
+  | "hooks"
+  | "appIntegrity"
+  | "simulator"
+  | "debug"
+  | "deviceBinding"
+  | "unofficialStore"
+  | "secureHardwareNotAvailable"
+  | "passcode"
+  | "obfuscationIssues";
 
 export interface SecurityStatus {
   isSecure: boolean;
@@ -42,9 +42,9 @@ export interface SecurityStatus {
  * List of threats that should block app usage
  */
 const CRITICAL_THREATS: ThreatType[] = [
-  'privilegedAccess', // Root/Jailbreak
-  'hooks', // Frida, Xposed, etc.
-  'appIntegrity', // App has been tampered
+  "privilegedAccess", // Root/Jailbreak
+  "hooks", // Frida, Xposed, etc.
+  "appIntegrity", // App has been tampered
 ];
 
 /**
@@ -64,19 +64,28 @@ let isInitialized = false;
 /**
  * freeRASP configuration
  *
- * TODO: Update with actual signing certificate hash and team ID
+ * To complete setup, fill in the two platform-specific values below:
+ *
+ * Android certificateHashes:
+ *   Run: eas credentials -p android (select production profile)
+ *   Copy the SHA-256 Fingerprint from the Keystore section.
+ *   Format: uppercase hex with colons, e.g. "A1:B2:C3:..."
+ *
+ * iOS appTeamId:
+ *   Go to https://developer.apple.com → Account → Membership
+ *   Copy the 10-character Team ID, e.g. "AB12CD34EF"
  */
 const getSecurityConfig = () => ({
   androidConfig: {
-    packageName: 'com.lifeplace.app',
-    certificateHashes: ['YOUR_SIGNING_CERTIFICATE_HASH'], // Get from: keytool -printcert -jarfile app.aab
-    supportedAlternativeStores: ['com.sec.android.app.samsungapps'],
+    packageName: "com.lifeplace.app",
+    certificateHashes: ["YOUR_SIGNING_CERTIFICATE_HASH"],
+    supportedAlternativeStores: ["com.sec.android.app.samsungapps"],
   },
   iosConfig: {
-    appBundleId: 'com.lifeplace.app',
-    appTeamId: 'YOUR_TEAM_ID', // Get from Apple Developer Portal
+    appBundleId: "com.lifeplace.app",
+    appTeamId: "YOUR_TEAM_ID",
   },
-  watcherMail: 'security@lifeplace.com',
+  watcherMail: "security@lifeplace.com",
   isProd: !__DEV__,
 });
 
@@ -91,48 +100,48 @@ function createThreatCallbacks() {
   return {
     // Critical threats - block app
     privilegedAccess: () => {
-      detectedThreats.push('privilegedAccess');
-      logger.warn('Device is rooted/jailbroken');
+      detectedThreats.push("privilegedAccess");
+      logger.warn("Device is rooted/jailbroken");
     },
     hooks: () => {
-      detectedThreats.push('hooks');
-      logger.warn('Hooking framework detected (Frida, Xposed, etc.)');
+      detectedThreats.push("hooks");
+      logger.warn("Hooking framework detected (Frida, Xposed, etc.)");
     },
     appIntegrity: () => {
-      detectedThreats.push('appIntegrity');
-      logger.warn('App integrity compromised');
+      detectedThreats.push("appIntegrity");
+      logger.warn("App integrity compromised");
     },
 
     // Warning threats - log but allow
     simulator: () => {
-      detectedThreats.push('simulator');
-      logger.warn('Running on simulator/emulator');
+      detectedThreats.push("simulator");
+      logger.warn("Running on simulator/emulator");
     },
     debug: () => {
-      detectedThreats.push('debug');
-      logger.warn('App is being debugged');
+      detectedThreats.push("debug");
+      logger.warn("App is being debugged");
     },
     deviceBinding: () => {
-      detectedThreats.push('deviceBinding');
-      logger.warn('Device binding issue');
+      detectedThreats.push("deviceBinding");
+      logger.warn("Device binding issue");
     },
     unofficialStore: () => {
-      detectedThreats.push('unofficialStore');
-      logger.warn('App installed from unofficial store');
+      detectedThreats.push("unofficialStore");
+      logger.warn("App installed from unofficial store");
     },
 
     // Info threats - log only
     secureHardwareNotAvailable: () => {
-      detectedThreats.push('secureHardwareNotAvailable');
-      logger.warn('Secure hardware not available');
+      detectedThreats.push("secureHardwareNotAvailable");
+      logger.warn("Secure hardware not available");
     },
     passcode: () => {
-      detectedThreats.push('passcode');
-      logger.warn('Device passcode not set');
+      detectedThreats.push("passcode");
+      logger.warn("Device passcode not set");
     },
     obfuscationIssues: () => {
-      detectedThreats.push('obfuscationIssues');
-      logger.warn('Obfuscation issues detected');
+      detectedThreats.push("obfuscationIssues");
+      logger.warn("Obfuscation issues detected");
     },
   };
 }
@@ -150,7 +159,7 @@ function createThreatCallbacks() {
 export async function initSecurityChecks(): Promise<void> {
   // Skip in development
   if (__DEV__) {
-    logger.debug('Checks skipped in development mode');
+    logger.debug("Checks skipped in development mode");
     isInitialized = true;
     return;
   }
@@ -158,7 +167,7 @@ export async function initSecurityChecks(): Promise<void> {
   try {
     // Dynamic import to avoid issues when not installed
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const Talsec = (await import('freerasp-react-native')) as any;
+    const Talsec = (await import("freerasp-react-native")) as any;
 
     const config = getSecurityConfig();
     const callbacks = createThreatCallbacks();
@@ -169,13 +178,13 @@ export async function initSecurityChecks(): Promise<void> {
     } else if (Talsec.start) {
       await Talsec.start(config, callbacks);
     } else {
-      logger.warn('freeRASP API not found, skipping initialization');
+      logger.warn("freeRASP API not found, skipping initialization");
     }
 
-    logger.info('Checks initialized successfully');
+    logger.info("Checks initialized successfully");
     isInitialized = true;
   } catch (error) {
-    logger.error('Initialization failed:', error);
+    logger.error("Initialization failed:", error);
     isInitialized = true; // Still mark as initialized to not block forever
   }
 }
@@ -187,7 +196,7 @@ export async function initSecurityChecks(): Promise<void> {
  */
 export function getSecurityStatus(): SecurityStatus {
   const hasCriticalThreat = detectedThreats.some((threat) =>
-    CRITICAL_THREATS.includes(threat)
+    CRITICAL_THREATS.includes(threat),
   );
 
   return {
@@ -210,19 +219,19 @@ export function hasThreat(threat: ThreatType): boolean {
  */
 export function getThreatDescription(threat: ThreatType): string {
   const descriptions: Record<ThreatType, string> = {
-    privilegedAccess: 'Device has elevated privileges (rooted/jailbroken)',
-    hooks: 'Hooking framework detected (potential security tool)',
-    appIntegrity: 'App has been modified or tampered with',
-    simulator: 'Running on a simulator or emulator',
-    debug: 'Debugger is attached to the app',
-    deviceBinding: 'Device binding verification failed',
-    unofficialStore: 'App was installed from an unofficial source',
-    secureHardwareNotAvailable: 'Secure hardware is not available',
-    passcode: 'Device does not have a passcode set',
-    obfuscationIssues: 'Code obfuscation issues detected',
+    privilegedAccess: "Device has elevated privileges (rooted/jailbroken)",
+    hooks: "Hooking framework detected (potential security tool)",
+    appIntegrity: "App has been modified or tampered with",
+    simulator: "Running on a simulator or emulator",
+    debug: "Debugger is attached to the app",
+    deviceBinding: "Device binding verification failed",
+    unofficialStore: "App was installed from an unofficial source",
+    secureHardwareNotAvailable: "Secure hardware is not available",
+    passcode: "Device does not have a passcode set",
+    obfuscationIssues: "Code obfuscation issues detected",
   };
 
-  return descriptions[threat] || 'Unknown security issue';
+  return descriptions[threat] || "Unknown security issue";
 }
 
 /**
@@ -244,7 +253,7 @@ export async function isSecurityChecksAvailable(): Promise<boolean> {
   }
 
   try {
-    await import('freerasp-react-native');
+    await import("freerasp-react-native");
     return true;
   } catch {
     return false;

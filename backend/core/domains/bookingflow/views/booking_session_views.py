@@ -422,16 +422,17 @@ class PublicBookingFlowViewSet(viewsets.ReadOnlyModelViewSet):
 
             if not request.user.is_authenticated and not session.client:
                 from core.domains.users.services import UserService
+                from django.db import IntegrityError
                 try:
                     # Check if user already exists with this email
                     from django.contrib.auth import get_user_model
                     User = get_user_model()
-                    
+
                     existing_user = User.objects.filter(
-                        email=contact_data['email'], 
+                        email=contact_data['email'],
                         role='CLIENT'
                     ).first()
-                    
+
                     if existing_user:
                         # Use existing client user
                         user = existing_user
@@ -449,7 +450,7 @@ class PublicBookingFlowViewSet(viewsets.ReadOnlyModelViewSet):
                                 'company': contact_data.get('company', ''),
                             }
                         }
-                        
+
                         # Determine if this should be an active account or guest account
                         if contact_data.get('create_account'):
                             # User wants an active account with password
@@ -460,14 +461,22 @@ class PublicBookingFlowViewSet(viewsets.ReadOnlyModelViewSet):
                             # Guest booking - create inactive user without usable password
                             user_data['is_active'] = False
                             # Don't set password - UserService will set unusable password
-                        
-                        user = UserService.create_user(user_data)
-                        
+
+                        try:
+                            user = UserService.create_user(user_data)
+                        except IntegrityError:
+                            # A concurrent request created this user between our
+                            # check and insert. Fetch the user that was created.
+                            user = User.objects.get(
+                                email=contact_data['email'],
+                                role='CLIENT'
+                            )
+
                         # Update session with new user
                         session.client = user
                         session.save()
                         user_created = contact_data.get('create_account', False)
-                        
+
                 except Exception as e:
                     # Log error and return specific error message
                     logger.error(f"Failed to create user account for guest booking: {e}")
