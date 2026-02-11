@@ -127,7 +127,10 @@ export const ServicesSection: React.FC = () => {
         <Stack spacing={tokens.spacing.space[8]}>
           {/* Section Header */}
           <AnimatedElement animation="fadeIn" delay={100}>
-            <Stack spacing={tokens.spacing.space[2]} textAlign="center">
+            <Stack
+              spacing={tokens.spacing.space[2]}
+              sx={{ textAlign: "center", alignItems: "center" }}
+            >
               <Typography
                 component="h2"
                 sx={{
@@ -152,8 +155,6 @@ export const ServicesSection: React.FC = () => {
                   ...tokens.typography.styles.bodyLarge,
                   color: tokens.color.base.neutral[700],
                   maxWidth: "800px",
-                  mx: "auto",
-                  textAlign: "center",
                 }}
               >
                 We provide comprehensive packages for every type of celebration
