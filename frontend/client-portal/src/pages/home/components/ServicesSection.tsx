@@ -1,82 +1,82 @@
 // pages/home/components/ServicesSection.tsx
 
-import React from 'react';
-import { Box, Typography, Stack } from '@mui/material';
-import { styled } from '@mui/material/styles';
+import React from "react";
+import { Box, Typography, Stack } from "@mui/material";
+import { styled } from "@mui/material/styles";
+import { Favorite, Groups, Spa, Nature } from "@mui/icons-material";
 import {
-  Favorite,
-  Groups,
-  Spa,
-  Nature,
-} from '@mui/icons-material';
-import { Section, Container, AnimatedElement, tokens } from '../../../design-system';
-import type { ServiceInfo } from '../types/home.types';
+  Section,
+  Container,
+  AnimatedElement,
+  tokens,
+} from "../../../design-system";
+import type { ServiceInfo } from "../types/home.types";
 
 // Modern service card component
 const ServiceCard = styled(Box)(() => ({
-  position: 'relative',
-  height: '100%',
-  background: 'rgba(255, 255, 255, 0.95)',
+  position: "relative",
+  height: "100%",
+  background: "rgba(255, 255, 255, 0.95)",
   borderRadius: tokens.spacing.radius.card,
   padding: tokens.spacing.space[4],
-  textAlign: 'center',
+  textAlign: "center",
   transition: tokens.animation.transition.all,
   boxShadow: tokens.shadow.elevation.sm,
   border: `1px solid ${tokens.color.base.neutral[100]}`,
-  overflow: 'hidden',
+  overflow: "hidden",
 
-  '&::before': {
+  "&::before": {
     content: '""',
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     left: 0,
     right: 0,
-    height: '4px',
+    height: "4px",
     background: tokens.color.gradients.warmSage,
     opacity: 0,
     transition: tokens.animation.transition.all,
   },
 
-  '&:hover': {
-    transform: 'translateY(-8px)',
+  "&:hover": {
+    transform: "translateY(-8px)",
     boxShadow: tokens.shadow.elevation.lg,
-    '&::before': {
+    "&::before": {
       opacity: 1,
     },
   },
 
   // Accessibility: Reduced motion
-  '@media (prefers-reduced-motion: reduce)': {
-    transition: 'none',
-    '&:hover': {
-      transform: 'none',
+  "@media (prefers-reduced-motion: reduce)": {
+    transition: "none",
+    "&:hover": {
+      transform: "none",
     },
   },
 }));
 
 const IconWrapper = styled(Box)({
-  display: 'inline-flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  width: '80px',
-  height: '80px',
-  borderRadius: '50%',
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  width: "80px",
+  height: "80px",
+  borderRadius: "50%",
   background: tokens.color.gradients.morningMist,
   marginBottom: tokens.spacing.space[3],
-  position: 'relative',
+  position: "relative",
 
-  '&::after': {
+  "&::after": {
     content: '""',
-    position: 'absolute',
+    position: "absolute",
     inset: -2,
-    borderRadius: '50%',
+    borderRadius: "50%",
     background: tokens.color.gradients.warmSage,
     opacity: 0.1,
     zIndex: 0,
   },
 
-  '& > svg': {
-    position: 'relative',
+  "& > svg": {
+    position: "relative",
     zIndex: 1,
   },
 });
@@ -84,28 +84,40 @@ const IconWrapper = styled(Box)({
 export const ServicesSection: React.FC = () => {
   const services: ServiceInfo[] = [
     {
-      id: 'weddings',
-      title: 'Weddings',
-      description: 'Create timeless memories in our beautiful venues with comprehensive wedding packages.',
-      icon: <Favorite sx={{ fontSize: 48, color: tokens.color.base.terracotta[500] }} />,
+      id: "weddings",
+      title: "Weddings",
+      description:
+        "Create timeless memories in our beautiful venues with comprehensive wedding packages.",
+      icon: (
+        <Favorite
+          sx={{ fontSize: 48, color: tokens.color.base.terracotta[500] }}
+        />
+      ),
     },
     {
-      id: 'team-building',
-      title: 'Team Building',
-      description: 'Strengthen bonds and foster creativity through hands-on activities in a peaceful environment.',
-      icon: <Groups sx={{ fontSize: 48, color: tokens.color.base.sage[600] }} />,
+      id: "team-building",
+      title: "Team Building",
+      description:
+        "Strengthen bonds and foster creativity through hands-on activities in a peaceful environment.",
+      icon: (
+        <Groups sx={{ fontSize: 48, color: tokens.color.base.sage[600] }} />
+      ),
     },
     {
-      id: 'retreats',
-      title: 'Retreats',
-      description: 'Connect with others and find spiritual renewal in our tranquil retreat setting.',
+      id: "retreats",
+      title: "Retreats",
+      description:
+        "Connect with others and find spiritual renewal in our tranquil retreat setting.",
       icon: <Spa sx={{ fontSize: 48, color: tokens.color.base.olive[500] }} />,
     },
     {
-      id: 'camping',
-      title: 'Camping',
-      description: 'Experience nature and community in our safe and comfortable camping facilities.',
-      icon: <Nature sx={{ fontSize: 48, color: tokens.color.base.sage[500] }} />,
+      id: "camping",
+      title: "Camping",
+      description:
+        "Experience nature and community in our safe and comfortable camping facilities.",
+      icon: (
+        <Nature sx={{ fontSize: 48, color: tokens.color.base.sage[500] }} />
+      ),
     },
   ];
 
@@ -139,11 +151,13 @@ export const ServicesSection: React.FC = () => {
                 sx={{
                   ...tokens.typography.styles.bodyLarge,
                   color: tokens.color.base.neutral[700],
-                  maxWidth: '800px',
-                  mx: 'auto',
+                  maxWidth: "800px",
+                  mx: "auto",
+                  textAlign: "center",
                 }}
               >
-                We provide comprehensive packages for every type of celebration and gathering
+                We provide comprehensive packages for every type of celebration
+                and gathering
               </Typography>
             </Stack>
           </AnimatedElement>
@@ -151,11 +165,11 @@ export const ServicesSection: React.FC = () => {
           {/* Service Cards Grid */}
           <Box
             sx={{
-              display: 'grid',
+              display: "grid",
               gridTemplateColumns: {
-                xs: '1fr',
-                sm: 'repeat(2, 1fr)',
-                lg: 'repeat(4, 1fr)',
+                xs: "1fr",
+                sm: "repeat(2, 1fr)",
+                lg: "repeat(4, 1fr)",
               },
               gap: {
                 xs: tokens.spacing.space[3],
@@ -174,9 +188,7 @@ export const ServicesSection: React.FC = () => {
                   aria-label={`${service.title} service`}
                 >
                   <Stack spacing={tokens.spacing.space[3]} alignItems="center">
-                    <IconWrapper aria-hidden="true">
-                      {service.icon}
-                    </IconWrapper>
+                    <IconWrapper aria-hidden="true">{service.icon}</IconWrapper>
                     <Box>
                       <Typography
                         component="h3"
