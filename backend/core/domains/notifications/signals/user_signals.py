@@ -11,6 +11,8 @@ from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 from django.apps import apps
 
+from ..exceptions import InvalidNotificationDataException
+
 User = get_user_model()
 logger = logging.getLogger(__name__)
 
@@ -81,9 +83,11 @@ def user_notifications(sender, instance, created, **kwargs):
                             },
                             client=instance
                         )
+                    except InvalidNotificationDataException as e:
+                        logger.warning(f"Notification rate-limited for admin {admin.email}: {str(e)}")
                     except Exception as e:
                         logger.error(f"Failed to create client notification for admin {admin.email}: {str(e)}")
-            
+
             elif instance.role == "ADMIN":
                 logger.info(f"ADMIN created signal fired for user: {instance.id} - {instance.email}")
                 
@@ -105,6 +109,8 @@ def user_notifications(sender, instance, created, **kwargs):
                                 'action_url': f'/settings/account/admin-users',
                             }
                         )
+                    except InvalidNotificationDataException as e:
+                        logger.warning(f"Notification rate-limited for admin {admin.email}: {str(e)}")
                     except Exception as e:
                         logger.error(f"Failed to create admin notification for {admin.email}: {str(e)}")
         
@@ -127,6 +133,8 @@ def user_notifications(sender, instance, created, **kwargs):
                                 'action_url': f'/settings/account/admin-users' if instance.role == 'ADMIN' else f'/clients/{instance.id}',
                             }
                         )
+                    except InvalidNotificationDataException as e:
+                        logger.warning(f"Notification rate-limited for status change: {str(e)}")
                     except Exception as e:
                         logger.error(f"Failed to create user status notification: {str(e)}")
     

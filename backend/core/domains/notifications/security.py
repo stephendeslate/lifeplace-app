@@ -190,7 +190,11 @@ class NotificationRateLimiter:
     @classmethod
     def check_creation_limit(cls, user_id: int, notification_type_code: str) -> tuple[bool, Optional[str]]:
         """Check if user can create a notification of this type"""
-        
+
+        # Skip rate limiting in development/load test mode
+        if settings.DEBUG or settings.LOAD_TEST_MODE:
+            return True, None
+
         # Global rate limit (per user per hour)
         global_key = f"notification_rate_global:{user_id}"
         global_count = cache.get(global_key, 0)

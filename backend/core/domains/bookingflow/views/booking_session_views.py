@@ -9,6 +9,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
 from decimal import Decimal
+from django.db import OperationalError
 from django.db.models import Prefetch, Count, Q
 from core.domains.products.models import ProductOption, ProductCategory
 from core.domains.products.services import DiscountService
@@ -1013,6 +1014,15 @@ class PublicBookingFlowViewSet(viewsets.ReadOnlyModelViewSet):
                     "blocking_event_id": result.get('blocking_event_id')
                 })
 
+        except OperationalError as e:
+            logger.warning(f"Database connection issue during availability check: {e}")
+            return Response(
+                {
+                    "available": False,
+                    "error": "Service temporarily unavailable. Please try again."
+                },
+                status=status.HTTP_503_SERVICE_UNAVAILABLE
+            )
         except Exception as e:
             logger.error(f"Error validating availability: {e}")
             return Response(

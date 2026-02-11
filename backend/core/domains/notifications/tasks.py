@@ -21,28 +21,11 @@ from .models import (
     NotificationPreference,
     NotificationType,
 )
+from .security import NotificationRateLimiter
 from .services import NotificationService, NotificationDigestService
 
 User = get_user_model()
 logger = logging.getLogger(__name__)
-
-# Rate limiting decorator
-def rate_limit_check(user_id: int, notification_type_code: str) -> bool:
-    """Check if user has exceeded rate limits for notifications"""
-    cache_key = f"notification_rate_limit:{user_id}:{notification_type_code}"
-    current_count = cache.get(cache_key, 0)
-    
-    # Get rate limit from settings (default 100/hour)
-    rate_limit = getattr(settings, 'NOTIFICATION_RATE_LIMIT', '100/hour')
-    limit_count = int(rate_limit.split('/')[0])
-    
-    if current_count >= limit_count:
-        logger.warning(f"Rate limit exceeded for user {user_id}, type {notification_type_code}")
-        return False
-    
-    # Increment counter with 1-hour expiry
-    cache.set(cache_key, current_count + 1, timeout=3600)
-    return True
 
 
 @shared_task(bind=True, max_retries=3, default_retry_delay=60)
@@ -67,11 +50,15 @@ def create_notification_async(
         client_id: Related client ID
     """
     try:
-        # Rate limiting check
-        if not rate_limit_check(recipient_id, notification_type_code):
+        # Rate limiting check (uses the canonical NotificationRateLimiter)
+        can_create, limit_message = NotificationRateLimiter.check_creation_limit(
+            user_id=recipient_id,
+            notification_type_code=notification_type_code
+        )
+        if not can_create:
             logger.warning(
                 f"Notification creation skipped due to rate limiting: "
-                f"user={recipient_id}, type={notification_type_code}"
+                f"user={recipient_id}, type={notification_type_code}, reason={limit_message}"
             )
             return {'status': 'rate_limited', 'notification_id': None}
         
@@ -137,7 +124,7 @@ def create_notification_async(
         return {'status': 'error', 'message': str(e)}
         
     except InvalidNotificationDataException as e:
-        logger.error(f"Invalid notification data: {str(e)}")
+        logger.warning(f"Invalid notification data: {str(e)}")
         return {'status': 'error', 'message': str(e)}
         
     except Exception as e:
