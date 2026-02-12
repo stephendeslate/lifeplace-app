@@ -14,9 +14,9 @@ export type {
   StepConfiguration as BaseStepConfiguration,
   StepDisplayCondition,
   StepValidationRules,
-} from './core.types';
+} from "./core.types";
 
-export { STEP_TYPE_LABELS } from './core.types';
+export { STEP_TYPE_LABELS } from "./core.types";
 
 // API Types
 export type {
@@ -32,7 +32,7 @@ export type {
   PaginatedResponse,
   ApiErrorResponse,
   RecoverableSessionInfo,
-} from './api.types';
+} from "./api.types";
 
 // Payment Types
 export type {
@@ -54,9 +54,9 @@ export type {
   PaymentMethodFormData,
   SetupIntentResponse,
   PaginatedPaymentMethodsResponse,
-} from './payment.types';
+} from "./payment.types";
 
-export { PAYMENT_GATEWAY_LABELS, PAYMENT_GATEWAY_ICONS } from './payment.types';
+export { PAYMENT_GATEWAY_LABELS, PAYMENT_GATEWAY_ICONS } from "./payment.types";
 
 // Questionnaire Types
 export type {
@@ -75,9 +75,9 @@ export type {
   FormattedQuestionnaireResponse,
   QuestionnaireStepConfiguration,
   QuestionnaireFieldResponse,
-} from './questionnaire.types';
+} from "./questionnaire.types";
 
-export { QUESTIONNAIRE_FIELD_TYPE_LABELS } from './questionnaire.types';
+export { QUESTIONNAIRE_FIELD_TYPE_LABELS } from "./questionnaire.types";
 
 // Venue Types
 export type {
@@ -100,7 +100,7 @@ export type {
   FindMatchingPackagesResponse,
   CreateFromVenuesRequest,
   CreateFromVenuesResponse,
-} from './venues.types';
+} from "./venues.types";
 
 // Step Data Types
 export type {
@@ -108,6 +108,7 @@ export type {
   ProductAttributes,
   IntroductionStepData,
   DateTimeStepData,
+  AttendeeBreakdown,
   SelectedPackage,
   PackageSelectionStepData,
   SelectedAddon,
@@ -124,7 +125,7 @@ export type {
   ProductCategory,
   Discount,
   BookingReviewSummary,
-} from './stepData.types';
+} from "./stepData.types";
 
 // Step Configuration Types
 export type {
@@ -140,7 +141,7 @@ export type {
   PricingSummaryStepConfiguration,
   StepConfiguration,
   StepConfigurationMap,
-} from './stepConfigurations.types';
+} from "./stepConfigurations.types";
 
 // Booking Data Types
 export type {
@@ -151,7 +152,7 @@ export type {
   SessionRecoveryInfo,
   StoredSession,
   SessionSyncStatus,
-} from './bookingData.types';
+} from "./bookingData.types";
 
 // State Management Types
 export type {
@@ -164,6 +165,6 @@ export type {
   BookingState,
   BookingActions,
   BookingContextValue,
-} from './state.types';
+} from "./state.types";
 
-export { createInitialBookingState } from './state.types';
+export { createInitialBookingState } from "./state.types";

@@ -4,7 +4,10 @@
  * Adapted from: frontend/client-portal/src/types/booking/stepData.types.ts
  */
 
-import type { UploadedFile, QuestionnaireFieldValues } from './questionnaire.types';
+import type {
+  UploadedFile,
+  QuestionnaireFieldValues,
+} from "./questionnaire.types";
 
 /**
  * Custom field values for contact info - typically strings or numbers
@@ -55,6 +58,19 @@ export interface VenueSelectionStepData {
 }
 
 /**
+ * Attendee breakdown for child/age-based pricing tiers
+ */
+export interface AttendeeBreakdown {
+  tier_label: string; // e.g., "Adult", "Child (4-11)", "Infant (0-3)"
+  min_age?: number;
+  max_age?: number;
+  count: number;
+  discount_percentage: number; // 0 for adults, 50 for children, 100 for infants
+  unit_price: number; // base_price * (1 - discount_percentage/100)
+  subtotal: number; // count * unit_price
+}
+
+/**
  * Selected package with pricing details
  */
 export interface SelectedPackage {
@@ -80,6 +96,12 @@ export interface SelectedPackage {
   category_id?: number;
   category_name?: string;
   featured_image?: string;
+  // Per-person pricing fields
+  pricing_unit?: "PER_EVENT" | "PER_PERSON" | "PER_HOUR";
+  pricing_unit_display?: string;
+  minimum_guests?: number;
+  maximum_guests?: number;
+  attendee_breakdown?: AttendeeBreakdown[];
 }
 
 /**
@@ -176,7 +198,7 @@ export interface ContactInfoStepData {
  */
 export interface PaymentStepData {
   payment_method: string;
-  payment_type: 'FULL' | 'DEPOSIT';
+  payment_type: "FULL" | "DEPOSIT";
   payment_gateway_id?: number;
   payment_gateway_code?: string;
   payment_method_id?: string; // For saved payment methods
@@ -186,7 +208,7 @@ export interface PaymentStepData {
   billing_postal_code?: string;
   billing_country?: string;
   save_payment_method?: boolean;
-  completion_type?: 'payment' | 'quote';
+  completion_type?: "payment" | "quote";
   quote_message?: string;
   deposit_amount?: number;
   deposit_percentage?: number;
@@ -199,7 +221,7 @@ export interface PaymentStepData {
 export interface ConfirmationStepData {
   booking_reference?: string;
   quote_reference?: string;
-  completion_status: 'pending' | 'processing' | 'completed' | 'failed';
+  completion_status: "pending" | "processing" | "completed" | "failed";
   completed_at?: string;
   confirmation_email_sent?: boolean;
   error_message?: string;
@@ -229,11 +251,22 @@ export interface PricingLineItem {
   quantity: number;
   unit_price: string;
   total_price: string;
-  type: 'PACKAGE' | 'ADDON' | 'TAX' | 'DISCOUNT' | 'FEE' | 'EXCESS_HOURS' | 'DEPOSIT' | 'BALANCE';
+  type:
+    | "PACKAGE"
+    | "ADDON"
+    | "TAX"
+    | "DISCOUNT"
+    | "FEE"
+    | "EXCESS_HOURS"
+    | "DEPOSIT"
+    | "BALANCE";
   venue_id?: number;
   venue_name?: string;
   product_id?: number;
   is_custom_bundle?: boolean;
+  pricing_unit?: "PER_EVENT" | "PER_PERSON" | "PER_HOUR";
+  minimum_guests?: number;
+  attendee_breakdown?: AttendeeBreakdown[];
 }
 
 /**
@@ -291,8 +324,8 @@ export interface ProductOption {
   category_id?: number | null;
   category_name?: string | null;
   // Type field - can be 'product_type' or 'type' from API
-  product_type: 'package' | 'addon' | 'service' | 'PACKAGE' | 'PRODUCT';
-  type?: 'PACKAGE' | 'PRODUCT';
+  product_type: "package" | "addon" | "service" | "PACKAGE" | "PRODUCT";
+  type?: "PACKAGE" | "PRODUCT";
   is_active: boolean;
   is_featured?: boolean;
   featured_image?: string;
@@ -317,9 +350,12 @@ export interface ProductOption {
   included_venues?: Array<{ venue_id: number; venue_name: string }>;
   // Additional API fields
   currency?: string;
-  pricing_model?: 'FIXED' | 'HOURLY' | 'DAILY' | 'CUSTOM';
-  pricing_unit?: 'PER_EVENT' | 'PER_PERSON' | 'PER_HOUR';
+  pricing_model?: "FIXED" | "HOURLY" | "DAILY" | "CUSTOM";
+  pricing_unit?: "PER_EVENT" | "PER_PERSON" | "PER_HOUR";
   pricing_unit_display?: string;
+  minimum_guests?: number;
+  maximum_guests?: number;
+  recommended_guests?: number;
   min_hours?: number;
   max_hours?: number;
   unit_label?: string | null;
@@ -352,7 +388,7 @@ export interface Discount {
   code: string;
   name: string;
   description?: string;
-  discount_type: 'percentage' | 'fixed';
+  discount_type: "percentage" | "fixed";
   discount_value: string;
   min_order_amount?: string;
   max_discount_amount?: string;

@@ -6,7 +6,7 @@
  * Aligned with: frontend/client-portal/src/components/booking/steps/PricingSummaryStep.tsx
  */
 
-import React, { useMemo, useEffect, useCallback, useState } from 'react';
+import React, { useMemo, useEffect, useCallback, useState } from "react";
 import {
   View,
   Text,
@@ -16,7 +16,7 @@ import {
   ActivityIndicator,
   TextInput,
   Linking,
-} from 'react-native';
+} from "react-native";
 import {
   Receipt,
   Package,
@@ -34,16 +34,16 @@ import {
   Square,
   Note,
   Warning,
-} from 'phosphor-react-native';
-import { colors, spacing, typeScale, layout, shadows } from '@/theme';
-import { useBookingContext } from '@/contexts/BookingContext';
-import { formatCurrency } from '@/utils/currency';
-import { useSimplePricing } from '@/hooks/booking/useSimplePricing';
-import { BookingCoreAPI } from '@/apis/booking';
-import { usePaymentPlanSettings } from '@/hooks/usePaymentPlanSettings';
-import { format, parseISO } from 'date-fns';
-import { logger } from '@/utils/logger';
-import type { StepComponentProps } from '../StepRenderer';
+} from "phosphor-react-native";
+import { colors, spacing, typeScale, layout, shadows } from "@/theme";
+import { useBookingContext } from "@/contexts/BookingContext";
+import { formatCurrency } from "@/utils/currency";
+import { useSimplePricing } from "@/hooks/booking/useSimplePricing";
+import { BookingCoreAPI } from "@/apis/booking";
+import { usePaymentPlanSettings } from "@/hooks/usePaymentPlanSettings";
+import { format, parseISO } from "date-fns";
+import { logger } from "@/utils/logger";
+import type { StepComponentProps } from "../StepRenderer";
 import type {
   PricingSummaryStepData,
   PricingSummaryStepConfiguration,
@@ -53,9 +53,12 @@ import type {
   AddonSelectionStepData,
   ContactInfoStepData,
   DateTimeStepData,
-} from '@/types/booking';
+} from "@/types/booking";
 
-type PricingSummaryStepProps = StepComponentProps<PricingSummaryStepData, PricingSummaryStepConfiguration>;
+type PricingSummaryStepProps = StepComponentProps<
+  PricingSummaryStepData,
+  PricingSummaryStepConfiguration
+>;
 
 export function PricingSummaryStep({
   step,
@@ -67,9 +70,9 @@ export function PricingSummaryStep({
 }: PricingSummaryStepProps) {
   const { state } = useBookingContext();
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
-    new Set(['packages', 'addons', 'review'])
+    new Set(["packages", "addons", "review"]),
   );
-  const [promoCodeInput, setPromoCodeInput] = useState('');
+  const [promoCodeInput, setPromoCodeInput] = useState("");
   const [promoError, setPromoError] = useState<string | null>(null);
 
   const {
@@ -90,16 +93,24 @@ export function PricingSummaryStep({
   } = configuration || {};
 
   // Get packages and addons from booking state
-  const packageStepData = state.stepData.package_selection as PackageSelectionStepData | undefined;
-  const addonStepData = state.stepData.addon_selection as AddonSelectionStepData | undefined;
-  const contactData = state.stepData.contact_info as ContactInfoStepData | undefined;
+  const packageStepData = state.stepData.package_selection as
+    | PackageSelectionStepData
+    | undefined;
+  const addonStepData = state.stepData.addon_selection as
+    | AddonSelectionStepData
+    | undefined;
+  const contactData = state.stepData.contact_info as
+    | ContactInfoStepData
+    | undefined;
   const dateTimeData = state.stepData.date_time as DateTimeStepData | undefined;
 
-  const selectedPackages: SelectedPackage[] = packageStepData?.selected_packages || [];
+  const selectedPackages: SelectedPackage[] =
+    packageStepData?.selected_packages || [];
   const selectedAddons: SelectedAddon[] = addonStepData?.selected_addons || [];
 
   // Get venue_additional_hours from addon_selection or package_selection
-  const venueAdditionalHours = addonStepData?.venue_additional_hours ||
+  const venueAdditionalHours =
+    addonStepData?.venue_additional_hours ||
     packageStepData?.venue_additional_hours ||
     undefined;
 
@@ -114,7 +125,7 @@ export function PricingSummaryStep({
     selectedPackages,
     selectedAddons,
     data.promo_code || data.applied_discount_code,
-    venueAdditionalHours
+    venueAdditionalHours,
   );
 
   // Determine if this is "quote mode" - only add-ons selected, no packages
@@ -127,8 +138,15 @@ export function PricingSummaryStep({
   // Get payment step configuration from the flow for effective_payment_terms
   const paymentStepConfig = useMemo(() => {
     const steps = state.currentFlow?.enabled_steps || state.currentFlow?.steps;
-    const paymentStep = steps?.find(s => s.step_type === 'payment_info');
-    return paymentStep?.configuration as { effective_payment_terms?: { deposit_percentage?: number; balance_due_days?: number } } | undefined;
+    const paymentStep = steps?.find((s) => s.step_type === "payment_info");
+    return paymentStep?.configuration as
+      | {
+          effective_payment_terms?: {
+            deposit_percentage?: number;
+            balance_due_days?: number;
+          };
+        }
+      | undefined;
   }, [state.currentFlow]);
 
   // Get deposit percentage - priority: payment step config > payment settings > default
@@ -166,28 +184,37 @@ export function PricingSummaryStep({
   };
 
   // Handle terms acceptance change
-  const handleTermsChange = useCallback((accepted: boolean) => {
-    onDataChange({
-      ...data,
-      terms_accepted: accepted,
-    });
-  }, [data, onDataChange]);
+  const handleTermsChange = useCallback(
+    (accepted: boolean) => {
+      onDataChange({
+        ...data,
+        terms_accepted: accepted,
+      });
+    },
+    [data, onDataChange],
+  );
 
   // Handle marketing consent change
-  const handleMarketingConsentChange = useCallback((consent: boolean) => {
-    onDataChange({
-      ...data,
-      marketing_consent: consent,
-    });
-  }, [data, onDataChange]);
+  const handleMarketingConsentChange = useCallback(
+    (consent: boolean) => {
+      onDataChange({
+        ...data,
+        marketing_consent: consent,
+      });
+    },
+    [data, onDataChange],
+  );
 
   // Handle special requests change
-  const handleSpecialRequestsChange = useCallback((text: string) => {
-    onDataChange({
-      ...data,
-      special_requests: text,
-    });
-  }, [data, onDataChange]);
+  const handleSpecialRequestsChange = useCallback(
+    (text: string) => {
+      onDataChange({
+        ...data,
+        special_requests: text,
+      });
+    },
+    [data, onDataChange],
+  );
 
   // Handle promo code application — validates via pricing API before applying
   const handleApplyPromoCode = useCallback(async () => {
@@ -203,7 +230,7 @@ export function PricingSummaryStep({
       const result = await BookingCoreAPI.calculatePricing(
         currentSessionId,
         codeToValidate,
-        venueAdditionalHours
+        venueAdditionalHours,
       );
 
       if (result.discount_error) {
@@ -215,12 +242,18 @@ export function PricingSummaryStep({
           promo_code: codeToValidate,
           applied_discount_code: codeToValidate,
         });
-        setPromoCodeInput('');
+        setPromoCodeInput("");
       }
     } catch (_error) {
-      setPromoError('Unable to validate promo code. Please try again.');
+      setPromoError("Unable to validate promo code. Please try again.");
     }
-  }, [promoCodeInput, data, onDataChange, state.currentSession?.session_id, venueAdditionalHours]);
+  }, [
+    promoCodeInput,
+    data,
+    onDataChange,
+    state.currentSession?.session_id,
+    venueAdditionalHours,
+  ]);
 
   // Handle promo code removal
   const handleRemovePromoCode = useCallback(() => {
@@ -236,9 +269,9 @@ export function PricingSummaryStep({
 
   // Format date helper
   const formatDate = (dateString: string): string => {
-    if (!dateString) return 'Not specified';
+    if (!dateString) return "Not specified";
     try {
-      return format(parseISO(dateString), 'EEEE, MMMM d, yyyy');
+      return format(parseISO(dateString), "EEEE, MMMM d, yyyy");
     } catch {
       return dateString;
     }
@@ -249,7 +282,7 @@ export function PricingSummaryStep({
     try {
       await Linking.openURL(url);
     } catch (error) {
-      logger.error('Failed to open link:', error);
+      logger.error("Failed to open link:", error);
     }
   };
 
@@ -275,7 +308,8 @@ export function PricingSummaryStep({
         <View style={styles.header}>
           <Text style={styles.title}>Quote Request</Text>
           <Text style={styles.subtitle}>
-            You haven't selected any packages or add-ons yet. You can still proceed to request a custom quote for your event.
+            You haven't selected any packages or add-ons yet. You can still
+            proceed to request a custom quote for your event.
           </Text>
         </View>
 
@@ -283,41 +317,45 @@ export function PricingSummaryStep({
         <View style={styles.quoteInfoBanner}>
           <Info size={18} color={colors.tertiary.teal} />
           <Text style={styles.quoteInfoText}>
-            No packages or add-ons selected. Continue to submit a quote request and our team will prepare a custom proposal for you.
+            No packages or add-ons selected. Continue to submit a quote request
+            and our team will prepare a custom proposal for you.
           </Text>
         </View>
 
         {/* Event Details */}
-        {show_booking_review && show_event_details && dateTimeData?.start_date && (
-          <View style={styles.reviewSection}>
-            <View style={styles.reviewSectionHeader}>
-              <Calendar size={18} color={colors.tertiary.teal} />
-              <Text style={styles.reviewSectionTitle}>Event Details</Text>
-            </View>
-            <View style={styles.reviewContent}>
-              <View style={styles.reviewRow}>
-                <Text style={styles.reviewLabel}>Event Type</Text>
-                <Text style={styles.reviewValue}>
-                  {state.currentFlow?.event_type_name || 'Not specified'}
-                </Text>
+        {show_booking_review &&
+          show_event_details &&
+          dateTimeData?.start_date && (
+            <View style={styles.reviewSection}>
+              <View style={styles.reviewSectionHeader}>
+                <Calendar size={18} color={colors.tertiary.teal} />
+                <Text style={styles.reviewSectionTitle}>Event Details</Text>
               </View>
-              <View style={styles.reviewRow}>
-                <Text style={styles.reviewLabel}>Event Date</Text>
-                <Text style={styles.reviewValue}>
-                  {formatDate(dateTimeData.start_date)}
-                </Text>
-              </View>
-              {dateTimeData.end_date && dateTimeData.end_date !== dateTimeData.start_date && (
+              <View style={styles.reviewContent}>
                 <View style={styles.reviewRow}>
-                  <Text style={styles.reviewLabel}>End Date</Text>
+                  <Text style={styles.reviewLabel}>Event Type</Text>
                   <Text style={styles.reviewValue}>
-                    {formatDate(dateTimeData.end_date)}
+                    {state.currentFlow?.event_type_name || "Not specified"}
                   </Text>
                 </View>
-              )}
+                <View style={styles.reviewRow}>
+                  <Text style={styles.reviewLabel}>Event Date</Text>
+                  <Text style={styles.reviewValue}>
+                    {formatDate(dateTimeData.start_date)}
+                  </Text>
+                </View>
+                {dateTimeData.end_date &&
+                  dateTimeData.end_date !== dateTimeData.start_date && (
+                    <View style={styles.reviewRow}>
+                      <Text style={styles.reviewLabel}>End Date</Text>
+                      <Text style={styles.reviewValue}>
+                        {formatDate(dateTimeData.end_date)}
+                      </Text>
+                    </View>
+                  )}
+              </View>
             </View>
-          </View>
-        )}
+          )}
 
         {/* Special Requests */}
         {show_booking_review && show_special_requests && (
@@ -333,7 +371,7 @@ export function PricingSummaryStep({
               multiline
               numberOfLines={4}
               textAlignVertical="top"
-              value={data.special_requests || ''}
+              value={data.special_requests || ""}
               onChangeText={handleSpecialRequestsChange}
             />
           </View>
@@ -348,24 +386,28 @@ export function PricingSummaryStep({
               activeOpacity={0.7}
             >
               {data.terms_accepted ? (
-                <CheckSquare size={24} color={colors.secondary.forest} weight="fill" />
+                <CheckSquare
+                  size={24}
+                  color={colors.secondary.forest}
+                  weight="fill"
+                />
               ) : (
                 <Square size={24} color={colors.neutral.gray} />
               )}
               <Text style={styles.termsText}>
                 {terms_text || (
                   <>
-                    I agree to the{' '}
+                    I agree to the{" "}
                     <Text
                       style={styles.termsLink}
-                      onPress={() => openLink(terms_url || '/terms')}
+                      onPress={() => openLink(terms_url || "/terms")}
                     >
                       Terms of Service
-                    </Text>
-                    {' '}and{' '}
+                    </Text>{" "}
+                    and{" "}
                     <Text
                       style={styles.termsLink}
-                      onPress={() => openLink(privacy_url || '/privacy')}
+                      onPress={() => openLink(privacy_url || "/privacy")}
                     >
                       Privacy Policy
                     </Text>
@@ -386,16 +428,23 @@ export function PricingSummaryStep({
             {show_marketing_consent && (
               <TouchableOpacity
                 style={[styles.checkboxRow, styles.marketingCheckbox]}
-                onPress={() => handleMarketingConsentChange(!data.marketing_consent)}
+                onPress={() =>
+                  handleMarketingConsentChange(!data.marketing_consent)
+                }
                 activeOpacity={0.7}
               >
                 {data.marketing_consent ? (
-                  <CheckSquare size={24} color={colors.secondary.forest} weight="fill" />
+                  <CheckSquare
+                    size={24}
+                    color={colors.secondary.forest}
+                    weight="fill"
+                  />
                 ) : (
                   <Square size={24} color={colors.neutral.gray} />
                 )}
                 <Text style={styles.marketingText}>
-                  I would like to receive marketing updates and special offers (optional)
+                  I would like to receive marketing updates and special offers
+                  (optional)
                 </Text>
               </TouchableOpacity>
             )}
@@ -414,12 +463,12 @@ export function PricingSummaryStep({
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.title}>
-          {isQuoteMode ? 'Quote Request Summary' : 'Pricing Summary'}
+          {isQuoteMode ? "Quote Request Summary" : "Pricing Summary"}
         </Text>
         <Text style={styles.subtitle}>
           {isQuoteMode
-            ? 'Review your selected add-ons. A custom quote with package recommendations will be provided.'
-            : 'Review your booking details and confirm your selection'}
+            ? "Review your selected add-ons. A custom quote with package recommendations will be provided."
+            : "Review your booking details and confirm your selection"}
         </Text>
       </View>
 
@@ -430,8 +479,9 @@ export function PricingSummaryStep({
           <View style={styles.quoteModeAlertContent}>
             <Text style={styles.quoteModeAlertTitle}>Quote Request Mode</Text>
             <Text style={styles.quoteModeAlertText}>
-              You've selected add-ons but no package. Since packages are required for booking,
-              you'll receive a custom quote with package recommendations that best fit your needs.
+              You've selected add-ons but no package. Since packages are
+              required for booking, you'll receive a custom quote with package
+              recommendations that best fit your needs.
             </Text>
           </View>
         </View>
@@ -450,7 +500,7 @@ export function PricingSummaryStep({
         <View style={styles.section}>
           <TouchableOpacity
             style={styles.sectionHeader}
-            onPress={() => toggleSection('packages')}
+            onPress={() => toggleSection("packages")}
           >
             <View style={styles.sectionHeaderLeft}>
               <Package size={20} color={colors.accent.wood} />
@@ -462,11 +512,14 @@ export function PricingSummaryStep({
             <View style={styles.sectionHeaderRight}>
               <Text style={styles.sectionTotal}>
                 {formatCurrency(
-                  selectedPackages.reduce((sum, pkg) => sum + parseFloat(pkg.price) * pkg.quantity, 0),
-                  { currency: 'PHP' }
+                  selectedPackages.reduce(
+                    (sum, pkg) => sum + parseFloat(pkg.price) * pkg.quantity,
+                    0,
+                  ),
+                  { currency: "PHP" },
                 )}
               </Text>
-              {expandedSections.has('packages') ? (
+              {expandedSections.has("packages") ? (
                 <CaretUp size={20} color={colors.neutral.darkGray} />
               ) : (
                 <CaretDown size={20} color={colors.neutral.darkGray} />
@@ -474,31 +527,88 @@ export function PricingSummaryStep({
             </View>
           </TouchableOpacity>
 
-          {expandedSections.has('packages') && (
+          {expandedSections.has("packages") && (
             <View style={styles.sectionContent}>
-              {selectedPackages.map((pkg, index) => (
-                <View key={`pkg-${index}`} style={styles.lineItem}>
-                  <View style={styles.lineItemLeft}>
-                    <Text style={styles.lineItemName}>{pkg.name}</Text>
-                    {pkg.quantity > 1 && (
-                      <Text style={styles.lineItemQuantity}>× {pkg.quantity}</Text>
-                    )}
-                    {pkg.is_custom_bundle && (
-                      <View style={styles.customBundleBadge}>
-                        <Text style={styles.customBundleBadgeText}>Custom</Text>
+              {selectedPackages.map((pkg, index) => {
+                const activeTiers = pkg.attendee_breakdown?.filter(
+                  (t) => t.count > 0,
+                );
+                const showBreakdown = activeTiers && activeTiers.length > 1;
+
+                return (
+                  <View key={`pkg-${index}`}>
+                    <View style={styles.lineItem}>
+                      <View style={styles.lineItemLeft}>
+                        <Text style={styles.lineItemName}>
+                          {pkg.name}
+                          {showBreakdown &&
+                            pkg.pricing_unit === "PER_PERSON" &&
+                            ` (${pkg.quantity} persons)`}
+                        </Text>
+                        {!showBreakdown && pkg.pricing_unit === "PER_PERSON" ? (
+                          <Text style={styles.lineItemQuantity}>
+                            {pkg.quantity} persons ×{" "}
+                            {formatCurrency(parseFloat(pkg.price), {
+                              currency: "PHP",
+                            })}
+                            /person
+                          </Text>
+                        ) : (
+                          !showBreakdown &&
+                          pkg.quantity > 1 && (
+                            <Text style={styles.lineItemQuantity}>
+                              × {pkg.quantity}
+                            </Text>
+                          )
+                        )}
+                        {pkg.is_custom_bundle && (
+                          <View style={styles.customBundleBadge}>
+                            <Text style={styles.customBundleBadgeText}>
+                              Custom
+                            </Text>
+                          </View>
+                        )}
+                        {pkg.is_tax_inclusive && (
+                          <View style={styles.taxInclusiveBadge}>
+                            <Text style={styles.taxInclusiveBadgeText}>
+                              Tax Incl.
+                            </Text>
+                          </View>
+                        )}
                       </View>
-                    )}
-                    {pkg.is_tax_inclusive && (
-                      <View style={styles.taxInclusiveBadge}>
-                        <Text style={styles.taxInclusiveBadgeText}>Tax Incl.</Text>
+                      <Text style={styles.lineItemPrice}>
+                        {formatCurrency(parseFloat(pkg.price) * pkg.quantity, {
+                          currency: "PHP",
+                        })}
+                      </Text>
+                    </View>
+                    {showBreakdown && (
+                      <View style={styles.attendeeBreakdownContainer}>
+                        {activeTiers.map((tier, idx) => (
+                          <View key={idx} style={styles.attendeeTierRow}>
+                            <Text style={styles.attendeeTierLabel}>
+                              {tier.count} {tier.tier_label}
+                              {tier.discount_percentage > 0
+                                ? ` (${tier.discount_percentage}% off)`
+                                : ""}{" "}
+                              ×{" "}
+                              {formatCurrency(tier.unit_price, {
+                                currency: "PHP",
+                              })}
+                              /person
+                            </Text>
+                            <Text style={styles.attendeeTierAmount}>
+                              {formatCurrency(tier.subtotal, {
+                                currency: "PHP",
+                              })}
+                            </Text>
+                          </View>
+                        ))}
                       </View>
                     )}
                   </View>
-                  <Text style={styles.lineItemPrice}>
-                    {formatCurrency(parseFloat(pkg.price) * pkg.quantity, { currency: 'PHP' })}
-                  </Text>
-                </View>
-              ))}
+                );
+              })}
             </View>
           )}
         </View>
@@ -509,12 +619,12 @@ export function PricingSummaryStep({
         <View style={styles.section}>
           <TouchableOpacity
             style={styles.sectionHeader}
-            onPress={() => toggleSection('addons')}
+            onPress={() => toggleSection("addons")}
           >
             <View style={styles.sectionHeaderLeft}>
               <Tag size={20} color={colors.tertiary.teal} />
               <Text style={styles.sectionTitle}>
-                {isQuoteMode ? 'Estimated Add-ons Summary' : 'Add-ons'}
+                {isQuoteMode ? "Estimated Add-ons Summary" : "Add-ons"}
               </Text>
               <View style={styles.badge}>
                 <Text style={styles.badgeText}>{selectedAddons.length}</Text>
@@ -523,11 +633,15 @@ export function PricingSummaryStep({
             <View style={styles.sectionHeaderRight}>
               <Text style={styles.sectionTotal}>
                 {formatCurrency(
-                  selectedAddons.reduce((sum, addon) => sum + parseFloat(addon.price) * addon.quantity, 0),
-                  { currency: 'PHP' }
+                  selectedAddons.reduce(
+                    (sum, addon) =>
+                      sum + parseFloat(addon.price) * addon.quantity,
+                    0,
+                  ),
+                  { currency: "PHP" },
                 )}
               </Text>
-              {expandedSections.has('addons') ? (
+              {expandedSections.has("addons") ? (
                 <CaretUp size={20} color={colors.neutral.darkGray} />
               ) : (
                 <CaretDown size={20} color={colors.neutral.darkGray} />
@@ -535,18 +649,22 @@ export function PricingSummaryStep({
             </View>
           </TouchableOpacity>
 
-          {expandedSections.has('addons') && (
+          {expandedSections.has("addons") && (
             <View style={styles.sectionContent}>
               {selectedAddons.map((addon, index) => (
                 <View key={`addon-${index}`} style={styles.lineItem}>
                   <View style={styles.lineItemLeft}>
                     <Text style={styles.lineItemName}>{addon.name}</Text>
                     {addon.quantity > 1 && (
-                      <Text style={styles.lineItemQuantity}>× {addon.quantity}</Text>
+                      <Text style={styles.lineItemQuantity}>
+                        × {addon.quantity}
+                      </Text>
                     )}
                   </View>
                   <Text style={styles.lineItemPrice}>
-                    {formatCurrency(parseFloat(addon.price) * addon.quantity, { currency: 'PHP' })}
+                    {formatCurrency(parseFloat(addon.price) * addon.quantity, {
+                      currency: "PHP",
+                    })}
                   </Text>
                 </View>
               ))}
@@ -565,7 +683,11 @@ export function PricingSummaryStep({
           {data.promo_code || data.applied_discount_code ? (
             <View style={styles.promoApplied}>
               <View style={styles.promoCodeBadge}>
-                <Check size={14} color={colors.secondary.forest} weight="bold" />
+                <Check
+                  size={14}
+                  color={colors.secondary.forest}
+                  weight="bold"
+                />
                 <Text style={styles.promoCodeText}>
                   {data.promo_code || data.applied_discount_code}
                 </Text>
@@ -585,7 +707,10 @@ export function PricingSummaryStep({
                 autoCapitalize="characters"
               />
               <TouchableOpacity
-                style={[styles.promoApplyButton, !promoCodeInput && styles.promoApplyButtonDisabled]}
+                style={[
+                  styles.promoApplyButton,
+                  !promoCodeInput && styles.promoApplyButtonDisabled,
+                ]}
                 onPress={handleApplyPromoCode}
                 disabled={!promoCodeInput}
               >
@@ -609,7 +734,9 @@ export function PricingSummaryStep({
         {show_tax_breakdown && pricing?.tax > 0 && (
           <View style={styles.totalRow}>
             <View style={styles.taxLabelContainer}>
-              <Text style={styles.totalLabel}>VAT ({(pricing.taxRate * 100).toFixed(0)}%)</Text>
+              <Text style={styles.totalLabel}>
+                VAT ({(pricing.taxRate * 100).toFixed(0)}%)
+              </Text>
               <TouchableOpacity>
                 <Info size={14} color={colors.neutral.gray} />
               </TouchableOpacity>
@@ -620,7 +747,9 @@ export function PricingSummaryStep({
 
         {pricing?.discount > 0 && (
           <View style={styles.totalRow}>
-            <Text style={[styles.totalLabel, styles.discountLabel]}>Discount</Text>
+            <Text style={[styles.totalLabel, styles.discountLabel]}>
+              Discount
+            </Text>
             <Text style={[styles.totalValue, styles.discountValue]}>
               -{pricing?.formattedDiscount}
             </Text>
@@ -630,16 +759,27 @@ export function PricingSummaryStep({
         <View style={styles.divider} />
 
         <View style={styles.grandTotalRow}>
-          <Text style={[styles.grandTotalLabel, isQuoteMode && styles.estimatedTotalLabel]}>
-            {isQuoteMode ? 'Estimated Total' : 'Total'}
+          <Text
+            style={[
+              styles.grandTotalLabel,
+              isQuoteMode && styles.estimatedTotalLabel,
+            ]}
+          >
+            {isQuoteMode ? "Estimated Total" : "Total"}
           </Text>
-          <Text style={[styles.grandTotalValue, isQuoteMode && styles.estimatedTotalValue]}>
+          <Text
+            style={[
+              styles.grandTotalValue,
+              isQuoteMode && styles.estimatedTotalValue,
+            ]}
+          >
             {pricing?.formattedTotal}
           </Text>
         </View>
         {isQuoteMode && (
           <Text style={styles.quoteFootnote}>
-            * Final pricing will be provided in your custom quote, which will include a recommended package.
+            * Final pricing will be provided in your custom quote, which will
+            include a recommended package.
           </Text>
         )}
       </View>
@@ -663,7 +803,9 @@ export function PricingSummaryStep({
                 </View>
               </View>
               <Text style={styles.paymentItemAmount}>
-                {formatCurrency(pricing.total * (depositPercentage / 100), { currency: 'PHP' })}
+                {formatCurrency(pricing.total * (depositPercentage / 100), {
+                  currency: "PHP",
+                })}
               </Text>
             </View>
             <View style={styles.paymentItem}>
@@ -677,7 +819,10 @@ export function PricingSummaryStep({
                 </View>
               </View>
               <Text style={styles.paymentItemAmount}>
-                {formatCurrency(pricing.total * ((100 - depositPercentage) / 100), { currency: 'PHP' })}
+                {formatCurrency(
+                  pricing.total * ((100 - depositPercentage) / 100),
+                  { currency: "PHP" },
+                )}
               </Text>
             </View>
           </View>
@@ -698,7 +843,7 @@ export function PricingSummaryStep({
                 <View style={styles.reviewRow}>
                   <Text style={styles.reviewLabel}>Event Type</Text>
                   <Text style={styles.reviewValue}>
-                    {state.currentFlow?.event_type_name || 'Not specified'}
+                    {state.currentFlow?.event_type_name || "Not specified"}
                   </Text>
                 </View>
                 <View style={styles.reviewRow}>
@@ -707,14 +852,15 @@ export function PricingSummaryStep({
                     {formatDate(dateTimeData.start_date)}
                   </Text>
                 </View>
-                {dateTimeData.end_date && dateTimeData.end_date !== dateTimeData.start_date && (
-                  <View style={styles.reviewRow}>
-                    <Text style={styles.reviewLabel}>End Date</Text>
-                    <Text style={styles.reviewValue}>
-                      {formatDate(dateTimeData.end_date)}
-                    </Text>
-                  </View>
-                )}
+                {dateTimeData.end_date &&
+                  dateTimeData.end_date !== dateTimeData.start_date && (
+                    <View style={styles.reviewRow}>
+                      <Text style={styles.reviewLabel}>End Date</Text>
+                      <Text style={styles.reviewValue}>
+                        {formatDate(dateTimeData.end_date)}
+                      </Text>
+                    </View>
+                  )}
               </View>
             </View>
           )}
@@ -724,12 +870,16 @@ export function PricingSummaryStep({
             <View style={styles.reviewSection}>
               <View style={styles.reviewSectionHeader}>
                 <User size={18} color={colors.tertiary.teal} />
-                <Text style={styles.reviewSectionTitle}>Contact Information</Text>
+                <Text style={styles.reviewSectionTitle}>
+                  Contact Information
+                </Text>
               </View>
               <View style={styles.reviewContent}>
                 <View style={styles.reviewRow}>
                   <Text style={styles.reviewLabel}>Name</Text>
-                  <Text style={styles.reviewValue}>{contactData.full_name}</Text>
+                  <Text style={styles.reviewValue}>
+                    {contactData.full_name}
+                  </Text>
                 </View>
                 {contactData.email && (
                   <View style={styles.reviewRow}>
@@ -746,7 +896,9 @@ export function PricingSummaryStep({
                 {contactData.company && (
                   <View style={styles.reviewRow}>
                     <Text style={styles.reviewLabel}>Company</Text>
-                    <Text style={styles.reviewValue}>{contactData.company}</Text>
+                    <Text style={styles.reviewValue}>
+                      {contactData.company}
+                    </Text>
                   </View>
                 )}
               </View>
@@ -767,7 +919,7 @@ export function PricingSummaryStep({
                 multiline
                 numberOfLines={4}
                 textAlignVertical="top"
-                value={data.special_requests || ''}
+                value={data.special_requests || ""}
                 onChangeText={handleSpecialRequestsChange}
               />
             </View>
@@ -782,24 +934,28 @@ export function PricingSummaryStep({
                 activeOpacity={0.7}
               >
                 {data.terms_accepted ? (
-                  <CheckSquare size={24} color={colors.secondary.forest} weight="fill" />
+                  <CheckSquare
+                    size={24}
+                    color={colors.secondary.forest}
+                    weight="fill"
+                  />
                 ) : (
                   <Square size={24} color={colors.neutral.gray} />
                 )}
                 <Text style={styles.termsText}>
                   {terms_text || (
                     <>
-                      I agree to the{' '}
+                      I agree to the{" "}
                       <Text
                         style={styles.termsLink}
-                        onPress={() => openLink(terms_url || '/terms')}
+                        onPress={() => openLink(terms_url || "/terms")}
                       >
                         Terms of Service
-                      </Text>
-                      {' '}and{' '}
+                      </Text>{" "}
+                      and{" "}
                       <Text
                         style={styles.termsLink}
-                        onPress={() => openLink(privacy_url || '/privacy')}
+                        onPress={() => openLink(privacy_url || "/privacy")}
                       >
                         Privacy Policy
                       </Text>
@@ -820,16 +976,23 @@ export function PricingSummaryStep({
               {show_marketing_consent && (
                 <TouchableOpacity
                   style={[styles.checkboxRow, styles.marketingCheckbox]}
-                  onPress={() => handleMarketingConsentChange(!data.marketing_consent)}
+                  onPress={() =>
+                    handleMarketingConsentChange(!data.marketing_consent)
+                  }
                   activeOpacity={0.7}
                 >
                   {data.marketing_consent ? (
-                    <CheckSquare size={24} color={colors.secondary.forest} weight="fill" />
+                    <CheckSquare
+                      size={24}
+                      color={colors.secondary.forest}
+                      weight="fill"
+                    />
                   ) : (
                     <Square size={24} color={colors.neutral.gray} />
                   )}
                   <Text style={styles.marketingText}>
-                    I would like to receive marketing updates and special offers (optional)
+                    I would like to receive marketing updates and special offers
+                    (optional)
                   </Text>
                 </TouchableOpacity>
               )}
@@ -842,8 +1005,8 @@ export function PricingSummaryStep({
       <View style={styles.infoNote}>
         <Info size={16} color={colors.tertiary.teal} />
         <Text style={styles.infoNoteText}>
-          Prices are inclusive of applicable taxes. Final amount may vary based on
-          actual event duration and additional services requested.
+          Prices are inclusive of applicable taxes. Final amount may vary based
+          on actual event duration and additional services requested.
         </Text>
       </View>
     </ScrollView>
@@ -859,8 +1022,8 @@ const styles = StyleSheet.create({
   },
   loadingContainer: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     padding: spacing.xxl,
     gap: spacing.md,
   },
@@ -870,8 +1033,8 @@ const styles = StyleSheet.create({
   },
   errorContainer: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     padding: spacing.xxl,
     gap: spacing.md,
   },
@@ -882,7 +1045,7 @@ const styles = StyleSheet.create({
   errorText: {
     ...typeScale.bodyMedium,
     color: colors.neutral.darkGray,
-    textAlign: 'center',
+    textAlign: "center",
   },
   header: {
     marginBottom: spacing.lg,
@@ -897,9 +1060,9 @@ const styles = StyleSheet.create({
     color: colors.neutral.darkGray,
   },
   warningBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.semantic.warning + '15',
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: colors.semantic.warning + "15",
     padding: spacing.md,
     borderRadius: layout.borderRadius.md,
     gap: spacing.sm,
@@ -914,23 +1077,23 @@ const styles = StyleSheet.create({
     backgroundColor: colors.neutral.white,
     borderRadius: layout.cardBorderRadius,
     marginBottom: spacing.md,
-    overflow: 'hidden',
+    overflow: "hidden",
     ...shadows.sm,
   },
   sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     padding: spacing.md,
   },
   sectionHeaderLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: spacing.sm,
   },
   sectionHeaderRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: spacing.sm,
   },
   sectionTitle: {
@@ -950,7 +1113,7 @@ const styles = StyleSheet.create({
   sectionTotal: {
     ...typeScale.titleSmall,
     color: colors.primary.black,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   sectionContent: {
     paddingHorizontal: spacing.md,
@@ -961,13 +1124,13 @@ const styles = StyleSheet.create({
     paddingTop: spacing.sm,
   },
   lineItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
   lineItemLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: spacing.xs,
     flex: 1,
   },
@@ -984,7 +1147,7 @@ const styles = StyleSheet.create({
     color: colors.primary.black,
   },
   customBundleBadge: {
-    backgroundColor: colors.tertiary.teal + '20',
+    backgroundColor: colors.tertiary.teal + "20",
     paddingHorizontal: spacing.xs,
     paddingVertical: 2,
     borderRadius: layout.borderRadius.xs,
@@ -992,10 +1155,10 @@ const styles = StyleSheet.create({
   customBundleBadgeText: {
     ...typeScale.labelSmall,
     color: colors.tertiary.teal,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   taxInclusiveBadge: {
-    backgroundColor: colors.accent.wood + '20',
+    backgroundColor: colors.accent.wood + "20",
     paddingHorizontal: spacing.xs,
     paddingVertical: 2,
     borderRadius: layout.borderRadius.xs,
@@ -1003,8 +1166,27 @@ const styles = StyleSheet.create({
   taxInclusiveBadgeText: {
     ...typeScale.labelSmall,
     color: colors.accent.wood,
-    fontWeight: '600',
+    fontWeight: "600",
     fontSize: 10,
+  },
+  attendeeBreakdownContainer: {
+    paddingLeft: spacing.md,
+    paddingTop: spacing.xs,
+    gap: spacing.xxs,
+  },
+  attendeeTierRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  attendeeTierLabel: {
+    ...typeScale.labelSmall,
+    color: colors.neutral.gray,
+    flex: 1,
+  },
+  attendeeTierAmount: {
+    ...typeScale.labelSmall,
+    color: colors.neutral.gray,
   },
   promoSection: {
     backgroundColor: colors.neutral.white,
@@ -1014,8 +1196,8 @@ const styles = StyleSheet.create({
     ...shadows.sm,
   },
   promoHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: spacing.sm,
     marginBottom: spacing.sm,
   },
@@ -1024,13 +1206,13 @@ const styles = StyleSheet.create({
     color: colors.primary.black,
   },
   promoApplied: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
   promoCodeBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: colors.secondary.forestSubtle,
     paddingVertical: spacing.xs,
     paddingHorizontal: spacing.sm,
@@ -1040,14 +1222,14 @@ const styles = StyleSheet.create({
   promoCodeText: {
     ...typeScale.labelMedium,
     color: colors.secondary.forest,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   promoRemove: {
     ...typeScale.labelMedium,
     color: colors.semantic.error,
   },
   promoInputRow: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: spacing.sm,
   },
   promoInput: {
@@ -1065,7 +1247,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     borderRadius: layout.borderRadius.sm,
-    justifyContent: 'center',
+    justifyContent: "center",
   },
   promoApplyButtonDisabled: {
     backgroundColor: colors.neutral.gray,
@@ -1073,7 +1255,7 @@ const styles = StyleSheet.create({
   promoApplyButtonText: {
     ...typeScale.labelMedium,
     color: colors.neutral.white,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   promoErrorText: {
     ...typeScale.labelSmall,
@@ -1088,14 +1270,14 @@ const styles = StyleSheet.create({
     ...shadows.sm,
   },
   totalRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     marginBottom: spacing.sm,
   },
   taxLabelContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: spacing.xs,
   },
   totalLabel: {
@@ -1118,9 +1300,9 @@ const styles = StyleSheet.create({
     marginVertical: spacing.sm,
   },
   grandTotalRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
   grandTotalLabel: {
     ...typeScale.titleMedium,
@@ -1129,7 +1311,7 @@ const styles = StyleSheet.create({
   grandTotalValue: {
     ...typeScale.headlineSmall,
     color: colors.primary.black,
-    fontWeight: '700',
+    fontWeight: "700",
   },
   paymentSchedule: {
     backgroundColor: colors.neutral.sand,
@@ -1138,8 +1320,8 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   paymentScheduleHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: spacing.sm,
     marginBottom: spacing.md,
   },
@@ -1151,13 +1333,13 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   paymentItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
   paymentItemLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: spacing.sm,
   },
   paymentDot: {
@@ -1182,7 +1364,7 @@ const styles = StyleSheet.create({
   paymentItemAmount: {
     ...typeScale.titleSmall,
     color: colors.primary.black,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   reviewSection: {
     backgroundColor: colors.neutral.white,
@@ -1192,8 +1374,8 @@ const styles = StyleSheet.create({
     ...shadows.sm,
   },
   reviewSectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: spacing.sm,
     marginBottom: spacing.md,
     paddingBottom: spacing.sm,
@@ -1203,15 +1385,15 @@ const styles = StyleSheet.create({
   reviewSectionTitle: {
     ...typeScale.titleSmall,
     color: colors.primary.black,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   reviewContent: {
     gap: spacing.sm,
   },
   reviewRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
   },
   reviewLabel: {
     ...typeScale.labelMedium,
@@ -1220,8 +1402,8 @@ const styles = StyleSheet.create({
   reviewValue: {
     ...typeScale.bodyMedium,
     color: colors.primary.black,
-    fontWeight: '500',
-    textAlign: 'right',
+    fontWeight: "500",
+    textAlign: "right",
     flex: 1,
     marginLeft: spacing.md,
   },
@@ -1242,8 +1424,8 @@ const styles = StyleSheet.create({
     ...shadows.sm,
   },
   checkboxRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
+    flexDirection: "row",
+    alignItems: "flex-start",
     gap: spacing.sm,
   },
   marketingCheckbox: {
@@ -1257,7 +1439,7 @@ const styles = StyleSheet.create({
   },
   termsLink: {
     color: colors.tertiary.teal,
-    textDecorationLine: 'underline',
+    textDecorationLine: "underline",
   },
   marketingText: {
     ...typeScale.bodySmall,
@@ -1266,11 +1448,11 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   termsError: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: spacing.xs,
     marginTop: spacing.sm,
-    backgroundColor: colors.semantic.error + '10',
+    backgroundColor: colors.semantic.error + "10",
     padding: spacing.sm,
     borderRadius: layout.borderRadius.sm,
   },
@@ -1279,8 +1461,8 @@ const styles = StyleSheet.create({
     color: colors.semantic.error,
   },
   infoNote: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
+    flexDirection: "row",
+    alignItems: "flex-start",
     backgroundColor: colors.tertiary.tealSubtle,
     padding: spacing.md,
     borderRadius: layout.borderRadius.md,
@@ -1293,8 +1475,8 @@ const styles = StyleSheet.create({
   },
   // Quote mode styles
   quoteInfoBanner: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
+    flexDirection: "row",
+    alignItems: "flex-start",
     backgroundColor: colors.tertiary.tealSubtle,
     padding: spacing.md,
     borderRadius: layout.borderRadius.md,
@@ -1307,15 +1489,15 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   quoteModeAlert: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
+    flexDirection: "row",
+    alignItems: "flex-start",
     backgroundColor: colors.tertiary.tealSubtle,
     padding: spacing.md,
     borderRadius: layout.borderRadius.md,
     gap: spacing.sm,
     marginBottom: spacing.lg,
     borderWidth: 1,
-    borderColor: colors.tertiary.teal + '40',
+    borderColor: colors.tertiary.teal + "40",
   },
   quoteModeAlertContent: {
     flex: 1,
@@ -1323,7 +1505,7 @@ const styles = StyleSheet.create({
   quoteModeAlertTitle: {
     ...typeScale.labelMedium,
     color: colors.tertiary.tealDark,
-    fontWeight: '600',
+    fontWeight: "600",
     marginBottom: spacing.xxs,
   },
   quoteModeAlertText: {
@@ -1339,9 +1521,9 @@ const styles = StyleSheet.create({
   quoteFootnote: {
     ...typeScale.labelSmall,
     color: colors.neutral.darkGray,
-    fontStyle: 'italic',
+    fontStyle: "italic",
     marginTop: spacing.sm,
-    textAlign: 'center',
+    textAlign: "center",
   },
 });
 

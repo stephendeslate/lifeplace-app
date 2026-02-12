@@ -18,6 +18,17 @@ export interface QuestionnaireStepData {
   uploaded_files?: Record<string, File[]>; // field_id -> uploaded files
 }
 
+// Attendee breakdown for child/age-based pricing tiers
+export interface AttendeeBreakdown {
+  tier_label: string; // e.g., "Adult", "Child (4-11)", "Infant (0-3)"
+  min_age?: number;
+  max_age?: number;
+  count: number;
+  discount_percentage: number; // 0 for adults, 50 for children, 100 for infants
+  unit_price: number; // base_price * (1 - discount_percentage/100)
+  subtotal: number; // count * unit_price
+}
+
 // Standardized to use product_id while keeping all display fields
 export interface SelectedPackage {
   product_id: number; // Standardized from 'package_id'. Use -1 for custom bundles (temporary ID)
@@ -31,6 +42,12 @@ export interface SelectedPackage {
   // Custom bundle pricing properties
   included_hours?: number | string | null;
   excess_hour_price?: string;
+  // Per-person pricing fields
+  pricing_unit?: "PER_EVENT" | "PER_PERSON" | "PER_HOUR";
+  pricing_unit_display?: string;
+  minimum_guests?: number;
+  maximum_guests?: number;
+  attendee_breakdown?: AttendeeBreakdown[];
 }
 
 export interface PackageSelectionStepData {
@@ -75,7 +92,7 @@ export interface ContactInfoStepData {
 
 export interface PaymentStepData {
   payment_method: string;
-  payment_type: 'FULL' | 'DEPOSIT';
+  payment_type: "FULL" | "DEPOSIT";
   payment_gateway_id?: number;
   payment_method_id?: string; // Stripe payment method ID
   payment_method_token?: string; // Alternative token field for other gateways
@@ -89,7 +106,7 @@ export interface PaymentStepData {
     country?: string;
   };
   save_payment_method?: boolean;
-  completion_type?: 'payment' | 'quote';
+  completion_type?: "payment" | "quote";
   quote_message?: string; // Client message for quote requests
   // Calculated deposit values (stored for use in confirmation step)
   deposit_amount?: number; // Actual deposit amount calculated from effective payment terms
@@ -97,17 +114,17 @@ export interface PaymentStepData {
   balance_due_days?: number; // Days before event when balance is due
 }
 
-export type PaymentMethodType = 
-  | 'CREDIT_CARD'
-  | 'DEBIT_CARD'
-  | 'DIGITAL_WALLET'
-  | 'BANK_TRANSFER'
-  | 'MANUAL'
-  | 'CASH';
+export type PaymentMethodType =
+  | "CREDIT_CARD"
+  | "DEBIT_CARD"
+  | "DIGITAL_WALLET"
+  | "BANK_TRANSFER"
+  | "MANUAL"
+  | "CASH";
 
 export interface EnhancedPaymentStepData {
   payment_method: PaymentMethodType;
-  payment_type: 'FULL' | 'DEPOSIT';
+  payment_type: "FULL" | "DEPOSIT";
   payment_gateway_id?: number;
   payment_method_id?: string; // Stripe payment method ID
   payment_method_token?: string; // Alternative token for other gateways
@@ -124,7 +141,7 @@ export interface EnhancedPaymentStepData {
   // Additional fields for future extensibility
   payment_intent_id?: string; // For tracking Stripe payment intents
   client_secret?: string; // For 3D Secure authentication
-  payment_status?: 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
+  payment_status?: "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED";
 }
 
 // Venue-specific excess hours breakdown
@@ -151,6 +168,9 @@ export interface PricingLineItem {
   excess_hour_price: string | null;
   excess_cost: string;
   venue_details?: VenueExcessHours[];
+  pricing_unit?: "PER_EVENT" | "PER_PERSON" | "PER_HOUR";
+  minimum_guests?: number;
+  attendee_breakdown?: AttendeeBreakdown[];
 }
 
 // Server response for pricing calculation
@@ -176,7 +196,7 @@ export interface PricingCalculation {
 
 export interface ConfirmationStepData {
   booking_reference: string;
-  completion_status: 'pending' | 'processing' | 'completed' | 'failed';
+  completion_status: "pending" | "processing" | "completed" | "failed";
   confirmation_email_sent: boolean;
   completed_at?: string;
   event_id?: number;
@@ -209,16 +229,19 @@ export interface ProductOption {
   id: number;
   name: string;
   description: string;
-  product_type: 'PACKAGE' | 'PRODUCT';
+  product_type: "PACKAGE" | "PRODUCT";
   base_price: string;
   is_tax_inclusive: boolean;
   category: number;
   category_name?: string;
   is_active: boolean;
   is_featured: boolean;
-  pricing_model?: 'FLAT' | 'HOURLY';
-  pricing_unit?: 'PER_EVENT' | 'PER_PERSON' | 'PER_HOUR';
+  pricing_model?: "FLAT" | "HOURLY";
+  pricing_unit?: "PER_EVENT" | "PER_PERSON" | "PER_HOUR";
   pricing_unit_display?: string;
+  minimum_guests?: number;
+  maximum_guests?: number;
+  recommended_guests?: number;
   advance_booking_days?: number;
   maximum_booking_days?: number;
   event_days?: number | null;
@@ -242,8 +265,8 @@ export interface Discount {
   name: string;
   code: string | null;
   description: string;
-  discount_type: 'PERCENTAGE' | 'FIXED' | 'FREE_HOURS';
-  application_type: 'AUTOMATIC' | 'CODE_REQUIRED' | 'ADMIN_ONLY';
+  discount_type: "PERCENTAGE" | "FIXED" | "FREE_HOURS";
+  application_type: "AUTOMATIC" | "CODE_REQUIRED" | "ADMIN_ONLY";
   value: string;
   currency: string;
   is_active: boolean;
@@ -307,7 +330,7 @@ export interface PricingBreakdown {
 }
 
 export interface PaymentSummary {
-  paymentType: 'FULL' | 'DEPOSIT';
+  paymentType: "FULL" | "DEPOSIT";
   totalAmount: string;
   amountPaid: string;
   remainingBalance: string;
@@ -315,7 +338,7 @@ export interface PaymentSummary {
   balanceDueDays?: number;
   paymentMethod?: string;
   paymentMethodLast4?: string;
-  completionType?: 'payment' | 'quote';
+  completionType?: "payment" | "quote";
   quoteMessage?: string;
 }
 

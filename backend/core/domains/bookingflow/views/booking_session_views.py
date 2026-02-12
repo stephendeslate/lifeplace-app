@@ -643,6 +643,9 @@ class PublicBookingFlowViewSet(viewsets.ReadOnlyModelViewSet):
                     'excess_hours': item.excess_hours,
                     'excess_hour_price': str(item.excess_hour_price.quantize(Decimal('0.01'))) if item.excess_hour_price else None,
                     'excess_cost': str(item.excess_cost.quantize(Decimal('0.01'))),
+                    'pricing_unit': item.pricing_unit,
+                    'minimum_guests': item.minimum_guests,
+                    'attendee_breakdown': item.attendee_breakdown,
                 }
                 line_items_data.append(line_item_dict)
 

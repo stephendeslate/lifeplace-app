@@ -2,7 +2,7 @@
 import logging
 from decimal import Decimal
 from typing import Dict, List, Optional, Tuple, Any
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from core.domains.products.models import Discount
 from core.domains.payments.models import TaxRate
@@ -60,6 +60,9 @@ class PricingLineItem:
     line_total: Decimal = Decimal('0.00')  # total_unit_price * quantity
     tax_rate: Decimal = Decimal('0.00')
     item_type: str = 'PACKAGE'  # 'PACKAGE' or 'ADDON'
+    pricing_unit: Optional[str] = None  # 'PER_EVENT', 'PER_PERSON', 'PER_HOUR'
+    minimum_guests: Optional[int] = None
+    attendee_breakdown: Optional[List[Dict[str, Any]]] = field(default=None, repr=False)
 
     def __post_init__(self):
         """Calculate derived fields after initialization"""
@@ -368,6 +371,7 @@ class PricingCalculationService:
 
             # Determine tax rate using product's tax_rate with global fallback
             tax_rate = Decimal('0.00')
+            product_ref = None  # Reference to ProductOption for per-person fields
             # Ensure product_id is an integer for comparison (handles JSON string "24" -> 24)
             if product_id is not None:
                 try:
@@ -377,16 +381,24 @@ class PricingCalculationService:
                     product_id = None
             if product_id is not None and product_id > 0:
                 try:
-                    product = ProductOption.objects.get(id=product_id)
-                    tax_rate = get_tax_rate_for_product(product)
-                    logger.info(f"Package {name}: tax_rate={tax_rate}% (is_tax_inclusive={product.is_tax_inclusive})")
+                    product_ref = ProductOption.objects.get(id=product_id)
+                    tax_rate = get_tax_rate_for_product(product_ref)
+                    logger.info(f"Package {name}: tax_rate={tax_rate}% (is_tax_inclusive={product_ref.is_tax_inclusive})")
                     # Defensive quantity clamping based on product constraints
-                    if not product.allow_multiple and quantity > 1:
+                    if not product_ref.allow_multiple and quantity > 1:
                         logger.warning(f"Package {name}: quantity {quantity} clamped to 1 (allow_multiple=False)")
                         quantity = 1
-                    elif product.allow_multiple and product.maximum_quantity and quantity > product.maximum_quantity:
-                        logger.warning(f"Package {name}: quantity {quantity} clamped to {product.maximum_quantity}")
-                        quantity = product.maximum_quantity
+                    elif product_ref.allow_multiple and product_ref.maximum_quantity and quantity > product_ref.maximum_quantity:
+                        logger.warning(f"Package {name}: quantity {quantity} clamped to {product_ref.maximum_quantity}")
+                        quantity = product_ref.maximum_quantity
+                    # Enforce minimum/maximum guests for per-person packages
+                    if product_ref.pricing_unit == 'PER_PERSON':
+                        if product_ref.minimum_guests and quantity < product_ref.minimum_guests:
+                            logger.info(f"Package {name}: quantity {quantity} clamped up to minimum_guests={product_ref.minimum_guests}")
+                            quantity = product_ref.minimum_guests
+                        if product_ref.maximum_guests and quantity > product_ref.maximum_guests:
+                            logger.info(f"Package {name}: quantity {quantity} clamped down to maximum_guests={product_ref.maximum_guests}")
+                            quantity = product_ref.maximum_guests
                 except ProductOption.DoesNotExist:
                     tax_rate = get_default_tax_rate()
                     logger.warning(f"Product {product_id} not found, using default tax_rate={tax_rate}%")
@@ -403,6 +415,51 @@ class PricingCalculationService:
                     else:
                         tax_rate = get_default_tax_rate()
                     logger.info(f"Custom bundle {name}: tax_rate={tax_rate}%")
+
+            # Handle attendee breakdown for child pricing (Phase 2)
+            # If attendee_breakdown is provided for PER_PERSON packages, calculate
+            # weighted average price from tier-based discounts
+            attendee_breakdown_data = package_data.get('attendee_breakdown')
+            resolved_breakdown = None
+            if (product_ref and product_ref.pricing_unit == 'PER_PERSON'
+                    and attendee_breakdown_data and isinstance(attendee_breakdown_data, list)
+                    and len(attendee_breakdown_data) > 0):
+                weighted_total = Decimal('0')
+                total_count = 0
+                resolved_breakdown = []
+                for tier in attendee_breakdown_data:
+                    count = int(tier.get('count', 0))
+                    if count <= 0:
+                        continue
+                    discount_pct = Decimal(str(tier.get('discount_percentage', 0)))
+                    tier_unit_price = base_price * (1 - discount_pct / 100)
+                    tier_subtotal = tier_unit_price * count
+                    weighted_total += tier_subtotal
+                    total_count += count
+                    resolved_breakdown.append({
+                        'tier_label': tier.get('tier_label', 'Guest'),
+                        'min_age': tier.get('min_age'),
+                        'max_age': tier.get('max_age'),
+                        'count': count,
+                        'discount_percentage': float(discount_pct),
+                        'unit_price': str(tier_unit_price.quantize(Decimal('0.01'))),
+                        'subtotal': str(tier_subtotal.quantize(Decimal('0.01'))),
+                    })
+
+                # Enforce minimum_guests on total count
+                if product_ref.minimum_guests and total_count < product_ref.minimum_guests:
+                    shortfall = product_ref.minimum_guests - total_count
+                    weighted_total += base_price * shortfall
+                    total_count = product_ref.minimum_guests
+                    logger.info(f"Package {name}: attendee breakdown total {total_count - shortfall} below minimum, "
+                                f"filling {shortfall} at full rate")
+
+                if total_count > 0:
+                    quantity = total_count
+                    # Override base_price to weighted average for line item calculation
+                    base_price = weighted_total / quantity
+                    logger.info(f"Package {name}: attendee breakdown applied — {total_count} persons, "
+                                f"weighted avg ₱{base_price}/person, total ₱{weighted_total}")
 
             # Calculate excess hours using venue-based hours system
             excess_hours = None
@@ -438,7 +495,10 @@ class PricingCalculationService:
                 base_unit_price=base_price,
                 excess_hours=excess_hours,
                 excess_hour_price=excess_hour_price,
-                tax_rate=tax_rate
+                tax_rate=tax_rate,
+                pricing_unit=product_ref.pricing_unit if product_ref else None,
+                minimum_guests=product_ref.minimum_guests if product_ref else None,
+                attendee_breakdown=resolved_breakdown,
             )
 
         except (ValueError, TypeError, KeyError) as e:

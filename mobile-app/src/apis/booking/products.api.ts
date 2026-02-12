@@ -5,16 +5,16 @@
  * Adapted from: frontend/client-portal/src/apis/booking/products.api.ts
  */
 
-import api from '@/utils/api';
-import { ErrorHandler } from '@/utils/errorHandler';
-import { logger } from '@/utils/logger';
+import api from "@/utils/api";
+import { ErrorHandler } from "@/utils/errorHandler";
+import { logger } from "@/utils/logger";
 import type {
   SelectedPackage,
   SelectedAddon,
   PackageSelectionStepData,
   AddonSelectionStepData,
   StepValidationResult,
-} from '@/types/booking';
+} from "@/types/booking";
 
 // =============================================================================
 // TYPES
@@ -34,16 +34,19 @@ export interface ProductOption {
   name: string;
   description: string;
   short_description: string;
-  type: 'PACKAGE' | 'PRODUCT';
+  type: "PACKAGE" | "PRODUCT";
   category_id: number | null;
   category_name: string | null;
   base_price: string;
   price_with_tax?: string;
   is_tax_inclusive: boolean;
   currency: string;
-  pricing_model: 'FIXED' | 'HOURLY' | 'DAILY' | 'CUSTOM';
-  pricing_unit?: 'PER_EVENT' | 'PER_PERSON' | 'PER_HOUR';
+  pricing_model: "FIXED" | "HOURLY" | "DAILY" | "CUSTOM";
+  pricing_unit?: "PER_EVENT" | "PER_PERSON" | "PER_HOUR";
   pricing_unit_display?: string;
+  minimum_guests?: number;
+  maximum_guests?: number;
+  recommended_guests?: number;
   unit_label: string | null;
   has_excess_hours: boolean;
   included_hours: number | string | null;
@@ -73,7 +76,7 @@ export interface Discount {
   code: string;
   name: string;
   description: string;
-  discount_type: 'PERCENTAGE' | 'FIXED';
+  discount_type: "PERCENTAGE" | "FIXED";
   discount_value: string;
   minimum_amount: string | null;
   maximum_discount: string | null;
@@ -95,7 +98,7 @@ export const ProductsAPI = {
    * GET /products/categories/
    */
   getCategories: async (): Promise<ProductCategory[]> => {
-    const response = await api.get<ProductCategory[]>('/products/categories/', {
+    const response = await api.get<ProductCategory[]>("/products/categories/", {
       params: { is_active: true },
     });
     return response.data;
@@ -107,7 +110,9 @@ export const ProductsAPI = {
    * GET /products/categories/:categoryId/
    */
   getCategory: async (categoryId: number): Promise<ProductCategory> => {
-    const response = await api.get<ProductCategory>(`/products/categories/${categoryId}/`);
+    const response = await api.get<ProductCategory>(
+      `/products/categories/${categoryId}/`,
+    );
     return response.data;
   },
 
@@ -122,7 +127,7 @@ export const ProductsAPI = {
       next: string | null;
       previous: string | null;
       results: ProductOption[];
-    }>('/products/products/', {
+    }>("/products/products/", {
       params: { is_active: true },
     });
     return response.data.results || [];
@@ -140,7 +145,7 @@ export const ProductsAPI = {
   getPackages: async (eventTypeId?: number): Promise<ProductOption[]> => {
     const params: Record<string, unknown> = {
       is_active: true,
-      type: 'PACKAGE',
+      type: "PACKAGE",
     };
 
     // Add event_type_id filter if provided
@@ -153,7 +158,7 @@ export const ProductsAPI = {
       next: string | null;
       previous: string | null;
       results: ProductOption[];
-    }>('/products/products/', { params });
+    }>("/products/products/", { params });
     return response.data.results || [];
   },
 
@@ -168,10 +173,10 @@ export const ProductsAPI = {
       next: string | null;
       previous: string | null;
       results: ProductOption[];
-    }>('/products/products/', {
+    }>("/products/products/", {
       params: {
         is_active: true,
-        type: 'PRODUCT',
+        type: "PRODUCT",
       },
     });
     return response.data.results || [];
@@ -182,16 +187,18 @@ export const ProductsAPI = {
    *
    * GET /products/products/
    */
-  getPackagesByCategory: async (categoryId: number): Promise<ProductOption[]> => {
+  getPackagesByCategory: async (
+    categoryId: number,
+  ): Promise<ProductOption[]> => {
     const response = await api.get<{
       count: number;
       next: string | null;
       previous: string | null;
       results: ProductOption[];
-    }>('/products/products/', {
+    }>("/products/products/", {
       params: {
         is_active: true,
-        type: 'PACKAGE',
+        type: "PACKAGE",
         category_id: categoryId,
       },
     });
@@ -209,10 +216,10 @@ export const ProductsAPI = {
       next: string | null;
       previous: string | null;
       results: ProductOption[];
-    }>('/products/products/', {
+    }>("/products/products/", {
       params: {
         is_active: true,
-        type: 'PRODUCT',
+        type: "PRODUCT",
         category_id: categoryId,
       },
     });
@@ -225,7 +232,9 @@ export const ProductsAPI = {
    * GET /products/products/:productId/
    */
   getProductOption: async (productId: number): Promise<ProductOption> => {
-    const response = await api.get<ProductOption>(`/products/products/${productId}/`);
+    const response = await api.get<ProductOption>(
+      `/products/products/${productId}/`,
+    );
     return response.data;
   },
 
@@ -234,17 +243,19 @@ export const ProductsAPI = {
    *
    * GET /products/products/batch/
    */
-  getProductsByIds: async (productIds: number[]): Promise<Map<number, ProductOption>> => {
+  getProductsByIds: async (
+    productIds: number[],
+  ): Promise<Map<number, ProductOption>> => {
     if (productIds.length === 0) {
       return new Map();
     }
 
     try {
-      const idsString = productIds.join(',');
-      const response = await api.get<{ count: number; products: ProductOption[] }>(
-        '/products/products/batch/',
-        { params: { ids: idsString } }
-      );
+      const idsString = productIds.join(",");
+      const response = await api.get<{
+        count: number;
+        products: ProductOption[];
+      }>("/products/products/batch/", { params: { ids: idsString } });
 
       const productMap = new Map<number, ProductOption>();
       response.data.products.forEach((product) => {
@@ -253,7 +264,7 @@ export const ProductsAPI = {
 
       return productMap;
     } catch (error) {
-      logger.warn('Failed to fetch products by IDs via batch API:', error);
+      logger.warn("Failed to fetch products by IDs via batch API:", error);
 
       // Fallback to individual requests
       const productMap = new Map<number, ProductOption>();
@@ -277,7 +288,7 @@ export const ProductsAPI = {
    * GET /products/discounts/
    */
   getDiscounts: async (): Promise<Discount[]> => {
-    const response = await api.get<Discount[]>('/products/discounts/', {
+    const response = await api.get<Discount[]>("/products/discounts/", {
       params: { is_active: true },
     });
     return response.data;
@@ -291,14 +302,14 @@ export const ProductsAPI = {
   validatePackageStepData: async (
     sessionId: string,
     stepId: number,
-    stepData: PackageSelectionStepData
+    stepData: PackageSelectionStepData,
   ): Promise<StepValidationResult> => {
     const response = await api.post<StepValidationResult>(
       `/bookingflow/public/flows/session/${sessionId}/validate/`,
       {
         step_id: stepId,
         step_data: stepData,
-      }
+      },
     );
     return response.data;
   },
@@ -311,14 +322,14 @@ export const ProductsAPI = {
   validateAddonStepData: async (
     sessionId: string,
     stepId: number,
-    stepData: AddonSelectionStepData
+    stepData: AddonSelectionStepData,
   ): Promise<StepValidationResult> => {
     const response = await api.post<StepValidationResult>(
       `/bookingflow/public/flows/session/${sessionId}/validate/`,
       {
         step_id: stepId,
         step_data: stepData,
-      }
+      },
     );
     return response.data;
   },
@@ -332,7 +343,7 @@ export const ProductsAPI = {
     sessionId: string,
     stepId: number,
     stepData: PackageSelectionStepData,
-    markCompleted: boolean = false
+    markCompleted: boolean = false,
   ): Promise<Record<string, unknown>> => {
     const response = await api.patch(
       `/bookingflow/public/flows/session/${sessionId}/update/`,
@@ -340,7 +351,7 @@ export const ProductsAPI = {
         step_id: stepId,
         step_data: stepData,
         mark_completed: markCompleted,
-      }
+      },
     );
     return response.data as Record<string, unknown>;
   },
@@ -354,7 +365,7 @@ export const ProductsAPI = {
     sessionId: string,
     stepId: number,
     stepData: AddonSelectionStepData,
-    markCompleted: boolean = false
+    markCompleted: boolean = false,
   ): Promise<Record<string, unknown>> => {
     const response = await api.patch(
       `/bookingflow/public/flows/session/${sessionId}/update/`,
@@ -362,7 +373,7 @@ export const ProductsAPI = {
         step_id: stepId,
         step_data: stepData,
         mark_completed: markCompleted,
-      }
+      },
     );
     return response.data as Record<string, unknown>;
   },
@@ -374,12 +385,15 @@ export const ProductsAPI = {
   /**
    * Calculate package price with duration.
    */
-  calculatePackagePrice: (packageOption: ProductOption, duration: number): number => {
+  calculatePackagePrice: (
+    packageOption: ProductOption,
+    duration: number,
+  ): number => {
     const basePrice = parseFloat(packageOption.base_price);
 
     if (packageOption.has_excess_hours && packageOption.included_hours) {
       const includedHours =
-        typeof packageOption.included_hours === 'number'
+        typeof packageOption.included_hours === "number"
           ? packageOption.included_hours
           : parseFloat(String(packageOption.included_hours)) || 0;
 
@@ -387,12 +401,12 @@ export const ProductsAPI = {
         return basePrice;
       } else {
         const excessHours = duration - includedHours;
-        const excessPrice = parseFloat(packageOption.excess_hour_price || '0');
+        const excessPrice = parseFloat(packageOption.excess_hour_price || "0");
         return basePrice + excessHours * excessPrice;
       }
     }
 
-    if (packageOption.pricing_model === 'HOURLY') {
+    if (packageOption.pricing_model === "HOURLY") {
       return basePrice * duration;
     }
 
@@ -411,7 +425,7 @@ export const ProductsAPI = {
    * Calculate price with tax.
    */
   calculatePriceWithTax: (price: number, taxRate: string | number): number => {
-    const rate = typeof taxRate === 'string' ? parseFloat(taxRate) : taxRate;
+    const rate = typeof taxRate === "string" ? parseFloat(taxRate) : taxRate;
     const taxMultiplier = 1 + rate / 100;
     return price * taxMultiplier;
   },
@@ -419,19 +433,19 @@ export const ProductsAPI = {
   /**
    * Format price for display.
    */
-  formatPrice: (amount: string | number, currency: string = 'PHP'): string => {
-    const num = typeof amount === 'string' ? parseFloat(amount) : amount;
+  formatPrice: (amount: string | number, currency: string = "PHP"): string => {
+    const num = typeof amount === "string" ? parseFloat(amount) : amount;
 
-    if (currency === 'PHP') {
-      return new Intl.NumberFormat('en-PH', {
-        style: 'currency',
-        currency: 'PHP',
+    if (currency === "PHP") {
+      return new Intl.NumberFormat("en-PH", {
+        style: "currency",
+        currency: "PHP",
         minimumFractionDigits: 2,
       }).format(num);
     }
 
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
       currency: currency,
       minimumFractionDigits: 2,
     }).format(num);
@@ -440,7 +454,10 @@ export const ProductsAPI = {
   /**
    * Check if product is available for booking.
    */
-  isProductAvailable: (product: ProductOption, bookingDate?: string): boolean => {
+  isProductAvailable: (
+    product: ProductOption,
+    bookingDate?: string,
+  ): boolean => {
     if (!product.is_active) {
       return false;
     }
@@ -449,14 +466,17 @@ export const ProductsAPI = {
       const booking = new Date(bookingDate);
       const today = new Date();
       const daysDifference = Math.ceil(
-        (booking.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
+        (booking.getTime() - today.getTime()) / (1000 * 60 * 60 * 24),
       );
 
       if (daysDifference < product.advance_booking_days) {
         return false;
       }
 
-      if (product.maximum_booking_days && daysDifference > product.maximum_booking_days) {
+      if (
+        product.maximum_booking_days &&
+        daysDifference > product.maximum_booking_days
+      ) {
         return false;
       }
     }
@@ -467,24 +487,31 @@ export const ProductsAPI = {
   /**
    * Filter products by availability.
    */
-  filterAvailableProducts: (products: ProductOption[], bookingDate?: string): ProductOption[] => {
-    return products.filter((product) => ProductsAPI.isProductAvailable(product, bookingDate));
+  filterAvailableProducts: (
+    products: ProductOption[],
+    bookingDate?: string,
+  ): ProductOption[] => {
+    return products.filter((product) =>
+      ProductsAPI.isProductAvailable(product, bookingDate),
+    );
   },
 
   /**
    * Group products by category.
    */
-  groupProductsByCategory: (products: ProductOption[]): Record<string, ProductOption[]> => {
+  groupProductsByCategory: (
+    products: ProductOption[],
+  ): Record<string, ProductOption[]> => {
     return products.reduce(
       (grouped, product) => {
-        const categoryName = product.category_name || 'Uncategorized';
+        const categoryName = product.category_name || "Uncategorized";
         if (!grouped[categoryName]) {
           grouped[categoryName] = [];
         }
         grouped[categoryName].push(product);
         return grouped;
       },
-      {} as Record<string, ProductOption[]>
+      {} as Record<string, ProductOption[]>,
     );
   },
 
@@ -510,16 +537,20 @@ export const ProductsAPI = {
   validatePackageData: (
     data: PackageSelectionStepData,
     minSelection: number = 1,
-    maxSelection: number = 10
+    maxSelection: number = 10,
   ): { isValid: boolean; errors: Record<string, string[]> } => {
     const errors: Record<string, string[]> = {};
 
     if (!data.selected_packages || data.selected_packages.length === 0) {
-      errors.selected_packages = ['Please select at least one package'];
+      errors.selected_packages = ["Please select at least one package"];
     } else if (data.selected_packages.length < minSelection) {
-      errors.selected_packages = [`Please select at least ${minSelection} package(s)`];
+      errors.selected_packages = [
+        `Please select at least ${minSelection} package(s)`,
+      ];
     } else if (data.selected_packages.length > maxSelection) {
-      errors.selected_packages = [`You can select up to ${maxSelection} packages`];
+      errors.selected_packages = [
+        `You can select up to ${maxSelection} packages`,
+      ];
     }
 
     return {
@@ -534,13 +565,21 @@ export const ProductsAPI = {
   validateAddonData: (
     data: AddonSelectionStepData,
     minSelection: number = 0,
-    maxSelection: number = 100
+    maxSelection: number = 100,
   ): { isValid: boolean; errors: Record<string, string[]> } => {
     const errors: Record<string, string[]> = {};
 
-    if (minSelection > 0 && (!data.selected_addons || data.selected_addons.length < minSelection)) {
-      errors.selected_addons = [`Please select at least ${minSelection} add-on(s)`];
-    } else if (data.selected_addons && data.selected_addons.length > maxSelection) {
+    if (
+      minSelection > 0 &&
+      (!data.selected_addons || data.selected_addons.length < minSelection)
+    ) {
+      errors.selected_addons = [
+        `Please select at least ${minSelection} add-on(s)`,
+      ];
+    } else if (
+      data.selected_addons &&
+      data.selected_addons.length > maxSelection
+    ) {
       errors.selected_addons = [`You can select up to ${maxSelection} add-ons`];
     }
 

@@ -2406,6 +2406,12 @@ class BookingSessionService:
             if product_id == -1:
                 product_id = None
 
+            # Build metadata for additional pricing details (e.g., attendee breakdown)
+            line_item_metadata = None
+            attendee_breakdown = getattr(pricing_item, 'attendee_breakdown', None)
+            if attendee_breakdown:
+                line_item_metadata = {'attendee_breakdown': attendee_breakdown}
+
             QuoteLineItem.objects.create(
                 quote=quote,
                 description=pricing_item.description,
@@ -2420,7 +2426,8 @@ class BookingSessionService:
                 base_unit_price=getattr(pricing_item, 'base_unit_price', None),
                 excess_hours=getattr(pricing_item, 'excess_hours', None),
                 excess_hour_price=getattr(pricing_item, 'excess_hour_price', None),
-                excess_cost=getattr(pricing_item, 'excess_cost', Decimal('0.00'))
+                excess_cost=getattr(pricing_item, 'excess_cost', Decimal('0.00')),
+                metadata=line_item_metadata,
             )
             
             logger.info(

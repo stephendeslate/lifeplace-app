@@ -649,6 +649,67 @@ class EventViewSet(viewsets.ModelViewSet):
 
         return Response(status_info)
 
+    # ============================================================
+    # HEADCOUNT UPDATE ACTION
+    # ============================================================
+
+    @action(detail=True, methods=['post'])
+    def update_headcount(self, request, pk=None):
+        """
+        Update the guest headcount for an event with optional quote revision
+        and supplementary invoice.
+
+        POST /events/{id}/update_headcount/
+        Body: {
+            "num_participants": 120,
+            "notes": "Client confirmed additional guests",
+            "create_quote_revision": true,
+            "create_supplementary_invoice": true
+        }
+        """
+        from ..services import HeadcountUpdateService
+
+        event = self.get_object()
+
+        num_participants = request.data.get('num_participants')
+        if num_participants is None:
+            return Response(
+                {"detail": "num_participants is required"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            num_participants = int(num_participants)
+        except (ValueError, TypeError):
+            return Response(
+                {"detail": "num_participants must be a valid integer"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        notes = request.data.get('notes', '')
+        create_quote_revision = request.data.get('create_quote_revision', True)
+        create_supplementary_invoice = request.data.get('create_supplementary_invoice', True)
+
+        result = HeadcountUpdateService.update_headcount(
+            event=event,
+            new_count=num_participants,
+            user=request.user,
+            create_quote_revision=create_quote_revision,
+            create_supplementary_invoice=create_supplementary_invoice,
+            notes=notes,
+        )
+
+        if not result['success']:
+            return Response(
+                {"detail": result['error']},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Invalidate cache and return result
+        EventCacheService.invalidate_event(event.id)
+
+        return Response(result)
+
 
 class EventProductOptionViewSet(viewsets.ModelViewSet):
     """
