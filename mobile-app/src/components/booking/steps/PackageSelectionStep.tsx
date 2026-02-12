@@ -290,6 +290,7 @@ interface PerPersonHeadcountSectionProps {
   childPricingEnabled: boolean;
   attendeeBreakdown?: AttendeeBreakdown[];
   onAttendeeCountChange?: (tierIndex: number, delta: number) => void;
+  onResetBreakdown?: () => void;
 }
 
 function PerPersonHeadcountSection({
@@ -301,6 +302,7 @@ function PerPersonHeadcountSection({
   childPricingEnabled,
   attendeeBreakdown,
   onAttendeeCountChange,
+  onResetBreakdown,
 }: PerPersonHeadcountSectionProps) {
   const [showBreakdown, setShowBreakdown] = useState(false);
 
@@ -479,7 +481,12 @@ function PerPersonHeadcountSection({
 
           <TouchableOpacity
             style={styles.breakdownToggle}
-            onPress={() => setShowBreakdown(!showBreakdown)}
+            onPress={() => {
+              if (showBreakdown && onResetBreakdown) {
+                onResetBreakdown();
+              }
+              setShowBreakdown(!showBreakdown);
+            }}
           >
             <Text style={styles.breakdownToggleText}>
               {showBreakdown
@@ -514,6 +521,7 @@ interface PackageCardProps {
   childPricingEnabled?: boolean;
   attendeeBreakdown?: AttendeeBreakdown[];
   onAttendeeCountChange?: (tierIndex: number, delta: number) => void;
+  onResetBreakdown?: () => void;
 }
 
 function PackageCard({
@@ -532,6 +540,7 @@ function PackageCard({
   childPricingEnabled = false,
   attendeeBreakdown,
   onAttendeeCountChange,
+  onResetBreakdown,
 }: PackageCardProps) {
   const {
     name,
@@ -740,6 +749,7 @@ function PackageCard({
             childPricingEnabled={childPricingEnabled}
             attendeeBreakdown={attendeeBreakdown}
             onAttendeeCountChange={onAttendeeCountChange}
+            onResetBreakdown={onResetBreakdown}
           />
         )}
       </View>
@@ -1198,6 +1208,32 @@ export function PackageSelectionStep({
     ],
   );
 
+  // Reset attendee breakdown to default: all persons in the adult (0% discount) tier
+  const handleResetBreakdown = useCallback(
+    (packageId: number) => {
+      const newSelection = selectedPackages.map((p) => {
+        if (p.product_id !== packageId || !p.attendee_breakdown) return p;
+
+        const adultIdx = p.attendee_breakdown.findIndex(
+          (t) => t.discount_percentage === 0,
+        );
+        const resetIdx = adultIdx >= 0 ? adultIdx : 0;
+
+        const resetBreakdown = p.attendee_breakdown.map((tier, idx) => ({
+          ...tier,
+          count: idx === resetIdx ? p.quantity : 0,
+          subtotal: idx === resetIdx ? tier.unit_price * p.quantity : 0,
+        }));
+
+        return { ...p, attendee_breakdown: resetBreakdown };
+      });
+
+      setSelectedPackages(newSelection);
+      onDataChange(buildCompleteData(newSelection));
+    },
+    [selectedPackages, onDataChange, buildCompleteData],
+  );
+
   const handleVenueHoursChange = useCallback(
     (venueId: number, hours: number) => {
       const newHours = {
@@ -1424,6 +1460,11 @@ export function PackageSelectionStep({
                   isPerPersonPkg && childPricingConfig.enabled
                     ? (tierIndex, delta) =>
                         handleAttendeeCountChange(pkg.id, tierIndex, delta)
+                    : undefined
+                }
+                onResetBreakdown={
+                  isPerPersonPkg && childPricingConfig.enabled
+                    ? () => handleResetBreakdown(pkg.id)
                     : undefined
                 }
               />

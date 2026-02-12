@@ -153,6 +153,7 @@ interface PackageCardProps {
   childPricingEnabled?: boolean;
   attendeeBreakdown?: AttendeeBreakdown[];
   onAttendeeBreakdownChange?: (tierIndex: number, newCount: number) => void;
+  onResetBreakdown?: () => void;
 }
 
 const PackageCard: React.FC<PackageCardProps> = ({
@@ -169,6 +170,7 @@ const PackageCard: React.FC<PackageCardProps> = ({
   childPricingEnabled = false,
   attendeeBreakdown,
   onAttendeeBreakdownChange,
+  onResetBreakdown,
 }) => {
   const theme = useTheme();
   const { announceToScreenReader } = useAccessibility();
@@ -691,7 +693,12 @@ const PackageCard: React.FC<PackageCardProps> = ({
 
                     <Button
                       size="small"
-                      onClick={() => setShowBreakdown(!showBreakdown)}
+                      onClick={() => {
+                        if (showBreakdown && onResetBreakdown) {
+                          onResetBreakdown();
+                        }
+                        setShowBreakdown(!showBreakdown);
+                      }}
                       sx={{
                         mt: 1,
                         textTransform: "none",
@@ -1657,6 +1664,32 @@ const CleanPackageSelectionStep: React.FC<CleanPackageSelectionStepProps> = ({
     [stepData.selected_packages, onDataChange, buildCompleteData],
   );
 
+  // Reset attendee breakdown to default: all persons in the adult (0% discount) tier
+  const handleResetBreakdown = useCallback(
+    (packageId: number) => {
+      const updatedPackages =
+        stepData.selected_packages?.map((p) => {
+          if (p.product_id !== packageId || !p.attendee_breakdown) return p;
+
+          const adultIdx = p.attendee_breakdown.findIndex(
+            (t) => t.discount_percentage === 0,
+          );
+          const resetIdx = adultIdx >= 0 ? adultIdx : 0;
+
+          const resetBreakdown = p.attendee_breakdown.map((tier, idx) => ({
+            ...tier,
+            count: idx === resetIdx ? p.quantity : 0,
+            subtotal: idx === resetIdx ? tier.unit_price * p.quantity : 0,
+          }));
+
+          return { ...p, attendee_breakdown: resetBreakdown };
+        }) || [];
+
+      onDataChange(buildCompleteData(updatedPackages));
+    },
+    [stepData.selected_packages, onDataChange, buildCompleteData],
+  );
+
   // Handle venue hours change - update local state AND sync to parent immediately
   const handleVenueHoursChange = useCallback(
     (venueId: number, hours: number) => {
@@ -1779,6 +1812,7 @@ const CleanPackageSelectionStep: React.FC<CleanPackageSelectionStepProps> = ({
               onAttendeeBreakdownChange={(tierIndex, newCount) =>
                 handleAttendeeBreakdownChange(-1, tierIndex, newCount)
               }
+              onResetBreakdown={() => handleResetBreakdown(-1)}
             />
 
             {/* Show venue hours selector if custom bundle is selected */}
@@ -1842,6 +1876,7 @@ const CleanPackageSelectionStep: React.FC<CleanPackageSelectionStepProps> = ({
               onAttendeeBreakdownChange={(tierIndex, newCount) =>
                 handleAttendeeBreakdownChange(pkg.id, tierIndex, newCount)
               }
+              onResetBreakdown={() => handleResetBreakdown(pkg.id)}
             />
           ))
         ) : (
