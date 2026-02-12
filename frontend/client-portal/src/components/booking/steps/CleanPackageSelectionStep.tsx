@@ -397,20 +397,39 @@ const PackageCard: React.FC<PackageCardProps> = ({
           </Box>
 
           {/* Per-person pricing info */}
-          {pkg.pricing_unit === "PER_PERSON" && pkg.minimum_guests && (
-            <Box sx={{ mb: 2 }}>
-              <Typography variant="body2" color="text.secondary">
-                Minimum {pkg.minimum_guests} persons
-              </Typography>
-              <Typography
-                variant="body2"
-                sx={{ fontWeight: 600, color: packageColor }}
-              >
-                From ₱
-                {(
-                  parseFloat(pkg.base_price || "0") * pkg.minimum_guests
-                ).toLocaleString()}
-              </Typography>
+          {pkg.pricing_unit === "PER_PERSON" && (
+            <Box
+              sx={{
+                mb: 2,
+                p: 1.5,
+                borderRadius: 1.5,
+                backgroundColor: alpha(packageColor, 0.08),
+                border: `1px solid ${alpha(packageColor, 0.15)}`,
+              }}
+            >
+              {pkg.minimum_guests && pkg.minimum_guests > 1 ? (
+                <>
+                  <Typography
+                    variant="body2"
+                    sx={{ fontWeight: 600, color: packageColor }}
+                  >
+                    Minimum {pkg.minimum_guests} persons
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    sx={{ fontWeight: 700, mt: 0.25 }}
+                  >
+                    Starting at ₱
+                    {(
+                      parseFloat(pkg.base_price || "0") * pkg.minimum_guests
+                    ).toLocaleString()}
+                  </Typography>
+                </>
+              ) : (
+                <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                  Price is per person
+                </Typography>
+              )}
             </Box>
           )}
 
@@ -598,12 +617,13 @@ const PackageCard: React.FC<PackageCardProps> = ({
                 }}
               >
                 <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  sx={{ display: "block", mb: 1 }}
+                  variant="subtitle2"
+                  sx={{ display: "block", mb: 1, fontWeight: 600 }}
                 >
-                  Expected headcount (optional — minimum{" "}
-                  {pkg.minimum_guests || 1} persons)
+                  Number of Guests
+                  {pkg.minimum_guests && pkg.minimum_guests > 1
+                    ? ` (minimum ${pkg.minimum_guests})`
+                    : ""}
                 </Typography>
                 <Box
                   sx={{
@@ -1822,10 +1842,25 @@ const CleanPackageSelectionStep: React.FC<CleanPackageSelectionStepProps> = ({
                 alignItems: "center",
               }}
             >
-              <Typography variant="h6">
-                Total Selected: {totalSelected}{" "}
-                {totalSelected === 1 ? "package" : "packages"}
-              </Typography>
+              <Box>
+                <Typography variant="h6">
+                  Total Selected: {totalSelected}{" "}
+                  {totalSelected === 1 ? "package" : "packages"}
+                </Typography>
+                {/* Per-person breakdown detail */}
+                {stepData.selected_packages?.map((pkg) =>
+                  pkg.pricing_unit === "PER_PERSON" ? (
+                    <Typography
+                      key={pkg.product_id}
+                      variant="body2"
+                      color="text.secondary"
+                    >
+                      {pkg.quantity} {pkg.quantity === 1 ? "person" : "persons"}{" "}
+                      × ₱{parseFloat(pkg.price || "0").toLocaleString()}/person
+                    </Typography>
+                  ) : null,
+                )}
+              </Box>
               <Typography
                 variant="h5"
                 sx={{ fontWeight: 700, color: theme.palette.success.main }}

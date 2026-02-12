@@ -546,13 +546,20 @@ export function PricingSummaryStep({
                             ` (${pkg.quantity} persons)`}
                         </Text>
                         {!showBreakdown && pkg.pricing_unit === "PER_PERSON" ? (
-                          <Text style={styles.lineItemQuantity}>
-                            {pkg.quantity} persons ×{" "}
-                            {formatCurrency(parseFloat(pkg.price), {
-                              currency: "PHP",
-                            })}
-                            /person
-                          </Text>
+                          <>
+                            <Text style={styles.lineItemQuantity}>
+                              {pkg.quantity} persons ×{" "}
+                              {formatCurrency(parseFloat(pkg.price), {
+                                currency: "PHP",
+                              })}
+                              /person
+                            </Text>
+                            {pkg.minimum_guests && pkg.minimum_guests > 1 && (
+                              <Text style={styles.lineItemMinNote}>
+                                Minimum {pkg.minimum_guests} persons
+                              </Text>
+                            )}
+                          </>
                         ) : (
                           !showBreakdown &&
                           pkg.quantity > 1 && (
@@ -1141,6 +1148,11 @@ const styles = StyleSheet.create({
   lineItemQuantity: {
     ...typeScale.labelSmall,
     color: colors.neutral.gray,
+  },
+  lineItemMinNote: {
+    ...typeScale.labelSmall,
+    color: colors.accent.wood,
+    fontWeight: "600",
   },
   lineItemPrice: {
     ...typeScale.bodyMedium,

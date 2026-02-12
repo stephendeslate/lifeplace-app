@@ -677,11 +677,28 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
                             </Box>
                           </TableCell>
                           <TableCell align="center">
-                            {!showBreakdown && pkg.pricing_unit === "PER_PERSON"
-                              ? `${pkg.quantity} persons`
-                              : showBreakdown
-                                ? ""
-                                : pkg.quantity}
+                            {!showBreakdown &&
+                            pkg.pricing_unit === "PER_PERSON" ? (
+                              <Box>
+                                <Typography variant="body2">
+                                  {pkg.quantity} persons
+                                </Typography>
+                                {pkg.minimum_guests &&
+                                  pkg.minimum_guests > 1 && (
+                                    <Typography
+                                      variant="caption"
+                                      color="text.secondary"
+                                      sx={{ display: "block" }}
+                                    >
+                                      min. {pkg.minimum_guests}
+                                    </Typography>
+                                  )}
+                              </Box>
+                            ) : showBreakdown ? (
+                              ""
+                            ) : (
+                              pkg.quantity
+                            )}
                           </TableCell>
                           <TableCell align="right">
                             <Box>

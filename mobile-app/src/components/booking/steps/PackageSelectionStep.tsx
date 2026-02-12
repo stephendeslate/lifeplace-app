@@ -449,19 +449,27 @@ function PackageCard({
                       ? "per hour"
                       : "per event")}
               </Text>
-              {/* Per-person minimum and starting price */}
-              {isPerPerson && minimum_guests && minimum_guests > 1 && (
-                <Text style={styles.perPersonMinLabel}>
-                  Min. {minimum_guests} persons
-                </Text>
-              )}
-              {isPerPerson && minimum_guests && minimum_guests > 1 && (
-                <Text style={styles.perPersonFromPrice}>
-                  From{" "}
-                  {formatCurrency(basePriceNum * minimum_guests, {
-                    currency: "PHP",
-                  })}
-                </Text>
+              {/* Per-person pricing highlight */}
+              {isPerPerson && (
+                <View style={styles.perPersonHighlight}>
+                  {minimum_guests && minimum_guests > 1 ? (
+                    <>
+                      <Text style={styles.perPersonMinLabel}>
+                        Minimum {minimum_guests} persons
+                      </Text>
+                      <Text style={styles.perPersonFromPrice}>
+                        Starting at{" "}
+                        {formatCurrency(basePriceNum * minimum_guests, {
+                          currency: "PHP",
+                        })}
+                      </Text>
+                    </>
+                  ) : (
+                    <Text style={styles.perPersonMinLabel}>
+                      Price is per person
+                    </Text>
+                  )}
+                </View>
               )}
             </View>
 
@@ -508,7 +516,10 @@ function PackageCard({
         {/* Per-Person Headcount Stepper (simple mode — no child pricing) */}
         {showQuantity && isPerPerson && !childPricingEnabled && (
           <View style={styles.headcountContainer}>
-            <Text style={styles.headcountLabel}>Expected headcount</Text>
+            <Text style={styles.headcountLabel}>
+              Number of Guests
+              {perPersonMin > 1 ? ` (minimum ${perPersonMin})` : ""}
+            </Text>
             <View style={styles.headcountStepper}>
               <TouchableOpacity
                 style={[
@@ -1355,6 +1366,16 @@ export function PackageSelectionStep({
               {selectedPackages.length}{" "}
               {selectedPackages.length === 1 ? "package" : "packages"} selected
             </Text>
+            {/* Per-person breakdown detail */}
+            {selectedPackages.map((pkg) =>
+              pkg.pricing_unit === "PER_PERSON" ? (
+                <Text key={pkg.product_id} style={styles.totalSummaryDetail}>
+                  {pkg.quantity} {pkg.quantity === 1 ? "person" : "persons"} ×{" "}
+                  {formatCurrency(parseFloat(pkg.price), { currency: "PHP" })}
+                  /person
+                </Text>
+              ) : null,
+            )}
             <Text style={styles.totalSummaryPrice}>
               {formatCurrency(totalPrice, { currency: "PHP" })}
             </Text>
@@ -1601,15 +1622,25 @@ const styles = StyleSheet.create({
     ...typeScale.labelSmall,
     color: colors.neutral.gray,
   },
+  perPersonHighlight: {
+    marginTop: spacing.xs,
+    backgroundColor: colors.accent.wood + "15",
+    borderWidth: 1,
+    borderColor: colors.accent.wood + "30",
+    borderRadius: layout.borderRadius.sm,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+  },
   perPersonMinLabel: {
     ...typeScale.labelSmall,
     color: colors.accent.wood,
-    fontWeight: "600",
-    marginTop: spacing.xxs,
+    fontWeight: "700",
   },
   perPersonFromPrice: {
-    ...typeScale.labelSmall,
-    color: colors.neutral.darkGray,
+    ...typeScale.titleSmall,
+    color: colors.primary.black,
+    fontWeight: "700",
+    marginTop: 2,
   },
   excessHourInfo: {
     alignItems: "flex-end",
@@ -1785,19 +1816,23 @@ const styles = StyleSheet.create({
   },
   totalSummaryContent: {
     flex: 1,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
   },
   totalSummaryTitle: {
     ...typeScale.titleSmall,
     color: colors.secondary.forest,
     fontWeight: "600",
   },
+  totalSummaryDetail: {
+    ...typeScale.labelSmall,
+    color: colors.neutral.darkGray,
+    marginTop: 2,
+  },
   totalSummaryPrice: {
     ...typeScale.titleMedium,
     color: colors.secondary.forest,
     fontWeight: "700",
+    textAlign: "right",
+    marginTop: spacing.xs,
   },
   // Venue Hours Selector Styles
   venueHoursContainer: {
