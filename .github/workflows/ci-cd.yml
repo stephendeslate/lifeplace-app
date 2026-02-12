@@ -106,7 +106,9 @@ jobs:
 
     - name: Install dependencies
       run: |
-        cd frontend/${{ matrix.app }}
+        cd frontend/shared
+        npm install
+        cd ../${{ matrix.app }}
         npm install --force
 
     - name: Run TypeScript check
