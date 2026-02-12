@@ -1094,6 +1094,37 @@ export function PackageSelectionStep({
           if (maxQty !== undefined) {
             newQuantity = Math.min(maxQty, newQuantity);
           }
+
+          // If attendee_breakdown exists, keep it in sync with quantity
+          if (p.attendee_breakdown && p.attendee_breakdown.length > 0) {
+            const currentTotal = p.attendee_breakdown.reduce(
+              (sum, t) => sum + t.count,
+              0,
+            );
+            const breakdownDelta = newQuantity - currentTotal;
+            if (breakdownDelta !== 0) {
+              // Adjust the adult tier (0% discount) to absorb the delta
+              const adultIdx = p.attendee_breakdown.findIndex(
+                (t) => t.discount_percentage === 0,
+              );
+              const adjustIdx = adultIdx >= 0 ? adultIdx : 0;
+              const updatedBreakdown = p.attendee_breakdown.map((tier, idx) => {
+                if (idx !== adjustIdx) return tier;
+                const newCount = Math.max(0, tier.count + breakdownDelta);
+                return {
+                  ...tier,
+                  count: newCount,
+                  subtotal: tier.unit_price * newCount,
+                };
+              });
+              return {
+                ...p,
+                quantity: newQuantity,
+                attendee_breakdown: updatedBreakdown,
+              };
+            }
+          }
+
           return { ...p, quantity: newQuantity };
         }
         return p;

@@ -989,16 +989,18 @@ export const PaymentStep: React.FC<PaymentStepProps> = ({
           </Paper>
 
           <Box sx={{ textAlign: "center", mb: 2 }}>
-            <Button
-              variant="outlined"
-              onClick={() => {
-                setCompletionChoice(null);
-                updateData({ completion_type: undefined, quote_message: "" });
-              }}
-              sx={{ mr: 2 }}
-            >
-              ← Back to Payment Options
-            </Button>
+            {!bookingState.quickQuoteMode && (
+              <Button
+                variant="outlined"
+                onClick={() => {
+                  setCompletionChoice(null);
+                  updateData({ completion_type: undefined, quote_message: "" });
+                }}
+                sx={{ mr: 2 }}
+              >
+                ← Back to Payment Options
+              </Button>
+            )}
 
             <Typography
               variant="caption"
@@ -1016,7 +1018,11 @@ export const PaymentStep: React.FC<PaymentStepProps> = ({
               display="block"
               sx={{ mt: 1, fontWeight: 600 }}
             >
-              Click "Continue" below to proceed with your quote request
+              Click &ldquo;
+              {bookingState.quickQuoteMode
+                ? "Submit Quote Request"
+                : "Continue"}
+              &rdquo; below to proceed with your quote request
             </Typography>
           </Box>
         </>

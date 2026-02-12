@@ -1564,9 +1564,43 @@ const CleanPackageSelectionStep: React.FC<CleanPackageSelectionStepProps> = ({
         }
 
         const updatedPackages =
-          stepData.selected_packages?.map((p) =>
-            p.product_id === pkg.id ? { ...p, quantity: clampedQuantity } : p,
-          ) || [];
+          stepData.selected_packages?.map((p) => {
+            if (p.product_id !== pkg.id) return p;
+
+            // If attendee_breakdown exists, keep it in sync with quantity
+            if (p.attendee_breakdown && p.attendee_breakdown.length > 0) {
+              const currentTotal = p.attendee_breakdown.reduce(
+                (sum, t) => sum + t.count,
+                0,
+              );
+              const delta = clampedQuantity - currentTotal;
+              if (delta !== 0) {
+                // Adjust the adult tier (0% discount) to absorb the delta
+                const adultIdx = p.attendee_breakdown.findIndex(
+                  (t) => t.discount_percentage === 0,
+                );
+                const adjustIdx = adultIdx >= 0 ? adultIdx : 0;
+                const updatedBreakdown = p.attendee_breakdown.map(
+                  (tier, idx) => {
+                    if (idx !== adjustIdx) return tier;
+                    const newCount = Math.max(0, tier.count + delta);
+                    return {
+                      ...tier,
+                      count: newCount,
+                      subtotal: tier.unit_price * newCount,
+                    };
+                  },
+                );
+                return {
+                  ...p,
+                  quantity: clampedQuantity,
+                  attendee_breakdown: updatedBreakdown,
+                };
+              }
+            }
+
+            return { ...p, quantity: clampedQuantity };
+          }) || [];
         onDataChange(buildCompleteData(updatedPackages));
       }
     },

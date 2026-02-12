@@ -30,11 +30,13 @@ import {
   Schedule,
   Warning,
   KeyboardArrowDown,
+  RequestQuote,
 } from "@mui/icons-material";
 // import { useNavigate } from 'react-router-dom'; // Available for future use
 import { useBooking } from "../../contexts/BookingContext";
 import { useSessionTimer } from "../../hooks/booking/useBookingCore";
 import { useCurrencySettings } from "../../hooks/useCurrency";
+import type { PaymentInfoStepConfiguration } from "../../types/booking/stepConfigurations.types";
 
 interface BookingContainerProps {
   children: React.ReactNode;
@@ -79,6 +81,26 @@ export const BookingContainer: React.FC<BookingContainerProps> = ({
   };
 
   const { stepName, stepIndex } = getCurrentStepInfo();
+
+  // Quick Quote exit ramp visibility
+  const QUICK_QUOTE_ELIGIBLE_STEPS = [
+    "venue_selection",
+    "package_selection",
+    "addon_selection",
+  ];
+  const currentStepType = state.currentSession?.current_step?.step_type as
+    | string
+    | undefined;
+  const paymentStep = state.currentFlow?.enabled_steps?.find(
+    (s) => s.step_type === "payment_info",
+  );
+  const paymentConfig =
+    paymentStep?.configuration_data as PaymentInfoStepConfiguration | null;
+  const showQuickQuoteExitRamp =
+    !!currentStepType &&
+    QUICK_QUOTE_ELIGIBLE_STEPS.includes(currentStepType) &&
+    !!paymentConfig?.allow_quote_request &&
+    !state.quickQuoteMode;
 
   // Handle exit confirmation
   const handleExit = () => {
@@ -346,6 +368,35 @@ export const BookingContainer: React.FC<BookingContainerProps> = ({
           </AnimatedElement>
         )}
 
+        {/* Quick Quote Mode Banner */}
+        {state.quickQuoteMode && (
+          <AnimatedElement animation="slideDown" delay={100}>
+            <Alert
+              severity="info"
+              sx={{
+                mb: 3,
+                backgroundColor: alpha(theme.palette.info.main, 0.1),
+                backdropFilter: "blur(10px)",
+                border: `1px solid ${alpha(theme.palette.info.main, 0.2)}`,
+              }}
+              icon={<RequestQuote />}
+              action={
+                <Button
+                  color="inherit"
+                  size="small"
+                  onClick={actions.exitQuickQuoteMode}
+                  disabled={state.ui.isSubmitting}
+                >
+                  Cancel
+                </Button>
+              }
+            >
+              Quote Request Mode — Fill in your contact info and we&apos;ll send
+              you a personalized quote.
+            </Alert>
+          </AnimatedElement>
+        )}
+
         {/* Expiring Soon Warning */}
         {isExpiringSoon && !expired && (
           <AnimatedElement animation="slideDown" delay={150}>
@@ -453,12 +504,39 @@ export const BookingContainer: React.FC<BookingContainerProps> = ({
                   transition: "all 0.3s ease",
                 }}
               >
-                {stepIndex === state.progress.totalSteps - 1
-                  ? "Complete"
-                  : "Next"}
+                {state.quickQuoteMode && currentStepType === "payment_info"
+                  ? "Submit Quote Request"
+                  : stepIndex === state.progress.totalSteps - 1
+                    ? "Complete"
+                    : "Next"}
               </Button>
             )}
           </Box>
+
+          {/* Quick Quote Exit Ramp */}
+          {showQuickQuoteExitRamp && (
+            <Box sx={{ textAlign: "center", mt: 2 }}>
+              <Button
+                variant="text"
+                size="small"
+                startIcon={<RequestQuote sx={{ fontSize: 16 }} />}
+                onClick={actions.requestQuote}
+                disabled={state.ui.isSubmitting}
+                sx={{
+                  color: "text.secondary",
+                  textTransform: "none",
+                  fontWeight: 400,
+                  fontSize: "0.85rem",
+                  "&:hover": {
+                    color: "primary.main",
+                    backgroundColor: "transparent",
+                  },
+                }}
+              >
+                Not ready to decide? Request a personalized quote instead
+              </Button>
+            </Box>
+          )}
         </AnimatedElement>
 
         {/* Pricing Summary (if available) */}
