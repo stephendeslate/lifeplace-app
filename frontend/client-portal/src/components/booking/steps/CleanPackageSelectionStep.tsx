@@ -39,6 +39,7 @@ import type {
   PackageSelectionStepConfiguration,
   SelectedPackage,
   AttendeeBreakdown,
+  BookingFlowStep,
 } from "../../../types/booking";
 import type {
   VenueSelectionStepData,
@@ -105,12 +106,7 @@ function extractGuestCount(
  * is true AND at least one tier is configured.
  */
 function extractChildPricingConfig(
-  enabledSteps:
-    | Array<{
-        step_type: string;
-        configuration_data?: Record<string, unknown> | null;
-      }>
-    | undefined,
+  enabledSteps: BookingFlowStep[] | undefined,
 ): {
   enabled: boolean;
   tiers: Array<{
@@ -123,7 +119,10 @@ function extractChildPricingConfig(
   if (!enabledSteps) return { enabled: false, tiers: [] };
   for (const step of enabledSteps) {
     if (step.step_type !== "payment_info" || !step.configuration_data) continue;
-    const configData = step.configuration_data as Record<string, unknown>;
+    const configData = step.configuration_data as unknown as Record<
+      string,
+      unknown
+    >;
     const effectiveTerms = configData.effective_payment_terms as
       | Record<string, unknown>
       | undefined;
