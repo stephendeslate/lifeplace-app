@@ -278,6 +278,222 @@ function VenueHoursSelector({
 }
 
 // =============================================================================
+// PER-PERSON HEADCOUNT SECTION (unified: simple stepper + opt-in breakdown)
+// =============================================================================
+
+interface PerPersonHeadcountSectionProps {
+  quantity: number;
+  onQuantityChange: (delta: number) => void;
+  perPersonMin: number;
+  perPersonMax: number | undefined;
+  basePriceNum: number;
+  childPricingEnabled: boolean;
+  attendeeBreakdown?: AttendeeBreakdown[];
+  onAttendeeCountChange?: (tierIndex: number, delta: number) => void;
+}
+
+function PerPersonHeadcountSection({
+  quantity,
+  onQuantityChange,
+  perPersonMin,
+  perPersonMax,
+  basePriceNum,
+  childPricingEnabled,
+  attendeeBreakdown,
+  onAttendeeCountChange,
+}: PerPersonHeadcountSectionProps) {
+  const [showBreakdown, setShowBreakdown] = useState(false);
+
+  return (
+    <View style={styles.headcountContainer}>
+      {/* Simple headcount stepper — always shown */}
+      <Text style={styles.headcountLabel}>
+        Number of Guests
+        {perPersonMin > 1 ? ` (minimum ${perPersonMin})` : ""}
+      </Text>
+      <View style={styles.headcountStepper}>
+        <TouchableOpacity
+          style={[
+            styles.quantityButton,
+            quantity <= perPersonMin && styles.headcountButtonDisabled,
+          ]}
+          onPress={() => onQuantityChange(-1)}
+          disabled={quantity <= perPersonMin}
+        >
+          <Minus
+            size={18}
+            color={
+              quantity <= perPersonMin
+                ? colors.neutral.gray
+                : colors.primary.black
+            }
+          />
+        </TouchableOpacity>
+        <Text style={styles.quantityText}>{quantity}</Text>
+        <TouchableOpacity
+          style={[
+            styles.quantityButton,
+            perPersonMax !== undefined &&
+              quantity >= perPersonMax &&
+              styles.headcountButtonDisabled,
+          ]}
+          onPress={() => onQuantityChange(1)}
+          disabled={perPersonMax !== undefined && quantity >= perPersonMax}
+        >
+          <Plus
+            size={18}
+            color={
+              perPersonMax !== undefined && quantity >= perPersonMax
+                ? colors.neutral.gray
+                : colors.primary.black
+            }
+          />
+        </TouchableOpacity>
+      </View>
+      <Text style={styles.headcountBreakdown}>
+        {quantity} x {formatCurrency(basePriceNum, { currency: "PHP" })}
+        /person = {formatCurrency(basePriceNum * quantity, { currency: "PHP" })}
+      </Text>
+
+      {/* Optional attendee breakdown toggle — only when child pricing is enabled */}
+      {childPricingEnabled && attendeeBreakdown && onAttendeeCountChange && (
+        <>
+          {showBreakdown && (
+            <View style={styles.breakdownSection}>
+              <Text style={styles.breakdownHelper}>
+                Adjust counts per age group for discounted rates. Total must
+                meet the minimum.
+              </Text>
+
+              {attendeeBreakdown.map((tier, index) => {
+                const totalCount = attendeeBreakdown.reduce(
+                  (sum, t) => sum + t.count,
+                  0,
+                );
+                const isMinusDisabled = tier.count <= 0;
+                const isPlusDisabled =
+                  perPersonMax !== undefined && totalCount >= perPersonMax;
+
+                // Build age range label
+                const ageRange =
+                  tier.min_age != null && tier.max_age != null
+                    ? `Ages ${tier.min_age}–${tier.max_age}`
+                    : tier.min_age != null
+                      ? `Ages ${tier.min_age}+`
+                      : "";
+
+                return (
+                  <View key={index} style={styles.attendeeTierRow}>
+                    <View style={styles.attendeeTierInfo}>
+                      <View style={styles.attendeeTierLabelRow}>
+                        <Text style={styles.attendeeTierLabel}>
+                          {tier.tier_label}
+                        </Text>
+                        {ageRange ? (
+                          <Text style={styles.attendeeTierAgeRange}>
+                            ({ageRange})
+                          </Text>
+                        ) : null}
+                      </View>
+                      <View style={styles.attendeeTierPriceRow}>
+                        <Text style={styles.attendeeTierPrice}>
+                          {tier.discount_percentage === 100
+                            ? "Free"
+                            : tier.discount_percentage > 0
+                              ? `${tier.discount_percentage}% off — ${formatCurrency(tier.unit_price, { currency: "PHP" })}/person`
+                              : `${formatCurrency(tier.unit_price, { currency: "PHP" })}/person`}
+                        </Text>
+                      </View>
+                    </View>
+
+                    <View style={styles.attendeeTierControls}>
+                      <TouchableOpacity
+                        style={[
+                          styles.attendeeStepperButton,
+                          isMinusDisabled &&
+                            styles.attendeeStepperButtonDisabled,
+                        ]}
+                        onPress={() => onAttendeeCountChange(index, -1)}
+                        disabled={isMinusDisabled}
+                      >
+                        <Minus
+                          size={16}
+                          color={
+                            isMinusDisabled
+                              ? colors.neutral.gray
+                              : colors.primary.black
+                          }
+                        />
+                      </TouchableOpacity>
+                      <Text style={styles.attendeeTierCount}>{tier.count}</Text>
+                      <TouchableOpacity
+                        style={[
+                          styles.attendeeStepperButton,
+                          isPlusDisabled &&
+                            styles.attendeeStepperButtonDisabled,
+                        ]}
+                        onPress={() => onAttendeeCountChange(index, 1)}
+                        disabled={isPlusDisabled}
+                      >
+                        <Plus
+                          size={16}
+                          color={
+                            isPlusDisabled
+                              ? colors.neutral.gray
+                              : colors.primary.black
+                          }
+                        />
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                );
+              })}
+
+              {/* Breakdown total */}
+              <View style={styles.attendeeTotalRow}>
+                <Text style={styles.attendeeTotalLabel}>
+                  Total:{" "}
+                  {attendeeBreakdown.reduce((sum, t) => sum + t.count, 0)}{" "}
+                  {attendeeBreakdown.reduce((sum, t) => sum + t.count, 0) === 1
+                    ? "person"
+                    : "persons"}
+                </Text>
+                <Text style={styles.attendeeTotalPrice}>
+                  {formatCurrency(
+                    attendeeBreakdown.reduce((sum, t) => sum + t.subtotal, 0),
+                    { currency: "PHP" },
+                  )}
+                </Text>
+              </View>
+
+              {/* Min guests warning */}
+              {perPersonMin > 1 &&
+                attendeeBreakdown.reduce((sum, t) => sum + t.count, 0) <
+                  perPersonMin && (
+                  <Text style={styles.attendeeMinWarning}>
+                    Minimum {perPersonMin} persons required
+                  </Text>
+                )}
+            </View>
+          )}
+
+          <TouchableOpacity
+            style={styles.breakdownToggle}
+            onPress={() => setShowBreakdown(!showBreakdown)}
+          >
+            <Text style={styles.breakdownToggleText}>
+              {showBreakdown
+                ? "Use simple headcount"
+                : "Have children or infants? Adjust by age group"}
+            </Text>
+          </TouchableOpacity>
+        </>
+      )}
+    </View>
+  );
+}
+
+// =============================================================================
 // PACKAGE CARD COMPONENT
 // =============================================================================
 
@@ -513,171 +729,19 @@ function PackageCard({
           </View>
         )}
 
-        {/* Per-Person Headcount Stepper (simple mode — no child pricing) */}
-        {showQuantity && isPerPerson && !childPricingEnabled && (
-          <View style={styles.headcountContainer}>
-            <Text style={styles.headcountLabel}>
-              Number of Guests
-              {perPersonMin > 1 ? ` (minimum ${perPersonMin})` : ""}
-            </Text>
-            <View style={styles.headcountStepper}>
-              <TouchableOpacity
-                style={[
-                  styles.quantityButton,
-                  quantity <= perPersonMin && styles.headcountButtonDisabled,
-                ]}
-                onPress={() => onQuantityChange(-1)}
-                disabled={quantity <= perPersonMin}
-              >
-                <Minus
-                  size={18}
-                  color={
-                    quantity <= perPersonMin
-                      ? colors.neutral.gray
-                      : colors.primary.black
-                  }
-                />
-              </TouchableOpacity>
-              <Text style={styles.quantityText}>{quantity}</Text>
-              <TouchableOpacity
-                style={[
-                  styles.quantityButton,
-                  perPersonMax !== undefined &&
-                    quantity >= perPersonMax &&
-                    styles.headcountButtonDisabled,
-                ]}
-                onPress={() => onQuantityChange(1)}
-                disabled={
-                  perPersonMax !== undefined && quantity >= perPersonMax
-                }
-              >
-                <Plus
-                  size={18}
-                  color={
-                    perPersonMax !== undefined && quantity >= perPersonMax
-                      ? colors.neutral.gray
-                      : colors.primary.black
-                  }
-                />
-              </TouchableOpacity>
-            </View>
-            <Text style={styles.headcountBreakdown}>
-              {quantity} x {formatCurrency(basePriceNum, { currency: "PHP" })}
-              /person ={" "}
-              {formatCurrency(basePriceNum * quantity, { currency: "PHP" })}
-            </Text>
-          </View>
+        {/* Per-Person Headcount — unified: simple stepper + optional breakdown */}
+        {showQuantity && isPerPerson && (
+          <PerPersonHeadcountSection
+            quantity={quantity}
+            onQuantityChange={onQuantityChange}
+            perPersonMin={perPersonMin}
+            perPersonMax={perPersonMax}
+            basePriceNum={basePriceNum}
+            childPricingEnabled={childPricingEnabled}
+            attendeeBreakdown={attendeeBreakdown}
+            onAttendeeCountChange={onAttendeeCountChange}
+          />
         )}
-
-        {/* Per-Person Attendee Breakdown (child pricing enabled) */}
-        {showQuantity &&
-          isPerPerson &&
-          childPricingEnabled &&
-          attendeeBreakdown &&
-          onAttendeeCountChange && (
-            <View style={styles.attendeeBreakdownContainer}>
-              <Text style={styles.headcountLabel}>Attendee Breakdown</Text>
-
-              {attendeeBreakdown.map((tier, index) => {
-                const totalCount = attendeeBreakdown.reduce(
-                  (sum, t) => sum + t.count,
-                  0,
-                );
-                const isMinusDisabled = tier.count <= 0;
-                const isPlusDisabled =
-                  perPersonMax !== undefined && totalCount >= perPersonMax;
-
-                return (
-                  <View key={index} style={styles.attendeeTierRow}>
-                    <View style={styles.attendeeTierInfo}>
-                      <Text style={styles.attendeeTierLabel}>
-                        {tier.tier_label}
-                      </Text>
-                      <View style={styles.attendeeTierPriceRow}>
-                        <Text style={styles.attendeeTierPrice}>
-                          {formatCurrency(tier.unit_price, { currency: "PHP" })}
-                          /person
-                        </Text>
-                        {tier.discount_percentage > 0 && (
-                          <View style={styles.attendeeDiscountBadge}>
-                            <Text style={styles.attendeeDiscountBadgeText}>
-                              {tier.discount_percentage}% off
-                            </Text>
-                          </View>
-                        )}
-                      </View>
-                    </View>
-
-                    <View style={styles.attendeeTierControls}>
-                      <TouchableOpacity
-                        style={[
-                          styles.attendeeStepperButton,
-                          isMinusDisabled &&
-                            styles.attendeeStepperButtonDisabled,
-                        ]}
-                        onPress={() => onAttendeeCountChange(index, -1)}
-                        disabled={isMinusDisabled}
-                      >
-                        <Minus
-                          size={16}
-                          color={
-                            isMinusDisabled
-                              ? colors.neutral.gray
-                              : colors.primary.black
-                          }
-                        />
-                      </TouchableOpacity>
-                      <Text style={styles.attendeeTierCount}>{tier.count}</Text>
-                      <TouchableOpacity
-                        style={[
-                          styles.attendeeStepperButton,
-                          isPlusDisabled &&
-                            styles.attendeeStepperButtonDisabled,
-                        ]}
-                        onPress={() => onAttendeeCountChange(index, 1)}
-                        disabled={isPlusDisabled}
-                      >
-                        <Plus
-                          size={16}
-                          color={
-                            isPlusDisabled
-                              ? colors.neutral.gray
-                              : colors.primary.black
-                          }
-                        />
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                );
-              })}
-
-              {/* Attendee Breakdown Totals */}
-              <View style={styles.attendeeTotalRow}>
-                <Text style={styles.attendeeTotalLabel}>
-                  Total:{" "}
-                  {attendeeBreakdown.reduce((sum, t) => sum + t.count, 0)}{" "}
-                  {attendeeBreakdown.reduce((sum, t) => sum + t.count, 0) === 1
-                    ? "person"
-                    : "persons"}
-                </Text>
-                <Text style={styles.attendeeTotalPrice}>
-                  {formatCurrency(
-                    attendeeBreakdown.reduce((sum, t) => sum + t.subtotal, 0),
-                    { currency: "PHP" },
-                  )}
-                </Text>
-              </View>
-
-              {/* Min guests warning */}
-              {perPersonMin > 1 &&
-                attendeeBreakdown.reduce((sum, t) => sum + t.count, 0) <
-                  perPersonMin && (
-                  <Text style={styles.attendeeMinWarning}>
-                    Minimum {perPersonMin} persons required
-                  </Text>
-                )}
-            </View>
-          )}
       </View>
     </TouchableOpacity>
   );
@@ -1796,6 +1860,37 @@ const styles = StyleSheet.create({
     ...typeScale.labelSmall,
     color: colors.semantic.error,
     textAlign: "center",
+  },
+  attendeeTierLabelRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  attendeeTierAgeRange: {
+    ...typeScale.labelSmall,
+    color: colors.neutral.darkGray,
+  },
+  breakdownSection: {
+    marginTop: spacing.sm,
+    paddingTop: spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: colors.neutral.warmGray,
+    gap: spacing.sm,
+  },
+  breakdownHelper: {
+    ...typeScale.labelSmall,
+    color: colors.neutral.darkGray,
+    marginBottom: spacing.xs,
+  },
+  breakdownToggle: {
+    marginTop: spacing.sm,
+    alignSelf: "center",
+    paddingVertical: spacing.xs,
+  },
+  breakdownToggleText: {
+    ...typeScale.labelMedium,
+    color: colors.accent.wood,
+    fontWeight: "600",
   },
   validationError: {
     ...typeScale.labelSmall,

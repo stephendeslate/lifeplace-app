@@ -495,13 +495,26 @@ class BookingSessionService:
             # Log session info (sanitized - no full data)
             logger.debug(f"Session booking data keys: {list(session.booking_data.keys()) if session.booking_data else []}")
         
-        # Validate all required steps are completed
-        required_steps = session.booking_flow.steps.filter(is_required=True, is_enabled=True)
+        # Validate required steps based on completion type
         completed_step_ids = set(session.completed_steps.values_list('id', flat=True))
-        
-        for step in required_steps:
-            if step.id not in completed_step_ids:
-                raise StepValidationError(f"Required step '{step.get_step_type_display()}' is not completed")
+
+        if completion_type == 'quote':
+            # For quote requests (including quick quote exit ramp), only require
+            # contact_info to be completed. Other step data is preserved in
+            # booking_data as context but should not block the quote.
+            contact_info_step = session.booking_flow.steps.filter(
+                step_type='contact_info', is_enabled=True
+            ).first()
+            if contact_info_step and contact_info_step.id not in completed_step_ids:
+                raise StepValidationError(
+                    "Contact information must be completed before requesting a quote"
+                )
+        else:
+            # For payment completions, all required steps must be completed
+            required_steps = session.booking_flow.steps.filter(is_required=True, is_enabled=True)
+            for step in required_steps:
+                if step.id not in completed_step_ids:
+                    raise StepValidationError(f"Required step '{step.get_step_type_display()}' is not completed")
         
         # Validate completion type against payment step configuration
         payment_step = session.booking_flow.steps.filter(step_type='payment_info').first()

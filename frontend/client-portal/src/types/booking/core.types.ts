@@ -45,17 +45,18 @@ export interface BookingFlowStep {
   updated_at: string;
 }
 
-export type StepType = 
-  | 'introduction'
-  | 'date_time' 
-  | 'questionnaire'
-  | 'package_selection'
-  | 'addon_selection'
-  | 'pricing_summary'
-  | 'contact_info'
-  | 'payment_info'
-  | 'review_booking'
-  | 'confirmation';
+export type StepType =
+  | "introduction"
+  | "venue_selection"
+  | "date_time"
+  | "questionnaire"
+  | "package_selection"
+  | "addon_selection"
+  | "pricing_summary"
+  | "contact_info"
+  | "payment_info"
+  | "review_booking"
+  | "confirmation";
 
 export interface StepConfiguration {
   id: number;

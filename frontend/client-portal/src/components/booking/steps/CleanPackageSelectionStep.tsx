@@ -173,6 +173,7 @@ const PackageCard: React.FC<PackageCardProps> = ({
   const theme = useTheme();
   const { announceToScreenReader } = useAccessibility();
   const [expanded, setExpanded] = useState(false);
+  const [showBreakdown, setShowBreakdown] = useState(false);
 
   const handleSelect = useCallback(() => {
     if (selectionType === "SINGLE" || (!isSelected && canSelectMore)) {
@@ -433,266 +434,282 @@ const PackageCard: React.FC<PackageCardProps> = ({
             </Box>
           )}
 
-          {/* Per-person: Attendee breakdown (child pricing enabled) OR simple headcount stepper */}
-          {pkg.pricing_unit === "PER_PERSON" &&
-            isSelected &&
-            childPricingEnabled &&
-            attendeeBreakdown &&
-            onAttendeeBreakdownChange && (
+          {/* Per-person headcount input (always simple stepper first, with optional breakdown) */}
+          {pkg.pricing_unit === "PER_PERSON" && isSelected && (
+            <Box
+              sx={{
+                mb: 2,
+                p: 2,
+                borderRadius: 2,
+                backgroundColor: alpha(packageColor, 0.05),
+                border: `1px solid ${alpha(packageColor, 0.15)}`,
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Simple headcount stepper — always shown */}
+              <Typography
+                variant="subtitle2"
+                sx={{ display: "block", mb: 1, fontWeight: 600 }}
+              >
+                Number of Guests
+                {pkg.minimum_guests && pkg.minimum_guests > 1
+                  ? ` (minimum ${pkg.minimum_guests})`
+                  : ""}
+              </Typography>
               <Box
                 sx={{
-                  mb: 2,
-                  p: 2,
-                  borderRadius: 2,
-                  backgroundColor: alpha(packageColor, 0.05),
-                  border: `1px solid ${alpha(packageColor, 0.15)}`,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 2,
                 }}
-                onClick={(e) => e.stopPropagation()}
               >
-                <Typography
-                  variant="subtitle2"
-                  sx={{ fontWeight: 600, mb: 0.5 }}
-                >
-                  Attendees
-                  {pkg.minimum_guests
-                    ? ` (minimum ${pkg.minimum_guests} total)`
-                    : ""}
-                </Typography>
-
-                {/* Tier rows */}
-                <Stack spacing={1.5} sx={{ mt: 1.5 }}>
-                  {attendeeBreakdown.map((tier, tierIdx) => {
-                    const totalCount = attendeeBreakdown.reduce(
-                      (sum, t) => sum + t.count,
-                      0,
-                    );
-                    const atMin =
-                      tier.count <= 0 ||
-                      (pkg.minimum_guests
-                        ? totalCount <= pkg.minimum_guests && tier.count <= 0
-                        : false);
-                    const atMax = pkg.maximum_guests
-                      ? totalCount >= pkg.maximum_guests
-                      : false;
-
-                    return (
-                      <Box
-                        key={tierIdx}
-                        sx={{
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "space-between",
-                          gap: 1,
-                        }}
-                      >
-                        {/* Tier label and discount info */}
-                        <Box sx={{ flex: "1 1 auto", minWidth: 0 }}>
-                          <Typography
-                            variant="body2"
-                            sx={{ fontWeight: 600, lineHeight: 1.3 }}
-                          >
-                            {tier.tier_label}
-                          </Typography>
-                          <Typography
-                            variant="caption"
-                            color="text.secondary"
-                            sx={{ display: "block", lineHeight: 1.3 }}
-                          >
-                            {tier.discount_percentage === 100
-                              ? "Free"
-                              : tier.discount_percentage > 0
-                                ? `${tier.discount_percentage}% off`
-                                : ""}
-                            {tier.discount_percentage < 100 &&
-                              ` \u20B1${tier.unit_price.toLocaleString()}/person`}
-                          </Typography>
-                        </Box>
-
-                        {/* Stepper */}
-                        <Box
-                          sx={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 1,
-                            flex: "0 0 auto",
-                          }}
-                        >
-                          <IconButton
-                            size="small"
-                            onClick={() =>
-                              onAttendeeBreakdownChange(tierIdx, tier.count - 1)
-                            }
-                            disabled={atMin}
-                            sx={{
-                              width: 32,
-                              height: 32,
-                              backgroundColor: alpha("#fff", 0.1),
-                              "&:hover": {
-                                backgroundColor: alpha("#fff", 0.2),
-                              },
-                            }}
-                          >
-                            <RemoveIcon fontSize="small" />
-                          </IconButton>
-                          <Typography
-                            variant="body1"
-                            sx={{
-                              minWidth: 32,
-                              textAlign: "center",
-                              fontWeight: 600,
-                            }}
-                          >
-                            {tier.count}
-                          </Typography>
-                          <IconButton
-                            size="small"
-                            onClick={() =>
-                              onAttendeeBreakdownChange(tierIdx, tier.count + 1)
-                            }
-                            disabled={atMax}
-                            sx={{
-                              width: 32,
-                              height: 32,
-                              backgroundColor: alpha("#fff", 0.1),
-                              "&:hover": {
-                                backgroundColor: alpha("#fff", 0.2),
-                              },
-                            }}
-                          >
-                            <AddIcon fontSize="small" />
-                          </IconButton>
-                        </Box>
-                      </Box>
-                    );
-                  })}
-                </Stack>
-
-                {/* Total summary */}
-                <Divider sx={{ my: 1.5, borderColor: alpha("#fff", 0.1) }} />
-                <Box
+                <IconButton
+                  size="small"
+                  onClick={() => handleQuantityChange(-1)}
+                  disabled={selectedQuantity <= (pkg.minimum_guests || 1)}
                   sx={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
+                    backgroundColor: alpha("#fff", 0.1),
+                    "&:hover": { backgroundColor: alpha("#fff", 0.2) },
                   }}
                 >
-                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                    Total:{" "}
-                    {attendeeBreakdown.reduce((sum, t) => sum + t.count, 0)}{" "}
-                    persons
-                  </Typography>
-                  <Typography
-                    variant="body2"
-                    sx={{ fontWeight: 700, color: packageColor }}
-                  >
-                    {"\u20B1"}
-                    {attendeeBreakdown
-                      .reduce((sum, t) => sum + t.subtotal, 0)
-                      .toLocaleString()}
-                  </Typography>
-                </Box>
+                  <RemoveIcon />
+                </IconButton>
+                <Typography
+                  variant="h6"
+                  sx={{ minWidth: 40, textAlign: "center", fontWeight: 600 }}
+                >
+                  {selectedQuantity}
+                </Typography>
+                <IconButton
+                  size="small"
+                  onClick={() => handleQuantityChange(1)}
+                  disabled={
+                    pkg.maximum_guests
+                      ? selectedQuantity >= pkg.maximum_guests
+                      : false
+                  }
+                  sx={{
+                    backgroundColor: alpha("#fff", 0.1),
+                    "&:hover": { backgroundColor: alpha("#fff", 0.2) },
+                  }}
+                >
+                  <AddIcon />
+                </IconButton>
                 {pkg.maximum_guests && (
                   <Typography
                     variant="caption"
-                    color="text.secondary"
-                    sx={{ display: "block", mt: 0.5 }}
+                    sx={{ color: alpha("#fff", 0.7) }}
                   >
-                    Maximum {pkg.maximum_guests} persons
+                    max {pkg.maximum_guests}
                   </Typography>
                 )}
               </Box>
-            )}
-
-          {/* Per-person simple headcount stepper (shown when selected and child pricing is NOT enabled) */}
-          {pkg.pricing_unit === "PER_PERSON" &&
-            isSelected &&
-            !childPricingEnabled && (
-              <Box
-                sx={{
-                  mb: 2,
-                  p: 2,
-                  borderRadius: 2,
-                  backgroundColor: alpha(packageColor, 0.05),
-                  border: `1px solid ${alpha(packageColor, 0.15)}`,
-                }}
+              <Typography
+                variant="body2"
+                sx={{ textAlign: "center", mt: 1, fontWeight: 600 }}
               >
-                <Typography
-                  variant="subtitle2"
-                  sx={{ display: "block", mb: 1, fontWeight: 600 }}
-                >
-                  Number of Guests
-                  {pkg.minimum_guests && pkg.minimum_guests > 1
-                    ? ` (minimum ${pkg.minimum_guests})`
-                    : ""}
-                </Typography>
-                <Box
-                  sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: 2,
-                  }}
-                >
-                  <IconButton
-                    size="small"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleQuantityChange(-1);
-                    }}
-                    disabled={selectedQuantity <= (pkg.minimum_guests || 1)}
-                    sx={{
-                      backgroundColor: alpha("#fff", 0.1),
-                      "&:hover": { backgroundColor: alpha("#fff", 0.2) },
-                    }}
-                  >
-                    <RemoveIcon />
-                  </IconButton>
-                  <Typography
-                    variant="h6"
-                    sx={{ minWidth: 40, textAlign: "center", fontWeight: 600 }}
-                  >
-                    {selectedQuantity}
-                  </Typography>
-                  <IconButton
-                    size="small"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleQuantityChange(1);
-                    }}
-                    disabled={
-                      pkg.maximum_guests
-                        ? selectedQuantity >= pkg.maximum_guests
-                        : false
-                    }
-                    sx={{
-                      backgroundColor: alpha("#fff", 0.1),
-                      "&:hover": { backgroundColor: alpha("#fff", 0.2) },
-                    }}
-                  >
-                    <AddIcon />
-                  </IconButton>
-                  {pkg.maximum_guests && (
-                    <Typography
-                      variant="caption"
-                      sx={{ color: alpha("#fff", 0.7) }}
+                {selectedQuantity} × ₱
+                {parseFloat(pkg.base_price || "0").toLocaleString()}/person = ₱
+                {(
+                  selectedQuantity * parseFloat(pkg.base_price || "0")
+                ).toLocaleString()}
+              </Typography>
+
+              {/* Optional attendee breakdown toggle — only when child pricing is enabled */}
+              {childPricingEnabled &&
+                attendeeBreakdown &&
+                onAttendeeBreakdownChange && (
+                  <>
+                    <Divider
+                      sx={{ my: 1.5, borderColor: alpha("#fff", 0.1) }}
+                    />
+                    <Collapse in={showBreakdown}>
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        sx={{ display: "block", mb: 1.5 }}
+                      >
+                        Adjust counts per age group for discounted rates. Total
+                        must meet the minimum.
+                      </Typography>
+                      <Stack spacing={1.5}>
+                        {attendeeBreakdown.map((tier, tierIdx) => {
+                          const totalCount = attendeeBreakdown.reduce(
+                            (sum, t) => sum + t.count,
+                            0,
+                          );
+                          const atMin = tier.count <= 0;
+                          const atMax = pkg.maximum_guests
+                            ? totalCount >= pkg.maximum_guests
+                            : false;
+
+                          // Build age range label
+                          const ageRange =
+                            tier.min_age != null && tier.max_age != null
+                              ? `Ages ${tier.min_age}–${tier.max_age}`
+                              : tier.min_age != null
+                                ? `Ages ${tier.min_age}+`
+                                : "";
+
+                          return (
+                            <Box
+                              key={tierIdx}
+                              sx={{
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "space-between",
+                                gap: 1,
+                              }}
+                            >
+                              <Box sx={{ flex: "1 1 auto", minWidth: 0 }}>
+                                <Typography
+                                  variant="body2"
+                                  sx={{ fontWeight: 600, lineHeight: 1.3 }}
+                                >
+                                  {tier.tier_label}
+                                  {ageRange && (
+                                    <Typography
+                                      component="span"
+                                      variant="caption"
+                                      color="text.secondary"
+                                      sx={{ ml: 0.5 }}
+                                    >
+                                      ({ageRange})
+                                    </Typography>
+                                  )}
+                                </Typography>
+                                <Typography
+                                  variant="caption"
+                                  color="text.secondary"
+                                  sx={{ display: "block", lineHeight: 1.3 }}
+                                >
+                                  {tier.discount_percentage === 100
+                                    ? "Free"
+                                    : tier.discount_percentage > 0
+                                      ? `${tier.discount_percentage}% off — `
+                                      : ""}
+                                  {tier.discount_percentage < 100 &&
+                                    `₱${tier.unit_price.toLocaleString()}/person`}
+                                </Typography>
+                              </Box>
+
+                              <Box
+                                sx={{
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: 1,
+                                  flex: "0 0 auto",
+                                }}
+                              >
+                                <IconButton
+                                  size="small"
+                                  onClick={() =>
+                                    onAttendeeBreakdownChange(
+                                      tierIdx,
+                                      tier.count - 1,
+                                    )
+                                  }
+                                  disabled={atMin}
+                                  sx={{
+                                    width: 32,
+                                    height: 32,
+                                    backgroundColor: alpha("#fff", 0.1),
+                                    "&:hover": {
+                                      backgroundColor: alpha("#fff", 0.2),
+                                    },
+                                  }}
+                                >
+                                  <RemoveIcon fontSize="small" />
+                                </IconButton>
+                                <Typography
+                                  variant="body1"
+                                  sx={{
+                                    minWidth: 32,
+                                    textAlign: "center",
+                                    fontWeight: 600,
+                                  }}
+                                >
+                                  {tier.count}
+                                </Typography>
+                                <IconButton
+                                  size="small"
+                                  onClick={() =>
+                                    onAttendeeBreakdownChange(
+                                      tierIdx,
+                                      tier.count + 1,
+                                    )
+                                  }
+                                  disabled={atMax}
+                                  sx={{
+                                    width: 32,
+                                    height: 32,
+                                    backgroundColor: alpha("#fff", 0.1),
+                                    "&:hover": {
+                                      backgroundColor: alpha("#fff", 0.2),
+                                    },
+                                  }}
+                                >
+                                  <AddIcon fontSize="small" />
+                                </IconButton>
+                              </Box>
+                            </Box>
+                          );
+                        })}
+                      </Stack>
+
+                      {/* Breakdown total */}
+                      <Divider
+                        sx={{ my: 1.5, borderColor: alpha("#fff", 0.1) }}
+                      />
+                      <Box
+                        sx={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                        }}
+                      >
+                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                          Total:{" "}
+                          {attendeeBreakdown.reduce(
+                            (sum, t) => sum + t.count,
+                            0,
+                          )}{" "}
+                          persons
+                        </Typography>
+                        <Typography
+                          variant="body2"
+                          sx={{ fontWeight: 700, color: packageColor }}
+                        >
+                          ₱
+                          {attendeeBreakdown
+                            .reduce((sum, t) => sum + t.subtotal, 0)
+                            .toLocaleString()}
+                        </Typography>
+                      </Box>
+                    </Collapse>
+
+                    <Button
+                      size="small"
+                      onClick={() => setShowBreakdown(!showBreakdown)}
+                      sx={{
+                        mt: 1,
+                        textTransform: "none",
+                        color: packageColor,
+                        fontWeight: 600,
+                        p: 0,
+                        minWidth: 0,
+                        "&:hover": { backgroundColor: "transparent" },
+                      }}
                     >
-                      max {pkg.maximum_guests}
-                    </Typography>
-                  )}
-                </Box>
-                <Typography
-                  variant="body2"
-                  sx={{ textAlign: "center", mt: 1, fontWeight: 600 }}
-                >
-                  {selectedQuantity} × ₱
-                  {parseFloat(pkg.base_price || "0").toLocaleString()}/person =
-                  ₱
-                  {(
-                    selectedQuantity * parseFloat(pkg.base_price || "0")
-                  ).toLocaleString()}
-                </Typography>
-              </Box>
-            )}
+                      {showBreakdown
+                        ? "Use simple headcount"
+                        : "Have children or infants? Adjust by age group"}
+                    </Button>
+                  </>
+                )}
+            </Box>
+          )}
 
           {/* Quantity selector for multiple selection (only when package allows multiple quantities) */}
           {selectionType === "MULTIPLE" && isSelected && pkg.allow_multiple && (
