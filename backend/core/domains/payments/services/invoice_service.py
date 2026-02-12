@@ -1,5 +1,6 @@
 # backend/core/domains/payments/services/invoice_service.py
 import logging
+import uuid
 from datetime import timedelta
 from decimal import Decimal
 
@@ -645,7 +646,9 @@ class InvoiceService:
                             transaction_record = existing_transaction
                         except stripe.error.StripeError as e:
                             logger.error(f"Failed to retrieve existing Stripe payment intent: {e}")
-                            # Create new intent if existing one is invalid
+                            # Create new intent if existing one is invalid.
+                            # Use a UUID suffix because the previous intent
+                            # for this payment was invalid and we need a fresh one.
                             intent_data = {
                                 'amount': int(invoice.remaining_amount * 100),  # Use remaining_amount for partial payment support
                                 'currency': invoice.currency.lower(),
@@ -657,7 +660,10 @@ class InvoiceService:
                                     'event_id': invoice.event.id
                                 }
                             }
-                            intent = stripe.PaymentIntent.create(**intent_data)
+                            intent = stripe.PaymentIntent.create(
+                                **intent_data,
+                                idempotency_key=f"pi_inv_{invoice.id}_pay_{payment.id}_{uuid.uuid4().hex[:8]}",
+                            )
 
                             # Update existing transaction record
                             existing_transaction.transaction_id = intent.id
@@ -678,7 +684,12 @@ class InvoiceService:
                             }
                         }
 
-                        intent = stripe.PaymentIntent.create(**intent_data)
+                        # Idempotency key is deterministic per payment record
+                        # so retries/network replays won't create duplicate intents.
+                        intent = stripe.PaymentIntent.create(
+                            **intent_data,
+                            idempotency_key=f"pi_inv_{invoice.id}_pay_{payment.id}",
+                        )
 
                         # Create transaction record with remaining_amount
                         transaction_record = PaymentTransaction.objects.create(

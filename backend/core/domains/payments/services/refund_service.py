@@ -116,7 +116,8 @@ class RefundService:
         stripe.api_key = stripe_transaction.gateway.config['secret_key']
         
         try:
-            # Create refund with Stripe
+            # Create refund with Stripe.
+            # Idempotency key ensures retries never create duplicate refunds.
             stripe_refund = stripe.Refund.create(
                 payment_intent=stripe_transaction.transaction_id,
                 amount=int(refund.amount * 100),  # Convert to cents
@@ -124,7 +125,8 @@ class RefundService:
                     'refund_id': refund.id,
                     'payment_id': payment.id,
                     'reason': refund.reason[:500],  # Stripe has character limits
-                }
+                },
+                idempotency_key=f"ref_{refund.id}",
             )
             
             # Update refund record

@@ -1,6 +1,7 @@
 # backend/core/domains/payments/services/payment_gateway_factory.py
 
 import logging
+import uuid
 from abc import ABC, abstractmethod
 from typing import Dict, List, Optional, Any, Tuple
 from decimal import Decimal
@@ -237,7 +238,20 @@ class StripePaymentGateway(BasePaymentGateway):
             if 'payment_method' in payment_data:
                 intent_data['payment_method'] = payment_data['payment_method']
 
-            intent = self.stripe.PaymentIntent.create(**intent_data)
+            # Build an idempotency key from metadata if a payment_id is
+            # available (deterministic), otherwise use a UUID so that
+            # automatic retries within the same request are still safe.
+            metadata = payment_data.get('metadata', {})
+            payment_id = metadata.get('payment_id')
+            if payment_id:
+                idem_key = f"pi_factory_{payment_id}"
+            else:
+                idem_key = f"pi_factory_{uuid.uuid4().hex}"
+
+            intent = self.stripe.PaymentIntent.create(
+                **intent_data,
+                idempotency_key=idem_key,
+            )
 
             return PaymentGatewayResponse(
                 success=True,
@@ -335,7 +349,16 @@ class StripePaymentGateway(BasePaymentGateway):
             if reason:
                 refund_data['reason'] = reason
 
-            refund = self.stripe.Refund.create(**refund_data)
+            # Idempotency key for refunds: use the payment intent ID and
+            # formatted amount so that retries of the same refund request
+            # don't create duplicate refunds.
+            amount_key = refund_data.get('amount', 'full')
+            idem_key = f"ref_factory_{transaction_id}_{amount_key}"
+
+            refund = self.stripe.Refund.create(
+                **refund_data,
+                idempotency_key=idem_key,
+            )
 
             return PaymentGatewayResponse(
                 success=True,
@@ -396,7 +419,8 @@ class StripePaymentGateway(BasePaymentGateway):
             if customer_id and payment_method_id:
                 payment_method = self.stripe.PaymentMethod.attach(
                     payment_method_id,
-                    customer=customer_id
+                    customer=customer_id,
+                    idempotency_key=f"pm_attach_{payment_method_id}_{customer_id}",
                 )
 
                 return PaymentGatewayResponse(

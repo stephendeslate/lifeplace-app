@@ -2,6 +2,7 @@
 import logging
 import os
 import time
+import uuid
 from decimal import Decimal
 
 import stripe
@@ -284,13 +285,15 @@ class PaymentGatewayService:
                                     # Create new customer
                                     start_time = time.time()
                                     logger.info("⏱️  Starting Stripe Customer.create API call")
+                                    client_id = payment.event.client.id if payment.event.client else 'unknown'
                                     customer = stripe.Customer.create(
                                         email=user_email,
                                         name=user_name,
                                         metadata={
-                                            'user_id': payment.event.client.id if payment.event.client else '',
+                                            'user_id': client_id,
                                             'created_by': 'lifeplace_invoice_payment'
-                                        }
+                                        },
+                                        idempotency_key=f"cus_client_{client_id}",
                                     )
                                     elapsed = time.time() - start_time
                                     logger.info(f"⏱️  Stripe Customer.create completed in {elapsed:.2f}s")
@@ -347,7 +350,7 @@ class PaymentGatewayService:
                     'event_id': payment.event.id,
                     'client_email': payment.event.client.email if payment.event.client else '',
                 }
-                
+
                 # Log only safe fields - never log payment methods or customer data
                 logger.info(f"Creating Stripe PaymentIntent: amount={intent_data.get('amount')}, currency={intent_data.get('currency')}")
 
@@ -358,10 +361,19 @@ class PaymentGatewayService:
                         "Payment service is temporarily unavailable. Please try again in a few minutes."
                     )
 
+                # Stripe-native idempotency key: ensures retries and network
+                # replays for the same payment never create duplicate charges.
+                # Key is deterministic per payment record so the same Payment
+                # row always maps to the same Stripe PaymentIntent.
+                idempotency_key = f"pi_payment_{payment.id}"
+
                 try:
                     start_time = time.time()
                     logger.info(f"⏱️  Starting Stripe PaymentIntent.create API call")
-                    intent = stripe.PaymentIntent.create(**intent_data)
+                    intent = stripe.PaymentIntent.create(
+                        **intent_data,
+                        idempotency_key=idempotency_key,
+                    )
                     elapsed = time.time() - start_time
                     logger.info(f"⏱️  Stripe PaymentIntent.create completed in {elapsed:.2f}s")
                     logger.info(f"PaymentIntent created successfully: {intent.id} (status: {intent.status})")
@@ -586,6 +598,11 @@ class PaymentGatewayService:
 
             # Create setup intent for future payments
             # This will create a reusable payment method
+            # Use a UUID suffix because a user may create multiple setup
+            # intents (e.g. adding several cards). Each call should produce
+            # a distinct SetupIntent, but retries of the same call should
+            # be idempotent within Stripe's 24-hour key window.
+            setup_idempotency_key = f"seti_user_{user.id}_{uuid.uuid4().hex[:8]}"
             setup_intent = stripe.SetupIntent.create(
                 usage='off_session',  # For future payments
                 payment_method_types=['card'],  # Specify payment method types
@@ -593,7 +610,8 @@ class PaymentGatewayService:
                     'user_id': user.id,
                     'user_email': user.email,
                     'purpose': 'save_payment_method'
-                }
+                },
+                idempotency_key=setup_idempotency_key,
             )
 
             logger.info(f"Created Stripe setup intent {setup_intent.id} for user {user.id}")
