@@ -376,10 +376,26 @@ export const eventsApi = {
     refund_needed: boolean;
     refund_amount: string;
   }> => {
-    const response = await api.post(
-      `/events/events/${eventId}/update_headcount/`,
-      data,
-    );
+    const response = await api.post<{
+      success: boolean;
+      old_count: number;
+      new_count: number;
+      old_total: string;
+      new_total: string;
+      delta: string;
+      quote_revision: {
+        id: number;
+        version: number;
+        total_amount: string;
+      } | null;
+      supplementary_invoice: {
+        id: number;
+        invoice_id: string;
+        total_amount: string;
+      } | null;
+      refund_needed: boolean;
+      refund_amount: string;
+    }>(`/events/events/${eventId}/update_headcount/`, data);
     return response.data;
   },
 };
