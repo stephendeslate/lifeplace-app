@@ -407,12 +407,21 @@ class WorkflowEngine:
             stage._execute_automation(event)
 
             # Schedule delayed actions if needed
+            # Use transaction.on_commit to defer Celery dispatch until after the
+            # database transaction commits, preventing race conditions where the
+            # Celery worker queries for the event before it's visible in the DB.
             if trigger_time:
                 trigger_upper = trigger_time.upper()
+                _event_id = event.id
+                _stage_id = stage.id
 
                 if trigger_upper.startswith('AFTER_'):
                     # Delay after stage start (existing behavior)
-                    schedule_stage_actions.delay(event.id, stage.id)
+                    transaction.on_commit(
+                        lambda eid=_event_id, sid=_stage_id: schedule_stage_actions.delay(eid, sid)
+                    )
                 elif '_DAYS_BEFORE_EVENT' in trigger_upper or '_BEFORE_EVENT' in trigger_upper:
                     # Schedule to execute X days before event start_date
-                    schedule_before_event_action.delay(event.id, stage.id)
+                    transaction.on_commit(
+                        lambda eid=_event_id, sid=_stage_id: schedule_before_event_action.delay(eid, sid)
+                    )

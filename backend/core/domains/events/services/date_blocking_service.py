@@ -292,7 +292,9 @@ class DateBlockingService:
 
         try:
             # Lock OUR event first with SELECT FOR UPDATE
-            locked_event = Event.objects.select_for_update(nowait=False).get(id=event.id)
+            # Use all_objects to bypass OptimizedEventManager's select_related,
+            # which adds LEFT JOINs on nullable FKs incompatible with FOR UPDATE
+            locked_event = Event.all_objects.select_for_update(nowait=False).get(id=event.id)
         except Event.DoesNotExist:
             result['error'] = 'Event not found'
             return result
@@ -309,7 +311,8 @@ class DateBlockingService:
             return result
 
         # Lock ALL events on this date (including competitors)
-        events_on_date = Event.objects.select_for_update(nowait=False).filter(
+        # Use all_objects to bypass OptimizedEventManager's select_related (see above)
+        events_on_date = Event.all_objects.select_for_update(nowait=False).filter(
             start_date__date=locked_event.start_date.date(),
             status__in=['CONFIRMED', 'LEAD']
         ).exclude(status='CANCELLED')

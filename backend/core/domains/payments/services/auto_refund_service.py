@@ -73,7 +73,9 @@ class AutoRefundService:
 
         try:
             # Lock the event
-            locked_event = Event.objects.select_for_update().get(id=event.id)
+            # Use all_objects to bypass OptimizedEventManager's select_related,
+            # which adds LEFT JOINs on nullable FKs incompatible with FOR UPDATE
+            locked_event = Event.all_objects.select_for_update().get(id=event.id)
 
             # Find all completed payments
             payments = Payment.objects.filter(

@@ -123,7 +123,9 @@ class AtomicAvailabilityService:
 
             # Step 2: Lock all events on this date to prevent concurrent modifications
             # Using nowait=False to wait for lock if another transaction holds it
-            blocking_events = Event.objects.select_for_update(nowait=False).filter(
+            # Use all_objects to bypass OptimizedEventManager's select_related,
+            # which adds LEFT JOINs on nullable FKs incompatible with FOR UPDATE
+            blocking_events = Event.all_objects.select_for_update(nowait=False).filter(
                 start_date__date=check_date,
                 date_blocked=True
             ).exclude(status='CANCELLED')

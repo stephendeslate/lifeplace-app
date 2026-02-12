@@ -740,7 +740,10 @@ class TestWorkflowEngineExecuteStageActions:
 
         with patch('core.domains.workflows.tasks.schedule_stage_actions.delay') as mock_schedule:
             with patch('core.domains.notifications.services.NotificationService.create_notification'):
-                WorkflowEngine.execute_stage_actions(event, stage)
+                # on_commit callbacks don't fire in TestCase (transaction never commits),
+                # so execute them immediately to test the dispatch logic
+                with patch('core.domains.workflows.engine.transaction.on_commit', side_effect=lambda func, **kw: func()):
+                    WorkflowEngine.execute_stage_actions(event, stage)
                 mock_schedule.assert_called_once_with(event.id, stage.id)
 
     def test_execute_stage_actions_schedules_before_event_action(
@@ -771,7 +774,10 @@ class TestWorkflowEngineExecuteStageActions:
 
         with patch('core.domains.workflows.tasks.schedule_before_event_action.delay') as mock_schedule:
             with patch('core.domains.notifications.services.NotificationService.create_notification'):
-                WorkflowEngine.execute_stage_actions(event, stage)
+                # on_commit callbacks don't fire in TestCase (transaction never commits),
+                # so execute them immediately to test the dispatch logic
+                with patch('core.domains.workflows.engine.transaction.on_commit', side_effect=lambda func, **kw: func()):
+                    WorkflowEngine.execute_stage_actions(event, stage)
                 mock_schedule.assert_called_once_with(event.id, stage.id)
 
     def test_execute_stage_actions_not_automated(

@@ -631,11 +631,12 @@ class Payment(BaseModel):
                 logger.info(f"Payment receipt email sent for payment {self.payment_number}")
 
                 # Also send SMS receipt if client has phone number
-                if client.phone:
+                client_phone = getattr(client.profile, 'phone', None) if hasattr(client, 'profile') and client.profile else None
+                if client_phone:
                     try:
                         comm_service.send_communication(
                             template_name='Payment Receipt SMS',
-                            recipient=client.phone,
+                            recipient=client_phone,
                             client=client,
                             event=self.event,
                             payment=self,
