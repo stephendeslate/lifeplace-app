@@ -12,7 +12,7 @@
  * Adapted from: frontend/client-portal/src/components/booking/steps/EnhancedContactInfoStep.tsx
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -23,7 +23,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
-} from 'react-native';
+} from "react-native";
 import {
   User,
   Envelope,
@@ -36,19 +36,26 @@ import {
   CheckCircle,
   Star,
   Spinner,
-} from 'phosphor-react-native';
-import { colors, spacing, typeScale, layout, shadows } from '@/theme';
-import { useBookingContext } from '@/contexts/BookingContext';
-import { useContactInfoManager } from '@/hooks/booking/useContactInfo';
-import type { StepComponentProps } from '../StepRenderer';
-import type { ContactInfoStepData, ContactInfoStepConfiguration } from '@/types/booking';
-import * as Haptics from 'expo-haptics';
+} from "phosphor-react-native";
+import { colors, spacing, typeScale, layout, shadows } from "@/theme";
+import { useBookingContext } from "@/contexts/BookingContext";
+import { useContactInfoManager } from "@/hooks/booking/useContactInfo";
+import type { StepComponentProps } from "../StepRenderer";
+import type {
+  ContactInfoStepData,
+  ContactInfoStepConfiguration,
+} from "@/types/booking";
+import * as Haptics from "expo-haptics";
+import {
+  validatePhoneNumber as validatePhoneLib,
+  formatPhoneDisplay,
+} from "@/utils/phoneValidation";
 
 // =============================================================================
 // TYPES
 // =============================================================================
 
-type ValidationState = 'idle' | 'validating' | 'valid' | 'invalid';
+type ValidationState = "idle" | "validating" | "valid" | "invalid";
 
 interface FieldValidationStates {
   full_name: ValidationState;
@@ -56,7 +63,10 @@ interface FieldValidationStates {
   phone: ValidationState;
 }
 
-type ContactInfoStepProps = StepComponentProps<ContactInfoStepData, ContactInfoStepConfiguration> & {
+type ContactInfoStepProps = StepComponentProps<
+  ContactInfoStepData,
+  ContactInfoStepConfiguration
+> & {
   /** Whether step is currently being validated */
   isValidating?: boolean;
 };
@@ -66,11 +76,17 @@ type ContactInfoStepProps = StepComponentProps<ContactInfoStepData, ContactInfoS
 // =============================================================================
 
 /**
- * Format phone number for Philippines format.
- * Converts to +63 XXX XXX XXXX format as user types.
+ * Format phone number as user types (visual formatting only).
+ * Keeps PH-specific as-you-type formatting for the typing UX.
+ * Validation is done on submit with libphonenumber-js.
  */
 const formatPhoneNumber = (value: string): string => {
-  const cleaned = value.replace(/\D/g, '');
+  // Don't reformat if it starts with '+' (international number being typed)
+  if (value.startsWith("+") && !value.startsWith("+63")) {
+    return value;
+  }
+
+  const cleaned = value.replace(/\D/g, "");
 
   if (cleaned.length <= 4) return cleaned;
   if (cleaned.length <= 7) return `${cleaned.slice(0, 4)}-${cleaned.slice(4)}`;
@@ -79,7 +95,7 @@ const formatPhoneNumber = (value: string): string => {
   }
 
   // For international format starting with 63
-  if (cleaned.startsWith('63')) {
+  if (cleaned.startsWith("63")) {
     return `+63 ${cleaned.slice(2, 5)} ${cleaned.slice(5, 8)} ${cleaned.slice(8, 12)}`;
   }
 
@@ -95,22 +111,17 @@ const validateEmail = (email: string): boolean => {
 };
 
 /**
- * Validate phone number for Philippines.
+ * Validate phone number (PH default, accepts international).
  */
 const validatePhoneNumber = (phone: string): boolean => {
-  const cleaned = phone.replace(/\D/g, '');
-  // Accept 10-11 digit numbers, or international format starting with 63
-  return (
-    cleaned.length >= 10 &&
-    (cleaned.length <= 11 || (cleaned.startsWith('63') && cleaned.length === 12))
-  );
+  return validatePhoneLib(phone);
 };
 
 /**
  * Validate full name (should have at least first and last name).
  */
 const validateFullName = (name: string): boolean => {
-  return name.trim().length > 0 && name.includes(' ');
+  return name.trim().length > 0 && name.includes(" ");
 };
 
 interface FormField {
@@ -118,8 +129,8 @@ interface FormField {
   label: string;
   placeholder: string;
   icon: React.ReactNode;
-  keyboardType?: 'default' | 'email-address' | 'phone-pad';
-  autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
+  keyboardType?: "default" | "email-address" | "phone-pad";
+  autoCapitalize?: "none" | "sentences" | "words" | "characters";
   required?: boolean;
   multiline?: boolean;
 }
@@ -135,21 +146,17 @@ export function ContactInfoStep({
   const { state } = useBookingContext();
 
   // Use the contact info manager for auth prefill
-  const {
-    getInitialData,
-    isAuthenticated,
-    user,
-    fieldRequirements,
-  } = useContactInfoManager(configuration);
+  const { getInitialData, isAuthenticated, user, fieldRequirements } =
+    useContactInfoManager(configuration);
 
   const {
-    required_fields = ['first_name', 'last_name', 'email', 'phone'],
+    required_fields = ["first_name", "last_name", "email", "phone"],
     show_company_fields = true,
     show_address_fields = true,
     collect_emergency_contact = false,
     terms_url,
     privacy_url,
-    title = 'Contact Information',
+    title = "Contact Information",
     description,
   } = configuration || {};
 
@@ -164,11 +171,12 @@ export function ContactInfoStep({
   });
 
   const [focusedField, setFocusedField] = useState<string | null>(null);
-  const [validationStates, setValidationStates] = useState<FieldValidationStates>({
-    full_name: 'idle',
-    email: 'idle',
-    phone: 'idle',
-  });
+  const [validationStates, setValidationStates] =
+    useState<FieldValidationStates>({
+      full_name: "idle",
+      email: "idle",
+      phone: "idle",
+    });
   const [fieldStrengths, setFieldStrengths] = useState({
     email: 0,
     phone: 0,
@@ -188,48 +196,60 @@ export function ContactInfoStep({
     }
   }, [data]);
 
-  const handleFieldChange = useCallback((field: string, value: string) => {
-    let processedValue = value;
+  const handleFieldChange = useCallback(
+    (field: string, value: string) => {
+      let processedValue = value;
 
-    // Format phone number as user types
-    if (field === 'phone') {
-      processedValue = formatPhoneNumber(value);
-    }
+      // Format phone number as user types
+      if (field === "phone") {
+        processedValue = formatPhoneNumber(value);
+      }
 
-    const newData = { ...formData, [field]: processedValue };
-    setFormData(newData);
-    onDataChange(newData);
+      const newData = { ...formData, [field]: processedValue };
+      setFormData(newData);
+      onDataChange(newData);
 
-    // Real-time validation for specific fields
-    if (field === 'email') {
-      setValidationStates((prev) => ({ ...prev, email: 'validating' }));
-      setTimeout(() => {
-        const isValid = validateEmail(processedValue);
-        setValidationStates((prev) => ({ ...prev, email: isValid ? 'valid' : 'invalid' }));
-        setFieldStrengths((prev) => ({
-          ...prev,
-          email: isValid ? (processedValue.includes('.com') ? 100 : 80) : 0,
-        }));
-      }, 500);
-    }
+      // Real-time validation for specific fields
+      if (field === "email") {
+        setValidationStates((prev) => ({ ...prev, email: "validating" }));
+        setTimeout(() => {
+          const isValid = validateEmail(processedValue);
+          setValidationStates((prev) => ({
+            ...prev,
+            email: isValid ? "valid" : "invalid",
+          }));
+          setFieldStrengths((prev) => ({
+            ...prev,
+            email: isValid ? (processedValue.includes(".com") ? 100 : 80) : 0,
+          }));
+        }, 500);
+      }
 
-    if (field === 'phone') {
-      setValidationStates((prev) => ({ ...prev, phone: 'validating' }));
-      setTimeout(() => {
-        const isValid = validatePhoneNumber(processedValue);
-        setValidationStates((prev) => ({ ...prev, phone: isValid ? 'valid' : 'invalid' }));
-        setFieldStrengths((prev) => ({ ...prev, phone: isValid ? 100 : 0 }));
-      }, 500);
-    }
+      if (field === "phone") {
+        setValidationStates((prev) => ({ ...prev, phone: "validating" }));
+        setTimeout(() => {
+          const isValid = validatePhoneNumber(processedValue);
+          setValidationStates((prev) => ({
+            ...prev,
+            phone: isValid ? "valid" : "invalid",
+          }));
+          setFieldStrengths((prev) => ({ ...prev, phone: isValid ? 100 : 0 }));
+        }, 500);
+      }
 
-    if (field === 'full_name') {
-      setValidationStates((prev) => ({ ...prev, full_name: 'validating' }));
-      setTimeout(() => {
-        const hasFullName = validateFullName(processedValue);
-        setValidationStates((prev) => ({ ...prev, full_name: hasFullName ? 'valid' : 'invalid' }));
-      }, 300);
-    }
-  }, [formData, onDataChange]);
+      if (field === "full_name") {
+        setValidationStates((prev) => ({ ...prev, full_name: "validating" }));
+        setTimeout(() => {
+          const hasFullName = validateFullName(processedValue);
+          setValidationStates((prev) => ({
+            ...prev,
+            full_name: hasFullName ? "valid" : "invalid",
+          }));
+        }, 300);
+      }
+    },
+    [formData, onDataChange],
+  );
 
   const handleFieldFocus = (field: string) => {
     setFocusedField(field);
@@ -252,11 +272,17 @@ export function ContactInfoStep({
   const getValidationIcon = (field: keyof FieldValidationStates) => {
     const state = validationStates[field];
     switch (state) {
-      case 'validating':
+      case "validating":
         return <ActivityIndicator size="small" color={colors.tertiary.teal} />;
-      case 'valid':
-        return <CheckCircle size={18} color={colors.secondary.forest} weight="fill" />;
-      case 'invalid':
+      case "valid":
+        return (
+          <CheckCircle
+            size={18}
+            color={colors.secondary.forest}
+            weight="fill"
+          />
+        );
+      case "invalid":
         return null;
       default:
         return null;
@@ -264,81 +290,81 @@ export function ContactInfoStep({
   };
 
   // Get field strength indicator
-  const getFieldStrength = (field: 'email' | 'phone'): number => {
+  const getFieldStrength = (field: "email" | "phone"): number => {
     return fieldStrengths[field];
   };
 
   const personalFields: FormField[] = [
     {
-      key: 'first_name',
-      label: 'First Name',
-      placeholder: 'Enter your first name',
+      key: "first_name",
+      label: "First Name",
+      placeholder: "Enter your first name",
       icon: <User size={20} color={colors.neutral.gray} />,
-      autoCapitalize: 'words',
-      required: isFieldRequired('first_name'),
+      autoCapitalize: "words",
+      required: isFieldRequired("first_name"),
     },
     {
-      key: 'last_name',
-      label: 'Last Name',
-      placeholder: 'Enter your last name',
+      key: "last_name",
+      label: "Last Name",
+      placeholder: "Enter your last name",
       icon: <User size={20} color={colors.neutral.gray} />,
-      autoCapitalize: 'words',
-      required: isFieldRequired('last_name'),
+      autoCapitalize: "words",
+      required: isFieldRequired("last_name"),
     },
     {
-      key: 'email',
-      label: 'Email Address',
-      placeholder: 'Enter your email',
+      key: "email",
+      label: "Email Address",
+      placeholder: "Enter your email",
       icon: <Envelope size={20} color={colors.neutral.gray} />,
-      keyboardType: 'email-address',
-      autoCapitalize: 'none',
-      required: isFieldRequired('email'),
+      keyboardType: "email-address",
+      autoCapitalize: "none",
+      required: isFieldRequired("email"),
     },
     {
-      key: 'phone',
-      label: 'Phone Number',
-      placeholder: '+63 XXX XXX XXXX',
+      key: "phone",
+      label: "Phone Number",
+      placeholder: "09123456789",
       icon: <Phone size={20} color={colors.neutral.gray} />,
-      keyboardType: 'phone-pad',
-      required: isFieldRequired('phone'),
+      keyboardType: "phone-pad",
+      required: isFieldRequired("phone"),
     },
   ];
 
   const companyFields: FormField[] = [
     {
-      key: 'company_name',
-      label: 'Company Name',
-      placeholder: 'Enter company name (optional)',
+      key: "company_name",
+      label: "Company Name",
+      placeholder: "Enter company name (optional)",
       icon: <Buildings size={20} color={colors.neutral.gray} />,
-      autoCapitalize: 'words',
-      required: isFieldRequired('company_name'),
+      autoCapitalize: "words",
+      required: isFieldRequired("company_name"),
     },
     {
-      key: 'company_position',
-      label: 'Position/Title',
-      placeholder: 'Enter your position',
+      key: "company_position",
+      label: "Position/Title",
+      placeholder: "Enter your position",
       icon: <IdentificationCard size={20} color={colors.neutral.gray} />,
-      autoCapitalize: 'words',
-      required: isFieldRequired('company_position'),
+      autoCapitalize: "words",
+      required: isFieldRequired("company_position"),
     },
   ];
 
   const addressFields: FormField[] = [
     {
-      key: 'address_line1',
-      label: 'Address',
-      placeholder: 'Street address',
+      key: "address_line1",
+      label: "Address",
+      placeholder: "Street address",
       icon: <MapPin size={20} color={colors.neutral.gray} />,
-      autoCapitalize: 'words',
-      required: isFieldRequired('address_line1'),
+      autoCapitalize: "words",
+      required: isFieldRequired("address_line1"),
     },
     {
-      key: 'city',
-      label: 'City',
-      placeholder: 'Enter city',
+      key: "city",
+      label: "City",
+      placeholder: "Enter city",
       icon: <MapPin size={20} color={colors.neutral.gray} />,
-      autoCapitalize: 'words',
-      required: isFieldRequired('city'),
+      autoCapitalize: "words",
+      required: isFieldRequired("city"),
     },
   ];
 
@@ -347,9 +373,16 @@ export function ContactInfoStep({
     const isFocused = focusedField === field.key;
     const hasValue = !!formData[field.key];
     const fieldKey = field.key as keyof FieldValidationStates;
-    const isValidatedField = ['full_name', 'email', 'phone'].includes(field.key);
-    const validationIcon = isValidatedField ? getValidationIcon(fieldKey) : null;
-    const strength = (field.key === 'email' || field.key === 'phone') ? getFieldStrength(field.key) : 0;
+    const isValidatedField = ["full_name", "email", "phone"].includes(
+      field.key,
+    );
+    const validationIcon = isValidatedField
+      ? getValidationIcon(fieldKey)
+      : null;
+    const strength =
+      field.key === "email" || field.key === "phone"
+        ? getFieldStrength(field.key)
+        : 0;
 
     return (
       <View key={field.key} style={styles.fieldContainer}>
@@ -363,26 +396,28 @@ export function ContactInfoStep({
             isFocused && styles.inputContainerFocused,
             error && styles.inputContainerError,
             hasValue && !error && styles.inputContainerFilled,
-            validationStates[fieldKey] === 'valid' && styles.inputContainerValid,
+            validationStates[fieldKey] === "valid" &&
+              styles.inputContainerValid,
           ]}
         >
           {field.icon}
           <TextInput
             style={[styles.input, field.multiline && styles.inputMultiline]}
-            value={(formData[field.key] as string) || ''}
+            value={(formData[field.key] as string) || ""}
             onChangeText={(value) => handleFieldChange(field.key, value)}
             onFocus={() => handleFieldFocus(field.key)}
             onBlur={handleFieldBlur}
             placeholder={field.placeholder}
             placeholderTextColor={colors.neutral.gray}
-            keyboardType={field.keyboardType || 'default'}
-            autoCapitalize={field.autoCapitalize || 'sentences'}
+            keyboardType={field.keyboardType || "default"}
+            autoCapitalize={field.autoCapitalize || "sentences"}
             multiline={field.multiline}
             numberOfLines={field.multiline ? 3 : 1}
           />
-          {validationIcon || (hasValue && !error && !isValidatedField && (
-            <Check size={18} color={colors.secondary.forest} weight="bold" />
-          ))}
+          {validationIcon ||
+            (hasValue && !error && !isValidatedField && (
+              <Check size={18} color={colors.secondary.forest} weight="bold" />
+            ))}
         </View>
         {error && (
           <View style={styles.errorRow}>
@@ -398,12 +433,21 @@ export function ContactInfoStep({
                 style={[
                   styles.strengthFill,
                   { width: `${strength}%` },
-                  strength > 80 ? styles.strengthFillStrong : styles.strengthFillGood,
+                  strength > 80
+                    ? styles.strengthFillStrong
+                    : styles.strengthFillGood,
                 ]}
               />
             </View>
-            <Text style={[styles.strengthText, strength > 80 ? styles.strengthTextStrong : styles.strengthTextGood]}>
-              {strength > 80 ? 'Strong' : 'Good'}
+            <Text
+              style={[
+                styles.strengthText,
+                strength > 80
+                  ? styles.strengthTextStrong
+                  : styles.strengthTextGood,
+              ]}
+            >
+              {strength > 80 ? "Strong" : "Good"}
             </Text>
           </View>
         )}
@@ -414,7 +458,7 @@ export function ContactInfoStep({
   return (
     <KeyboardAvoidingView
       style={styles.keyboardAvoid}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
       keyboardVerticalOffset={100}
     >
       <ScrollView
@@ -427,35 +471,41 @@ export function ContactInfoStep({
         <View style={styles.header}>
           <Text style={styles.title}>{title}</Text>
           <Text style={styles.subtitle}>
-            {description || 'Please provide your contact details for booking confirmation'}
+            {description ||
+              "Please provide your contact details for booking confirmation"}
           </Text>
         </View>
 
         {/* Validation Status Chips */}
         <View style={styles.validationChips}>
           {[
-            { key: 'full_name', label: 'Name', icon: <User size={14} /> },
-            { key: 'email', label: 'Email', icon: <Envelope size={14} /> },
-            { key: 'phone', label: 'Phone', icon: <Phone size={14} /> },
+            { key: "full_name", label: "Name", icon: <User size={14} /> },
+            { key: "email", label: "Email", icon: <Envelope size={14} /> },
+            { key: "phone", label: "Phone", icon: <Phone size={14} /> },
           ].map((item) => (
             <View
               key={item.key}
               style={[
                 styles.validationChip,
-                validationStates[item.key as keyof FieldValidationStates] === 'valid' &&
-                  styles.validationChipValid,
+                validationStates[item.key as keyof FieldValidationStates] ===
+                  "valid" && styles.validationChipValid,
               ]}
             >
-              {validationStates[item.key as keyof FieldValidationStates] === 'valid' ? (
-                <CheckCircle size={14} color={colors.secondary.forest} weight="fill" />
+              {validationStates[item.key as keyof FieldValidationStates] ===
+              "valid" ? (
+                <CheckCircle
+                  size={14}
+                  color={colors.secondary.forest}
+                  weight="fill"
+                />
               ) : (
                 item.icon
               )}
               <Text
                 style={[
                   styles.validationChipText,
-                  validationStates[item.key as keyof FieldValidationStates] === 'valid' &&
-                    styles.validationChipTextValid,
+                  validationStates[item.key as keyof FieldValidationStates] ===
+                    "valid" && styles.validationChipTextValid,
                 ]}
               >
                 {item.label}
@@ -468,10 +518,16 @@ export function ContactInfoStep({
         {isAuthenticated && user && (
           <View style={styles.authBanner}>
             <View style={styles.authBannerIcon}>
-              <CheckCircle size={24} color={colors.secondary.forest} weight="fill" />
+              <CheckCircle
+                size={24}
+                color={colors.secondary.forest}
+                weight="fill"
+              />
             </View>
             <View style={styles.authBannerContent}>
-              <Text style={styles.authBannerTitle}>Welcome back, {user.first_name}!</Text>
+              <Text style={styles.authBannerTitle}>
+                Welcome back, {user.first_name}!
+              </Text>
               <Text style={styles.authBannerSubtitle}>
                 We've pre-filled your information from your account
               </Text>
@@ -495,7 +551,9 @@ export function ContactInfoStep({
         {show_company_fields && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Company Information</Text>
-            <Text style={styles.sectionSubtitle}>Optional - for corporate bookings</Text>
+            <Text style={styles.sectionSubtitle}>
+              Optional - for corporate bookings
+            </Text>
             <View style={styles.fieldsGrid}>
               {companyFields.map(renderField)}
             </View>
@@ -523,14 +581,17 @@ export function ContactInfoStep({
               style={[
                 styles.inputContainer,
                 styles.textAreaContainer,
-                focusedField === 'special_requests' && styles.inputContainerFocused,
+                focusedField === "special_requests" &&
+                  styles.inputContainerFocused,
               ]}
             >
               <TextInput
                 style={[styles.input, styles.textArea]}
-                value={formData.special_requests || ''}
-                onChangeText={(value) => handleFieldChange('special_requests', value)}
-                onFocus={() => handleFieldFocus('special_requests')}
+                value={formData.special_requests || ""}
+                onChangeText={(value) =>
+                  handleFieldChange("special_requests", value)
+                }
+                onFocus={() => handleFieldFocus("special_requests")}
                 onBlur={handleFieldBlur}
                 placeholder="Enter any special requests or notes..."
                 placeholderTextColor={colors.neutral.gray}
@@ -546,11 +607,11 @@ export function ContactInfoStep({
         {(terms_url || privacy_url) && (
           <View style={styles.termsSection}>
             <Text style={styles.termsText}>
-              By continuing, you agree to our{' '}
+              By continuing, you agree to our{" "}
               {terms_url && (
                 <Text style={styles.termsLink}>Terms of Service</Text>
               )}
-              {terms_url && privacy_url && ' and '}
+              {terms_url && privacy_url && " and "}
               {privacy_url && (
                 <Text style={styles.termsLink}>Privacy Policy</Text>
               )}
@@ -619,8 +680,8 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   labelRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: spacing.xxs,
   },
   fieldLabel: {
@@ -632,8 +693,8 @@ const styles = StyleSheet.create({
     color: colors.semantic.error,
   },
   inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: colors.neutral.white,
     borderRadius: layout.borderRadius.md,
     borderWidth: 1.5,
@@ -649,7 +710,7 @@ const styles = StyleSheet.create({
   },
   inputContainerError: {
     borderColor: colors.semantic.error,
-    backgroundColor: colors.semantic.error + '08',
+    backgroundColor: colors.semantic.error + "08",
   },
   inputContainerFilled: {
     borderColor: colors.secondary.forest,
@@ -659,7 +720,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.secondary.forestSubtle,
   },
   textAreaContainer: {
-    alignItems: 'flex-start',
+    alignItems: "flex-start",
     paddingVertical: spacing.md,
   },
   input: {
@@ -670,15 +731,15 @@ const styles = StyleSheet.create({
   },
   inputMultiline: {
     minHeight: 60,
-    textAlignVertical: 'top',
+    textAlignVertical: "top",
   },
   textArea: {
     minHeight: 80,
-    textAlignVertical: 'top',
+    textAlignVertical: "top",
   },
   errorRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: spacing.xs,
   },
   errorText: {
@@ -694,14 +755,14 @@ const styles = StyleSheet.create({
   termsText: {
     ...typeScale.bodySmall,
     color: colors.neutral.darkGray,
-    textAlign: 'center',
+    textAlign: "center",
   },
   termsLink: {
     color: colors.tertiary.teal,
-    textDecorationLine: 'underline',
+    textDecorationLine: "underline",
   },
   requiredNote: {
-    alignItems: 'center',
+    alignItems: "center",
   },
   requiredNoteText: {
     ...typeScale.labelSmall,
@@ -709,15 +770,15 @@ const styles = StyleSheet.create({
   },
   // Validation chips
   validationChips: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    justifyContent: "center",
+    flexWrap: "wrap",
     gap: spacing.sm,
     marginBottom: spacing.lg,
   },
   validationChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: colors.alpha.black05,
     paddingVertical: spacing.xs,
     paddingHorizontal: spacing.sm,
@@ -733,15 +794,15 @@ const styles = StyleSheet.create({
   },
   validationChipTextValid: {
     color: colors.secondary.forest,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   // Auth banner
   authBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: colors.secondary.forestSubtle,
     borderWidth: 1,
-    borderColor: colors.secondary.forest + '40',
+    borderColor: colors.secondary.forest + "40",
     borderRadius: layout.borderRadius.md,
     padding: spacing.md,
     marginBottom: spacing.lg,
@@ -751,9 +812,9 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: colors.secondary.forest + '20',
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: colors.secondary.forest + "20",
+    alignItems: "center",
+    justifyContent: "center",
   },
   authBannerContent: {
     flex: 1,
@@ -761,16 +822,16 @@ const styles = StyleSheet.create({
   authBannerTitle: {
     ...typeScale.labelMedium,
     color: colors.primary.black,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   authBannerSubtitle: {
     ...typeScale.labelSmall,
     color: colors.neutral.darkGray,
   },
   authBannerBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.secondary.forest + '20',
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: colors.secondary.forest + "20",
     paddingVertical: spacing.xxs,
     paddingHorizontal: spacing.sm,
     borderRadius: layout.borderRadius.sm,
@@ -779,12 +840,12 @@ const styles = StyleSheet.create({
   authBannerBadgeText: {
     ...typeScale.labelSmall,
     color: colors.secondary.forest,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   // Strength indicators
   strengthContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: spacing.sm,
     marginTop: spacing.xs,
   },
@@ -795,7 +856,7 @@ const styles = StyleSheet.create({
     borderRadius: 2,
   },
   strengthFill: {
-    height: '100%',
+    height: "100%",
     borderRadius: 2,
   },
   strengthFillStrong: {
@@ -815,9 +876,9 @@ const styles = StyleSheet.create({
   },
   // Validation indicator
   validatingContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     gap: spacing.sm,
     marginTop: spacing.md,
   },

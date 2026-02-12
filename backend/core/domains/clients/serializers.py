@@ -10,6 +10,16 @@ class ClientProfileSerializer(serializers.Serializer):
     phone = serializers.CharField(allow_blank=True, required=False)
     company = serializers.CharField(allow_blank=True, required=False)
 
+    def validate_phone(self, value):
+        if not value:
+            return value
+        from core.utils.validators import validate_phone_number, normalize_phone_number
+        if not validate_phone_number(value):
+            raise serializers.ValidationError(
+                'Enter a valid phone number (e.g., 09123456789 or +639123456789).'
+            )
+        return normalize_phone_number(value) or value
+
 
 class ClientListSerializer(serializers.ModelSerializer):
     """Serializer for client list view"""

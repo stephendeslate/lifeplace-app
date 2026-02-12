@@ -16,6 +16,16 @@ class UserProfileSerializer(serializers.ModelSerializer):
             'avatar': {'write_only': True}
         }
 
+    def validate_phone(self, value):
+        if not value:
+            return value
+        from core.utils.validators import validate_phone_number, normalize_phone_number
+        if not validate_phone_number(value):
+            raise serializers.ValidationError(
+                'Enter a valid phone number (e.g., 09123456789 or +639123456789).'
+            )
+        return normalize_phone_number(value) or value
+
     def get_avatar_url(self, obj):
         """Return the full URL for the avatar if it exists."""
         if obj.avatar and hasattr(obj.avatar, 'url'):

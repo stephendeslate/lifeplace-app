@@ -2151,13 +2151,24 @@ class BookingSessionService:
                         errors['email'] = ["Email is required"]
                 
                 # Phone validation
-                if config.require_phone and not step_data.get('phone'):
+                from core.utils.validators import validate_phone_number, normalize_phone_number
+                phone_value = step_data.get('phone', '').strip() if step_data.get('phone') else ''
+                if config.require_phone and not phone_value:
                     # For authenticated users, check profile phone
                     if is_authenticated and hasattr(user, 'profile') and user.profile and getattr(user.profile, 'phone', ''):
                         # Authenticated user has phone in profile - validation passes
                         pass
                     else:
                         errors['phone'] = ["Phone number is required"]
+                elif phone_value:
+                    # Validate format if a phone was provided (even if not required)
+                    if not validate_phone_number(phone_value):
+                        errors['phone'] = ["Please enter a valid phone number (e.g., 09123456789 or +639123456789)"]
+                    else:
+                        # Normalize to E.164 in step_data for consistent storage
+                        normalized = normalize_phone_number(phone_value)
+                        if normalized:
+                            step_data['phone'] = normalized
                 
                 # Address validation (typically not in user profile, so still required)
                 if config.require_address and not step_data.get('address'):

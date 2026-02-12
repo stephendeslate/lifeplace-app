@@ -1,6 +1,7 @@
 // frontend/admin-crm/src/components/clients/ClientForm.tsx
 
-import React, { useState } from 'react';
+import React, { useState } from "react";
+import { validatePhoneNumber } from "@shared/utils/phoneValidation";
 import {
   Box,
   Button,
@@ -14,8 +15,8 @@ import {
   CircularProgress,
   Alert,
   InputAdornment,
-  IconButton
-} from '@mui/material';
+  IconButton,
+} from "@mui/material";
 import {
   Person as PersonIcon,
   Email as EmailIcon,
@@ -25,9 +26,13 @@ import {
   Visibility,
   VisibilityOff,
   Save as SaveIcon,
-  Cancel as CancelIcon
-} from '@mui/icons-material';
-import type { CreateClientData, UpdateClientData, Client } from '../../types/clients.types';
+  Cancel as CancelIcon,
+} from "@mui/icons-material";
+import type {
+  CreateClientData,
+  UpdateClientData,
+  Client,
+} from "../../types/clients.types";
 
 interface ClientFormProps {
   client?: Client;
@@ -40,19 +45,19 @@ export const ClientForm: React.FC<ClientFormProps> = ({
   client,
   onSubmit,
   onCancel,
-  isLoading = false
+  isLoading = false,
 }) => {
   const isEditing = !!client;
-  
+
   const [formData, setFormData] = useState<CreateClientData>({
-    email: client?.email || '',
-    first_name: client?.first_name || '',
-    last_name: client?.last_name || '',
+    email: client?.email || "",
+    first_name: client?.first_name || "",
+    last_name: client?.last_name || "",
     profile: {
-      company: client?.profile?.company || '',
-      phone: client?.profile?.phone || '',
+      company: client?.profile?.company || "",
+      phone: client?.profile?.phone || "",
     },
-    password: '',
+    password: "",
     is_active: client?.is_active ?? true,
   });
 
@@ -64,26 +69,29 @@ export const ClientForm: React.FC<ClientFormProps> = ({
     const newErrors: Record<string, string> = {};
 
     if (!formData.first_name.trim()) {
-      newErrors.first_name = 'First name is required';
+      newErrors.first_name = "First name is required";
     }
 
     if (!formData.last_name.trim()) {
-      newErrors.last_name = 'Last name is required';
+      newErrors.last_name = "Last name is required";
     }
 
     if (!formData.email.trim()) {
-      newErrors.email = 'Email is required';
+      newErrors.email = "Email is required";
     } else if (!/\S+@\S+.\S+/.test(formData.email)) {
-      newErrors.email = 'Please enter a valid email address';
+      newErrors.email = "Please enter a valid email address";
     }
 
-    if (formData.profile?.phone && !/^[\d\s\-+()]+$/.test(formData.profile.phone)) {
-      newErrors.phone = 'Please enter a valid phone number';
+    if (
+      formData.profile?.phone &&
+      !validatePhoneNumber(formData.profile.phone)
+    ) {
+      newErrors.phone = "Please enter a valid phone number";
     }
 
     if ((createAccount || isEditing) && formData.password) {
       if (formData.password.length < 8) {
-        newErrors.password = 'Password must be at least 8 characters long';
+        newErrors.password = "Password must be at least 8 characters long";
       }
     }
 
@@ -92,35 +100,35 @@ export const ClientForm: React.FC<ClientFormProps> = ({
   };
 
   const handleInputChange = (field: string, value: string | boolean) => {
-    setFormData(prev => {
-      if (field.startsWith('profile.')) {
-        const profileField = field.split('.')[1];
+    setFormData((prev) => {
+      if (field.startsWith("profile.")) {
+        const profileField = field.split(".")[1];
         return {
           ...prev,
           profile: {
             ...prev.profile,
-            [profileField]: value
-          }
+            [profileField]: value,
+          },
         };
       }
       return {
         ...prev,
-        [field]: value
+        [field]: value,
       };
     });
 
     // Clear error for this field
     if (errors[field]) {
-      setErrors(prev => ({
+      setErrors((prev) => ({
         ...prev,
-        [field]: ''
+        [field]: "",
       }));
     }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       return;
     }
@@ -135,12 +143,12 @@ export const ClientForm: React.FC<ClientFormProps> = ({
         profile: formData.profile,
         is_active: formData.is_active,
       };
-      
+
       // Only include password if it's being changed
       if (formData.password) {
         updateData.password = formData.password;
       }
-      
+
       onSubmit(updateData);
     } else {
       // For creating, create CreateClientData
@@ -151,12 +159,12 @@ export const ClientForm: React.FC<ClientFormProps> = ({
         profile: formData.profile,
         is_active: formData.is_active,
       };
-      
+
       // Add password if creating account
       if (createAccount || formData.password) {
         createData.password = formData.password;
       }
-      
+
       onSubmit(createData);
     }
   };
@@ -170,13 +178,15 @@ export const ClientForm: React.FC<ClientFormProps> = ({
             <Typography variant="h6" gutterBottom>
               Basic Information
             </Typography>
-            
+
             <Stack spacing={2}>
               <Box display="flex" gap={2}>
                 <TextField
                   label="First Name"
                   value={formData.first_name}
-                  onChange={(e) => handleInputChange('first_name', e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("first_name", e.target.value)
+                  }
                   error={!!errors.first_name}
                   helperText={errors.first_name}
                   required
@@ -190,11 +200,13 @@ export const ClientForm: React.FC<ClientFormProps> = ({
                     ),
                   }}
                 />
-                
+
                 <TextField
                   label="Last Name"
                   value={formData.last_name}
-                  onChange={(e) => handleInputChange('last_name', e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("last_name", e.target.value)
+                  }
                   error={!!errors.last_name}
                   helperText={errors.last_name}
                   required
@@ -214,7 +226,7 @@ export const ClientForm: React.FC<ClientFormProps> = ({
                 label="Email Address"
                 type="email"
                 value={formData.email}
-                onChange={(e) => handleInputChange('email', e.target.value)}
+                onChange={(e) => handleInputChange("email", e.target.value)}
                 error={!!errors.email}
                 helperText={errors.email}
                 required
@@ -238,12 +250,14 @@ export const ClientForm: React.FC<ClientFormProps> = ({
             <Typography variant="h6" gutterBottom>
               Contact Information
             </Typography>
-            
+
             <Stack spacing={2}>
               <TextField
                 label="Company"
-                value={formData.profile?.company || ''}
-                onChange={(e) => handleInputChange('profile.company', e.target.value)}
+                value={formData.profile?.company || ""}
+                onChange={(e) =>
+                  handleInputChange("profile.company", e.target.value)
+                }
                 fullWidth
                 disabled={isLoading}
                 InputProps={{
@@ -255,11 +269,13 @@ export const ClientForm: React.FC<ClientFormProps> = ({
                 }}
                 helperText="Optional - Client's company or organization"
               />
-              
+
               <TextField
                 label="Phone Number"
-                value={formData.profile?.phone || ''}
-                onChange={(e) => handleInputChange('profile.phone', e.target.value)}
+                value={formData.profile?.phone || ""}
+                onChange={(e) =>
+                  handleInputChange("profile.phone", e.target.value)
+                }
                 error={!!errors.phone}
                 helperText={errors.phone || "Optional - Client's phone number"}
                 fullWidth
@@ -282,13 +298,15 @@ export const ClientForm: React.FC<ClientFormProps> = ({
             <Typography variant="h6" gutterBottom>
               Account Settings
             </Typography>
-            
+
             <Stack spacing={2}>
               <FormControlLabel
                 control={
                   <Switch
                     checked={formData.is_active}
-                    onChange={(e) => handleInputChange('is_active', e.target.checked)}
+                    onChange={(e) =>
+                      handleInputChange("is_active", e.target.checked)
+                    }
                     disabled={isLoading}
                   />
                 }
@@ -307,10 +325,11 @@ export const ClientForm: React.FC<ClientFormProps> = ({
                     }
                     label="Create Account Immediately"
                   />
-                  
+
                   {!createAccount && (
                     <Alert severity="info" sx={{ mt: 1 }}>
-                      Client will be created without an account. You can send them an invitation later to create their own password.
+                      Client will be created without an account. You can send
+                      them an invitation later to create their own password.
                     </Alert>
                   )}
                 </Box>
@@ -318,12 +337,23 @@ export const ClientForm: React.FC<ClientFormProps> = ({
 
               {(createAccount || isEditing) && (
                 <TextField
-                  label={isEditing ? "New Password (leave blank to keep current)" : "Password"}
-                  type={showPassword ? 'text' : 'password'}
-                  value={formData.password || ''}
-                  onChange={(e) => handleInputChange('password', e.target.value)}
+                  label={
+                    isEditing
+                      ? "New Password (leave blank to keep current)"
+                      : "Password"
+                  }
+                  type={showPassword ? "text" : "password"}
+                  value={formData.password || ""}
+                  onChange={(e) =>
+                    handleInputChange("password", e.target.value)
+                  }
                   error={!!errors.password}
-                  helperText={errors.password || (isEditing ? "Only enter if changing password" : "Minimum 8 characters")}
+                  helperText={
+                    errors.password ||
+                    (isEditing
+                      ? "Only enter if changing password"
+                      : "Minimum 8 characters")
+                  }
                   fullWidth
                   disabled={isLoading}
                   required={createAccount && !isEditing}
@@ -363,14 +393,20 @@ export const ClientForm: React.FC<ClientFormProps> = ({
               Cancel
             </Button>
           )}
-          
+
           <Button
             type="submit"
             variant="contained"
-            startIcon={isLoading ? <CircularProgress size={20} /> : <SaveIcon />}
+            startIcon={
+              isLoading ? <CircularProgress size={20} /> : <SaveIcon />
+            }
             disabled={isLoading}
           >
-            {isLoading ? 'Saving...' : (isEditing ? 'Update Client' : 'Create Client')}
+            {isLoading
+              ? "Saving..."
+              : isEditing
+                ? "Update Client"
+                : "Create Client"}
           </Button>
         </Box>
       </Stack>

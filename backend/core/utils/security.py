@@ -204,24 +204,11 @@ def validate_password_strength(password: str) -> Dict[str, Any]:
 
 def validate_phone_number(phone: str) -> bool:
     """
-    Validate phone number format
-    
-    Args:
-        phone: Phone number to validate
-    
-    Returns:
-        bool: True if phone format is valid
+    Validate phone number format.
+    Delegates to the canonical phone validator in core.utils.validators.
     """
-    if not phone:
-        return False
-    
-    # Remove common formatting
-    cleaned = re.sub(r'[^\d+]', '', phone)
-    
-    # Basic validation - adjust pattern as needed
-    phone_pattern = re.compile(r'^\+?1?[2-9]\d{2}[2-9]\d{2}\d{4}$|^\+?[\d\-\s\(\)]{10,15}$')
-    
-    return bool(phone_pattern.match(cleaned))
+    from core.utils.validators import validate_phone_number as _validate
+    return _validate(phone)
 
 
 def validate_file_upload(file, allowed_types: List[str] = None, max_size_mb: int = 10) -> Dict[str, Any]:

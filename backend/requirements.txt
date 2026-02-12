@@ -95,6 +95,9 @@ sentry-sdk[django]==2.19.2
 # Google OAuth Authentication
 google-auth>=2.0.0
 
+# Phone number validation (Google libphonenumber)
+phonenumbers>=8.13.0
+
 # Push notifications (Expo)
 exponent-server-sdk==2.1.0
 

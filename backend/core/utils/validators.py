@@ -390,6 +390,97 @@ def validate_avatar_image(uploaded_file, max_size: int = 512):
     )
 
 
+# =============================================================================
+# Phone Number Validation
+# =============================================================================
+
+import phonenumbers
+from phonenumbers import NumberParseException
+
+# Default region for parsing numbers without a country code prefix
+DEFAULT_PHONE_REGION = 'PH'
+
+
+def validate_phone_number(phone: str, default_region: str = DEFAULT_PHONE_REGION) -> bool:
+    """
+    Validate a phone number using Google's libphonenumber.
+    Defaults to PH region if no country code is provided.
+
+    Accepts E.164 (+639123456789), local PH (09123456789),
+    and any valid international number with country code.
+    """
+    if not phone or not isinstance(phone, str):
+        return False
+
+    cleaned = phone.strip()
+    if not cleaned:
+        return False
+
+    try:
+        parsed = phonenumbers.parse(cleaned, default_region)
+        return phonenumbers.is_valid_number(parsed)
+    except NumberParseException:
+        return False
+
+
+def normalize_phone_number(phone: str, default_region: str = DEFAULT_PHONE_REGION) -> str | None:
+    """
+    Normalize a phone number to E.164 format (e.g., '+639123456789').
+    Returns None if the number is invalid.
+    """
+    if not phone or not isinstance(phone, str):
+        return None
+
+    cleaned = phone.strip()
+    if not cleaned:
+        return None
+
+    try:
+        parsed = phonenumbers.parse(cleaned, default_region)
+        if phonenumbers.is_valid_number(parsed):
+            return phonenumbers.format_number(parsed, phonenumbers.PhoneNumberFormat.E164)
+        return None
+    except NumberParseException:
+        return None
+
+
+class PhoneNumberValidator:
+    """
+    Django field validator for phone numbers.
+
+    Usage on model fields:
+        phone = models.CharField(max_length=20, validators=[PhoneNumberValidator()])
+
+    Usage on serializer fields:
+        phone = serializers.CharField(validators=[PhoneNumberValidator()])
+    """
+
+    def __init__(self, default_region: str = DEFAULT_PHONE_REGION):
+        self.default_region = default_region
+
+    def __call__(self, value):
+        if not value:
+            return  # Let required/blank validators handle empty values
+        if not validate_phone_number(value, self.default_region):
+            raise ValidationError(
+                'Enter a valid phone number (e.g., 09123456789 or +639123456789).',
+                code='invalid_phone',
+            )
+
+    def __eq__(self, other):
+        return (
+            isinstance(other, PhoneNumberValidator)
+            and self.default_region == other.default_region
+        )
+
+    def deconstruct(self):
+        return (
+            'core.utils.validators.PhoneNumberValidator',
+            [],
+            {'default_region': self.default_region},
+        )
+
+
 class ImageDimensionValidator:
     """
     Django model field validator for image dimensions.

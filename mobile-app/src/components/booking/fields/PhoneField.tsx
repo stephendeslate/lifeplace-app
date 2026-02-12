@@ -4,11 +4,15 @@
  * Phone input with country code support and formatting.
  */
 
-import React, { useState } from 'react';
-import { View, Text, TextInput, StyleSheet } from 'react-native';
-import { Phone, Warning, Check } from 'phosphor-react-native';
-import { colors, spacing, typeScale, layout, shadows } from '@/theme';
-import type { QuestionnaireField, QuestionnaireFieldResponse } from '@/types/booking';
+import React, { useState } from "react";
+import { View, Text, TextInput, StyleSheet } from "react-native";
+import { Phone, Warning, Check } from "phosphor-react-native";
+import { colors, spacing, typeScale, layout, shadows } from "@/theme";
+import { validatePhoneNumber } from "@/utils/phoneValidation";
+import type {
+  QuestionnaireField,
+  QuestionnaireFieldResponse,
+} from "@/types/booking";
 
 interface PhoneFieldProps {
   field: QuestionnaireField;
@@ -20,27 +24,23 @@ interface PhoneFieldProps {
 export function PhoneField({ field, value, onChange, error }: PhoneFieldProps) {
   const [isFocused, setIsFocused] = useState(false);
 
-  const {
-    label,
-    placeholder,
-    help_text,
-    is_required,
-  } = field;
+  const { label, placeholder, help_text, is_required } = field;
 
   const formatPhoneNumber = (text: string): string => {
     // Remove non-digits
-    const digits = text.replace(/\D/g, '');
+    const digits = text.replace(/\D/g, "");
 
     // Format for Philippines (+63)
-    if (digits.startsWith('63')) {
+    if (digits.startsWith("63")) {
       const local = digits.slice(2);
       if (local.length <= 3) return `+63 ${local}`;
-      if (local.length <= 6) return `+63 ${local.slice(0, 3)} ${local.slice(3)}`;
+      if (local.length <= 6)
+        return `+63 ${local.slice(0, 3)} ${local.slice(3)}`;
       return `+63 ${local.slice(0, 3)} ${local.slice(3, 6)} ${local.slice(6, 10)}`;
     }
 
     // Format for local (0xxx)
-    if (digits.startsWith('0')) {
+    if (digits.startsWith("0")) {
       if (digits.length <= 4) return digits;
       if (digits.length <= 7) return `${digits.slice(0, 4)} ${digits.slice(4)}`;
       return `${digits.slice(0, 4)} ${digits.slice(4, 7)} ${digits.slice(7, 11)}`;
@@ -63,8 +63,7 @@ export function PhoneField({ field, value, onChange, error }: PhoneFieldProps) {
 
   const isValidPhone = (phone: string | undefined): boolean => {
     if (!phone) return false;
-    const digits = phone.replace(/\D/g, '');
-    return digits.length >= 10 && digits.length <= 12;
+    return validatePhoneNumber(phone);
   };
 
   const hasValue = !!value && value.length > 0;
@@ -90,14 +89,14 @@ export function PhoneField({ field, value, onChange, error }: PhoneFieldProps) {
         <Phone size={20} color={colors.neutral.gray} />
         <TextInput
           style={styles.input}
-          value={value || ''}
+          value={value || ""}
           onChangeText={handleChange}
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
-          placeholder={placeholder || '+63 XXX XXX XXXX'}
+          placeholder={placeholder || "+63 XXX XXX XXXX"}
           placeholderTextColor={colors.neutral.gray}
           keyboardType="phone-pad"
-          maxLength={17} // +63 XXX XXX XXXX
+          maxLength={20} // Accommodates international numbers
         />
         {isValid && (
           <Check size={18} color={colors.secondary.forest} weight="bold" />
@@ -105,9 +104,7 @@ export function PhoneField({ field, value, onChange, error }: PhoneFieldProps) {
       </View>
 
       {/* Help text */}
-      {help_text && !error && (
-        <Text style={styles.helpText}>{help_text}</Text>
-      )}
+      {help_text && !error && <Text style={styles.helpText}>{help_text}</Text>}
 
       {/* Error */}
       {error && (
@@ -125,8 +122,8 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   labelRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: spacing.xs,
   },
   label: {
@@ -139,8 +136,8 @@ const styles = StyleSheet.create({
     marginLeft: spacing.xxs,
   },
   inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: colors.neutral.white,
     borderRadius: layout.borderRadius.md,
     borderWidth: 1.5,
@@ -171,8 +168,8 @@ const styles = StyleSheet.create({
     marginTop: spacing.xs,
   },
   errorRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: spacing.xs,
     marginTop: spacing.xs,
   },

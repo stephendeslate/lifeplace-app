@@ -21,8 +21,8 @@ class FieldValidator:
             'example': 'example@email.com'
         },
         'phone': {
-            'pattern': r'^(\+63|0)?[9]\d{9}$',
-            'message': 'Please enter a valid Philippine phone number (e.g., 09123456789)',
+            'pattern': None,  # Validated using phonenumbers library
+            'message': 'Please enter a valid phone number (e.g., 09123456789 or +639123456789)',
             'example': '09123456789'
         },
         'number': {
@@ -118,13 +118,12 @@ class FieldValidator:
 
     @classmethod
     def _validate_phone(cls, value: str) -> Tuple[bool, Optional[str]]:
-        """Validate Philippine phone number format"""
-        # Remove common formatting characters
+        """Validate phone number - accepts PH and international formats."""
+        from core.utils.validators import validate_phone_number
         cleaned = re.sub(r'[\s\-\(\)]', '', value)
-        pattern = cls.VALIDATION_RULES['phone']['pattern']
-        if not re.match(pattern, cleaned):
-            return False, cls.VALIDATION_RULES['phone']['message']
-        return True, None
+        if validate_phone_number(cleaned):
+            return True, None
+        return False, cls.VALIDATION_RULES['phone']['message']
 
     @classmethod
     def _validate_number(cls, value: str) -> Tuple[bool, Optional[str]]:
