@@ -513,20 +513,18 @@ class StripeWebhookHandler(BaseWebhookHandler):
             for admin in admin_users:
                 try:
                     NotificationService.create_notification(
-                        user=admin,
-                        title="Payment Dispute Alert",
-                        message=f"A chargeback/dispute has been opened for {dispute.currency} {dispute.amount}. "
-                                f"Reason: {dispute.get_reason_display()}. "
-                                f"Evidence due by: {dispute.evidence_due_by.strftime('%Y-%m-%d') if dispute.evidence_due_by else 'N/A'}",
-                        notification_type='ALERT',
-                        priority='HIGH',
-                        action_url=f"/admin/payments/disputes/{dispute.id}/",
-                        metadata={
+                        recipient=admin,
+                        notification_type_code='PAYMENT_FAILED',
+                        context={
                             'dispute_id': dispute.id,
                             'payment_id': payment.id if payment else None,
                             'amount': str(dispute.amount),
-                            'currency': dispute.currency
-                        }
+                            'currency': dispute.currency,
+                            'reason': dispute.get_reason_display(),
+                            'evidence_due_by': dispute.evidence_due_by.strftime('%Y-%m-%d') if dispute.evidence_due_by else 'N/A',
+                            'action_url': f'/admin/payments/disputes/{dispute.id}/',
+                        },
+                        delivery_methods=['IN_APP', 'EMAIL'],
                     )
                 except Exception as e:
                     logger.warning(f"Failed to notify admin {admin.id} of dispute: {e}")

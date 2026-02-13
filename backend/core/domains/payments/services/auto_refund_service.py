@@ -262,19 +262,19 @@ class AutoRefundService:
 
             NotificationService.create_notification(
                 recipient=event.client,
-                notification_type='EVENT_CANCELLED',
-                title='Booking Cancelled - Full Refund Processed',
-                message=(
-                    f'Your booking for {event.start_date.strftime("%B %d, %Y")} has been cancelled '
-                    f'because another customer completed their booking for this date just before you. '
-                    f'A full refund of {event.client.default_currency or "PHP"} {amount} has been '
-                    f'processed and will appear in your account within 5-10 business days. '
-                    f'We apologize for the inconvenience. '
-                    f'Please feel free to book a different date.'
-                ),
-                related_event=event,
-                priority='HIGH',
-                channels=['IN_APP', 'EMAIL']
+                notification_type_code='EVENT_CANCELLED',
+                context={
+                    'event_name': event.name or event.start_date.strftime("%B %d, %Y"),
+                    'event_date': event.start_date.strftime("%B %d, %Y"),
+                    'reason': (
+                        f'Another customer completed their booking for this date just before you. '
+                        f'A full refund of {event.client.default_currency or "PHP"} {amount} has been '
+                        f'processed and will appear in your account within 5-10 business days.'
+                    ),
+                },
+                delivery_methods=['IN_APP', 'EMAIL'],
+                event=event,
+                client=event.client,
             )
             logger.info(f"Refund notification sent to client {event.client_id} for event {event.id}")
 

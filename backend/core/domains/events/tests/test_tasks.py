@@ -333,7 +333,7 @@ class TestNotifyCompetingEventCancelled:
         assert result['status'] == 'sent'
         mock_notify.assert_called_once()
         call_kwargs = mock_notify.call_args[1]
-        assert call_kwargs['notification_type'] == 'EVENT_CANCELLED'
+        assert call_kwargs['notification_type_code'] == 'EVENT_CANCELLED'
         assert call_kwargs['recipient'] == client
 
     def test_event_not_found(self):
@@ -420,7 +420,7 @@ class TestSendHoldExpiredNotification:
         assert result['status'] == 'sent'
         mock_notify.assert_called_once()
         call_kwargs = mock_notify.call_args[1]
-        assert call_kwargs['notification_type'] == 'DATE_HOLD_EXPIRED'
+        assert call_kwargs['notification_type_code'] == 'DATE_HOLD_EXPIRED'
 
     def test_event_not_found(self):
         """Test handling nonexistent event."""

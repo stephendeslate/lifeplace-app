@@ -502,16 +502,15 @@ class DateBlockingService:
 
             NotificationService.create_notification(
                 recipient=event.client,
-                notification_type='EVENT_CANCELLED',
-                title='Booking Cancelled - Date No Longer Available',
-                message=(
-                    f'Your booking for {event.start_date.strftime("%B %d, %Y")} has been cancelled '
-                    f'because another client secured the date first. '
-                    f'You can rebook for a different date through your account.'
-                ),
-                related_event=event,
-                priority='HIGH',
-                channels=['IN_APP', 'EMAIL']
+                notification_type_code='EVENT_CANCELLED',
+                context={
+                    'event_name': event.name or event.start_date.strftime("%B %d, %Y"),
+                    'event_date': event.start_date.strftime("%B %d, %Y"),
+                    'reason': 'Another client secured the date first.',
+                },
+                delivery_methods=['IN_APP', 'EMAIL'],
+                event=event,
+                client=event.client,
             )
         except Exception as e:
             logger.error(f"Failed to send date taken notification for event {event.id}: {e}")
@@ -529,16 +528,15 @@ class DateBlockingService:
 
             NotificationService.create_notification(
                 recipient=event.client,
-                notification_type='EVENT_CANCELLED',
-                title='Booking Cancelled - Payment Deadline Expired',
-                message=(
-                    f'Your booking for {event.start_date.strftime("%B %d, %Y")} has been cancelled '
-                    f'because the payment deadline has passed. '
-                    f'You can rebook for a new date through your account.'
-                ),
-                related_event=event,
-                priority='HIGH',
-                channels=['IN_APP', 'EMAIL']
+                notification_type_code='EVENT_CANCELLED',
+                context={
+                    'event_name': event.name or event.start_date.strftime("%B %d, %Y"),
+                    'event_date': event.start_date.strftime("%B %d, %Y"),
+                    'reason': 'The payment deadline has passed.',
+                },
+                delivery_methods=['IN_APP', 'EMAIL'],
+                event=event,
+                client=event.client,
             )
         except Exception as e:
             logger.error(f"Failed to send timeout notification for event {event.id}: {e}")
