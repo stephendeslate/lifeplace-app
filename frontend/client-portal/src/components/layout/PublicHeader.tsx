@@ -1,6 +1,6 @@
 // frontend/client-portal/src/components/layout/PublicHeader.tsx
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   AppBar,
   Toolbar,
@@ -13,37 +13,32 @@ import {
   ListItem,
   ListItemButton,
   ListItemText,
-  useTheme,
   useMediaQuery,
   alpha,
-} from '@mui/material';
-import {
-  Menu as MenuIcon,
-  Close as CloseIcon,
-} from '@mui/icons-material';
-import { useLocation, useNavigate } from 'react-router-dom';
-import { useAuth } from '../../contexts/AuthContext';
-import { tokens } from '../../design-system';
-import type { NavigationItem } from '../../types/layout.types';
+} from "@mui/material";
+import { Menu as MenuIcon, Close as CloseIcon } from "@mui/icons-material";
+import { useLocation, useNavigate } from "react-router-dom";
+import { useAuth } from "../../contexts/AuthContext";
+import { tokens } from "../../design-system";
+import type { NavigationItem } from "../../types/layout.types";
 
 const navigationItems: NavigationItem[] = [
-  { id: 'home', label: 'Home', path: '/' },
-  { id: 'about', label: 'About Us', path: '/about' },
-  { id: 'services', label: 'Services', path: '/services' },
-  { id: 'rates', label: 'Rates', path: '/rates' },
-  { id: 'facilities', label: 'Facilities', path: '/facilities' },
-  { id: 'partner', label: 'Partner With Us', path: '/partner' },
-  { id: 'reviews', label: 'Reviews', path: '/reviews' },
-  { id: 'podcasts', label: 'Podcasts', path: '/podcasts' },
-  { id: 'contact', label: 'Contact', path: '/contact' },
+  { id: "home", label: "Home", path: "/" },
+  { id: "about", label: "About Us", path: "/about" },
+  { id: "services", label: "Services", path: "/services" },
+  { id: "rates", label: "Rates", path: "/rates" },
+  { id: "facilities", label: "Facilities", path: "/facilities" },
+  { id: "partner", label: "Partner With Us", path: "/partner" },
+  { id: "reviews", label: "Reviews", path: "/reviews" },
+  { id: "podcasts", label: "Podcasts", path: "/podcasts" },
+  { id: "contact", label: "Contact", path: "/contact" },
 ];
 
 export const PublicHeader: React.FC = () => {
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const isMobile = useMediaQuery("(max-width:1199.95px)");
   const location = useLocation();
   const navigate = useNavigate();
-  
+
   const { isAuthenticated } = useAuth();
   // Toast actions available but not used in this component
   // const { showInfo } = useToastActions();
@@ -59,8 +54,8 @@ export const PublicHeader: React.FC = () => {
       setIsScrolled(scrollTop > 50);
     };
 
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
   const handleNavigation = (path: string) => {
@@ -70,31 +65,30 @@ export const PublicHeader: React.FC = () => {
 
   // FIXED: Book Now should always lead to booking, regardless of auth status
   const handleBookNow = () => {
-    navigate('/booking');
+    navigate("/booking");
     setMobileMenuOpen(false);
   };
 
   const isActivePath = (path: string) => {
-    if (path === '/') {
-      return location.pathname === '/';
+    if (path === "/") {
+      return location.pathname === "/";
     }
     return location.pathname.startsWith(path);
   };
 
   // FIXED: Consider booking pages as non-home for header styling
-  const isHomePage = location.pathname === '/';
-  const isBookingPage = location.pathname.startsWith('/booking');
+  const isHomePage = location.pathname === "/";
+  const isBookingPage = location.pathname.startsWith("/booking");
 
   // Robust background color system for proper logo contrast
   // On home page (not scrolled): transparent to show gradient background
   // Otherwise: Use warm sage for consistent branding and logo visibility
-  const headerBackground = isScrolled || !isHomePage
-    ? alpha(tokens.color.base.sage[500], 0.95)
-    : alpha('#ffffff', 0.1);
+  const headerBackground =
+    isScrolled || !isHomePage
+      ? alpha(tokens.color.base.sage[500], 0.95)
+      : alpha("#ffffff", 0.1);
 
-  const textColor = isScrolled || !isHomePage
-    ? '#ffffff'
-    : 'white';
+  const textColor = isScrolled || !isHomePage ? "#ffffff" : "white";
 
   return (
     <>
@@ -103,10 +97,13 @@ export const PublicHeader: React.FC = () => {
         elevation={0}
         sx={{
           backgroundColor: headerBackground,
-          backdropFilter: 'blur(20px)',
+          backdropFilter: "blur(20px)",
           color: textColor,
-          transition: 'all 0.3s ease',
-          borderBottom: (isScrolled || !isHomePage) ? `1px solid ${alpha('#ffffff', 0.2)}` : 'none',
+          transition: "all 0.3s ease",
+          borderBottom:
+            isScrolled || !isHomePage
+              ? `1px solid ${alpha("#ffffff", 0.2)}`
+              : "none",
         }}
       >
         <Toolbar sx={{ py: 1, px: { xs: 2, sm: 3, md: 4 } }}>
@@ -115,10 +112,11 @@ export const PublicHeader: React.FC = () => {
             display="flex"
             alignItems="center"
             sx={{
-              cursor: 'pointer',
-              mr: { xs: 2, md: 6 },
+              cursor: "pointer",
+              mr: { xs: 2, lg: 2, xl: 3 },
+              flexShrink: 0,
             }}
-            onClick={() => handleNavigation('/')}
+            onClick={() => handleNavigation("/")}
           >
             {!logoError ? (
               <Box
@@ -127,10 +125,10 @@ export const PublicHeader: React.FC = () => {
                 alt="LifePlace Alfonso"
                 onError={() => setLogoError(true)}
                 sx={{
-                  height: { xs: 72, md: 96 },
-                  width: 'auto',
-                  objectFit: 'contain',
-                  maxWidth: { xs: '220px', md: '300px' },
+                  height: { xs: 72, lg: 80, xl: 96 },
+                  width: "auto",
+                  objectFit: "contain",
+                  maxWidth: { xs: "220px", lg: "240px", xl: "300px" },
                 }}
               />
             ) : (
@@ -140,8 +138,8 @@ export const PublicHeader: React.FC = () => {
                   component="div"
                   sx={{
                     fontWeight: 700,
-                    color: 'inherit',
-                    letterSpacing: '-0.02em',
+                    color: "inherit",
+                    letterSpacing: "-0.02em",
                   }}
                 >
                   LifePlace
@@ -152,7 +150,7 @@ export const PublicHeader: React.FC = () => {
                     ml: 1,
                     opacity: 0.8,
                     fontWeight: 500,
-                    display: { xs: 'none', sm: 'block' },
+                    display: { xs: "none", sm: "block" },
                   }}
                 >
                   Alfonso
@@ -163,35 +161,52 @@ export const PublicHeader: React.FC = () => {
 
           {/* Center Section: Navigation (Desktop) */}
           {!isMobile && (
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flex: 1 }}>
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-evenly",
+                flex: 1,
+                minWidth: 0,
+                overflow: "hidden",
+              }}
+            >
               {navigationItems.map((item) => (
                 <Button
                   key={item.id}
                   onClick={() => handleNavigation(item.path)}
                   sx={{
-                    color: 'inherit',
+                    color: "inherit",
                     fontWeight: 500,
-                    px: 2,
+                    px: { lg: 1, xl: 1.5 },
                     py: 1,
                     borderRadius: 2,
-                    position: 'relative',
-                    '&:hover': {
-                      backgroundColor: isScrolled || !isHomePage
-                        ? alpha('#ffffff', 0.2)
-                        : alpha(tokens.color.base.sage[500], 0.1),
+                    position: "relative",
+                    whiteSpace: "nowrap",
+                    "&:hover": {
+                      backgroundColor:
+                        isScrolled || !isHomePage
+                          ? alpha("#ffffff", 0.2)
+                          : alpha(tokens.color.base.sage[500], 0.1),
                     },
                     ...(isActivePath(item.path) && {
-                      color: isScrolled || !isHomePage ? '#ffffff' : tokens.color.base.sage[600],
+                      color:
+                        isScrolled || !isHomePage
+                          ? "#ffffff"
+                          : tokens.color.base.sage[600],
                       fontWeight: 600,
-                      '&::after': {
+                      "&::after": {
                         content: '""',
-                        position: 'absolute',
+                        position: "absolute",
                         bottom: 0,
-                        left: '50%',
-                        transform: 'translateX(-50%)',
+                        left: "50%",
+                        transform: "translateX(-50%)",
                         width: 24,
                         height: 2,
-                        backgroundColor: isScrolled || !isHomePage ? '#ffffff' : tokens.color.base.terracotta[500],
+                        backgroundColor:
+                          isScrolled || !isHomePage
+                            ? "#ffffff"
+                            : tokens.color.base.terracotta[500],
                         borderRadius: 1,
                       },
                     }),
@@ -204,60 +219,69 @@ export const PublicHeader: React.FC = () => {
           )}
 
           {/* Right Section: Actions */}
-          <Box display="flex" alignItems="center" gap={2}>
+          <Box
+            display="flex"
+            alignItems="center"
+            gap={2}
+            sx={{ flexShrink: 0 }}
+          >
             {/* User Actions */}
             <Box display="flex" alignItems="center" gap={1}>
               {/* Show dashboard link for authenticated users */}
-              {isAuthenticated && (
+              {isAuthenticated && !isMobile && (
                 <Button
                   variant="outlined"
-                  onClick={() => navigate('/dashboard')}
+                  onClick={() => navigate("/dashboard")}
                   sx={{
-                    borderColor: 'currentColor',
-                    color: 'inherit',
-                    display: { xs: 'none', md: 'flex' },
-                    '&:hover': {
-                      borderColor: 'currentColor',
-                      backgroundColor: isScrolled || !isHomePage
-                        ? alpha('#ffffff', 0.2)
-                        : alpha(tokens.color.base.sage[500], 0.1),
+                    borderColor: "currentColor",
+                    color: "inherit",
+                    "&:hover": {
+                      borderColor: "currentColor",
+                      backgroundColor:
+                        isScrolled || !isHomePage
+                          ? alpha("#ffffff", 0.2)
+                          : alpha(tokens.color.base.sage[500], 0.1),
                     },
                   }}
                 >
                   My Dashboard
                 </Button>
               )}
-              
+
               {/* Show login link for unauthenticated users on desktop */}
               {!isAuthenticated && !isMobile && (
                 <Button
                   variant="text"
-                  onClick={() => handleNavigation('/login')}
+                  onClick={() => handleNavigation("/login")}
                   sx={{
-                    color: 'inherit',
-                    '&:hover': {
-                      backgroundColor: isScrolled || !isHomePage
-                        ? alpha('#ffffff', 0.2)
-                        : alpha(tokens.color.base.sage[500], 0.1),
+                    color: "inherit",
+                    "&:hover": {
+                      backgroundColor:
+                        isScrolled || !isHomePage
+                          ? alpha("#ffffff", 0.2)
+                          : alpha(tokens.color.base.sage[500], 0.1),
                     },
                   }}
                 >
                   Sign In
                 </Button>
               )}
-              
+
               {/* Book Now button - always visible and leads to booking */}
               <Button
                 variant="contained"
                 onClick={handleBookNow}
                 sx={{
-                  backgroundColor: isScrolled || !isHomePage ? tokens.color.base.terracotta[500] : tokens.color.base.terracotta[500],
-                  color: '#ffffff',
+                  backgroundColor:
+                    isScrolled || !isHomePage
+                      ? tokens.color.base.terracotta[500]
+                      : tokens.color.base.terracotta[500],
+                  color: "#ffffff",
                   px: 3,
                   fontWeight: 600,
-                  '&:hover': {
+                  "&:hover": {
                     backgroundColor: tokens.color.base.terracotta[600],
-                    transform: 'translateY(-1px)',
+                    transform: "translateY(-1px)",
                   },
                   // Highlight if on booking page
                   ...(isBookingPage && {
@@ -265,7 +289,7 @@ export const PublicHeader: React.FC = () => {
                   }),
                 }}
               >
-                {isBookingPage ? 'Booking...' : 'Book Now'}
+                {isBookingPage ? "Booking..." : "Book Now"}
               </Button>
             </Box>
 
@@ -274,7 +298,7 @@ export const PublicHeader: React.FC = () => {
               <IconButton
                 edge="end"
                 onClick={() => setMobileMenuOpen(true)}
-                sx={{ color: 'inherit', ml: 1 }}
+                sx={{ color: "inherit", ml: 1 }}
               >
                 <MenuIcon />
               </IconButton>
@@ -291,26 +315,26 @@ export const PublicHeader: React.FC = () => {
         PaperProps={{
           sx: {
             width: 280,
-            backgroundColor: 'background.paper',
+            backgroundColor: "background.paper",
           },
         }}
       >
         <Box
           sx={{
-            display: 'flex',
-            flexDirection: 'column',
-            height: '100%',
+            display: "flex",
+            flexDirection: "column",
+            height: "100%",
           }}
         >
           {/* Header */}
           <Box
             sx={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
               p: 2,
               borderBottom: 1,
-              borderColor: 'divider',
+              borderColor: "divider",
             }}
           >
             {!logoError ? (
@@ -321,9 +345,9 @@ export const PublicHeader: React.FC = () => {
                 onError={() => setLogoError(true)}
                 sx={{
                   height: 64,
-                  width: 'auto',
-                  objectFit: 'contain',
-                  maxWidth: '240px',
+                  width: "auto",
+                  objectFit: "contain",
+                  maxWidth: "240px",
                 }}
               />
             ) : (
@@ -347,11 +371,14 @@ export const PublicHeader: React.FC = () => {
                     borderRadius: 2,
                     mx: 1,
                     mb: 0.5,
-                    '&.Mui-selected': {
+                    "&.Mui-selected": {
                       backgroundColor: alpha(tokens.color.base.sage[500], 0.1),
                       color: tokens.color.base.sage[600],
-                      '&:hover': {
-                        backgroundColor: alpha(tokens.color.base.sage[500], 0.15),
+                      "&:hover": {
+                        backgroundColor: alpha(
+                          tokens.color.base.sage[500],
+                          0.15,
+                        ),
                       },
                     },
                   }}
@@ -359,7 +386,7 @@ export const PublicHeader: React.FC = () => {
                   <ListItemText
                     primary={item.label}
                     sx={{
-                      '& .MuiListItemText-primary': {
+                      "& .MuiListItemText-primary": {
                         fontWeight: isActivePath(item.path) ? 600 : 500,
                       },
                     }}
@@ -367,7 +394,7 @@ export const PublicHeader: React.FC = () => {
                 </ListItemButton>
               </ListItem>
             ))}
-            
+
             {/* Add Book Now to mobile menu for easy access */}
             <ListItem disablePadding>
               <ListItemButton
@@ -377,20 +404,29 @@ export const PublicHeader: React.FC = () => {
                   borderRadius: 2,
                   mx: 1,
                   mb: 0.5,
-                  backgroundColor: alpha(tokens.color.base.terracotta[500], 0.1),
-                  '&:hover': {
-                    backgroundColor: alpha(tokens.color.base.terracotta[500], 0.15),
+                  backgroundColor: alpha(
+                    tokens.color.base.terracotta[500],
+                    0.1,
+                  ),
+                  "&:hover": {
+                    backgroundColor: alpha(
+                      tokens.color.base.terracotta[500],
+                      0.15,
+                    ),
                   },
-                  '&.Mui-selected': {
-                    backgroundColor: alpha(tokens.color.base.terracotta[500], 0.2),
+                  "&.Mui-selected": {
+                    backgroundColor: alpha(
+                      tokens.color.base.terracotta[500],
+                      0.2,
+                    ),
                     color: tokens.color.base.terracotta[600],
                   },
                 }}
               >
                 <ListItemText
-                  primary={isBookingPage ? 'Booking...' : 'Book Event'}
+                  primary={isBookingPage ? "Booking..." : "Book Event"}
                   sx={{
-                    '& .MuiListItemText-primary': {
+                    "& .MuiListItemText-primary": {
                       fontWeight: 600,
                       color: tokens.color.base.terracotta[600],
                     },
@@ -401,21 +437,21 @@ export const PublicHeader: React.FC = () => {
           </List>
 
           {/* Actions */}
-          <Box sx={{ p: 2, borderTop: 1, borderColor: 'divider' }}>
+          <Box sx={{ p: 2, borderTop: 1, borderColor: "divider" }}>
             {!isAuthenticated ? (
               <Box display="flex" flexDirection="column" gap={1}>
                 <Button
                   variant="outlined"
                   fullWidth
-                  onClick={() => handleNavigation('/login')}
+                  onClick={() => handleNavigation("/login")}
                 >
                   Sign In
                 </Button>
                 <Button
                   variant="text"
                   fullWidth
-                  onClick={() => handleNavigation('/register')}
-                  sx={{ color: 'text.secondary' }}
+                  onClick={() => handleNavigation("/register")}
+                  sx={{ color: "text.secondary" }}
                 >
                   Create Account
                 </Button>
@@ -424,7 +460,7 @@ export const PublicHeader: React.FC = () => {
               <Button
                 variant="contained"
                 fullWidth
-                onClick={() => handleNavigation('/dashboard')}
+                onClick={() => handleNavigation("/dashboard")}
               >
                 My Dashboard
               </Button>
