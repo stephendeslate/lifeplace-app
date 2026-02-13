@@ -988,9 +988,16 @@ const FinancialPortal: React.FC = () => {
                                         }
                                         sx={{
                                           mt: 1,
-                                          backgroundColor: alpha("#fff", 0.1),
-                                          backdropFilter: "blur(5px)",
-                                          border: `1px solid ${alpha("#fff", 0.2)}`,
+                                          ...(invoice.is_fully_paid
+                                            ? {}
+                                            : {
+                                                backgroundColor: alpha(
+                                                  "#fff",
+                                                  0.1,
+                                                ),
+                                                backdropFilter: "blur(5px)",
+                                                border: `1px solid ${alpha("#fff", 0.2)}`,
+                                              }),
                                         }}
                                       />
                                     </Tooltip>
