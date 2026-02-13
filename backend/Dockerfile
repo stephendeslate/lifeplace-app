@@ -16,6 +16,7 @@ RUN apt-get update \
         python3-dev \
         musl-dev \
         libpq-dev \
+        libmagic1 \
     && rm -rf /var/lib/apt/lists/*
 
 # Create non-root user for security
