@@ -168,7 +168,6 @@ export const PublicHeader: React.FC = () => {
                 justifyContent: "space-evenly",
                 flex: 1,
                 minWidth: 0,
-                overflow: "hidden",
               }}
             >
               {navigationItems.map((item) => (
