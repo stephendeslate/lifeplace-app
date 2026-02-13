@@ -129,134 +129,140 @@ export const CookieConsent: React.FC = () => {
           maxWidth: "100vw",
           borderRadius: 0,
           bgcolor: "background.paper",
+          display: "flex",
+          justifyContent: "center",
         }}
       >
-        <Box sx={{ display: "flex", alignItems: "flex-start", gap: 2, mb: 2 }}>
-          <CookieIcon sx={{ color: "primary.main", fontSize: 28 }} />
-          <Box>
-            <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
-              Cookie Settings
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              We use cookies to enhance your experience. By continuing to visit
-              this site you agree to our use of cookies.{" "}
-              <Link href="/privacy" sx={{ color: "primary.main" }}>
-                Learn more
-              </Link>
-            </Typography>
-          </Box>
-        </Box>
-
-        {showPreferences ? (
-          <Box sx={{ mb: 2 }}>
-            <Box sx={{ mb: 2 }}>
-              <Typography variant="body2" fontWeight={500}>
-                Necessary Cookies (Always Active)
+        <Box sx={{ maxWidth: 900, width: "100%" }}>
+          <Box
+            sx={{ display: "flex", alignItems: "flex-start", gap: 2, mb: 2 }}
+          >
+            <CookieIcon sx={{ color: "primary.main", fontSize: 28 }} />
+            <Box>
+              <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
+                Cookie Settings
               </Typography>
-              <Typography variant="caption" color="text.secondary">
-                Required for the website to function properly
+              <Typography variant="body2" color="text.secondary">
+                We use cookies to enhance your experience. By continuing to
+                visit this site you agree to our use of cookies.{" "}
+                <Link href="/privacy" sx={{ color: "primary.main" }}>
+                  Learn more
+                </Link>
               </Typography>
             </Box>
-            <Box sx={{ mb: 2 }}>
-              <label
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  cursor: "pointer",
-                }}
-              >
-                <input
-                  type="checkbox"
-                  checked={consent.analytics}
-                  onChange={(e) =>
-                    setConsent({ ...consent, analytics: e.target.checked })
-                  }
-                  style={{ marginRight: 8 }}
-                />
-                <Box>
-                  <Typography variant="body2" fontWeight={500}>
-                    Analytics Cookies
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    Help us understand how visitors interact with our website
-                  </Typography>
-                </Box>
-              </label>
-            </Box>
-            <Box sx={{ mb: 2 }}>
-              <label
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  cursor: "pointer",
-                }}
-              >
-                <input
-                  type="checkbox"
-                  checked={consent.marketing}
-                  onChange={(e) =>
-                    setConsent({ ...consent, marketing: e.target.checked })
-                  }
-                  style={{ marginRight: 8 }}
-                />
-                <Box>
-                  <Typography variant="body2" fontWeight={500}>
-                    Marketing Cookies
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    Used to deliver personalized advertisements
-                  </Typography>
-                </Box>
-              </label>
-            </Box>
           </Box>
-        ) : null}
 
-        <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
           {showPreferences ? (
-            <>
-              <Button
-                variant="contained"
-                color="primary"
-                onClick={handleSavePreferences}
-                sx={{ borderRadius: 28 }}
-              >
-                Save Preferences
-              </Button>
-              <Button
-                variant="text"
-                onClick={() => setShowPreferences(false)}
-                sx={{ borderRadius: 28 }}
-              >
-                Back
-              </Button>
-            </>
-          ) : (
-            <>
-              <Button
-                variant="contained"
-                color="primary"
-                onClick={handleAcceptAll}
-                sx={{ borderRadius: 28 }}
-              >
-                Accept All
-              </Button>
-              <Button
-                variant="outlined"
-                onClick={handleAcceptNecessary}
-                sx={{ borderRadius: 28 }}
-              >
-                Necessary Only
-              </Button>
-              <Button
-                variant="text"
-                onClick={() => setShowPreferences(true)}
-                sx={{ borderRadius: 28 }}
-              >
-                Customize
-              </Button>
-            </>
-          )}
+            <Box sx={{ mb: 2 }}>
+              <Box sx={{ mb: 2 }}>
+                <Typography variant="body2" fontWeight={500}>
+                  Necessary Cookies (Always Active)
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  Required for the website to function properly
+                </Typography>
+              </Box>
+              <Box sx={{ mb: 2 }}>
+                <label
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    cursor: "pointer",
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={consent.analytics}
+                    onChange={(e) =>
+                      setConsent({ ...consent, analytics: e.target.checked })
+                    }
+                    style={{ marginRight: 8 }}
+                  />
+                  <Box>
+                    <Typography variant="body2" fontWeight={500}>
+                      Analytics Cookies
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      Help us understand how visitors interact with our website
+                    </Typography>
+                  </Box>
+                </label>
+              </Box>
+              <Box sx={{ mb: 2 }}>
+                <label
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    cursor: "pointer",
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={consent.marketing}
+                    onChange={(e) =>
+                      setConsent({ ...consent, marketing: e.target.checked })
+                    }
+                    style={{ marginRight: 8 }}
+                  />
+                  <Box>
+                    <Typography variant="body2" fontWeight={500}>
+                      Marketing Cookies
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      Used to deliver personalized advertisements
+                    </Typography>
+                  </Box>
+                </label>
+              </Box>
+            </Box>
+          ) : null}
+
+          <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
+            {showPreferences ? (
+              <>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  onClick={handleSavePreferences}
+                  sx={{ borderRadius: 28 }}
+                >
+                  Save Preferences
+                </Button>
+                <Button
+                  variant="text"
+                  onClick={() => setShowPreferences(false)}
+                  sx={{ borderRadius: 28 }}
+                >
+                  Back
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  onClick={handleAcceptAll}
+                  sx={{ borderRadius: 28 }}
+                >
+                  Accept All
+                </Button>
+                <Button
+                  variant="outlined"
+                  onClick={handleAcceptNecessary}
+                  sx={{ borderRadius: 28 }}
+                >
+                  Necessary Only
+                </Button>
+                <Button
+                  variant="text"
+                  onClick={() => setShowPreferences(true)}
+                  sx={{ borderRadius: 28 }}
+                >
+                  Customize
+                </Button>
+              </>
+            )}
+          </Box>
         </Box>
       </Paper>
     </Snackbar>
