@@ -1,5 +1,5 @@
 // frontend/client-portal/src/components/common/CookieConsent.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   Box,
   Button,
@@ -9,11 +9,11 @@ import {
   Link,
   Slide,
   type SlideProps,
-} from '@mui/material';
-import CookieIcon from '@mui/icons-material/Cookie';
+} from "@mui/material";
+import CookieIcon from "@mui/icons-material/Cookie";
 
-const COOKIE_CONSENT_KEY = 'lifeplace_cookie_consent';
-const COOKIE_CONSENT_VERSION = '1.0';
+const COOKIE_CONSENT_KEY = "lifeplace_cookie_consent";
+const COOKIE_CONSENT_VERSION = "1.0";
 
 interface ConsentState {
   version: string;
@@ -35,7 +35,7 @@ export const CookieConsent: React.FC = () => {
     analytics: false,
     marketing: false,
     necessary: true,
-    timestamp: '',
+    timestamp: "",
   });
 
   useEffect(() => {
@@ -66,13 +66,18 @@ export const CookieConsent: React.FC = () => {
       ...newConsent,
       timestamp: new Date().toISOString(),
     };
-    localStorage.setItem(COOKIE_CONSENT_KEY, JSON.stringify(consentWithTimestamp));
+    localStorage.setItem(
+      COOKIE_CONSENT_KEY,
+      JSON.stringify(consentWithTimestamp),
+    );
     setConsent(consentWithTimestamp);
     setOpen(false);
 
     // Dispatch event for analytics initialization
     if (newConsent.analytics) {
-      window.dispatchEvent(new CustomEvent('cookie-consent-analytics', { detail: true }));
+      window.dispatchEvent(
+        new CustomEvent("cookie-consent-analytics", { detail: true }),
+      );
     }
   };
 
@@ -82,7 +87,7 @@ export const CookieConsent: React.FC = () => {
       analytics: true,
       marketing: true,
       necessary: true,
-      timestamp: '',
+      timestamp: "",
     });
   };
 
@@ -92,7 +97,7 @@ export const CookieConsent: React.FC = () => {
       analytics: false,
       marketing: false,
       necessary: true,
-      timestamp: '',
+      timestamp: "",
     });
   };
 
@@ -107,32 +112,35 @@ export const CookieConsent: React.FC = () => {
     <Snackbar
       open={open}
       TransitionComponent={SlideTransition}
-      anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+      anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
       sx={{
-        bottom: { xs: 0, sm: 24 },
-        left: { xs: 0, sm: 24 },
-        right: { xs: 0, sm: 'auto' },
+        bottom: 0,
+        left: 0,
+        right: 0,
+        width: "100%",
+        maxWidth: "100%",
       }}
     >
       <Paper
         elevation={6}
         sx={{
           p: 3,
-          maxWidth: { xs: '100%', sm: 450 },
-          borderRadius: { xs: 0, sm: 2 },
-          bgcolor: 'background.paper',
+          width: "100vw",
+          maxWidth: "100vw",
+          borderRadius: 0,
+          bgcolor: "background.paper",
         }}
       >
-        <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2, mb: 2 }}>
-          <CookieIcon sx={{ color: 'primary.main', fontSize: 28 }} />
+        <Box sx={{ display: "flex", alignItems: "flex-start", gap: 2, mb: 2 }}>
+          <CookieIcon sx={{ color: "primary.main", fontSize: 28 }} />
           <Box>
             <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
               Cookie Settings
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              We use cookies to enhance your experience. By continuing to visit this
-              site you agree to our use of cookies.{' '}
-              <Link href="/privacy" sx={{ color: 'primary.main' }}>
+              We use cookies to enhance your experience. By continuing to visit
+              this site you agree to our use of cookies.{" "}
+              <Link href="/privacy" sx={{ color: "primary.main" }}>
                 Learn more
               </Link>
             </Typography>
@@ -150,7 +158,13 @@ export const CookieConsent: React.FC = () => {
               </Typography>
             </Box>
             <Box sx={{ mb: 2 }}>
-              <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+              <label
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  cursor: "pointer",
+                }}
+              >
                 <input
                   type="checkbox"
                   checked={consent.analytics}
@@ -170,7 +184,13 @@ export const CookieConsent: React.FC = () => {
               </label>
             </Box>
             <Box sx={{ mb: 2 }}>
-              <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+              <label
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  cursor: "pointer",
+                }}
+              >
                 <input
                   type="checkbox"
                   checked={consent.marketing}
@@ -192,7 +212,7 @@ export const CookieConsent: React.FC = () => {
           </Box>
         ) : null}
 
-        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+        <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
           {showPreferences ? (
             <>
               <Button
