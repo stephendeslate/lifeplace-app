@@ -220,14 +220,9 @@ class BookingFlowStepViewSet(viewsets.ModelViewSet):
                     serializer = serializer_class(config, context=self.get_serializer_context())
                     return Response(serializer.data)
             else:
-                # Handle steps that use generic configuration (like review_booking)
-                if step.step_type in ['review_booking']:
-                    # Return the generic configuration from the step's configuration field
-                    return Response(step.configuration)
-                else:
-                    # Step type should have a specific configuration but doesn't exist yet
-                    # This will trigger creation on first update
-                    return Response({})
+                # Step type should have a specific configuration but doesn't exist yet
+                # This will trigger creation on first update
+                return Response({})
             
             return Response({"detail": "Configuration not found"}, status=status.HTTP_404_NOT_FOUND)
         except BookingFlowStepNotFound:

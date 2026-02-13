@@ -192,8 +192,6 @@ export interface PricingCalculation {
   discount_error_type?: string;
 }
 
-// ReviewStepData removed - functionality moved to PricingSummaryStepData
-
 export interface ConfirmationStepData {
   booking_reference: string;
   completion_status: "pending" | "processing" | "completed" | "failed";

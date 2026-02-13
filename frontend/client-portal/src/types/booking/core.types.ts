@@ -55,7 +55,6 @@ export type StepType =
   | "pricing_summary"
   | "contact_info"
   | "payment_info"
-  | "review_booking"
   | "confirmation";
 
 export interface StepConfiguration {

@@ -30,16 +30,3 @@ def schedule_notification_cleanup(sender, instance, **kwargs):
             # cleanup_old_notifications.apply_async(args=[instance.auto_read_after_days])
     except Exception as e:
         logger.error(f"Failed to schedule notification cleanup: {str(e)}")
-
-
-# Future cleanup functions can be added here
-def cleanup_expired_notifications():
-    """Clean up expired notifications"""
-    # This would be implemented as a management command or Celery task
-    pass
-
-
-def cleanup_old_read_notifications():
-    """Clean up old read notifications based on retention policy"""
-    # This would be implemented as a management command or Celery task
-    pass

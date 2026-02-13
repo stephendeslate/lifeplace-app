@@ -198,17 +198,6 @@ export const pricingSummaryStepSchema = z.object({
   applied_discount_code: z.string().optional(),
 });
 
-export const reviewStepSchema = z.object({
-  terms_accepted: z.boolean().refine((val) => val === true, {
-    message: "You must accept the terms and conditions to proceed",
-  }),
-  privacy_accepted: z.boolean().refine((val) => val === true, {
-    message: "You must accept the privacy policy to proceed",
-  }),
-  marketing_consent: z.boolean().default(false),
-  final_notes: z.string().max(1000).optional().or(z.literal("")),
-});
-
 export const confirmationStepSchema = z.object({
   confirmation_number: z.string(),
   booking_reference: z.string(),
@@ -236,7 +225,6 @@ export const completeBookingSchema = z.object({
   questionnaire: questionnaireStepSchema.optional(),
   payment_info: paymentInfoStepSchema,
   pricing_summary: pricingSummaryStepSchema,
-  review: reviewStepSchema,
 });
 
 // Helper function to get validation errors in a user-friendly format
@@ -301,12 +289,6 @@ export const validateBookingStep = (stepType: string, data: unknown) => {
           data: pricingSummaryStepSchema.parse(data),
           errors: {},
         };
-      case "review":
-        return {
-          isValid: true,
-          data: reviewStepSchema.parse(data),
-          errors: {},
-        };
       default:
         return {
           isValid: false,
@@ -340,6 +322,5 @@ export type AddonSelectionStepData = z.infer<typeof addonSelectionStepSchema>;
 export type QuestionnaireStepData = z.infer<typeof questionnaireStepSchema>;
 export type PaymentInfoStepData = z.infer<typeof paymentInfoStepSchema>;
 export type PricingSummaryStepData = z.infer<typeof pricingSummaryStepSchema>;
-export type ReviewStepData = z.infer<typeof reviewStepSchema>;
 export type ConfirmationStepData = z.infer<typeof confirmationStepSchema>;
 export type CompleteBookingData = z.infer<typeof completeBookingSchema>;

@@ -1,6 +1,6 @@
 // frontend/admin-crm/src/components/bookingflows/sessions/SessionAnalytics.tsx
 
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   Box,
   Typography,
@@ -20,7 +20,7 @@ import {
   TableRow,
   LinearProgress,
   Stack,
-} from '@mui/material';
+} from "@mui/material";
 import {
   Analytics as AnalyticsIcon,
   TrendingUp as TrendingUpIcon,
@@ -31,15 +31,31 @@ import {
   AttachMoney as RevenueIcon,
   Refresh as RefreshIcon,
   Download as DownloadIcon,
-} from '@mui/icons-material';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
+} from "@mui/icons-material";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip as RechartsTooltip,
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  PieChart,
+  Pie,
+  Cell,
+} from "recharts";
 import type {
   BookingFlowDetail,
   BookingFlowAnalytics,
-} from '../../../types/bookingflows.types';
-import { useBookingFlowAnalytics, useBookingSessions } from '../../../hooks/useBookingFlows';
-import { formatCurrency } from '../../../utils/currency';
-import { useCurrencySettings } from '../../../hooks/useCurrency';
+} from "../../../types/bookingflows.types";
+import {
+  useBookingFlowAnalytics,
+  useBookingSessions,
+} from "../../../hooks/useBookingFlows";
+import { formatCurrency } from "../../../utils/currency";
+import { useCurrencySettings } from "../../../hooks/useCurrency";
 
 interface SessionAnalyticsProps {
   flow: BookingFlowDetail;
@@ -67,51 +83,50 @@ interface StepAnalytics {
 }
 
 export const SessionAnalytics: React.FC<SessionAnalyticsProps> = ({ flow }) => {
-  const [dateRange, setDateRange] = useState<'7d' | '30d' | '90d' | '1y'>('30d');
+  const [dateRange, setDateRange] = useState<"7d" | "30d" | "90d" | "1y">(
+    "30d",
+  );
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [selectedMetric, setSelectedMetric] = useState<'sessions' | 'conversions' | 'revenue'>('sessions');
+  const [selectedMetric, setSelectedMetric] = useState<
+    "sessions" | "conversions" | "revenue"
+  >("sessions");
   const { settings: currencySettings } = useCurrencySettings();
 
-  const { 
-    useFlowAnalytics,
-    updateDailyAnalytics,
-    isUpdatingAnalytics 
-  } = useBookingFlowAnalytics();
+  const { useFlowAnalytics, updateDailyAnalytics, isUpdatingAnalytics } =
+    useBookingFlowAnalytics();
 
-  const { 
-    refetchSessions 
-  } = useBookingSessions({ booking_flow: flow.id });
+  const { refetchSessions } = useBookingSessions({ booking_flow: flow.id });
 
   // Calculate date range for API filters
   const getDateRange = () => {
     const endDate = new Date();
     const startDate = new Date();
-    
+
     switch (dateRange) {
-      case '7d':
+      case "7d":
         startDate.setDate(endDate.getDate() - 7);
         break;
-      case '30d':
+      case "30d":
         startDate.setDate(endDate.getDate() - 30);
         break;
-      case '90d':
+      case "90d":
         startDate.setDate(endDate.getDate() - 90);
         break;
-      case '1y':
+      case "1y":
         startDate.setFullYear(endDate.getFullYear() - 1);
         break;
     }
-    
+
     return {
-      start_date: startDate.toISOString().split('T')[0],
-      end_date: endDate.toISOString().split('T')[0],
+      start_date: startDate.toISOString().split("T")[0],
+      end_date: endDate.toISOString().split("T")[0],
     };
   };
 
-  const { 
+  const {
     data: analyticsData = [],
     isLoading: isLoadingAnalytics,
-    refetch: refetchAnalytics 
+    refetch: refetchAnalytics,
   } = useFlowAnalytics(flow.id, getDateRange());
 
   // Calculate aggregated metrics from BookingFlowAnalytics[]
@@ -122,37 +137,46 @@ export const SessionAnalytics: React.FC<SessionAnalyticsProps> = ({ flow }) => {
         completedBookings: 0,
         abandonedSessions: 0,
         conversionRate: 0,
-        averageCompletionTime: '0',
+        averageCompletionTime: "0",
         totalRevenue: 0,
         averageBookingValue: 0,
         bounceRate: 0,
       };
     }
 
-    const totals = analyticsData.reduce((acc, day: BookingFlowAnalytics) => ({
-      totalSessions: acc.totalSessions + day.total_sessions,
-      completedBookings: acc.completedBookings + day.completed_bookings,
-      abandonedSessions: acc.abandonedSessions + day.abandoned_sessions,
-      totalRevenue: acc.totalRevenue + parseFloat(day.total_revenue),
-    }), {
-      totalSessions: 0,
-      completedBookings: 0,
-      abandonedSessions: 0,
-      totalRevenue: 0,
-    });
+    const totals = analyticsData.reduce(
+      (acc, day: BookingFlowAnalytics) => ({
+        totalSessions: acc.totalSessions + day.total_sessions,
+        completedBookings: acc.completedBookings + day.completed_bookings,
+        abandonedSessions: acc.abandonedSessions + day.abandoned_sessions,
+        totalRevenue: acc.totalRevenue + parseFloat(day.total_revenue),
+      }),
+      {
+        totalSessions: 0,
+        completedBookings: 0,
+        abandonedSessions: 0,
+        totalRevenue: 0,
+      },
+    );
 
-    const conversionRate = totals.totalSessions > 0 
-      ? parseFloat(((totals.completedBookings / totals.totalSessions) * 100).toFixed(2))
-      : 0;
+    const conversionRate =
+      totals.totalSessions > 0
+        ? parseFloat(
+            ((totals.completedBookings / totals.totalSessions) * 100).toFixed(
+              2,
+            ),
+          )
+        : 0;
 
-    const averageBookingValue = totals.completedBookings > 0 
-      ? totals.totalRevenue / totals.completedBookings 
-      : 0;
+    const averageBookingValue =
+      totals.completedBookings > 0
+        ? totals.totalRevenue / totals.completedBookings
+        : 0;
 
     // Get latest analytics record for time-based metrics
     const latestData = analyticsData[analyticsData.length - 1];
-    const averageCompletionTime = latestData?.average_completion_time || '0';
-    const bounceRate = parseFloat(latestData?.bounce_rate || '0');
+    const averageCompletionTime = latestData?.average_completion_time || "0";
+    const bounceRate = parseFloat(latestData?.bounce_rate || "0");
 
     return {
       totalSessions: totals.totalSessions,
@@ -168,33 +192,48 @@ export const SessionAnalytics: React.FC<SessionAnalyticsProps> = ({ flow }) => {
 
   // Calculate step analytics from flow steps and analytics data
   const calculateStepAnalytics = (): StepAnalytics[] => {
-    const enabledSteps = flow.steps?.filter(step => step.is_enabled).sort((a, b) => a.order - b.order) || [];
-    
-    return enabledSteps.map(step => {
+    const enabledSteps =
+      flow.steps
+        ?.filter((step) => step.is_enabled)
+        .sort((a, b) => a.order - b.order) || [];
+
+    return enabledSteps.map((step) => {
       // Get step completion data from analytics
       let completionRate = 0;
       let dropOffRate = 0;
-      
+
       if (analyticsData.length > 0) {
         // Use the latest analytics data for step completion info
         const latestAnalytics = analyticsData[analyticsData.length - 1];
-        if (latestAnalytics.step_completion_data && latestAnalytics.step_completion_data[step.id.toString()]) {
-          const stepData = latestAnalytics.step_completion_data[step.id.toString()];
-          completionRate = typeof stepData === 'number' ? stepData : (stepData as { completion_rate?: number })?.completion_rate || 0;
+        if (
+          latestAnalytics.step_completion_data &&
+          latestAnalytics.step_completion_data[step.id.toString()]
+        ) {
+          const stepData =
+            latestAnalytics.step_completion_data[step.id.toString()];
+          completionRate =
+            typeof stepData === "number"
+              ? stepData
+              : (stepData as { completion_rate?: number })?.completion_rate ||
+                0;
         }
-        
-        if (latestAnalytics.step_drop_off_data && latestAnalytics.step_drop_off_data[step.id.toString()]) {
-          dropOffRate = latestAnalytics.step_drop_off_data[step.id.toString()] || 0;
+
+        if (
+          latestAnalytics.step_drop_off_data &&
+          latestAnalytics.step_drop_off_data[step.id.toString()]
+        ) {
+          dropOffRate =
+            latestAnalytics.step_drop_off_data[step.id.toString()] || 0;
         }
       }
-      
+
       // If no real data, simulate based on step position for visualization
       if (completionRate === 0 && dropOffRate === 0) {
-        const stepPosition = enabledSteps.findIndex(s => s.id === step.id);
-        completionRate = Math.max(20, 95 - (stepPosition * 12));
+        const stepPosition = enabledSteps.findIndex((s) => s.id === step.id);
+        completionRate = Math.max(20, 95 - stepPosition * 12);
         dropOffRate = 100 - completionRate;
       }
-      
+
       // Simulate average time based on step type
       const timeByType: Record<string, number> = {
         introduction: 30,
@@ -205,20 +244,21 @@ export const SessionAnalytics: React.FC<SessionAnalyticsProps> = ({ flow }) => {
         pricing_summary: 120,
         contact_info: 150,
         payment_info: 200,
-        review_booking: 90,
         confirmation: 60,
       };
-      
+
       const averageTimeSpent = timeByType[step.step_type] || 120;
       const errorRate = Math.random() * 3; // Simulate 0-3% error rate
-      
+
       return {
         stepId: step.id,
         stepName: step.step_type_display,
         stepType: step.step_type_display,
         completionRate: Math.round(completionRate * 100) / 100,
         dropOffRate: Math.round(dropOffRate * 100) / 100,
-        averageTimeSpent: Math.round(averageTimeSpent + (Math.random() * 60 - 30)), // ±30s variation
+        averageTimeSpent: Math.round(
+          averageTimeSpent + (Math.random() * 60 - 30),
+        ), // ±30s variation
         errorRate: Math.round(errorRate * 100) / 100,
       };
     });
@@ -249,16 +289,25 @@ export const SessionAnalytics: React.FC<SessionAnalyticsProps> = ({ flow }) => {
     conversionRate: parseFloat(day.conversion_rate),
   }));
 
-  const conversionFunnelData = stepAnalytics.map(step => ({
+  const conversionFunnelData = stepAnalytics.map((step) => ({
     name: step.stepName,
     completionRate: step.completionRate,
     dropOff: step.dropOffRate,
   }));
 
   const sessionStatusData = [
-    { name: 'Completed', value: metrics.completedBookings, color: '#4caf50' },
-    { name: 'Abandoned', value: metrics.abandonedSessions, color: '#f44336' },
-    { name: 'In Progress', value: Math.max(0, metrics.totalSessions - metrics.completedBookings - metrics.abandonedSessions), color: '#ff9800' },
+    { name: "Completed", value: metrics.completedBookings, color: "#4caf50" },
+    { name: "Abandoned", value: metrics.abandonedSessions, color: "#f44336" },
+    {
+      name: "In Progress",
+      value: Math.max(
+        0,
+        metrics.totalSessions -
+          metrics.completedBookings -
+          metrics.abandonedSessions,
+      ),
+      color: "#ff9800",
+    },
   ];
 
   const formatDuration = (seconds: number): string => {
@@ -268,28 +317,32 @@ export const SessionAnalytics: React.FC<SessionAnalyticsProps> = ({ flow }) => {
   };
 
   const formatAnalyticsCurrency = (amount: number): string => {
-    const currency = currencySettings?.defaultCurrency || 'PHP';
+    const currency = currencySettings?.defaultCurrency || "PHP";
     return formatCurrency(amount, currency, {
-      showSymbol: currencySettings?.displayFormat !== 'code',
-      showCode: currencySettings?.displayFormat === 'code' || currencySettings?.displayFormat === 'both',
-      minimumFractionDigits: currencySettings?.decimalPlaces ?? (currency === 'PHP' ? 0 : 2),
-      maximumFractionDigits: currencySettings?.decimalPlaces ?? (currency === 'PHP' ? 0 : 2),
+      showSymbol: currencySettings?.displayFormat !== "code",
+      showCode:
+        currencySettings?.displayFormat === "code" ||
+        currencySettings?.displayFormat === "both",
+      minimumFractionDigits:
+        currencySettings?.decimalPlaces ?? (currency === "PHP" ? 0 : 2),
+      maximumFractionDigits:
+        currencySettings?.decimalPlaces ?? (currency === "PHP" ? 0 : 2),
     });
   };
 
   // Parse duration string from backend (e.g., "00:15:30" -> seconds)
   const parseDurationToSeconds = (duration: string): number => {
-    if (!duration || duration === '0') return 0;
-    
+    if (!duration || duration === "0") return 0;
+
     // Handle PostgreSQL interval format like "00:15:30"
-    const parts = duration.split(':');
+    const parts = duration.split(":");
     if (parts.length === 3) {
       const hours = parseInt(parts[0]) || 0;
       const minutes = parseInt(parts[1]) || 0;
       const seconds = parseInt(parts[2]) || 0;
       return hours * 3600 + minutes * 60 + seconds;
     }
-    
+
     // Handle numeric values (assume seconds)
     const numericValue = parseFloat(duration);
     return isNaN(numericValue) ? 0 : numericValue;
@@ -298,14 +351,17 @@ export const SessionAnalytics: React.FC<SessionAnalyticsProps> = ({ flow }) => {
   return (
     <Box>
       {/* Header */}
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+      <Box
+        display="flex"
+        justifyContent="space-between"
+        alignItems="center"
+        mb={3}
+      >
         <Box display="flex" alignItems="center" gap={1}>
           <AnalyticsIcon color="primary" />
-          <Typography variant="h6">
-            Analytics: {flow.name}
-          </Typography>
+          <Typography variant="h6">Analytics: {flow.name}</Typography>
         </Box>
-        
+
         <Box display="flex" gap={1}>
           <FormControl size="small" sx={{ minWidth: 120 }}>
             <InputLabel>Date Range</InputLabel>
@@ -320,22 +376,20 @@ export const SessionAnalytics: React.FC<SessionAnalyticsProps> = ({ flow }) => {
               <MenuItem value="1y">Last year</MenuItem>
             </Select>
           </FormControl>
-          
+
           <Button
             variant="outlined"
-            startIcon={isRefreshing ? <CircularProgress size={16} /> : <RefreshIcon />}
+            startIcon={
+              isRefreshing ? <CircularProgress size={16} /> : <RefreshIcon />
+            }
             onClick={handleRefresh}
             disabled={isRefreshing || isUpdatingAnalytics}
             size="small"
           >
             Refresh
           </Button>
-          
-          <Button
-            variant="outlined"
-            startIcon={<DownloadIcon />}
-            size="small"
-          >
+
+          <Button variant="outlined" startIcon={<DownloadIcon />} size="small">
             Export
           </Button>
         </Box>
@@ -350,7 +404,7 @@ export const SessionAnalytics: React.FC<SessionAnalyticsProps> = ({ flow }) => {
           {/* Key Metrics */}
           <Box display="flex" flexWrap="wrap" gap={3}>
             <Box flex="1 1 200px" minWidth={200}>
-              <Box sx={{ borderRadius: 1, bgcolor: 'background.paper' }}>
+              <Box sx={{ borderRadius: 1, bgcolor: "background.paper" }}>
                 <Box sx={{ p: 3 }}>
                   <Box display="flex" alignItems="center" gap={1} mb={1}>
                     <PeopleIcon color="primary" />
@@ -372,7 +426,7 @@ export const SessionAnalytics: React.FC<SessionAnalyticsProps> = ({ flow }) => {
             </Box>
 
             <Box flex="1 1 200px" minWidth={200}>
-              <Box sx={{ borderRadius: 1, bgcolor: 'background.paper' }}>
+              <Box sx={{ borderRadius: 1, bgcolor: "background.paper" }}>
                 <Box sx={{ p: 3 }}>
                   <Box display="flex" alignItems="center" gap={1} mb={1}>
                     <CompleteIcon color="success" />
@@ -394,7 +448,7 @@ export const SessionAnalytics: React.FC<SessionAnalyticsProps> = ({ flow }) => {
             </Box>
 
             <Box flex="1 1 200px" minWidth={200}>
-              <Box sx={{ borderRadius: 1, bgcolor: 'background.paper' }}>
+              <Box sx={{ borderRadius: 1, bgcolor: "background.paper" }}>
                 <Box sx={{ p: 3 }}>
                   <Box display="flex" alignItems="center" gap={1} mb={1}>
                     <RevenueIcon color="success" />
@@ -416,7 +470,7 @@ export const SessionAnalytics: React.FC<SessionAnalyticsProps> = ({ flow }) => {
             </Box>
 
             <Box flex="1 1 200px" minWidth={200}>
-              <Box sx={{ borderRadius: 1, bgcolor: 'background.paper' }}>
+              <Box sx={{ borderRadius: 1, bgcolor: "background.paper" }}>
                 <Box sx={{ p: 3 }}>
                   <Box display="flex" alignItems="center" gap={1} mb={1}>
                     <TimeIcon color="info" />
@@ -425,7 +479,9 @@ export const SessionAnalytics: React.FC<SessionAnalyticsProps> = ({ flow }) => {
                     </Typography>
                   </Box>
                   <Typography variant="h4" fontWeight="bold">
-                    {formatDuration(parseDurationToSeconds(metrics.averageCompletionTime))}
+                    {formatDuration(
+                      parseDurationToSeconds(metrics.averageCompletionTime),
+                    )}
                   </Typography>
                   <Box display="flex" alignItems="center" gap={0.5} mt={1}>
                     <TrendingDownIcon fontSize="small" color="success" />
@@ -442,14 +498,23 @@ export const SessionAnalytics: React.FC<SessionAnalyticsProps> = ({ flow }) => {
           <Box display="flex" flexWrap="wrap" gap={3}>
             {/* Trend Chart */}
             <Box flex="1 1 600px" minWidth={300}>
-              <Box sx={{ borderRadius: 1, bgcolor: 'background.paper' }}>
+              <Box sx={{ borderRadius: 1, bgcolor: "background.paper" }}>
                 <Box sx={{ p: 3 }}>
-                  <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                  <Box
+                    display="flex"
+                    justifyContent="space-between"
+                    alignItems="center"
+                    mb={2}
+                  >
                     <Typography variant="h6">Performance Trends</Typography>
                     <FormControl size="small">
                       <Select
                         value={selectedMetric}
-                        onChange={(e) => setSelectedMetric(e.target.value as typeof selectedMetric)}
+                        onChange={(e) =>
+                          setSelectedMetric(
+                            e.target.value as typeof selectedMetric,
+                          )
+                        }
                       >
                         <MenuItem value="sessions">Sessions</MenuItem>
                         <MenuItem value="conversions">Conversions</MenuItem>
@@ -469,7 +534,7 @@ export const SessionAnalytics: React.FC<SessionAnalyticsProps> = ({ flow }) => {
                         dataKey={selectedMetric}
                         stroke="#1976d2"
                         strokeWidth={2}
-                        dot={{ fill: '#1976d2' }}
+                        dot={{ fill: "#1976d2" }}
                       />
                     </LineChart>
                   </ResponsiveContainer>
@@ -479,9 +544,11 @@ export const SessionAnalytics: React.FC<SessionAnalyticsProps> = ({ flow }) => {
 
             {/* Session Status Distribution */}
             <Box flex="1 1 300px" minWidth={300}>
-              <Box sx={{ borderRadius: 1, bgcolor: 'background.paper' }}>
+              <Box sx={{ borderRadius: 1, bgcolor: "background.paper" }}>
                 <Box sx={{ p: 3 }}>
-                  <Typography variant="h6" gutterBottom>Session Status</Typography>
+                  <Typography variant="h6" gutterBottom>
+                    Session Status
+                  </Typography>
 
                   <ResponsiveContainer width="100%" height={300}>
                     <PieChart>
@@ -504,13 +571,19 @@ export const SessionAnalytics: React.FC<SessionAnalyticsProps> = ({ flow }) => {
 
                   <Box mt={2}>
                     {sessionStatusData.map((entry) => (
-                      <Box key={entry.name} display="flex" alignItems="center" gap={1} mb={1}>
+                      <Box
+                        key={entry.name}
+                        display="flex"
+                        alignItems="center"
+                        gap={1}
+                        mb={1}
+                      >
                         <Box
                           sx={{
                             width: 12,
                             height: 12,
-                            borderRadius: '50%',
-                            backgroundColor: entry.color
+                            borderRadius: "50%",
+                            backgroundColor: entry.color,
                           }}
                         />
                         <Typography variant="body2">
@@ -525,20 +598,22 @@ export const SessionAnalytics: React.FC<SessionAnalyticsProps> = ({ flow }) => {
           </Box>
 
           {/* Conversion Funnel */}
-          <Box sx={{ borderRadius: 1, bgcolor: 'background.paper' }}>
+          <Box sx={{ borderRadius: 1, bgcolor: "background.paper" }}>
             <Box sx={{ p: 3 }}>
-              <Typography variant="h6" gutterBottom>Conversion Funnel</Typography>
+              <Typography variant="h6" gutterBottom>
+                Conversion Funnel
+              </Typography>
 
               <ResponsiveContainer width="100%" height={400}>
-                <BarChart
-                  data={conversionFunnelData}
-                  layout="horizontal"
-                >
+                <BarChart data={conversionFunnelData} layout="horizontal">
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis type="number" domain={[0, 100]} />
                   <YAxis dataKey="name" type="category" width={150} />
                   <RechartsTooltip
-                    formatter={(value: number) => [`${value}%`, 'Completion Rate']}
+                    formatter={(value: number) => [
+                      `${value}%`,
+                      "Completion Rate",
+                    ]}
                   />
                   <Bar dataKey="completionRate" fill="#1976d2" />
                 </BarChart>
@@ -547,11 +622,19 @@ export const SessionAnalytics: React.FC<SessionAnalyticsProps> = ({ flow }) => {
           </Box>
 
           {/* Step Analytics Table */}
-          <Box sx={{ borderRadius: 1, bgcolor: 'background.paper' }}>
+          <Box sx={{ borderRadius: 1, bgcolor: "background.paper" }}>
             <Box sx={{ p: 3 }}>
-              <Typography variant="h6" gutterBottom>Step Performance</Typography>
+              <Typography variant="h6" gutterBottom>
+                Step Performance
+              </Typography>
 
-              <TableContainer sx={{ borderRadius: 1, border: '1px solid', borderColor: 'divider' }}>
+              <TableContainer
+                sx={{
+                  borderRadius: 1,
+                  border: "1px solid",
+                  borderColor: "divider",
+                }}
+              >
                 <Table size="small">
                   <TableHead>
                     <TableRow>
@@ -572,31 +655,38 @@ export const SessionAnalytics: React.FC<SessionAnalyticsProps> = ({ flow }) => {
                           </Typography>
                         </TableCell>
                         <TableCell>
-                          <Chip 
-                            label={step.stepType} 
-                            size="small" 
-                            variant="outlined" 
+                          <Chip
+                            label={step.stepType}
+                            size="small"
+                            variant="outlined"
                             color="primary"
                           />
                         </TableCell>
                         <TableCell align="center">
-                          <Box display="flex" alignItems="center" justifyContent="center" gap={1}>
+                          <Box
+                            display="flex"
+                            alignItems="center"
+                            justifyContent="center"
+                            gap={1}
+                          >
                             <Typography variant="body2">
                               {step.completionRate.toFixed(1)}%
                             </Typography>
                             <Box sx={{ width: 60 }}>
-                              <LinearProgress 
-                                variant="determinate" 
-                                value={step.completionRate} 
+                              <LinearProgress
+                                variant="determinate"
+                                value={step.completionRate}
                                 sx={{ height: 4 }}
                               />
                             </Box>
                           </Box>
                         </TableCell>
                         <TableCell align="center">
-                          <Typography 
-                            variant="body2" 
-                            color={step.dropOffRate > 20 ? 'error' : 'text.primary'}
+                          <Typography
+                            variant="body2"
+                            color={
+                              step.dropOffRate > 20 ? "error" : "text.primary"
+                            }
                           >
                             {step.dropOffRate.toFixed(1)}%
                           </Typography>
@@ -607,9 +697,11 @@ export const SessionAnalytics: React.FC<SessionAnalyticsProps> = ({ flow }) => {
                           </Typography>
                         </TableCell>
                         <TableCell align="center">
-                          <Typography 
+                          <Typography
                             variant="body2"
-                            color={step.errorRate > 3 ? 'error' : 'text.primary'}
+                            color={
+                              step.errorRate > 3 ? "error" : "text.primary"
+                            }
                           >
                             {step.errorRate.toFixed(1)}%
                           </Typography>
@@ -625,35 +717,63 @@ export const SessionAnalytics: React.FC<SessionAnalyticsProps> = ({ flow }) => {
           {/* Additional Metrics */}
           <Box display="flex" flexWrap="wrap" gap={3}>
             <Box flex="1 1 300px" minWidth={300}>
-              <Box sx={{ borderRadius: 1, bgcolor: 'background.paper' }}>
+              <Box sx={{ borderRadius: 1, bgcolor: "background.paper" }}>
                 <Box sx={{ p: 3 }}>
-                  <Typography variant="h6" gutterBottom>Key Performance Indicators</Typography>
+                  <Typography variant="h6" gutterBottom>
+                    Key Performance Indicators
+                  </Typography>
 
                   <Stack spacing={2}>
-                    <Box display="flex" justifyContent="space-between" alignItems="center">
-                      <Typography variant="body2">Average Booking Value</Typography>
+                    <Box
+                      display="flex"
+                      justifyContent="space-between"
+                      alignItems="center"
+                    >
+                      <Typography variant="body2">
+                        Average Booking Value
+                      </Typography>
                       <Typography variant="body2" fontWeight="medium">
                         {formatAnalyticsCurrency(metrics.averageBookingValue)}
                       </Typography>
                     </Box>
 
-                    <Box display="flex" justifyContent="space-between" alignItems="center">
+                    <Box
+                      display="flex"
+                      justifyContent="space-between"
+                      alignItems="center"
+                    >
                       <Typography variant="body2">Bounce Rate</Typography>
                       <Typography variant="body2" fontWeight="medium">
                         {metrics.bounceRate.toFixed(1)}%
                       </Typography>
                     </Box>
 
-                    <Box display="flex" justifyContent="space-between" alignItems="center">
-                      <Typography variant="body2">Completed Bookings</Typography>
+                    <Box
+                      display="flex"
+                      justifyContent="space-between"
+                      alignItems="center"
+                    >
+                      <Typography variant="body2">
+                        Completed Bookings
+                      </Typography>
                       <Typography variant="body2" fontWeight="medium">
                         {metrics.completedBookings}
                       </Typography>
                     </Box>
 
-                    <Box display="flex" justifyContent="space-between" alignItems="center">
-                      <Typography variant="body2">Abandoned Sessions</Typography>
-                      <Typography variant="body2" fontWeight="medium" color="error">
+                    <Box
+                      display="flex"
+                      justifyContent="space-between"
+                      alignItems="center"
+                    >
+                      <Typography variant="body2">
+                        Abandoned Sessions
+                      </Typography>
+                      <Typography
+                        variant="body2"
+                        fontWeight="medium"
+                        color="error"
+                      >
                         {metrics.abandonedSessions}
                       </Typography>
                     </Box>
@@ -663,19 +783,26 @@ export const SessionAnalytics: React.FC<SessionAnalyticsProps> = ({ flow }) => {
             </Box>
 
             <Box flex="1 1 300px" minWidth={300}>
-              <Box sx={{ borderRadius: 1, bgcolor: 'background.paper' }}>
+              <Box sx={{ borderRadius: 1, bgcolor: "background.paper" }}>
                 <Box sx={{ p: 3 }}>
-                  <Typography variant="h6" gutterBottom>Optimization Suggestions</Typography>
+                  <Typography variant="h6" gutterBottom>
+                    Optimization Suggestions
+                  </Typography>
 
                   <Stack spacing={2}>
                     {stepAnalytics
-                      .filter(step => step.dropOffRate > 30)
+                      .filter((step) => step.dropOffRate > 30)
                       .slice(0, 3)
-                      .map(step => (
-                        <Alert key={step.stepId} severity="warning" variant="outlined">
+                      .map((step) => (
+                        <Alert
+                          key={step.stepId}
+                          severity="warning"
+                          variant="outlined"
+                        >
                           <Typography variant="body2">
-                            <strong>{step.stepName}</strong> has a high drop-off rate ({step.dropOffRate.toFixed(1)}%).
-                            Consider simplifying this step or adding guidance.
+                            <strong>{step.stepName}</strong> has a high drop-off
+                            rate ({step.dropOffRate.toFixed(1)}%). Consider
+                            simplifying this step or adding guidance.
                           </Typography>
                         </Alert>
                       ))}
@@ -683,28 +810,34 @@ export const SessionAnalytics: React.FC<SessionAnalyticsProps> = ({ flow }) => {
                     {metrics.conversionRate < 20 && (
                       <Alert severity="info" variant="outlined">
                         <Typography variant="body2">
-                          Conversion rate is below 20%. Consider A/B testing different flow configurations.
+                          Conversion rate is below 20%. Consider A/B testing
+                          different flow configurations.
                         </Typography>
                       </Alert>
                     )}
 
-                    {parseDurationToSeconds(metrics.averageCompletionTime) > 900 && (
+                    {parseDurationToSeconds(metrics.averageCompletionTime) >
+                      900 && (
                       <Alert severity="info" variant="outlined">
                         <Typography variant="body2">
-                          Average completion time exceeds 15 minutes. Consider reducing the number of required steps.
+                          Average completion time exceeds 15 minutes. Consider
+                          reducing the number of required steps.
                         </Typography>
                       </Alert>
                     )}
 
-                    {stepAnalytics.filter(s => s.dropOffRate > 30).length === 0 &&
-                     metrics.conversionRate >= 20 &&
-                     parseDurationToSeconds(metrics.averageCompletionTime) <= 900 && (
-                      <Alert severity="success" variant="outlined">
-                        <Typography variant="body2">
-                          Your booking flow is performing well! All key metrics are within optimal ranges.
-                        </Typography>
-                      </Alert>
-                    )}
+                    {stepAnalytics.filter((s) => s.dropOffRate > 30).length ===
+                      0 &&
+                      metrics.conversionRate >= 20 &&
+                      parseDurationToSeconds(metrics.averageCompletionTime) <=
+                        900 && (
+                        <Alert severity="success" variant="outlined">
+                          <Typography variant="body2">
+                            Your booking flow is performing well! All key
+                            metrics are within optimal ranges.
+                          </Typography>
+                        </Alert>
+                      )}
                   </Stack>
                 </Box>
               </Box>

@@ -1,16 +1,19 @@
 // frontend/admin-crm/src/components/bookingflows/steps/ImprovedStepReorderList.tsx
 
-import React, { useRef, forwardRef, useImperativeHandle } from 'react';
-import { Box, Typography, Chip, Stack } from '@mui/material';
+import React, { useRef, forwardRef, useImperativeHandle } from "react";
+import { Box, Typography, Chip, Stack } from "@mui/material";
 import {
   CheckCircle as EnabledIcon,
   RadioButtonUnchecked as DisabledIcon,
   Star as RequiredIcon,
   StarBorder as OptionalIcon,
-} from '@mui/icons-material';
-import { DraggableList, type DraggableListRef } from '../../common/DraggableList';
-import type { BookingFlowStep } from '../../../types/bookingflows.types';
-import { useBookingFlowSteps } from '../../../hooks/useBookingFlows';
+} from "@mui/icons-material";
+import {
+  DraggableList,
+  type DraggableListRef,
+} from "../../common/DraggableList";
+import type { BookingFlowStep } from "../../../types/bookingflows.types";
+import { useBookingFlowSteps } from "../../../hooks/useBookingFlows";
 
 interface ImprovedStepReorderListProps {
   flowId: number;
@@ -31,34 +34,37 @@ const ImprovedStepReorderListInner: React.ForwardRefRenderFunction<
   const draggableListRef = useRef<DraggableListRef>(null);
 
   // Expose methods via ref
-  useImperativeHandle(ref, () => ({
-    save: async () => {
-      if (draggableListRef.current) {
-        await draggableListRef.current.save();
-      }
-    },
-  }), []);
+  useImperativeHandle(
+    ref,
+    () => ({
+      save: async () => {
+        if (draggableListRef.current) {
+          await draggableListRef.current.save();
+        }
+      },
+    }),
+    [],
+  );
 
   const getStepTypeColor = (stepType: string) => {
     const colors = {
-      introduction: 'primary',
-      date_time: 'info',
-      questionnaire: 'success',
-      package_selection: 'warning',
-      addon_selection: 'warning',
-      pricing_summary: 'secondary',
-      contact_info: 'success',
-      payment_info: 'error',
-      review_booking: 'secondary',
-      confirmation: 'success',
+      introduction: "primary",
+      date_time: "info",
+      questionnaire: "success",
+      package_selection: "warning",
+      addon_selection: "warning",
+      pricing_summary: "secondary",
+      contact_info: "success",
+      payment_info: "error",
+      confirmation: "success",
     } as const;
 
-    return colors[stepType as keyof typeof colors] || 'default';
+    return colors[stepType as keyof typeof colors] || "default";
   };
 
   const handleReorder = async (reorderedSteps: BookingFlowStep[]) => {
     const orderMapping: Record<string, number> = {};
-    
+
     reorderedSteps.forEach((step, index) => {
       orderMapping[step.id.toString()] = index + 1;
     });
@@ -89,7 +95,7 @@ const ImprovedStepReorderListInner: React.ForwardRefRenderFunction<
       ) : (
         <DisabledIcon color="disabled" fontSize="small" />
       )}
-      
+
       {/* Step Info */}
       <Box sx={{ flexGrow: 1 }}>
         <Box display="flex" alignItems="center" gap={1} mb={0.5}>
@@ -102,7 +108,7 @@ const ImprovedStepReorderListInner: React.ForwardRefRenderFunction<
             <OptionalIcon color="disabled" fontSize="small" />
           )}
         </Box>
-        
+
         <Stack direction="row" spacing={1} flexWrap="wrap">
           <Chip
             label={step.step_type_display}
@@ -110,17 +116,32 @@ const ImprovedStepReorderListInner: React.ForwardRefRenderFunction<
             color={getStepTypeColor(step.step_type)}
             variant="outlined"
           />
-          
+
           {step.is_required && (
-            <Chip label="Required" size="small" color="error" variant="outlined" />
+            <Chip
+              label="Required"
+              size="small"
+              color="error"
+              variant="outlined"
+            />
           )}
-          
+
           {step.is_skippable && (
-            <Chip label="Skippable" size="small" color="info" variant="outlined" />
+            <Chip
+              label="Skippable"
+              size="small"
+              color="info"
+              variant="outlined"
+            />
           )}
-          
+
           {!step.is_enabled && (
-            <Chip label="Disabled" size="small" color="default" variant="outlined" />
+            <Chip
+              label="Disabled"
+              size="small"
+              color="default"
+              variant="outlined"
+            />
           )}
         </Stack>
       </Box>
@@ -145,7 +166,7 @@ const ImprovedStepReorderListInner: React.ForwardRefRenderFunction<
       <Typography variant="h6" gutterBottom>
         Reorder Steps
       </Typography>
-      
+
       <DraggableList<BookingFlowStep>
         ref={draggableListRef}
         items={steps}
