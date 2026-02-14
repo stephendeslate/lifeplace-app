@@ -138,15 +138,21 @@ jobs:
     - name: Report bundle size
       run: |
         cd frontend/${{ matrix.app }}
+        # client-portal builds to build/client/, admin-crm builds to dist/
+        if [ -d "build/client" ]; then
+          BUILD_DIR="build/client"
+        else
+          BUILD_DIR="dist"
+        fi
         echo "📦 Bundle Size Report for ${{ matrix.app }}"
         echo "=========================================="
-        TOTAL_SIZE=$(du -sh dist/ | cut -f1)
+        TOTAL_SIZE=$(du -sh "$BUILD_DIR"/ | cut -f1)
         echo "Total build size: $TOTAL_SIZE"
         echo ""
         echo "JavaScript bundles:"
-        find dist/assets -name "*.js" -type f -exec ls -lh {} \; | awk '{print $5 "\t" $9}' | sort -hr
+        find "$BUILD_DIR/assets" -name "*.js" -type f -exec ls -lh {} \; | awk '{print $5 "\t" $9}' | sort -hr
         echo ""
-        LARGE_BUNDLES=$(find dist/assets -name "*.js" -type f -size +1M)
+        LARGE_BUNDLES=$(find "$BUILD_DIR/assets" -name "*.js" -type f -size +1M)
         if [ -n "$LARGE_BUNDLES" ]; then
           echo "⚠️  WARNING: Found JavaScript bundles larger than 1MB:"
           echo "$LARGE_BUNDLES" | while read file; do
