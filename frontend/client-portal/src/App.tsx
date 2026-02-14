@@ -15,6 +15,7 @@ import { useAuth } from "./contexts/AuthContext";
 import { useToastActions } from "./contexts/ToastContext";
 import { ErrorBoundary } from "./components/common/ErrorBoundary";
 import { TestModeBanner } from "./components/common/TestModeBanner";
+import { MessengerButton } from "./components/common/MessengerButton";
 import { PublicLayout, BookingLayout, ClientLayout } from "./components/layout";
 import { ProtectedRoute } from "./components/auth";
 
@@ -558,6 +559,7 @@ const App: React.FC = () => {
           <AppRouter />
         </Router>
       </ErrorBoundary>
+      <MessengerButton />
       <Suspense fallback={null}>
         <CookieConsent />
       </Suspense>
