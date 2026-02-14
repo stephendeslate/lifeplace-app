@@ -1,4 +1,3 @@
-# Cloudflare Pages SPA fallback
-# Pre-rendered routes (/, /about, etc.) have their own index.html files.
-# All other requests serve the SPA shell for client-side routing.
-/*    /__spa-fallback.html   200
+# Cloudflare Pages SPA fallback is handled by 200.html (copied from __spa-fallback.html in build step).
+# Pre-rendered routes (/, /about, etc.) have their own index.html and are served directly.
+# No redirect rules needed.
