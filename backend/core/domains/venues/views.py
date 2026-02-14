@@ -481,6 +481,7 @@ class PublicVenueViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = PublicVenueSerializer
     permission_classes = [AllowAny]
     pagination_class = StandardPagination
+    lookup_value_regex = r'[0-9]+'
 
     def get_queryset(self):
         return Venue.objects.filter(
