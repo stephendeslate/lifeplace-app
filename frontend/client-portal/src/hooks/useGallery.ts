@@ -9,6 +9,14 @@ export const useVenueGallery = () => {
   });
 };
 
+export const useGalleryVenues = () => {
+  return useQuery({
+    queryKey: ["gallery", "venues"],
+    queryFn: () => GalleryApi.getGalleryVenues(),
+    staleTime: 10 * 60 * 1000,
+  });
+};
+
 export const useGalleryPhotos = (category?: string) => {
   return useQuery({
     queryKey: ["gallery", "photos", category],

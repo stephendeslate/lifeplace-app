@@ -33,6 +33,7 @@ from .serializers import (
     VenueEventTypeConfigurationSerializer,
     GalleryPhotoPublicSerializer,
     GalleryPhotoAdminSerializer,
+    GalleryVenueSummarySerializer,
 )
 from .models import VenueEventTypeConfiguration
 from .services import VenueService, VenueAvailabilityService
@@ -485,7 +486,20 @@ class PublicVenueViewSet(viewsets.ReadOnlyModelViewSet):
         return Venue.objects.filter(
             is_active=True,
             is_bookable=True
-        ).order_by('sort_order', 'name')
+        ).select_related('venue_operating_rules').order_by('sort_order', 'name')
+
+    @action(detail=False, methods=['get'], url_path='gallery-venues')
+    def gallery_venues(self, request):
+        """Lightweight venue list for the gallery page (id, name, featured_image only)."""
+        venues = Venue.objects.filter(
+            is_active=True,
+            is_bookable=True,
+            featured_image__isnull=False,
+        ).exclude(featured_image='').order_by('sort_order', 'name')
+        serializer = GalleryVenueSummarySerializer(
+            venues, many=True, context={'request': request}
+        )
+        return Response(serializer.data)
 
     @action(detail=False, methods=['get'])
     def rentable(self, request):
@@ -605,6 +619,7 @@ class PublicGalleryPhotoViewSet(viewsets.ReadOnlyModelViewSet):
     """Public API for gallery photos."""
     permission_classes = [AllowAny]
     serializer_class = GalleryPhotoPublicSerializer
+    pagination_class = None  # Return all photos; frontend handles client-side pagination
 
     def get_queryset(self):
         qs = GalleryPhoto.objects.filter(is_active=True).select_related('venue', 'event_type')

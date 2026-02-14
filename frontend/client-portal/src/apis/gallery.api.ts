@@ -1,6 +1,9 @@
 import api from "../utils/api";
 import type { VenuePublic } from "../types/booking/venues.types";
-import type { GalleryPhotoPublic } from "../types/gallery.types";
+import type {
+  GalleryPhotoPublic,
+  GalleryVenueSummary,
+} from "../types/gallery.types";
 import type { EventType } from "../types/booking/core.types";
 
 interface PaginatedResponse<T> {
@@ -19,15 +22,24 @@ export class GalleryApi {
     return Array.isArray(data) ? data : data.results || [];
   }
 
+  static async getGalleryVenues(): Promise<GalleryVenueSummary[]> {
+    const response = await api.get<GalleryVenueSummary[]>(
+      "/venues/public/gallery-venues/",
+    );
+    return response.data;
+  }
+
   static async getGalleryPhotos(
     category?: string,
   ): Promise<GalleryPhotoPublic[]> {
     const params = category ? { category } : {};
-    const response = await api.get<
-      GalleryPhotoPublic[] | PaginatedResponse<GalleryPhotoPublic>
-    >("/venues/public/gallery/", { params });
-    const data = response.data;
-    return Array.isArray(data) ? data : data.results || [];
+    const response = await api.get<GalleryPhotoPublic[]>(
+      "/venues/public/gallery/",
+      {
+        params,
+      },
+    );
+    return response.data;
   }
 
   static async getEventTypesWithImages(): Promise<EventType[]> {

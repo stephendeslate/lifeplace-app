@@ -7,6 +7,12 @@ export interface GalleryImage {
   eventType?: string;
 }
 
+export interface GalleryVenueSummary {
+  id: number;
+  name: string;
+  featured_image: string | null;
+}
+
 export interface GalleryPhotoPublic {
   id: number;
   image: string;

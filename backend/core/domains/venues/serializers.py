@@ -366,6 +366,14 @@ class PublicVenueSerializer(serializers.ModelSerializer):
         return obj.gallery_images
 
 
+class GalleryVenueSummarySerializer(serializers.ModelSerializer):
+    """Minimal venue serializer for the gallery page (id, name, featured_image only)."""
+
+    class Meta:
+        model = Venue
+        fields = ['id', 'name', 'featured_image']
+
+
 class PublicPackageVenueSerializer(serializers.ModelSerializer):
     """
     Public serializer for package venues shown in booking flow.

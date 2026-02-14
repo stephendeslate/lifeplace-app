@@ -645,6 +645,10 @@ class GalleryPhoto(BaseModel):
         ordering = ['sort_order', '-created_at']
         verbose_name = 'Gallery Photo'
         verbose_name_plural = 'Gallery Photos'
+        indexes = [
+            models.Index(fields=['is_active', 'sort_order', '-created_at']),
+            models.Index(fields=['is_active', 'category']),
+        ]
 
     def __str__(self):
         return self.title or f"Gallery Photo #{self.pk}"

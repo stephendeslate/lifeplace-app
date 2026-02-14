@@ -15,7 +15,7 @@ import {
   GalleryFilterBar,
   ImageLightbox,
 } from "../../../components/gallery";
-import { useVenueGallery, useGalleryPhotos } from "../../../hooks/useGallery";
+import { useGalleryVenues, useGalleryPhotos } from "../../../hooks/useGallery";
 import type { GalleryImage } from "../../../types/gallery.types";
 import type { GalleryContentProps } from "../types/gallery.types";
 
@@ -80,7 +80,7 @@ export const GalleryContent: React.FC<GalleryContentProps> = () => {
     data: venues,
     isLoading: venuesLoading,
     isError: venuesError,
-  } = useVenueGallery();
+  } = useGalleryVenues();
   const {
     data: galleryPhotos,
     isLoading: photosLoading,
