@@ -3,7 +3,6 @@
 import React, { useMemo } from "react";
 import { Box, Typography, Stack } from "@mui/material";
 import { useNavigate } from "react-router-dom";
-import { SEO } from "../../hooks/useSEO";
 import {
   tokens,
   Section,
@@ -40,10 +39,6 @@ const FacilitiesPage: React.FC<FacilitiesPageProps> = ({
 
   return (
     <>
-      <SEO
-        title="Facilities | LifePlace Alfonso"
-        description="Explore our facilities including conference rooms, outdoor areas, and accommodation at LifePlace Alfonso."
-      />
       <Box sx={{ minHeight: "100vh", width: "100%" }}>
         <FacilitiesHero />
 

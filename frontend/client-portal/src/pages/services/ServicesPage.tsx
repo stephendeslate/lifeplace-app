@@ -3,7 +3,6 @@
 import React, { useMemo } from "react";
 import { Box, Typography, Stack, useTheme } from "@mui/material";
 import { NaturePeople, Groups, School, Favorite } from "@mui/icons-material";
-import { SEO } from "../../hooks/useSEO";
 import { useEventTypeImages } from "../../hooks/useGallery";
 import { ServicesHero } from "./components/ServicesHero";
 import { ServiceCard } from "./components/ServiceCard";
@@ -123,10 +122,6 @@ const ServicesPage: React.FC<ServicesPageProps> = ({ onNavigateToBooking }) => {
 
   return (
     <>
-      <SEO
-        title="Our Services | LifePlace Alfonso"
-        description="Discover our services: camps, retreats, team building, workshops, and weddings at LifePlace Alfonso, Cavite."
-      />
       <Box sx={{ minHeight: "100vh", width: "100%" }}>
         <ServicesHero />
 

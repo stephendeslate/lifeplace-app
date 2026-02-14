@@ -1,6 +1,6 @@
 // frontend/client-portal/src/pages/support/components/InquiryDetail.tsx
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from "react";
 import {
   Box,
   Typography,
@@ -14,37 +14,49 @@ import {
   IconButton,
   useTheme,
   alpha,
-} from '@mui/material';
+} from "@mui/material";
 import {
   ArrowBack as ArrowBackIcon,
   Send as SendIcon,
   Person as PersonIcon,
   SupportAgent as SupportAgentIcon,
-} from '@mui/icons-material';
-import { SEO } from '../../../hooks/useSEO';
-import { GlassCard } from '../../../design-system/components/GlassCard';
-import { AnimatedElement } from '../../../design-system/components/AnimatedElement';
-import { useSupport } from '../../../hooks/useSupport';
-import { getStatusConfig, getCategoryLabel } from '../../../constants/support.constants';
-import type { SupportMessage } from '../../../types/support.types';
+} from "@mui/icons-material";
+import { useDocumentTitle } from "../../../hooks/useDocumentTitle";
+import { GlassCard } from "../../../design-system/components/GlassCard";
+import { AnimatedElement } from "../../../design-system/components/AnimatedElement";
+import { useSupport } from "../../../hooks/useSupport";
+import {
+  getStatusConfig,
+  getCategoryLabel,
+} from "../../../constants/support.constants";
+import type { SupportMessage } from "../../../types/support.types";
 
 interface InquiryDetailProps {
   inquiryId: string;
   onBack: () => void;
 }
 
-export const InquiryDetail: React.FC<InquiryDetailProps> = ({ inquiryId, onBack }) => {
+export const InquiryDetail: React.FC<InquiryDetailProps> = ({
+  inquiryId,
+  onBack,
+}) => {
   const theme = useTheme();
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const [replyContent, setReplyContent] = useState('');
+  const [replyContent, setReplyContent] = useState("");
 
   const { useSupportInquiry, useAddReply } = useSupport();
   const { data: inquiry, isLoading, error } = useSupportInquiry(inquiryId);
   const addReply = useAddReply();
 
+  useDocumentTitle(
+    inquiry
+      ? `${inquiry.subject} | Support | LifePlace Alfonso`
+      : "Support | LifePlace Alfonso",
+  );
+
   // Scroll to bottom when messages change
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [inquiry?.messages]);
 
   const handleSendReply = async () => {
@@ -54,11 +66,11 @@ export const InquiryDetail: React.FC<InquiryDetailProps> = ({ inquiryId, onBack 
       inquiryId,
       data: { content: replyContent },
     });
-    setReplyContent('');
+    setReplyContent("");
   };
 
   const handleKeyPress = (event: React.KeyboardEvent) => {
-    if (event.key === 'Enter' && !event.shiftKey) {
+    if (event.key === "Enter" && !event.shiftKey) {
       event.preventDefault();
       handleSendReply();
     }
@@ -70,23 +82,33 @@ export const InquiryDetail: React.FC<InquiryDetailProps> = ({ inquiryId, onBack 
     const isToday = date.toDateString() === now.toDateString();
 
     if (isToday) {
-      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      return date.toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
     }
     return date.toLocaleDateString([], {
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
   const isFromClient = (message: SupportMessage) => {
-    return message.sender.role === 'CLIENT';
+    return message.sender.role === "CLIENT";
   };
 
   if (isLoading) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 400 }}>
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          minHeight: 400,
+        }}
+      >
         <CircularProgress />
       </Box>
     );
@@ -98,21 +120,19 @@ export const InquiryDetail: React.FC<InquiryDetailProps> = ({ inquiryId, onBack 
         <Button startIcon={<ArrowBackIcon />} onClick={onBack} sx={{ mb: 2 }}>
           Back to Inquiries
         </Button>
-        <Alert severity="error">Failed to load inquiry details. Please try again.</Alert>
+        <Alert severity="error">
+          Failed to load inquiry details. Please try again.
+        </Alert>
       </Box>
     );
   }
 
   const statusConfig = getStatusConfig(inquiry.status);
-  const isResolved = inquiry.status === 'resolved' || inquiry.status === 'archived';
+  const isResolved =
+    inquiry.status === "resolved" || inquiry.status === "archived";
 
   return (
     <>
-      <SEO
-        title={`${inquiry.subject} | Support | LifePlace Alfonso`}
-        description="Support inquiry details"
-        noIndex={true}
-      />
       <Box>
         {/* Header */}
         <AnimatedElement animation="slideDown" delay={100}>
@@ -125,7 +145,15 @@ export const InquiryDetail: React.FC<InquiryDetailProps> = ({ inquiryId, onBack 
               Back to Inquiries
             </Button>
 
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 2 }}>
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "flex-start",
+                flexWrap: "wrap",
+                gap: 2,
+              }}
+            >
               <Box>
                 <Typography variant="h5" sx={{ fontWeight: 600, mb: 1 }}>
                   {inquiry.subject}
@@ -140,7 +168,7 @@ export const InquiryDetail: React.FC<InquiryDetailProps> = ({ inquiryId, onBack 
                     label={getCategoryLabel(inquiry.category)}
                     size="small"
                     variant="outlined"
-                    sx={{ borderColor: alpha('#fff', 0.3) }}
+                    sx={{ borderColor: alpha("#fff", 0.3) }}
                   />
                   {inquiry.event_name && (
                     <Typography variant="body2" color="text.secondary">
@@ -161,16 +189,16 @@ export const InquiryDetail: React.FC<InquiryDetailProps> = ({ inquiryId, onBack 
             sx={{
               p: 0,
               mb: 3,
-              border: `1px solid ${alpha('#fff', 0.1)}`,
-              height: '50vh',
-              display: 'flex',
-              flexDirection: 'column',
+              border: `1px solid ${alpha("#fff", 0.1)}`,
+              height: "50vh",
+              display: "flex",
+              flexDirection: "column",
             }}
           >
             <Box
               sx={{
                 flex: 1,
-                overflowY: 'auto',
+                overflowY: "auto",
                 p: 3,
               }}
             >
@@ -182,16 +210,16 @@ export const InquiryDetail: React.FC<InquiryDetailProps> = ({ inquiryId, onBack 
                     <Box
                       key={message.id}
                       sx={{
-                        display: 'flex',
-                        justifyContent: fromClient ? 'flex-end' : 'flex-start',
+                        display: "flex",
+                        justifyContent: fromClient ? "flex-end" : "flex-start",
                       }}
                     >
                       <Box
                         sx={{
-                          display: 'flex',
-                          flexDirection: fromClient ? 'row-reverse' : 'row',
+                          display: "flex",
+                          flexDirection: fromClient ? "row-reverse" : "row",
                           gap: 1.5,
-                          maxWidth: '80%',
+                          maxWidth: "80%",
                         }}
                       >
                         <Avatar
@@ -201,25 +229,34 @@ export const InquiryDetail: React.FC<InquiryDetailProps> = ({ inquiryId, onBack 
                             backgroundColor: fromClient
                               ? theme.palette.primary.main
                               : alpha(theme.palette.info.main, 0.2),
-                            color: fromClient ? 'white' : theme.palette.info.main,
+                            color: fromClient
+                              ? "white"
+                              : theme.palette.info.main,
                           }}
                         >
-                          {fromClient ? <PersonIcon fontSize="small" /> : <SupportAgentIcon fontSize="small" />}
+                          {fromClient ? (
+                            <PersonIcon fontSize="small" />
+                          ) : (
+                            <SupportAgentIcon fontSize="small" />
+                          )}
                         </Avatar>
                         <Box>
                           <Box
                             sx={{
                               backgroundColor: fromClient
                                 ? theme.palette.primary.main
-                                : alpha('#fff', 0.1),
-                              color: fromClient ? 'white' : 'inherit',
+                                : alpha("#fff", 0.1),
+                              color: fromClient ? "white" : "inherit",
                               borderRadius: 2,
                               borderTopRightRadius: fromClient ? 4 : 16,
                               borderTopLeftRadius: fromClient ? 16 : 4,
                               p: 2,
                             }}
                           >
-                            <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
+                            <Typography
+                              variant="body2"
+                              sx={{ whiteSpace: "pre-wrap" }}
+                            >
                               {message.content}
                             </Typography>
                           </Box>
@@ -227,12 +264,15 @@ export const InquiryDetail: React.FC<InquiryDetailProps> = ({ inquiryId, onBack 
                             variant="caption"
                             color="text.secondary"
                             sx={{
-                              display: 'block',
-                              textAlign: fromClient ? 'right' : 'left',
+                              display: "block",
+                              textAlign: fromClient ? "right" : "left",
                               mt: 0.5,
                             }}
                           >
-                            {fromClient ? 'You' : message.sender.display_name || 'Support'} - {formatMessageTime(message.created_at)}
+                            {fromClient
+                              ? "You"
+                              : message.sender.display_name || "Support"}{" "}
+                            - {formatMessageTime(message.created_at)}
                           </Typography>
                         </Box>
                       </Box>
@@ -249,7 +289,8 @@ export const InquiryDetail: React.FC<InquiryDetailProps> = ({ inquiryId, onBack 
         <AnimatedElement animation="slideUp" delay={300}>
           {isResolved ? (
             <Alert severity="info">
-              This inquiry has been resolved. If you need further assistance, please create a new inquiry.
+              This inquiry has been resolved. If you need further assistance,
+              please create a new inquiry.
             </Alert>
           ) : (
             <GlassCard
@@ -257,10 +298,10 @@ export const InquiryDetail: React.FC<InquiryDetailProps> = ({ inquiryId, onBack 
               intensity="subtle"
               sx={{
                 p: 2,
-                border: `1px solid ${alpha('#fff', 0.1)}`,
+                border: `1px solid ${alpha("#fff", 0.1)}`,
               }}
             >
-              <Box sx={{ display: 'flex', gap: 2 }}>
+              <Box sx={{ display: "flex", gap: 2 }}>
                 <TextField
                   fullWidth
                   multiline
@@ -271,8 +312,8 @@ export const InquiryDetail: React.FC<InquiryDetailProps> = ({ inquiryId, onBack 
                   onKeyPress={handleKeyPress}
                   disabled={addReply.isPending}
                   sx={{
-                    '& .MuiOutlinedInput-root': {
-                      backgroundColor: alpha('#fff', 0.05),
+                    "& .MuiOutlinedInput-root": {
+                      backgroundColor: alpha("#fff", 0.05),
                     },
                   }}
                 />
@@ -282,17 +323,21 @@ export const InquiryDetail: React.FC<InquiryDetailProps> = ({ inquiryId, onBack 
                   disabled={!replyContent.trim() || addReply.isPending}
                   sx={{
                     backgroundColor: theme.palette.primary.main,
-                    color: 'white',
-                    '&:hover': {
+                    color: "white",
+                    "&:hover": {
                       backgroundColor: theme.palette.primary.dark,
                     },
-                    '&:disabled': {
+                    "&:disabled": {
                       backgroundColor: alpha(theme.palette.primary.main, 0.3),
-                      color: alpha('#fff', 0.5),
+                      color: alpha("#fff", 0.5),
                     },
                   }}
                 >
-                  {addReply.isPending ? <CircularProgress size={24} color="inherit" /> : <SendIcon />}
+                  {addReply.isPending ? (
+                    <CircularProgress size={24} color="inherit" />
+                  ) : (
+                    <SendIcon />
+                  )}
                 </IconButton>
               </Box>
             </GlassCard>

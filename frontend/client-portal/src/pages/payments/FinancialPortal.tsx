@@ -46,7 +46,7 @@ import {
   Edit as EditIcon,
   Delete as DeleteIcon,
 } from "@mui/icons-material";
-import { SEO } from "../../hooks/useSEO";
+import { useDocumentTitle } from "../../hooks/useDocumentTitle";
 import { GlassCard } from "../../design-system/components/GlassCard";
 import { AnimatedElement } from "../../design-system/components/AnimatedElement";
 import {
@@ -91,6 +91,7 @@ const TabPanel: React.FC<TabPanelProps> = ({ children, value, index }) => {
 };
 
 const FinancialPortal: React.FC = () => {
+  useDocumentTitle("Payments | LifePlace Alfonso");
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const [activeTab, setActiveTab] = useState(0);
@@ -254,11 +255,6 @@ const FinancialPortal: React.FC = () => {
   if (error) {
     return (
       <>
-        <SEO
-          title="Payments & Invoices | LifePlace Alfonso"
-          description="Manage your payments and invoices."
-          noIndex={true}
-        />
         <Box sx={{ p: 4, textAlign: "center" }}>
           <ErrorIcon sx={{ fontSize: 64, color: "error.main", mb: 2 }} />
           <Typography variant="h6" gutterBottom>
@@ -289,11 +285,6 @@ const FinancialPortal: React.FC = () => {
 
   return (
     <>
-      <SEO
-        title="Payments & Invoices | LifePlace Alfonso"
-        description="Manage your payments and invoices."
-        noIndex={true}
-      />
       <Box>
         {/* Header */}
         <AnimatedElement animation="slideDown" delay={100}>

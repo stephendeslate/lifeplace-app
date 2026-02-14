@@ -27,7 +27,7 @@ import {
   Notifications as NotificationsIcon,
   Support as SupportIcon,
 } from "@mui/icons-material";
-import { SEO } from "../../hooks/useSEO";
+import { useDocumentTitle } from "../../hooks/useDocumentTitle";
 import { useAuth } from "../../hooks/useAuth";
 import { GlassCard } from "../../design-system/components/GlassCard";
 import { AnimatedElement } from "../../design-system/components/AnimatedElement";
@@ -44,6 +44,7 @@ interface ProfileFormData {
 }
 
 const Profile: React.FC = () => {
+  useDocumentTitle("Profile | LifePlace Alfonso");
   const theme = useTheme();
   const navigate = useNavigate();
   const { user, updateProfile, isUpdatingProfile } = useAuth();
@@ -117,11 +118,6 @@ const Profile: React.FC = () => {
   if (!user) {
     return (
       <>
-        <SEO
-          title="Profile | LifePlace Alfonso"
-          description="Your LifePlace Alfonso profile."
-          noIndex={true}
-        />
         <AnimatedElement animation="fadeIn">
           <GlassCard
             variant="light"
@@ -139,11 +135,6 @@ const Profile: React.FC = () => {
 
   return (
     <>
-      <SEO
-        title="Profile | LifePlace Alfonso"
-        description="Your LifePlace Alfonso profile."
-        noIndex={true}
-      />
       <Box>
         {/* Header */}
         <AnimatedElement animation="slideDown" delay={100}>

@@ -1,6 +1,6 @@
 // frontend/client-portal/src/pages/support/SupportPage.tsx
 
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   Box,
   Typography,
@@ -11,30 +11,37 @@ import {
   Alert,
   useTheme,
   alpha,
-} from '@mui/material';
+} from "@mui/material";
 import {
   Add as AddIcon,
   Email as EmailIcon,
   Phone as PhoneIcon,
   Schedule as ScheduleIcon,
-} from '@mui/icons-material';
-import { SEO } from '../../hooks/useSEO';
-import { GlassCard } from '../../design-system/components/GlassCard';
-import { AnimatedElement } from '../../design-system/components/AnimatedElement';
-import { useSupport } from '../../hooks/useSupport';
-import { InquiryList } from './components/InquiryList';
-import { NewInquiryDialog } from './components/NewInquiryDialog';
-import { InquiryDetail } from './components/InquiryDetail';
-import type { SupportInquiry } from '../../types/support.types';
+} from "@mui/icons-material";
+import { useDocumentTitle } from "../../hooks/useDocumentTitle";
+import { GlassCard } from "../../design-system/components/GlassCard";
+import { AnimatedElement } from "../../design-system/components/AnimatedElement";
+import { useSupport } from "../../hooks/useSupport";
+import { InquiryList } from "./components/InquiryList";
+import { NewInquiryDialog } from "./components/NewInquiryDialog";
+import { InquiryDetail } from "./components/InquiryDetail";
+import type { SupportInquiry } from "../../types/support.types";
 
 const SupportPage: React.FC = () => {
+  useDocumentTitle("Support | LifePlace Alfonso");
   const theme = useTheme();
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [selectedInquiry, setSelectedInquiry] = useState<SupportInquiry | null>(null);
+  const [selectedInquiry, setSelectedInquiry] = useState<SupportInquiry | null>(
+    null,
+  );
 
   const { useSupportSettings, useSupportInquiries } = useSupport();
   const { data: settings, isLoading: settingsLoading } = useSupportSettings();
-  const { data: inquiries, isLoading: inquiriesLoading, error: inquiriesError } = useSupportInquiries();
+  const {
+    data: inquiries,
+    isLoading: inquiriesLoading,
+    error: inquiriesError,
+  } = useSupportInquiries();
 
   const handleInquirySelect = (inquiry: SupportInquiry) => {
     setSelectedInquiry(inquiry);
@@ -46,36 +53,40 @@ const SupportPage: React.FC = () => {
 
   const formatSupportHours = (hours: Record<string, string> | undefined) => {
     if (!hours || Object.keys(hours).length === 0) {
-      return 'Contact us anytime';
+      return "Contact us anytime";
     }
     return Object.entries(hours)
       .map(([day, time]) => `${day}: ${time}`)
-      .join(' | ');
+      .join(" | ");
   };
 
   // Show detail view if inquiry is selected
   if (selectedInquiry) {
     return (
-      <InquiryDetail
-        inquiryId={selectedInquiry.id}
-        onBack={handleBackToList}
-      />
+      <InquiryDetail inquiryId={selectedInquiry.id} onBack={handleBackToList} />
     );
   }
 
   return (
     <>
-      <SEO
-        title="Support | LifePlace Alfonso"
-        description="Get help and support for your LifePlace events."
-        noIndex={true}
-      />
       <Box>
         {/* Header */}
         <AnimatedElement animation="slideDown" delay={100}>
-          <Box sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 2 }}>
+          <Box
+            sx={{
+              mb: 4,
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "flex-start",
+              flexWrap: "wrap",
+              gap: 2,
+            }}
+          >
             <Box>
-              <Typography variant="h4" sx={{ fontWeight: 600, mb: 1, color: 'primary.main' }}>
+              <Typography
+                variant="h4"
+                sx={{ fontWeight: 600, mb: 1, color: "primary.main" }}
+              >
                 Help & Support
               </Typography>
               <Typography variant="body1" color="text.secondary">
@@ -88,7 +99,7 @@ const SupportPage: React.FC = () => {
               onClick={() => setDialogOpen(true)}
               sx={{
                 backgroundColor: theme.palette.primary.main,
-                '&:hover': {
+                "&:hover": {
                   backgroundColor: theme.palette.primary.dark,
                 },
               }}
@@ -113,7 +124,11 @@ const SupportPage: React.FC = () => {
             {settingsLoading ? (
               <CircularProgress size={24} />
             ) : (
-              <Stack direction={{ xs: 'column', md: 'row' }} spacing={3} justifyContent="space-between">
+              <Stack
+                direction={{ xs: "column", md: "row" }}
+                spacing={3}
+                justifyContent="space-between"
+              >
                 <Stack direction="row" spacing={1} alignItems="center">
                   <EmailIcon sx={{ color: theme.palette.info.main }} />
                   <Box>
@@ -121,7 +136,7 @@ const SupportPage: React.FC = () => {
                       Email
                     </Typography>
                     <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                      {settings?.support_email || 'support@lifeplace.dev'}
+                      {settings?.support_email || "support@lifeplace.dev"}
                     </Typography>
                   </Box>
                 </Stack>
@@ -161,10 +176,17 @@ const SupportPage: React.FC = () => {
             intensity="medium"
             sx={{
               p: 3,
-              border: `1px solid ${alpha('#fff', 0.1)}`,
+              border: `1px solid ${alpha("#fff", 0.1)}`,
             }}
           >
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                mb: 3,
+              }}
+            >
               <Typography variant="h6" sx={{ fontWeight: 600 }}>
                 Your Inquiries
               </Typography>
@@ -181,7 +203,7 @@ const SupportPage: React.FC = () => {
             </Box>
 
             {inquiriesLoading ? (
-              <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+              <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
                 <CircularProgress />
               </Box>
             ) : inquiriesError ? (
@@ -194,8 +216,12 @@ const SupportPage: React.FC = () => {
                 onSelect={handleInquirySelect}
               />
             ) : (
-              <Box sx={{ textAlign: 'center', py: 6 }}>
-                <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
+              <Box sx={{ textAlign: "center", py: 6 }}>
+                <Typography
+                  variant="body1"
+                  color="text.secondary"
+                  sx={{ mb: 2 }}
+                >
                   You haven't submitted any support inquiries yet.
                 </Typography>
                 <Button

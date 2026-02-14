@@ -1,8 +1,11 @@
 // frontend/client-portal/src/App.tsx
+//
+// Auth routes, protected routes, and redirects.
+// Public marketing routes have been migrated to individual route modules
+// in src/routes/ with per-route meta() exports for SEO.
 
-import React, { Suspense, useEffect } from "react";
+import React, { Suspense } from "react";
 import {
-  BrowserRouter as Router,
   Routes,
   Route,
   Navigate,
@@ -10,58 +13,15 @@ import {
   useLocation,
 } from "react-router-dom";
 import { Box, CircularProgress, Typography } from "@mui/material";
-import { AppProviders } from "./providers/AppProviders";
 import { useAuth } from "./contexts/AuthContext";
 import { useToastActions } from "./contexts/ToastContext";
-import { ErrorBoundary } from "./components/common/ErrorBoundary";
-import { TestModeBanner } from "./components/common/TestModeBanner";
-import { MessengerButton } from "./components/common/MessengerButton";
-import { PublicLayout, BookingLayout, ClientLayout } from "./components/layout";
+import { PublicLayout, ClientLayout } from "./components/layout";
 import { ProtectedRoute } from "./components/auth";
 
-// GA4 analytics
-import { initGA4, GA4Events } from "./utils/ga4";
-import { usePageTracking } from "./hooks/usePageTracking";
-import { hasAnalyticsConsent } from "./components/common/CookieConsent";
-const CookieConsent = React.lazy(() =>
-  import("./components/common/CookieConsent").then((m) => ({
-    default: m.CookieConsent,
-  })),
-);
-
 // Critical path imports - keep static for performance
-import { Home } from "./pages/home";
 import { Login, Register, ForgotPassword, ResetPassword } from "./pages/auth";
 import { Dashboard } from "./pages/dashboard";
 import AcceptInvitation from "./pages/auth/AcceptInvitation";
-import { BookingComplete, BookingPage } from "./pages/booking";
-
-// Lazy-loaded page components for code splitting
-const AboutPage = React.lazy(() =>
-  import("./pages/about").then((m) => ({ default: m.AboutPage })),
-);
-const ServicesPage = React.lazy(() =>
-  import("./pages/services").then((m) => ({ default: m.ServicesPage })),
-);
-const RatesPage = React.lazy(() =>
-  import("./pages/rates").then((m) => ({ default: m.RatesPage })),
-);
-const FacilitiesPage = React.lazy(() =>
-  import("./pages/facilities").then((m) => ({ default: m.FacilitiesPage })),
-);
-const GalleryPage = React.lazy(() => import("./pages/gallery"));
-const PartnerPage = React.lazy(() =>
-  import("./pages/partner").then((m) => ({ default: m.PartnerPage })),
-);
-const ReviewsPage = React.lazy(() =>
-  import("./pages/reviews").then((m) => ({ default: m.ReviewsPage })),
-);
-const ContactPage = React.lazy(() =>
-  import("./pages/contact").then((m) => ({ default: m.ContactPage })),
-);
-const PodcastsPage = React.lazy(() =>
-  import("./pages/podcasts").then((m) => ({ default: m.PodcastsPage })),
-);
 
 // Protected route lazy imports
 const Profile = React.lazy(() =>
@@ -98,20 +58,10 @@ const SupportPage = React.lazy(() =>
   import("./pages/support").then((m) => ({ default: m.SupportPage })),
 );
 
-// Legal pages lazy imports
-const TermsPage = React.lazy(() =>
-  import("./pages/legal").then((m) => ({ default: m.TermsPage })),
-);
-const PrivacyPage = React.lazy(() =>
-  import("./pages/legal").then((m) => ({ default: m.PrivacyPage })),
-);
-
 // NotFound page (404) lazy import
 const NotFound = React.lazy(() =>
   import("./pages/NotFound").then((m) => ({ default: m.NotFound })),
 );
-
-// Import booking components
 
 // Loading component
 const LoadingSpinner: React.FC = () => (
@@ -139,38 +89,12 @@ const ClientLayoutWrapper: React.FC<{ children: React.ReactNode }> = ({
   return <ClientLayout>{children}</ClientLayout>;
 };
 
-// Scroll to top on route change
-const ScrollToTop: React.FC = () => {
-  const { pathname } = useLocation();
-
-  useEffect(() => {
-    window.scrollTo(0, 0);
-  }, [pathname]);
-
-  return null;
-};
-
-// Main app router component
-const AppRouter: React.FC = () => {
+// Main app router component — exported for use by catchall.tsx
+export const AppRouter: React.FC = () => {
   const { isLoading, isAuthenticated } = useAuth();
   const { showInfo } = useToastActions();
   const navigate = useNavigate();
   const location = useLocation();
-
-  // GA4 page tracking
-  usePageTracking();
-
-  // Initialize GA4 if user has consented to analytics cookies
-  useEffect(() => {
-    if (hasAnalyticsConsent()) {
-      initGA4();
-    }
-    // Listen for consent changes
-    const handleConsent = () => initGA4();
-    window.addEventListener("cookie-consent-analytics", handleConsent);
-    return () =>
-      window.removeEventListener("cookie-consent-analytics", handleConsent);
-  }, []);
 
   // Handle successful login/register
   const handleAuthSuccess = () => {
@@ -192,12 +116,6 @@ const AppRouter: React.FC = () => {
   const handleNavigateToLogin = () => navigate("/login");
   const handleNavigateToRegister = () => navigate("/register");
 
-  // Updated booking handler - direct navigation to booking flow
-  const handleNavigateToBooking = () => {
-    GA4Events.ctaClicked("book_now", location.pathname);
-    navigate("/booking");
-  };
-
   if (isLoading) {
     return <LoadingSpinner />;
   }
@@ -205,121 +123,6 @@ const AppRouter: React.FC = () => {
   return (
     <Suspense fallback={<LoadingSpinner />}>
       <Routes>
-        {/* Public Routes with PublicLayout */}
-        <Route
-          path="/"
-          element={
-            <PublicLayout fullHeight>
-              <Home
-                onNavigateToLogin={handleNavigateToLogin}
-                onNavigateToRegister={handleNavigateToRegister}
-                onNavigateToBooking={handleNavigateToBooking}
-              />
-            </PublicLayout>
-          }
-        />
-
-        {/* Booking Routes - Using BookingLayout with original background */}
-        <Route
-          path="/booking"
-          element={
-            <BookingLayout>
-              <BookingPage />
-            </BookingLayout>
-          }
-        />
-
-        <Route
-          path="/booking/complete"
-          element={
-            <BookingLayout>
-              <BookingComplete />
-            </BookingLayout>
-          }
-        />
-
-        {/* Public About page */}
-        <Route
-          path="/about"
-          element={
-            <PublicLayout fullHeight>
-              <AboutPage onNavigateToBooking={handleNavigateToBooking} />
-            </PublicLayout>
-          }
-        />
-
-        <Route
-          path="/services"
-          element={
-            <PublicLayout fullHeight>
-              <ServicesPage onNavigateToBooking={handleNavigateToBooking} />
-            </PublicLayout>
-          }
-        />
-
-        <Route
-          path="/rates"
-          element={
-            <PublicLayout fullHeight>
-              <RatesPage onNavigateToBooking={handleNavigateToBooking} />
-            </PublicLayout>
-          }
-        />
-
-        <Route
-          path="/facilities"
-          element={
-            <PublicLayout fullHeight>
-              <FacilitiesPage onNavigateToBooking={handleNavigateToBooking} />
-            </PublicLayout>
-          }
-        />
-
-        <Route
-          path="/gallery"
-          element={
-            <PublicLayout fullHeight>
-              <GalleryPage onNavigateToBooking={handleNavigateToBooking} />
-            </PublicLayout>
-          }
-        />
-
-        <Route
-          path="/partner"
-          element={
-            <PublicLayout fullHeight>
-              <PartnerPage />
-            </PublicLayout>
-          }
-        />
-
-        <Route
-          path="/reviews"
-          element={
-            <PublicLayout fullHeight>
-              <ReviewsPage onNavigateToBooking={handleNavigateToBooking} />
-            </PublicLayout>
-          }
-        />
-
-        <Route
-          path="/contact"
-          element={
-            <PublicLayout fullHeight>
-              <ContactPage />
-            </PublicLayout>
-          }
-        />
-
-        <Route
-          path="/podcasts"
-          element={
-            <PublicLayout fullHeight>
-              <PodcastsPage />
-            </PublicLayout>
-          }
-        />
-
         {/* Auth routes - redirect if already authenticated */}
         <Route
           path="/login"
@@ -522,49 +325,9 @@ const AppRouter: React.FC = () => {
         {/* Redirect /help to /support for backward compatibility */}
         <Route path="/help" element={<Navigate to="/support" replace />} />
 
-        {/* Legal pages */}
-        <Route
-          path="/privacy"
-          element={
-            <PublicLayout>
-              <PrivacyPage />
-            </PublicLayout>
-          }
-        />
-
-        <Route
-          path="/terms"
-          element={
-            <PublicLayout>
-              <TermsPage />
-            </PublicLayout>
-          }
-        />
-
         {/* 404 Not Found - Better for SEO than redirect */}
         <Route path="*" element={<NotFound />} />
       </Routes>
     </Suspense>
   );
 };
-
-// Main App component
-const App: React.FC = () => {
-  return (
-    <AppProviders>
-      <TestModeBanner />
-      <ErrorBoundary>
-        <Router>
-          <ScrollToTop />
-          <AppRouter />
-        </Router>
-      </ErrorBoundary>
-      <MessengerButton />
-      <Suspense fallback={null}>
-        <CookieConsent />
-      </Suspense>
-    </AppProviders>
-  );
-};
-
-export default App;

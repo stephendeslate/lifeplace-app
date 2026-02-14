@@ -36,7 +36,7 @@ import {
   History as HistoryIcon,
   Update as UpdateIcon,
 } from "@mui/icons-material";
-import { SEO } from "../../hooks/useSEO";
+import { useDocumentTitle } from "../../hooks/useDocumentTitle";
 import { getRelativeTime } from "../../utils/eventHelpers";
 import { useAuth } from "../../contexts/AuthContext";
 import { useDashboardData } from "../../hooks/useDashboardData";
@@ -68,6 +68,7 @@ const safeFormatDate = (
 };
 
 const Dashboard: React.FC = () => {
+  useDocumentTitle("Dashboard | LifePlace Alfonso");
   const { user } = useAuth();
   const theme = useTheme();
   const navigate = useNavigate();
@@ -149,11 +150,6 @@ const Dashboard: React.FC = () => {
 
   return (
     <>
-      <SEO
-        title="Dashboard | LifePlace Alfonso"
-        description="Your LifePlace Alfonso client dashboard."
-        noIndex={true}
-      />
       <Box sx={{ width: "100%" }}>
         {/* Welcome Header */}
         <Box sx={{ mb: 4 }}>

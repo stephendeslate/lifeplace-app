@@ -3,7 +3,6 @@
 import React from "react";
 import { Box, useMediaQuery } from "@mui/material";
 import { useNavigate } from "react-router-dom";
-import { SEO } from "../../hooks/useSEO";
 import { tokens, Button } from "../../design-system";
 import { GalleryHero } from "./components/GalleryHero";
 import { GalleryContent } from "./components/GalleryContent";
@@ -31,11 +30,6 @@ const GalleryPage: React.FC<GalleryPageProps> = ({ onNavigateToBooking }) => {
 
   return (
     <>
-      <SEO
-        title="Gallery | LifePlace Alfonso"
-        description="Browse photos of our venues, event setups, weddings, team building activities, and more at LifePlace Alfonso, Cavite."
-      />
-
       <Box sx={{ minHeight: "100vh", width: "100%" }}>
         <GalleryHero />
         <GalleryContent />
