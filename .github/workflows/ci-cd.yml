@@ -79,13 +79,9 @@ jobs:
         cd backend
         python manage.py check
 
-  # Job 2: Test Frontend Apps
-  test-frontend:
+  # Job 2a: Test Admin CRM
+  test-admin-crm:
     runs-on: ubuntu-latest
-
-    strategy:
-      matrix:
-        app: [admin-crm, client-portal]
 
     steps:
     - name: Checkout code
@@ -100,59 +96,53 @@ jobs:
       uses: actions/cache@v4
       with:
         path: ~/.npm
-        key: ${{ runner.os }}-node-${{ matrix.app }}-${{ hashFiles(format('frontend/{0}/package-lock.json', matrix.app)) }}
+        key: ${{ runner.os }}-node-admin-crm-${{ hashFiles('frontend/admin-crm/package-lock.json') }}
         restore-keys: |
-          ${{ runner.os }}-node-${{ matrix.app }}-
+          ${{ runner.os }}-node-admin-crm-
 
     - name: Install dependencies
       run: |
         cd frontend/shared
         npm install
-        cd ../${{ matrix.app }}
+        cd ../admin-crm
         npm install --force
 
     - name: Run TypeScript check
       run: |
-        cd frontend/${{ matrix.app }}
+        cd frontend/admin-crm
         npm run type-check
 
     - name: Run linting
       run: |
-        cd frontend/${{ matrix.app }}
+        cd frontend/admin-crm
         npm run lint
 
     - name: Run tests
       run: |
-        cd frontend/${{ matrix.app }}
+        cd frontend/admin-crm
         npm run test
 
     - name: Build application
       env:
         VITE_API_URL: https://lifeplace-api.fly.dev
         VITE_APP_ENV: test
-        VITE_SENTRY_RELEASE: "${{ matrix.app }}@${{ github.sha }}"
+        VITE_SENTRY_RELEASE: "admin-crm@${{ github.sha }}"
       run: |
-        cd frontend/${{ matrix.app }}
+        cd frontend/admin-crm
         npm run build
 
     - name: Report bundle size
       run: |
-        cd frontend/${{ matrix.app }}
-        # client-portal builds to build/client/, admin-crm builds to dist/
-        if [ -d "build/client" ]; then
-          BUILD_DIR="build/client"
-        else
-          BUILD_DIR="dist"
-        fi
-        echo "📦 Bundle Size Report for ${{ matrix.app }}"
+        cd frontend/admin-crm
+        echo "📦 Bundle Size Report for admin-crm"
         echo "=========================================="
-        TOTAL_SIZE=$(du -sh "$BUILD_DIR"/ | cut -f1)
+        TOTAL_SIZE=$(du -sh dist/ | cut -f1)
         echo "Total build size: $TOTAL_SIZE"
         echo ""
         echo "JavaScript bundles:"
-        find "$BUILD_DIR/assets" -name "*.js" -type f -exec ls -lh {} \; | awk '{print $5 "\t" $9}' | sort -hr
+        find dist/assets -name "*.js" -type f -exec ls -lh {} \; | awk '{print $5 "\t" $9}' | sort -hr
         echo ""
-        LARGE_BUNDLES=$(find "$BUILD_DIR/assets" -name "*.js" -type f -size +1M)
+        LARGE_BUNDLES=$(find dist/assets -name "*.js" -type f -size +1M)
         if [ -n "$LARGE_BUNDLES" ]; then
           echo "⚠️  WARNING: Found JavaScript bundles larger than 1MB:"
           echo "$LARGE_BUNDLES" | while read file; do
@@ -163,7 +153,190 @@ jobs:
           echo "✅ All JavaScript bundles are under 1MB"
         fi
 
-  # Job 3: Deploy Backend to Fly.io (only on main branch)
+  # Job 2b: Test Client Portal
+  test-client-portal:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+
+    - name: Cache npm dependencies
+      uses: actions/cache@v4
+      with:
+        path: ~/.npm
+        key: ${{ runner.os }}-node-client-portal-${{ hashFiles('frontend/client-portal/package-lock.json') }}
+        restore-keys: |
+          ${{ runner.os }}-node-client-portal-
+
+    - name: Install dependencies
+      run: |
+        cd frontend/shared
+        npm install
+        cd ../client-portal
+        npm install --force
+
+    - name: Run TypeScript check
+      run: |
+        cd frontend/client-portal
+        npm run type-check
+
+    - name: Run linting
+      run: |
+        cd frontend/client-portal
+        npm run lint
+
+    - name: Run tests
+      run: |
+        cd frontend/client-portal
+        npm run test
+
+    - name: Build application
+      env:
+        VITE_API_URL: https://lifeplace-api.fly.dev
+        VITE_APP_ENV: test
+        VITE_SENTRY_RELEASE: "client-portal@${{ github.sha }}"
+      run: |
+        cd frontend/client-portal
+        npm run build
+
+    - name: Report bundle size
+      run: |
+        cd frontend/client-portal
+        echo "📦 Bundle Size Report for client-portal"
+        echo "=========================================="
+        TOTAL_SIZE=$(du -sh build/client/ | cut -f1)
+        echo "Total build size: $TOTAL_SIZE"
+        echo ""
+        echo "JavaScript bundles:"
+        find build/client/assets -name "*.js" -type f -exec ls -lh {} \; | awk '{print $5 "\t" $9}' | sort -hr
+        echo ""
+        LARGE_BUNDLES=$(find build/client/assets -name "*.js" -type f -size +1M)
+        if [ -n "$LARGE_BUNDLES" ]; then
+          echo "⚠️  WARNING: Found JavaScript bundles larger than 1MB:"
+          echo "$LARGE_BUNDLES" | while read file; do
+            SIZE=$(ls -lh "$file" | awk '{print $5}')
+            echo "  - $(basename $file): $SIZE"
+          done
+        else
+          echo "✅ All JavaScript bundles are under 1MB"
+        fi
+
+  # Job 3a: Deploy Admin CRM to Cloudflare Pages (only on main branch)
+  deploy-admin-crm:
+    needs: [test-admin-crm]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+
+    - name: Cache npm dependencies
+      uses: actions/cache@v4
+      with:
+        path: ~/.npm
+        key: ${{ runner.os }}-node-admin-crm-${{ hashFiles('frontend/admin-crm/package-lock.json') }}
+        restore-keys: |
+          ${{ runner.os }}-node-admin-crm-
+
+    - name: Install dependencies
+      run: |
+        cd frontend/shared
+        npm install
+        cd ../admin-crm
+        npm install --force
+
+    - name: Build for production
+      env:
+        VITE_API_URL: https://lifeplace-api.fly.dev
+        VITE_APP_ENV: production
+        VITE_SENTRY_RELEASE: "admin-crm@${{ github.sha }}"
+        VITE_SENTRY_DSN: ${{ secrets.VITE_SENTRY_DSN_ADMIN_CRM }}
+        VITE_STRIPE_PUBLIC_KEY: ${{ secrets.VITE_STRIPE_PUBLIC_KEY }}
+        SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+        SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+      run: |
+        cd frontend/admin-crm
+        npm run build
+
+    - name: Deploy to Cloudflare Pages
+      env:
+        CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      run: |
+        npx wrangler@3 pages deploy frontend/admin-crm/dist \
+          --project-name=lifeplace-admin \
+          --branch=main \
+          --commit-hash=${{ github.sha }} \
+          --commit-message="$(git log -1 --pretty=%s)"
+
+  # Job 3b: Deploy Client Portal to Cloudflare Pages (only on main branch)
+  deploy-client-portal:
+    needs: [test-client-portal]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+
+    - name: Cache npm dependencies
+      uses: actions/cache@v4
+      with:
+        path: ~/.npm
+        key: ${{ runner.os }}-node-client-portal-${{ hashFiles('frontend/client-portal/package-lock.json') }}
+        restore-keys: |
+          ${{ runner.os }}-node-client-portal-
+
+    - name: Install dependencies
+      run: |
+        cd frontend/shared
+        npm install
+        cd ../client-portal
+        npm install --force
+
+    - name: Build for production
+      env:
+        VITE_API_URL: https://lifeplace-api.fly.dev
+        VITE_APP_ENV: production
+        VITE_SENTRY_RELEASE: "client-portal@${{ github.sha }}"
+        VITE_SENTRY_DSN: ${{ secrets.VITE_SENTRY_DSN_CLIENT_PORTAL }}
+        VITE_STRIPE_PUBLIC_KEY: ${{ secrets.VITE_STRIPE_PUBLIC_KEY }}
+        VITE_GA_MEASUREMENT_ID: ${{ secrets.VITE_GA_MEASUREMENT_ID }}
+        SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+        SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+      run: |
+        cd frontend/client-portal
+        npm run build
+
+    - name: Deploy to Cloudflare Pages
+      env:
+        CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      run: |
+        npx wrangler@3 pages deploy frontend/client-portal/build/client \
+          --project-name=lifeplace-portal \
+          --branch=main \
+          --commit-hash=${{ github.sha }} \
+          --commit-message="$(git log -1 --pretty=%s)"
+
+  # Job 4: Deploy Backend to Fly.io (only on main branch)
   deploy-backend:
     needs: [test-backend]
     runs-on: ubuntu-latest
@@ -260,9 +433,9 @@ jobs:
           echo "✅ Created Sentry release: $RELEASE"
         done
 
-  # Job 5: Deployment Summary
+  # Job 7: Deployment Summary
   notify:
-    needs: [test-backend, test-frontend, deploy-backend, sentry-release]
+    needs: [test-backend, test-admin-crm, test-client-portal, deploy-backend, deploy-admin-crm, deploy-client-portal, sentry-release]
     runs-on: ubuntu-latest
     if: always() && github.ref == 'refs/heads/main' && github.event_name == 'push'
 
@@ -272,11 +445,13 @@ jobs:
         echo "🚀 LifePlace Deployment Summary"
         echo "================================"
         echo ""
-        echo "Backend Tests:    ${{ needs.test-backend.result }}"
-        echo "Frontend Tests:   ${{ needs.test-frontend.result }}"
-        echo "Backend Deploy:   ${{ needs.deploy-backend.result }}"
-        echo "Sentry Release:   ${{ needs.sentry-release.result }}"
-        echo "Frontend Deploy:  Handled by Cloudflare Pages (Git integration)"
+        echo "Backend Tests:          ${{ needs.test-backend.result }}"
+        echo "Admin CRM Tests:        ${{ needs.test-admin-crm.result }}"
+        echo "Client Portal Tests:    ${{ needs.test-client-portal.result }}"
+        echo "Backend Deploy:         ${{ needs.deploy-backend.result }}"
+        echo "Admin CRM Deploy:       ${{ needs.deploy-admin-crm.result }}"
+        echo "Client Portal Deploy:   ${{ needs.deploy-client-portal.result }}"
+        echo "Sentry Release:         ${{ needs.sentry-release.result }}"
         echo ""
         echo "URLs:"
         echo "  - Backend API:     https://lifeplace-api.fly.dev"
@@ -284,9 +459,24 @@ jobs:
         echo "  - Client Portal:   https://lifeplace.dev"
         echo ""
 
-        if [[ "${{ needs.test-backend.result }}" == "success" && "${{ needs.deploy-backend.result }}" == "success" ]]; then
-          echo "✅ Backend deployment successful!"
-        else
-          echo "❌ Backend deployment failed - check logs above"
+        FAILED=false
+
+        if [[ "${{ needs.deploy-backend.result }}" != "success" ]]; then
+          echo "❌ Backend deployment failed"
+          FAILED=true
+        fi
+        if [[ "${{ needs.deploy-admin-crm.result }}" != "success" ]]; then
+          echo "❌ Admin CRM deployment failed"
+          FAILED=true
+        fi
+        if [[ "${{ needs.deploy-client-portal.result }}" != "success" ]]; then
+          echo "❌ Client Portal deployment failed"
+          FAILED=true
+        fi
+
+        if [[ "$FAILED" == "true" ]]; then
+          echo "⚠️  One or more deployments failed - check logs above"
           exit 1
+        else
+          echo "✅ All deployments successful!"
         fi
