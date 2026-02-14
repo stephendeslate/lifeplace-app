@@ -1,21 +1,15 @@
 // frontend/client-portal/src/components/actions/PaymentActionCard.tsx
 
-import React from 'react';
-import {
-  Stack,
-  Button,
-  Typography,
-  Chip,
-  Alert,
-} from '@mui/material';
+import React from "react";
+import { Stack, Button, Typography, Chip, Alert } from "@mui/material";
 import {
   Payment as PayIcon,
   Visibility as ViewIcon,
   Warning as OverdueIcon,
-} from '@mui/icons-material';
-import { useNavigate } from 'react-router-dom';
-import { ActionCard } from './ActionCard';
-import type { PaymentActionItem } from '../../types/action-center.types';
+} from "@mui/icons-material";
+import { useNavigate } from "react-router-dom";
+import { ActionCard } from "./ActionCard";
+import type { PaymentActionItem } from "../../types/action-center.types";
 
 interface PaymentActionCardProps {
   action: PaymentActionItem;
@@ -48,9 +42,9 @@ export const PaymentActionCard: React.FC<PaymentActionCardProps> = ({
   };
 
   const formatCurrency = (amount: string) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: action.currency || 'USD',
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: action.currency || "USD",
     }).format(parseFloat(amount));
   };
 
@@ -60,19 +54,28 @@ export const PaymentActionCard: React.FC<PaymentActionCardProps> = ({
     <ActionCard action={action}>
       <Stack spacing={1.5}>
         {/* Amount and Status */}
-        <Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between">
-          <Typography variant="h6" color={isOverdue ? 'error.main' : 'primary.main'} sx={{ fontWeight: 600 }}>
+        <Stack
+          direction="row"
+          spacing={1}
+          alignItems="center"
+          justifyContent="space-between"
+        >
+          <Typography
+            variant="h6"
+            color={isOverdue ? "error.main" : "primary.main"}
+            sx={{ fontWeight: 600 }}
+          >
             {formatCurrency(action.amount)}
           </Typography>
 
           {isOverdue && (
             <Chip
-              icon={<OverdueIcon sx={{ fontSize: '0.875rem !important' }} />}
-              label={`${daysPastDue} day${daysPastDue !== 1 ? 's' : ''} overdue`}
+              icon={<OverdueIcon sx={{ fontSize: "0.875rem !important" }} />}
+              label={`${daysPastDue} day${daysPastDue !== 1 ? "s" : ""} overdue`}
               color="error"
               size="small"
               variant="filled"
-              sx={{ fontSize: '0.7rem' }}
+              sx={{ fontSize: "0.7rem" }}
             />
           )}
 
@@ -82,7 +85,7 @@ export const PaymentActionCard: React.FC<PaymentActionCardProps> = ({
               color="warning"
               size="small"
               variant="outlined"
-              sx={{ fontSize: '0.7rem' }}
+              sx={{ fontSize: "0.7rem" }}
             />
           )}
         </Stack>
@@ -97,12 +100,13 @@ export const PaymentActionCard: React.FC<PaymentActionCardProps> = ({
         {/* Overdue Warning */}
         {isOverdue && daysPastDue > 7 && (
           <Alert severity="error" sx={{ py: 0.5 }}>
-            This payment is significantly overdue. Please pay immediately to avoid service interruption.
+            This payment is significantly overdue. Please pay immediately to
+            avoid service interruption.
           </Alert>
         )}
 
         {/* Action Buttons */}
-        <Stack direction="row" spacing={1}>
+        <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
           <Button
             variant="outlined"
             size="small"
@@ -111,7 +115,7 @@ export const PaymentActionCard: React.FC<PaymentActionCardProps> = ({
               e.stopPropagation();
               handleView();
             }}
-            sx={{ fontSize: '0.75rem' }}
+            sx={{ fontSize: "0.75rem" }}
           >
             View Invoice
           </Button>
@@ -124,8 +128,8 @@ export const PaymentActionCard: React.FC<PaymentActionCardProps> = ({
               e.stopPropagation();
               handlePay();
             }}
-            color={isOverdue ? 'error' : 'primary'}
-            sx={{ fontSize: '0.75rem' }}
+            color={isOverdue ? "error" : "primary"}
+            sx={{ fontSize: "0.75rem" }}
           >
             Pay Now
           </Button>

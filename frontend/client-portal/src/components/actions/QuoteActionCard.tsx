@@ -1,6 +1,6 @@
 // frontend/client-portal/src/components/actions/QuoteActionCard.tsx
 
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   Stack,
   Button,
@@ -13,17 +13,17 @@ import {
   TextField,
   Box,
   Alert,
-} from '@mui/material';
+} from "@mui/material";
 import {
   CheckCircle as AcceptIcon,
   Cancel as RejectIcon,
   Warning as ExpiringIcon,
   Visibility as ViewIcon,
-} from '@mui/icons-material';
-import { useNavigate } from 'react-router-dom';
-import { ActionCard } from './ActionCard';
-import { useAcceptQuote, useRejectQuote } from '../../hooks/useEventQuotes';
-import type { QuoteActionItem } from '../../types/action-center.types';
+} from "@mui/icons-material";
+import { useNavigate } from "react-router-dom";
+import { ActionCard } from "./ActionCard";
+import { useAcceptQuote, useRejectQuote } from "../../hooks/useEventQuotes";
+import type { QuoteActionItem } from "../../types/action-center.types";
 
 interface QuoteActionCardProps {
   action: QuoteActionItem;
@@ -41,7 +41,7 @@ export const QuoteActionCard: React.FC<QuoteActionCardProps> = ({
   // Dialog state
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
-  const [rejectionReason, setRejectionReason] = useState('');
+  const [rejectionReason, setRejectionReason] = useState("");
 
   const handleAccept = async () => {
     try {
@@ -65,7 +65,7 @@ export const QuoteActionCard: React.FC<QuoteActionCardProps> = ({
         data: { reason: rejectionReason },
       });
       setRejectDialogOpen(false);
-      setRejectionReason('');
+      setRejectionReason("");
       onActionComplete?.();
     } catch {
       // Error handled by mutation
@@ -77,45 +77,55 @@ export const QuoteActionCard: React.FC<QuoteActionCardProps> = ({
   };
 
   const formatCurrency = (amount: string) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: action.currency || 'USD',
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: action.currency || "USD",
     }).format(parseFloat(amount));
   };
 
   const isExpired = action.isExpired;
   const isExpiringSoon = action.isExpiringSoon;
-  const isPending = acceptQuoteMutation.isPending || rejectQuoteMutation.isPending;
+  const isPending =
+    acceptQuoteMutation.isPending || rejectQuoteMutation.isPending;
 
   return (
     <>
       <ActionCard action={action}>
         <Stack spacing={1.5}>
           {/* Amount and Expiry Info */}
-          <Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between">
-            <Typography variant="h6" color="primary.main" sx={{ fontWeight: 600 }}>
+          <Stack
+            direction="row"
+            spacing={1}
+            alignItems="center"
+            justifyContent="space-between"
+          >
+            <Typography
+              variant="h6"
+              color="primary.main"
+              sx={{ fontWeight: 600 }}
+            >
               {formatCurrency(action.totalAmount)}
             </Typography>
 
             {isExpired && (
               <Chip
-                icon={<ExpiringIcon sx={{ fontSize: '0.875rem !important' }} />}
+                icon={<ExpiringIcon sx={{ fontSize: "0.875rem !important" }} />}
                 label="Expired"
                 color="error"
                 size="small"
                 variant="filled"
-                sx={{ fontSize: '0.7rem' }}
+                sx={{ fontSize: "0.7rem" }}
               />
             )}
 
             {!isExpired && isExpiringSoon && (
               <Chip
-                icon={<ExpiringIcon sx={{ fontSize: '0.875rem !important' }} />}
-                label={`Expires in ${action.daysUntilExpiry} day${action.daysUntilExpiry !== 1 ? 's' : ''}`}
+                icon={<ExpiringIcon sx={{ fontSize: "0.875rem !important" }} />}
+                label={`Expires in ${action.daysUntilExpiry} day${action.daysUntilExpiry !== 1 ? "s" : ""}`}
                 color="warning"
                 size="small"
                 variant="filled"
-                sx={{ fontSize: '0.7rem' }}
+                sx={{ fontSize: "0.7rem" }}
               />
             )}
 
@@ -128,7 +138,7 @@ export const QuoteActionCard: React.FC<QuoteActionCardProps> = ({
 
           {/* Action Buttons */}
           {!isExpired && (
-            <Stack direction="row" spacing={1}>
+            <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
               <Button
                 variant="outlined"
                 size="small"
@@ -137,7 +147,7 @@ export const QuoteActionCard: React.FC<QuoteActionCardProps> = ({
                   e.stopPropagation();
                   handleViewDetails();
                 }}
-                sx={{ fontSize: '0.75rem' }}
+                sx={{ fontSize: "0.75rem" }}
               >
                 View Details
               </Button>
@@ -152,7 +162,7 @@ export const QuoteActionCard: React.FC<QuoteActionCardProps> = ({
                   setConfirmDialogOpen(true);
                 }}
                 disabled={isPending}
-                sx={{ fontSize: '0.75rem' }}
+                sx={{ fontSize: "0.75rem" }}
               >
                 Accept
               </Button>
@@ -167,7 +177,7 @@ export const QuoteActionCard: React.FC<QuoteActionCardProps> = ({
                   setRejectDialogOpen(true);
                 }}
                 disabled={isPending}
-                sx={{ fontSize: '0.75rem' }}
+                sx={{ fontSize: "0.75rem" }}
               >
                 Reject
               </Button>
@@ -193,25 +203,23 @@ export const QuoteActionCard: React.FC<QuoteActionCardProps> = ({
         <DialogTitle>Accept Quote</DialogTitle>
         <DialogContent>
           <Typography variant="body1" gutterBottom>
-            Are you sure you want to accept this quote for{' '}
+            Are you sure you want to accept this quote for{" "}
             <strong>{formatCurrency(action.totalAmount)}</strong>?
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            By accepting, you agree to the terms and conditions outlined in the quote.
-            We will proceed with your event preparation.
+            By accepting, you agree to the terms and conditions outlined in the
+            quote. We will proceed with your event preparation.
           </Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setConfirmDialogOpen(false)}>
-            Cancel
-          </Button>
+          <Button onClick={() => setConfirmDialogOpen(false)}>Cancel</Button>
           <Button
             onClick={handleAccept}
             variant="contained"
             color="success"
             disabled={acceptQuoteMutation.isPending}
           >
-            {acceptQuoteMutation.isPending ? 'Accepting...' : 'Accept Quote'}
+            {acceptQuoteMutation.isPending ? "Accepting..." : "Accept Quote"}
           </Button>
         </DialogActions>
       </Dialog>
@@ -228,7 +236,8 @@ export const QuoteActionCard: React.FC<QuoteActionCardProps> = ({
         <DialogContent>
           <Box sx={{ mb: 2 }}>
             <Typography variant="body2" color="text.secondary">
-              Please let us know why you're declining this quote so we can better serve you.
+              Please let us know why you're declining this quote so we can
+              better serve you.
             </Typography>
           </Box>
           <TextField
@@ -241,20 +250,20 @@ export const QuoteActionCard: React.FC<QuoteActionCardProps> = ({
             placeholder="e.g., Budget constraints, different requirements, found alternative..."
             required
             error={!rejectionReason.trim() && rejectQuoteMutation.isPending}
-            helperText={!rejectionReason.trim() ? 'Please provide a reason' : ''}
+            helperText={
+              !rejectionReason.trim() ? "Please provide a reason" : ""
+            }
           />
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setRejectDialogOpen(false)}>
-            Cancel
-          </Button>
+          <Button onClick={() => setRejectDialogOpen(false)}>Cancel</Button>
           <Button
             onClick={handleReject}
             variant="contained"
             color="error"
             disabled={rejectQuoteMutation.isPending || !rejectionReason.trim()}
           >
-            {rejectQuoteMutation.isPending ? 'Rejecting...' : 'Reject Quote'}
+            {rejectQuoteMutation.isPending ? "Rejecting..." : "Reject Quote"}
           </Button>
         </DialogActions>
       </Dialog>

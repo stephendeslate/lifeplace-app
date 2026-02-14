@@ -1,8 +1,8 @@
 // frontend/client-portal/src/pages/contracts/ContractDetail.tsx
 
-import React, { useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import React, { useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import {
   Box,
   Typography,
@@ -17,7 +17,7 @@ import {
   Chip,
   useTheme,
   alpha,
-} from '@mui/material';
+} from "@mui/material";
 import {
   ArrowBack as BackIcon,
   Warning as ExpiredIcon,
@@ -25,11 +25,11 @@ import {
   Edit as SignIcon,
   Event as EventIcon,
   AccessTime as ClockIcon,
-} from '@mui/icons-material';
-import { contractsApi, contractUtils } from '../../apis/contracts.api';
-import { ContractViewer } from '../../components/contracts/ContractViewer';
-import ContractSigningDialog from '../../components/contracts/ContractSigningDialog';
-import { EVENT_TAB_INDICES } from '../events/EventDetail';
+} from "@mui/icons-material";
+import { contractsApi, contractUtils } from "../../apis/contracts.api";
+import { ContractViewer } from "../../components/contracts/ContractViewer";
+import ContractSigningDialog from "../../components/contracts/ContractSigningDialog";
+import { EVENT_TAB_INDICES } from "../events/EventDetail";
 
 const ContractDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -46,13 +46,14 @@ const ContractDetail: React.FC = () => {
     error,
     refetch,
   } = useQuery({
-    queryKey: ['contract', id],
+    queryKey: ["contract", id],
     queryFn: () => contractsApi.getContract(id!),
     enabled: !!id,
     retry: (failureCount, error) => {
       // Don't retry on 404 or 403
-      if (error && typeof error === 'object' && 'response' in error) {
-        const status = (error as { response?: { status?: number } }).response?.status;
+      if (error && typeof error === "object" && "response" in error) {
+        const status = (error as { response?: { status?: number } }).response
+          ?.status;
         if (status === 404 || status === 403) return false;
       }
       return failureCount < 2;
@@ -60,11 +61,15 @@ const ContractDetail: React.FC = () => {
   });
 
   // Determine contract state
-  const isExpired = contract ? contractUtils.isContractExpired(contract) || contract.status === 'EXPIRED' : false;
-  const isVoid = contract?.status === 'VOID';
-  const isSigned = contract?.status === 'SIGNED';
+  const isExpired = contract
+    ? contractUtils.isContractExpired(contract) || contract.status === "EXPIRED"
+    : false;
+  const isVoid = contract?.status === "VOID";
+  const isSigned = contract?.status === "SIGNED";
   const canSign = contract?.can_client_sign && !isExpired && !isVoid;
-  const daysUntilExpiry = contract ? contractUtils.getDaysUntilExpiry(contract.valid_until) : null;
+  const daysUntilExpiry = contract
+    ? contractUtils.getDaysUntilExpiry(contract.valid_until)
+    : null;
 
   const handleBack = () => {
     navigate(-1);
@@ -72,7 +77,9 @@ const ContractDetail: React.FC = () => {
 
   const handleGoToEvent = () => {
     if (contract?.event?.id) {
-      navigate(`/events/${contract.event.id}`, { state: { activeTab: EVENT_TAB_INDICES.CONTRACTS } });
+      navigate(`/events/${contract.event.id}`, {
+        state: { activeTab: EVENT_TAB_INDICES.CONTRACTS },
+      });
     }
   };
 
@@ -86,7 +93,7 @@ const ContractDetail: React.FC = () => {
   };
 
   const handleSignError = (error: string) => {
-    if (import.meta.env.DEV) console.error('Contract signing error:', error);
+    if (import.meta.env.DEV) console.error("Contract signing error:", error);
   };
 
   const handleDownloadPdf = async () => {
@@ -96,15 +103,15 @@ const ContractDetail: React.FC = () => {
     try {
       const blob = await contractsApi.downloadContractPdf(contract.id);
       const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
+      const link = document.createElement("a");
       link.href = url;
-      link.download = `contract-${contract.event.title.replace(/\s+/g, '-')}.pdf`;
+      link.download = `contract-${contract.event.title.replace(/\s+/g, "-")}.pdf`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
     } catch (error) {
-      if (import.meta.env.DEV) console.error('Download failed:', error);
+      if (import.meta.env.DEV) console.error("Download failed:", error);
     } finally {
       setIsDownloading(false);
     }
@@ -126,9 +133,10 @@ const ContractDetail: React.FC = () => {
 
   // Error/Not found state
   if (error || !contract) {
-    const errorStatus = error && typeof error === 'object' && 'response' in error
-      ? (error as { response?: { status?: number } }).response?.status
-      : null;
+    const errorStatus =
+      error && typeof error === "object" && "response" in error
+        ? (error as { response?: { status?: number } }).response?.status
+        : null;
 
     const is403 = errorStatus === 403;
     const is404 = errorStatus === 404;
@@ -137,19 +145,27 @@ const ContractDetail: React.FC = () => {
       <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
         <Alert severity="error" sx={{ mb: 3 }}>
           <AlertTitle>
-            {is403 ? 'Access Denied' : is404 ? 'Contract Not Found' : 'Unable to Load Contract'}
+            {is403
+              ? "Access Denied"
+              : is404
+                ? "Contract Not Found"
+                : "Unable to Load Contract"}
           </AlertTitle>
           {is403
-            ? 'You do not have permission to view this contract.'
+            ? "You do not have permission to view this contract."
             : is404
-            ? 'The contract you are looking for does not exist or has been removed.'
-            : 'There was an error loading the contract details. Please try again.'}
+              ? "The contract you are looking for does not exist or has been removed."
+              : "There was an error loading the contract details. Please try again."}
         </Alert>
         <Stack direction="row" spacing={2}>
-          <Button startIcon={<BackIcon />} onClick={handleBack} variant="outlined">
+          <Button
+            startIcon={<BackIcon />}
+            onClick={handleBack}
+            variant="outlined"
+          >
             Go Back
           </Button>
-          <Button onClick={() => navigate('/documents')} variant="contained">
+          <Button onClick={() => navigate("/documents")} variant="contained">
             View All Documents
           </Button>
         </Stack>
@@ -164,8 +180,8 @@ const ContractDetail: React.FC = () => {
         <Link
           component="button"
           variant="body2"
-          onClick={() => navigate('/documents')}
-          sx={{ textDecoration: 'none' }}
+          onClick={() => navigate("/documents")}
+          sx={{ textDecoration: "none" }}
         >
           Documents
         </Link>
@@ -181,15 +197,15 @@ const ContractDetail: React.FC = () => {
           icon={<ExpiredIcon />}
           sx={{
             mb: 3,
-            '& .MuiAlert-icon': {
-              alignItems: 'center',
+            "& .MuiAlert-icon": {
+              alignItems: "center",
             },
           }}
           action={
             <Button
               color="inherit"
               size="small"
-              onClick={() => navigate('/contact')}
+              onClick={() => navigate("/contact")}
             >
               Contact Us
             </Button>
@@ -197,15 +213,16 @@ const ContractDetail: React.FC = () => {
         >
           <AlertTitle>Contract Expired</AlertTitle>
           <Typography variant="body2">
-            This contract expired on{' '}
+            This contract expired on{" "}
             {contract.valid_until
-              ? new Date(contract.valid_until).toLocaleDateString('en-US', {
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric',
+              ? new Date(contract.valid_until).toLocaleDateString("en-US", {
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
                 })
-              : 'a previous date'}{' '}
-            and can no longer be signed. Please contact us if you need a new contract issued.
+              : "a previous date"}{" "}
+            and can no longer be signed. Please contact us if you need a new
+            contract issued.
           </Typography>
         </Alert>
       )}
@@ -215,31 +232,36 @@ const ContractDetail: React.FC = () => {
         <Alert severity="warning" sx={{ mb: 3 }}>
           <AlertTitle>Contract Voided</AlertTitle>
           <Typography variant="body2">
-            This contract has been voided and is no longer valid. Please contact us if you have questions.
+            This contract has been voided and is no longer valid. Please contact
+            us if you have questions.
           </Typography>
         </Alert>
       )}
 
       {/* Expiring Soon Warning */}
-      {!isExpired && !isVoid && daysUntilExpiry !== null && daysUntilExpiry <= 7 && daysUntilExpiry > 0 && (
-        <Alert
-          severity="warning"
-          icon={<ClockIcon />}
-          sx={{ mb: 3 }}
-        >
-          <AlertTitle>Contract Expiring Soon</AlertTitle>
-          <Typography variant="body2">
-            This contract will expire in {daysUntilExpiry} day{daysUntilExpiry === 1 ? '' : 's'}.
-            {canSign && ' Please sign before the expiration date to avoid delays.'}
-          </Typography>
-        </Alert>
-      )}
+      {!isExpired &&
+        !isVoid &&
+        daysUntilExpiry !== null &&
+        daysUntilExpiry <= 7 &&
+        daysUntilExpiry > 0 && (
+          <Alert severity="warning" icon={<ClockIcon />} sx={{ mb: 3 }}>
+            <AlertTitle>Contract Expiring Soon</AlertTitle>
+            <Typography variant="body2">
+              This contract will expire in {daysUntilExpiry} day
+              {daysUntilExpiry === 1 ? "" : "s"}.
+              {canSign &&
+                " Please sign before the expiration date to avoid delays."}
+            </Typography>
+          </Alert>
+        )}
 
       {/* Sign Disabled Reason */}
       {contract.sign_disabled_reason && !isExpired && !isVoid && (
         <Alert severity="info" sx={{ mb: 3 }}>
           <AlertTitle>Signing Not Available</AlertTitle>
-          <Typography variant="body2">{contract.sign_disabled_reason}</Typography>
+          <Typography variant="body2">
+            {contract.sign_disabled_reason}
+          </Typography>
         </Alert>
       )}
 
@@ -248,16 +270,17 @@ const ContractDetail: React.FC = () => {
         sx={{
           p: 3,
           mb: 3,
-          background: isExpired || isVoid
-            ? `linear-gradient(135deg, ${alpha(theme.palette.error.main, 0.1)} 0%, ${alpha(theme.palette.grey[500], 0.05)} 100%)`
-            : `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.1)} 0%, ${alpha(theme.palette.secondary.main, 0.05)} 100%)`,
+          background:
+            isExpired || isVoid
+              ? `linear-gradient(135deg, ${alpha(theme.palette.error.main, 0.1)} 0%, ${alpha(theme.palette.grey[500], 0.05)} 100%)`
+              : `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.1)} 0%, ${alpha(theme.palette.secondary.main, 0.05)} 100%)`,
           border: `1px solid ${alpha(isExpired || isVoid ? theme.palette.error.main : theme.palette.primary.main, 0.2)}`,
         }}
       >
         <Stack
-          direction={{ xs: 'column', md: 'row' }}
+          direction={{ xs: "column", md: "row" }}
           justifyContent="space-between"
-          alignItems={{ xs: 'flex-start', md: 'center' }}
+          alignItems={{ xs: "flex-start", md: "center" }}
           spacing={2}
         >
           <Box>
@@ -290,7 +313,7 @@ const ContractDetail: React.FC = () => {
                   variant="outlined"
                 />
               )}
-              {isExpired && contract.status !== 'EXPIRED' && (
+              {isExpired && contract.status !== "EXPIRED" && (
                 <Chip
                   icon={<ExpiredIcon />}
                   label="Expired"
@@ -305,13 +328,13 @@ const ContractDetail: React.FC = () => {
               size="small"
               startIcon={<EventIcon />}
               onClick={handleGoToEvent}
-              sx={{ textTransform: 'none' }}
+              sx={{ textTransform: "none" }}
             >
               View Event: {contract.event.title}
             </Button>
           </Box>
 
-          <Stack direction="row" spacing={2}>
+          <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap>
             {isSigned && (
               <Button
                 variant="outlined"
@@ -319,7 +342,7 @@ const ContractDetail: React.FC = () => {
                 onClick={handleDownloadPdf}
                 disabled={isDownloading}
               >
-                {isDownloading ? 'Downloading...' : 'Download PDF'}
+                {isDownloading ? "Downloading..." : "Download PDF"}
               </Button>
             )}
             {canSign && (

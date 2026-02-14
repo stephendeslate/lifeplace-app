@@ -19,6 +19,7 @@ import {
   IconButton,
   Divider,
   useTheme,
+  useMediaQuery,
   alpha,
   Tooltip,
   CircularProgress,
@@ -91,6 +92,7 @@ const TabPanel: React.FC<TabPanelProps> = ({ children, value, index }) => {
 
 const FinancialPortal: React.FC = () => {
   const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const [activeTab, setActiveTab] = useState(0);
   const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
@@ -619,183 +621,359 @@ const FinancialPortal: React.FC = () => {
                   </GlassCard>
                 ) : (
                   <AnimatedElement animation="slideUp" delay={400}>
-                    <GlassCard
-                      variant="light"
-                      intensity="subtle"
-                      sx={{
-                        border: `1px solid ${alpha("#fff", 0.1)}`,
-                        overflow: "hidden",
-                      }}
-                    >
-                      <TableContainer sx={{ backgroundColor: "transparent" }}>
-                        <Table>
-                          <TableHead>
-                            <TableRow>
-                              <TableCell>Payment</TableCell>
-                              <TableCell>Amount</TableCell>
-                              <TableCell>Method</TableCell>
-                              <TableCell>Status</TableCell>
-                              <TableCell>Date</TableCell>
-                              <TableCell width="100">Actions</TableCell>
-                            </TableRow>
-                          </TableHead>
-                          <TableBody>
-                            {(Array.isArray(payments) ? payments : []).map(
-                              (payment) => (
-                                <TableRow key={payment.id} hover>
-                                  <TableCell>
-                                    <Box
-                                      display="flex"
-                                      alignItems="center"
-                                      gap={1}
+                    {isMobile ? (
+                      /* Mobile: Card layout for payments */
+                      <Stack spacing={1.5}>
+                        {(Array.isArray(payments) ? payments : []).map(
+                          (payment) => (
+                            <GlassCard
+                              key={payment.id}
+                              variant="light"
+                              intensity="subtle"
+                              sx={{
+                                p: 2,
+                                border: `1px solid ${alpha("#fff", 0.1)}`,
+                              }}
+                            >
+                              {/* Top row: description + status chip */}
+                              <Box
+                                display="flex"
+                                justifyContent="space-between"
+                                alignItems="flex-start"
+                                gap={1}
+                                mb={1}
+                              >
+                                <Box sx={{ minWidth: 0, flex: 1 }}>
+                                  <Typography
+                                    variant="body2"
+                                    fontWeight="medium"
+                                    noWrap
+                                  >
+                                    {payment.description ||
+                                      payment.payment_number}
+                                  </Typography>
+                                  <Typography
+                                    variant="caption"
+                                    color="text.secondary"
+                                  >
+                                    {payment.payment_number}
+                                  </Typography>
+                                </Box>
+                                <Chip
+                                  icon={getPaymentStatusIcon(payment.status)}
+                                  label={payment.status_display}
+                                  size="small"
+                                  color={getPaymentStatusColor(payment.status)}
+                                  variant="outlined"
+                                  sx={{ flexShrink: 0, fontSize: "0.7rem" }}
+                                />
+                              </Box>
+
+                              {/* Amount */}
+                              <Typography
+                                variant="h6"
+                                sx={{ fontWeight: 600, mb: 1 }}
+                              >
+                                {FinancialApi.formatAmount(
+                                  payment.amount,
+                                  payment.currency,
+                                )}
+                              </Typography>
+
+                              {/* Info row: method + date */}
+                              <Stack
+                                direction="row"
+                                spacing={1}
+                                alignItems="center"
+                                justifyContent="space-between"
+                                flexWrap="wrap"
+                                useFlexGap
+                                sx={{ mb: 1.5 }}
+                              >
+                                <Box
+                                  display="flex"
+                                  alignItems="center"
+                                  gap={0.5}
+                                >
+                                  {payment.payment_method_details ? (
+                                    <>
+                                      {getPaymentMethodIcon(
+                                        payment.payment_method_details.type,
+                                      )}
+                                      <Typography
+                                        variant="caption"
+                                        color="text.secondary"
+                                      >
+                                        {
+                                          payment.payment_method_details
+                                            .type_display
+                                        }
+                                      </Typography>
+                                    </>
+                                  ) : payment.inferred_payment_method ? (
+                                    <>
+                                      {getPaymentMethodIcon(
+                                        payment.inferred_payment_method.type,
+                                      )}
+                                      <Typography
+                                        variant="caption"
+                                        color="text.secondary"
+                                      >
+                                        {
+                                          payment.inferred_payment_method
+                                            .type_display
+                                        }
+                                      </Typography>
+                                    </>
+                                  ) : (
+                                    <Typography
+                                      variant="caption"
+                                      color="text.secondary"
                                     >
-                                      <Box>
-                                        <Typography
-                                          variant="body2"
-                                          fontWeight="medium"
-                                        >
-                                          {payment.description ||
-                                            payment.payment_number}
-                                        </Typography>
-                                        <Typography
-                                          variant="caption"
-                                          color="text.secondary"
-                                        >
-                                          {payment.payment_number}
-                                        </Typography>
-                                        {payment.event_details && (
+                                      {payment.is_manual
+                                        ? "Manual Payment"
+                                        : "Not specified"}
+                                    </Typography>
+                                  )}
+                                </Box>
+                                <Typography
+                                  variant="caption"
+                                  color="text.secondary"
+                                >
+                                  {payment.paid_on
+                                    ? new Date(
+                                        payment.paid_on,
+                                      ).toLocaleDateString()
+                                    : new Date(
+                                        payment.due_date,
+                                      ).toLocaleDateString()}
+                                </Typography>
+                              </Stack>
+
+                              {/* Action buttons */}
+                              <Stack
+                                direction="row"
+                                spacing={1}
+                                flexWrap="wrap"
+                                useFlexGap
+                              >
+                                <Button
+                                  size="small"
+                                  variant="outlined"
+                                  startIcon={<ViewIcon />}
+                                  onClick={() => handleViewPayment(payment)}
+                                  sx={{ fontSize: "0.75rem" }}
+                                >
+                                  View
+                                </Button>
+                                {payment.receipt_number && (
+                                  <Button
+                                    size="small"
+                                    variant="outlined"
+                                    startIcon={
+                                      downloadReceiptMutation.isPending ? (
+                                        <CircularProgress size={14} />
+                                      ) : (
+                                        <DownloadIcon />
+                                      )
+                                    }
+                                    onClick={() =>
+                                      handleDownloadReceipt(payment.id)
+                                    }
+                                    disabled={downloadReceiptMutation.isPending}
+                                    sx={{ fontSize: "0.75rem" }}
+                                  >
+                                    Receipt
+                                  </Button>
+                                )}
+                              </Stack>
+                            </GlassCard>
+                          ),
+                        )}
+                      </Stack>
+                    ) : (
+                      /* Desktop: Table layout for payments */
+                      <GlassCard
+                        variant="light"
+                        intensity="subtle"
+                        sx={{
+                          border: `1px solid ${alpha("#fff", 0.1)}`,
+                          overflow: "hidden",
+                        }}
+                      >
+                        <TableContainer sx={{ backgroundColor: "transparent" }}>
+                          <Table>
+                            <TableHead>
+                              <TableRow>
+                                <TableCell>Payment</TableCell>
+                                <TableCell>Amount</TableCell>
+                                <TableCell>Method</TableCell>
+                                <TableCell>Status</TableCell>
+                                <TableCell>Date</TableCell>
+                                <TableCell width="100">Actions</TableCell>
+                              </TableRow>
+                            </TableHead>
+                            <TableBody>
+                              {(Array.isArray(payments) ? payments : []).map(
+                                (payment) => (
+                                  <TableRow key={payment.id} hover>
+                                    <TableCell>
+                                      <Box
+                                        display="flex"
+                                        alignItems="center"
+                                        gap={1}
+                                      >
+                                        <Box>
+                                          <Typography
+                                            variant="body2"
+                                            fontWeight="medium"
+                                          >
+                                            {payment.description ||
+                                              payment.payment_number}
+                                          </Typography>
                                           <Typography
                                             variant="caption"
-                                            display="block"
-                                            sx={{ color: "primary.main" }}
+                                            color="text.secondary"
                                           >
-                                            Event #{payment.event_details.id}
+                                            {payment.payment_number}
+                                          </Typography>
+                                          {payment.event_details && (
+                                            <Typography
+                                              variant="caption"
+                                              display="block"
+                                              sx={{ color: "primary.main" }}
+                                            >
+                                              Event #{payment.event_details.id}
+                                            </Typography>
+                                          )}
+                                        </Box>
+                                      </Box>
+                                    </TableCell>
+                                    <TableCell>
+                                      <Typography
+                                        variant="body2"
+                                        sx={{ fontWeight: 600 }}
+                                      >
+                                        {FinancialApi.formatAmount(
+                                          payment.amount,
+                                          payment.currency,
+                                        )}
+                                      </Typography>
+                                    </TableCell>
+                                    <TableCell>
+                                      <Box
+                                        display="flex"
+                                        alignItems="center"
+                                        gap={1}
+                                      >
+                                        {payment.payment_method_details ? (
+                                          <>
+                                            {getPaymentMethodIcon(
+                                              payment.payment_method_details
+                                                .type,
+                                            )}
+                                            <Typography variant="body2">
+                                              {
+                                                payment.payment_method_details
+                                                  .type_display
+                                              }
+                                            </Typography>
+                                          </>
+                                        ) : payment.inferred_payment_method ? (
+                                          <>
+                                            {getPaymentMethodIcon(
+                                              payment.inferred_payment_method
+                                                .type,
+                                            )}
+                                            <Typography variant="body2">
+                                              {
+                                                payment.inferred_payment_method
+                                                  .type_display
+                                              }
+                                            </Typography>
+                                          </>
+                                        ) : (
+                                          <Typography
+                                            variant="body2"
+                                            color="text.secondary"
+                                          >
+                                            {payment.is_manual
+                                              ? "Manual Payment"
+                                              : "Not specified"}
                                           </Typography>
                                         )}
                                       </Box>
-                                    </Box>
-                                  </TableCell>
-                                  <TableCell>
-                                    <Typography
-                                      variant="body2"
-                                      sx={{ fontWeight: 600 }}
-                                    >
-                                      {FinancialApi.formatAmount(
-                                        payment.amount,
-                                        payment.currency,
-                                      )}
-                                    </Typography>
-                                  </TableCell>
-                                  <TableCell>
-                                    <Box
-                                      display="flex"
-                                      alignItems="center"
-                                      gap={1}
-                                    >
-                                      {payment.payment_method_details ? (
-                                        <>
-                                          {getPaymentMethodIcon(
-                                            payment.payment_method_details.type,
-                                          )}
-                                          <Typography variant="body2">
-                                            {
-                                              payment.payment_method_details
-                                                .type_display
-                                            }
-                                          </Typography>
-                                        </>
-                                      ) : payment.inferred_payment_method ? (
-                                        <>
-                                          {getPaymentMethodIcon(
-                                            payment.inferred_payment_method
-                                              .type,
-                                          )}
-                                          <Typography variant="body2">
-                                            {
-                                              payment.inferred_payment_method
-                                                .type_display
-                                            }
-                                          </Typography>
-                                        </>
-                                      ) : (
-                                        <Typography
-                                          variant="body2"
-                                          color="text.secondary"
-                                        >
-                                          {payment.is_manual
-                                            ? "Manual Payment"
-                                            : "Not specified"}
-                                        </Typography>
-                                      )}
-                                    </Box>
-                                  </TableCell>
-                                  <TableCell>
-                                    <Chip
-                                      icon={getPaymentStatusIcon(
-                                        payment.status,
-                                      )}
-                                      label={payment.status_display}
-                                      size="small"
-                                      color={getPaymentStatusColor(
-                                        payment.status,
-                                      )}
-                                      variant="outlined"
-                                    />
-                                  </TableCell>
-                                  <TableCell>
-                                    <Typography
-                                      variant="body2"
-                                      color="text.secondary"
-                                    >
-                                      {payment.paid_on
-                                        ? new Date(
-                                            payment.paid_on,
-                                          ).toLocaleDateString()
-                                        : new Date(
-                                            payment.due_date,
-                                          ).toLocaleDateString()}
-                                    </Typography>
-                                  </TableCell>
-                                  <TableCell>
-                                    <Stack direction="row" spacing={1}>
-                                      <Tooltip title="View Details">
-                                        <IconButton
-                                          size="small"
-                                          onClick={() =>
-                                            handleViewPayment(payment)
-                                          }
-                                        >
-                                          <ViewIcon fontSize="small" />
-                                        </IconButton>
-                                      </Tooltip>
-                                      {payment.receipt_number && (
-                                        <Tooltip title="Download Receipt">
+                                    </TableCell>
+                                    <TableCell>
+                                      <Chip
+                                        icon={getPaymentStatusIcon(
+                                          payment.status,
+                                        )}
+                                        label={payment.status_display}
+                                        size="small"
+                                        color={getPaymentStatusColor(
+                                          payment.status,
+                                        )}
+                                        variant="outlined"
+                                      />
+                                    </TableCell>
+                                    <TableCell>
+                                      <Typography
+                                        variant="body2"
+                                        color="text.secondary"
+                                      >
+                                        {payment.paid_on
+                                          ? new Date(
+                                              payment.paid_on,
+                                            ).toLocaleDateString()
+                                          : new Date(
+                                              payment.due_date,
+                                            ).toLocaleDateString()}
+                                      </Typography>
+                                    </TableCell>
+                                    <TableCell>
+                                      <Stack direction="row" spacing={1}>
+                                        <Tooltip title="View Details">
                                           <IconButton
                                             size="small"
                                             onClick={() =>
-                                              handleDownloadReceipt(payment.id)
-                                            }
-                                            disabled={
-                                              downloadReceiptMutation.isPending
+                                              handleViewPayment(payment)
                                             }
                                           >
-                                            {downloadReceiptMutation.isPending ? (
-                                              <CircularProgress size={14} />
-                                            ) : (
-                                              <DownloadIcon fontSize="small" />
-                                            )}
+                                            <ViewIcon fontSize="small" />
                                           </IconButton>
                                         </Tooltip>
-                                      )}
-                                    </Stack>
-                                  </TableCell>
-                                </TableRow>
-                              ),
-                            )}
-                          </TableBody>
-                        </Table>
-                      </TableContainer>
-                    </GlassCard>
+                                        {payment.receipt_number && (
+                                          <Tooltip title="Download Receipt">
+                                            <IconButton
+                                              size="small"
+                                              onClick={() =>
+                                                handleDownloadReceipt(
+                                                  payment.id,
+                                                )
+                                              }
+                                              disabled={
+                                                downloadReceiptMutation.isPending
+                                              }
+                                            >
+                                              {downloadReceiptMutation.isPending ? (
+                                                <CircularProgress size={14} />
+                                              ) : (
+                                                <DownloadIcon fontSize="small" />
+                                              )}
+                                            </IconButton>
+                                          </Tooltip>
+                                        )}
+                                      </Stack>
+                                    </TableCell>
+                                  </TableRow>
+                                ),
+                              )}
+                            </TableBody>
+                          </Table>
+                        </TableContainer>
+                      </GlassCard>
+                    )}
                   </AnimatedElement>
                 )}
               </Box>
@@ -1361,175 +1539,345 @@ const FinancialPortal: React.FC = () => {
                   </GlassCard>
                 ) : (
                   <AnimatedElement animation="slideUp" delay={400}>
-                    <GlassCard
-                      variant="light"
-                      intensity="subtle"
-                      sx={{
-                        border: `1px solid ${alpha("#fff", 0.1)}`,
-                        overflow: "hidden",
-                      }}
-                    >
-                      <TableContainer sx={{ backgroundColor: "transparent" }}>
-                        <Table>
-                          <TableHead>
-                            <TableRow>
-                              <TableCell>Payment Method</TableCell>
-                              <TableCell>Type</TableCell>
-                              <TableCell>Details</TableCell>
-                              <TableCell>Status</TableCell>
-                              <TableCell>Created</TableCell>
-                              <TableCell width="120">Actions</TableCell>
-                            </TableRow>
-                          </TableHead>
-                          <TableBody>
-                            {(Array.isArray(paymentMethods)
-                              ? paymentMethods
-                              : []
-                            ).map((method) => (
-                              <TableRow key={method.id} hover>
-                                <TableCell>
-                                  <Box
-                                    display="flex"
-                                    alignItems="center"
-                                    gap={2}
-                                  >
-                                    {getPaymentMethodIcon(method.type)}
-                                    <Box>
-                                      <Typography
-                                        variant="body2"
-                                        fontWeight="medium"
-                                      >
-                                        {method.nickname || method.type_display}
-                                      </Typography>
-                                      {method.is_default && (
-                                        <Chip
-                                          label="Default"
-                                          size="small"
-                                          color="primary"
-                                          variant="outlined"
-                                          sx={{
-                                            mt: 0.5,
-                                            height: 20,
-                                            fontSize: "0.7rem",
-                                            backgroundColor: alpha(
-                                              theme.palette.primary.main,
-                                              0.1,
-                                            ),
-                                          }}
-                                        />
-                                      )}
-                                    </Box>
-                                  </Box>
-                                </TableCell>
-                                <TableCell>
-                                  <Typography variant="body2">
-                                    {method.type_display}
-                                  </Typography>
-                                </TableCell>
-                                <TableCell>
+                    {isMobile ? (
+                      /* Mobile: Card layout for payment methods */
+                      <Stack spacing={1.5}>
+                        {(Array.isArray(paymentMethods)
+                          ? paymentMethods
+                          : []
+                        ).map((method) => (
+                          <GlassCard
+                            key={method.id}
+                            variant="light"
+                            intensity="subtle"
+                            sx={{
+                              p: 2,
+                              border: `1px solid ${alpha("#fff", 0.1)}`,
+                            }}
+                          >
+                            {/* Top row: icon + name + default chip */}
+                            <Box
+                              display="flex"
+                              alignItems="center"
+                              gap={1.5}
+                              mb={1}
+                            >
+                              {getPaymentMethodIcon(method.type)}
+                              <Box sx={{ flex: 1, minWidth: 0 }}>
+                                <Typography variant="body2" fontWeight="medium">
+                                  {method.nickname || method.type_display}
+                                </Typography>
+                              </Box>
+                              {method.is_default && (
+                                <Chip
+                                  label="Default"
+                                  size="small"
+                                  color="primary"
+                                  variant="outlined"
+                                  sx={{
+                                    height: 20,
+                                    fontSize: "0.7rem",
+                                    flexShrink: 0,
+                                    backgroundColor: alpha(
+                                      theme.palette.primary.main,
+                                      0.1,
+                                    ),
+                                  }}
+                                />
+                              )}
+                            </Box>
+
+                            {/* Info: type, details, expiry, created */}
+                            <Stack spacing={0.5} sx={{ mb: 1.5 }}>
+                              <Box
+                                display="flex"
+                                justifyContent="space-between"
+                              >
+                                <Typography
+                                  variant="caption"
+                                  color="text.secondary"
+                                >
+                                  Type
+                                </Typography>
+                                <Typography variant="caption">
+                                  {method.type_display}
+                                </Typography>
+                              </Box>
+                              <Box
+                                display="flex"
+                                justifyContent="space-between"
+                              >
+                                <Typography
+                                  variant="caption"
+                                  color="text.secondary"
+                                >
+                                  Details
+                                </Typography>
+                                <Typography variant="caption">
+                                  {method.last_four
+                                    ? `•••• ${method.last_four}`
+                                    : "No details"}
+                                </Typography>
+                              </Box>
+                              {method.expiry_date && (
+                                <Box
+                                  display="flex"
+                                  justifyContent="space-between"
+                                >
                                   <Typography
-                                    variant="body2"
+                                    variant="caption"
                                     color="text.secondary"
                                   >
-                                    {method.last_four
-                                      ? `•••• ${method.last_four}`
-                                      : "No details"}
+                                    Expires
                                   </Typography>
-                                  {method.expiry_date && (
+                                  <Typography variant="caption">
+                                    {new Date(
+                                      method.expiry_date,
+                                    ).toLocaleDateString("en-US", {
+                                      month: "2-digit",
+                                      year: "2-digit",
+                                    })}
+                                  </Typography>
+                                </Box>
+                              )}
+                              <Box
+                                display="flex"
+                                justifyContent="space-between"
+                                alignItems="center"
+                              >
+                                <Typography
+                                  variant="caption"
+                                  color="text.secondary"
+                                >
+                                  Created
+                                </Typography>
+                                <Typography variant="caption">
+                                  {new Date(
+                                    method.created_at,
+                                  ).toLocaleDateString()}
+                                </Typography>
+                              </Box>
+                            </Stack>
+
+                            {/* Action buttons */}
+                            <Stack
+                              direction="row"
+                              spacing={1}
+                              justifyContent="flex-end"
+                            >
+                              <IconButton
+                                size="small"
+                                onClick={() => handleEditPaymentMethod(method)}
+                                sx={{
+                                  backgroundColor: alpha("#fff", 0.1),
+                                  "&:hover": {
+                                    backgroundColor: alpha("#fff", 0.2),
+                                  },
+                                }}
+                              >
+                                <EditIcon fontSize="small" />
+                              </IconButton>
+                              <IconButton
+                                size="small"
+                                color="error"
+                                onClick={() =>
+                                  handleDeletePaymentMethod(method)
+                                }
+                                sx={{
+                                  backgroundColor: alpha(
+                                    theme.palette.error.main,
+                                    0.1,
+                                  ),
+                                  "&:hover": {
+                                    backgroundColor: alpha(
+                                      theme.palette.error.main,
+                                      0.2,
+                                    ),
+                                  },
+                                }}
+                              >
+                                <DeleteIcon fontSize="small" />
+                              </IconButton>
+                            </Stack>
+                          </GlassCard>
+                        ))}
+                      </Stack>
+                    ) : (
+                      /* Desktop: Table layout for payment methods */
+                      <GlassCard
+                        variant="light"
+                        intensity="subtle"
+                        sx={{
+                          border: `1px solid ${alpha("#fff", 0.1)}`,
+                          overflow: "hidden",
+                        }}
+                      >
+                        <TableContainer sx={{ backgroundColor: "transparent" }}>
+                          <Table>
+                            <TableHead>
+                              <TableRow>
+                                <TableCell>Payment Method</TableCell>
+                                <TableCell>Type</TableCell>
+                                <TableCell>Details</TableCell>
+                                <TableCell>Status</TableCell>
+                                <TableCell>Created</TableCell>
+                                <TableCell width="120">Actions</TableCell>
+                              </TableRow>
+                            </TableHead>
+                            <TableBody>
+                              {(Array.isArray(paymentMethods)
+                                ? paymentMethods
+                                : []
+                              ).map((method) => (
+                                <TableRow key={method.id} hover>
+                                  <TableCell>
+                                    <Box
+                                      display="flex"
+                                      alignItems="center"
+                                      gap={2}
+                                    >
+                                      {getPaymentMethodIcon(method.type)}
+                                      <Box>
+                                        <Typography
+                                          variant="body2"
+                                          fontWeight="medium"
+                                        >
+                                          {method.nickname ||
+                                            method.type_display}
+                                        </Typography>
+                                        {method.is_default && (
+                                          <Chip
+                                            label="Default"
+                                            size="small"
+                                            color="primary"
+                                            variant="outlined"
+                                            sx={{
+                                              mt: 0.5,
+                                              height: 20,
+                                              fontSize: "0.7rem",
+                                              backgroundColor: alpha(
+                                                theme.palette.primary.main,
+                                                0.1,
+                                              ),
+                                            }}
+                                          />
+                                        )}
+                                      </Box>
+                                    </Box>
+                                  </TableCell>
+                                  <TableCell>
+                                    <Typography variant="body2">
+                                      {method.type_display}
+                                    </Typography>
+                                  </TableCell>
+                                  <TableCell>
                                     <Typography
-                                      variant="caption"
-                                      display="block"
+                                      variant="body2"
                                       color="text.secondary"
                                     >
-                                      Expires:{" "}
-                                      {new Date(
-                                        method.expiry_date,
-                                      ).toLocaleDateString("en-US", {
-                                        month: "2-digit",
-                                        year: "2-digit",
-                                      })}
+                                      {method.last_four
+                                        ? `•••• ${method.last_four}`
+                                        : "No details"}
                                     </Typography>
-                                  )}
-                                </TableCell>
-                                <TableCell>
-                                  <Chip
-                                    label="Active"
-                                    size="small"
-                                    color="success"
-                                    variant="outlined"
-                                  />
-                                </TableCell>
-                                <TableCell>
-                                  <Typography
-                                    variant="body2"
-                                    color="text.secondary"
-                                  >
-                                    {new Date(
-                                      method.created_at,
-                                    ).toLocaleDateString()}
-                                  </Typography>
-                                </TableCell>
-                                <TableCell>
-                                  <Stack direction="row" spacing={1}>
-                                    <Tooltip title="Edit Method">
-                                      <IconButton
-                                        size="small"
-                                        onClick={() =>
-                                          handleEditPaymentMethod(method)
-                                        }
-                                        sx={{
-                                          backgroundColor: alpha("#fff", 0.1),
-                                          "&:hover": {
-                                            backgroundColor: alpha("#fff", 0.2),
-                                          },
-                                        }}
+                                    {method.expiry_date && (
+                                      <Typography
+                                        variant="caption"
+                                        display="block"
+                                        color="text.secondary"
                                       >
-                                        <EditIcon fontSize="small" />
-                                      </IconButton>
-                                    </Tooltip>
-                                    <Tooltip title="Delete Method">
-                                      <IconButton
-                                        size="small"
-                                        color="error"
-                                        onClick={() =>
-                                          handleDeletePaymentMethod(method)
-                                        }
-                                        sx={{
-                                          backgroundColor: alpha(
-                                            theme.palette.error.main,
-                                            0.1,
-                                          ),
-                                          "&:hover": {
+                                        Expires:{" "}
+                                        {new Date(
+                                          method.expiry_date,
+                                        ).toLocaleDateString("en-US", {
+                                          month: "2-digit",
+                                          year: "2-digit",
+                                        })}
+                                      </Typography>
+                                    )}
+                                  </TableCell>
+                                  <TableCell>
+                                    <Chip
+                                      label="Active"
+                                      size="small"
+                                      color="success"
+                                      variant="outlined"
+                                    />
+                                  </TableCell>
+                                  <TableCell>
+                                    <Typography
+                                      variant="body2"
+                                      color="text.secondary"
+                                    >
+                                      {new Date(
+                                        method.created_at,
+                                      ).toLocaleDateString()}
+                                    </Typography>
+                                  </TableCell>
+                                  <TableCell>
+                                    <Stack direction="row" spacing={1}>
+                                      <Tooltip title="Edit Method">
+                                        <IconButton
+                                          size="small"
+                                          onClick={() =>
+                                            handleEditPaymentMethod(method)
+                                          }
+                                          sx={{
+                                            backgroundColor: alpha("#fff", 0.1),
+                                            "&:hover": {
+                                              backgroundColor: alpha(
+                                                "#fff",
+                                                0.2,
+                                              ),
+                                            },
+                                          }}
+                                        >
+                                          <EditIcon fontSize="small" />
+                                        </IconButton>
+                                      </Tooltip>
+                                      <Tooltip title="Delete Method">
+                                        <IconButton
+                                          size="small"
+                                          color="error"
+                                          onClick={() =>
+                                            handleDeletePaymentMethod(method)
+                                          }
+                                          sx={{
                                             backgroundColor: alpha(
                                               theme.palette.error.main,
-                                              0.2,
+                                              0.1,
                                             ),
-                                          },
-                                        }}
-                                      >
-                                        <DeleteIcon fontSize="small" />
-                                      </IconButton>
-                                    </Tooltip>
-                                  </Stack>
-                                </TableCell>
-                              </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
-                      </TableContainer>
+                                            "&:hover": {
+                                              backgroundColor: alpha(
+                                                theme.palette.error.main,
+                                                0.2,
+                                              ),
+                                            },
+                                          }}
+                                        >
+                                          <DeleteIcon fontSize="small" />
+                                        </IconButton>
+                                      </Tooltip>
+                                    </Stack>
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </TableContainer>
+                      </GlassCard>
+                    )}
 
-                      {paymentMethodsLoading && (
-                        <Box
-                          sx={{
-                            display: "flex",
-                            justifyContent: "center",
-                            p: 2,
-                          }}
-                        >
-                          <CircularProgress size={24} />
-                        </Box>
-                      )}
-                    </GlassCard>
+                    {paymentMethodsLoading && (
+                      <Box
+                        sx={{
+                          display: "flex",
+                          justifyContent: "center",
+                          p: 2,
+                        }}
+                      >
+                        <CircularProgress size={24} />
+                      </Box>
+                    )}
                   </AnimatedElement>
                 )}
               </Box>

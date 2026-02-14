@@ -1,8 +1,13 @@
 // frontend/client-portal/src/pages/events/EventDetail.tsx
 
-import React, { useState } from 'react';
-import { useParams, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
-import { useCurrencySettings } from '../../hooks/useCurrency';
+import React, { useState } from "react";
+import {
+  useParams,
+  useNavigate,
+  useLocation,
+  useSearchParams,
+} from "react-router-dom";
+import { useCurrencySettings } from "../../hooks/useCurrency";
 import {
   Box,
   Typography,
@@ -24,7 +29,7 @@ import {
   Chip,
   useTheme,
   alpha,
-} from '@mui/material';
+} from "@mui/material";
 import {
   ArrowBack as BackIcon,
   Share as ShareIcon,
@@ -41,11 +46,11 @@ import {
   Receipt as InvoiceIcon,
   Login as CheckInIcon,
   Note as NotesIcon,
-} from '@mui/icons-material';
-import { useEventsWithContracts } from '../../hooks/useEventsWithContracts';
-import { formatPhilippinesTime } from '../../utils/timezone';
-import { useEventQuotes } from '../../hooks/useEventQuotes';
-import { useInvoices } from '../../hooks/useFinancial';
+} from "@mui/icons-material";
+import { useEventsWithContracts } from "../../hooks/useEventsWithContracts";
+import { formatPhilippinesTime } from "../../utils/timezone";
+import { useEventQuotes } from "../../hooks/useEventQuotes";
+import { useInvoices } from "../../hooks/useFinancial";
 import {
   EventStatusBadge,
   EventCountdown,
@@ -59,11 +64,11 @@ import {
   EventNotes,
   ContractStatusChip,
   EventMilestones,
-} from '../../components/events';
-import { EventCheckIn } from '../../components/events/EventCheckIn';
-import ContractSigningDialog from '../../components/contracts/ContractSigningDialog';
-import { contractsApi } from '../../apis/contracts.api';
-import type { Contract } from '../../types/contracts.types';
+} from "../../components/events";
+import { EventCheckIn } from "../../components/events/EventCheckIn";
+import ContractSigningDialog from "../../components/contracts/ContractSigningDialog";
+import { contractsApi } from "../../apis/contracts.api";
+import type { Contract } from "../../types/contracts.types";
 
 /**
  * Tab index constants for EventDetail page.
@@ -83,7 +88,8 @@ export const EVENT_TAB_INDICES = {
   NOTES: 9,
 } as const;
 
-export type EventTabIndex = typeof EVENT_TAB_INDICES[keyof typeof EVENT_TAB_INDICES];
+export type EventTabIndex =
+  (typeof EVENT_TAB_INDICES)[keyof typeof EVENT_TAB_INDICES];
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -91,7 +97,12 @@ interface TabPanelProps {
   value: number;
 }
 
-const TabPanel: React.FC<TabPanelProps> = ({ children, value, index, ...other }) => {
+const TabPanel: React.FC<TabPanelProps> = ({
+  children,
+  value,
+  index,
+  ...other
+}) => {
   return (
     <div
       role="tabpanel"
@@ -100,11 +111,7 @@ const TabPanel: React.FC<TabPanelProps> = ({ children, value, index, ...other })
       aria-labelledby={`event-tab-${index}`}
       {...other}
     >
-      {value === index && (
-        <Box sx={{ py: 3 }}>
-          {children}
-        </Box>
-      )}
+      {value === index && <Box sx={{ py: 3 }}>{children}</Box>}
     </div>
   );
 };
@@ -123,10 +130,14 @@ const EventDetail: React.FC = () => {
   // 3. Default to 0 (Timeline)
   const [activeTab, setActiveTab] = useState(() => {
     // First check URL query param for deep linking support
-    const tabParam = searchParams.get('tab');
+    const tabParam = searchParams.get("tab");
     if (tabParam !== null) {
       const tabIndex = parseInt(tabParam, 10);
-      if (!isNaN(tabIndex) && tabIndex >= 0 && tabIndex <= EVENT_TAB_INDICES.NOTES) {
+      if (
+        !isNaN(tabIndex) &&
+        tabIndex >= 0 &&
+        tabIndex <= EVENT_TAB_INDICES.NOTES
+      ) {
         return tabIndex;
       }
     }
@@ -134,37 +145,38 @@ const EventDetail: React.FC = () => {
     return (location.state as { activeTab?: number })?.activeTab ?? 0;
   });
   const [preferencesDialogOpen, setPreferencesDialogOpen] = useState(false);
-  const [preferencesData, setPreferencesData] = useState<Record<string, unknown>>({});
+  const [preferencesData, setPreferencesData] = useState<
+    Record<string, unknown>
+  >({});
   const [signingDialogOpen, setSigningDialogOpen] = useState(false);
-  const [selectedContract, setSelectedContract] = useState<Contract | null>(null);
+  const [selectedContract, setSelectedContract] = useState<Contract | null>(
+    null,
+  );
 
   // Data fetching with contract integration
-  const eventId = parseInt(id || '0');
-  const { useEventWithContracts, useUpdatePreferences, useEventContracts } = useEventsWithContracts();
+  const eventId = parseInt(id || "0");
+  const { useEventWithContracts, useUpdatePreferences, useEventContracts } =
+    useEventsWithContracts();
 
   const {
     data: event,
     isLoading: isLoadingEvent,
-    error: eventError
+    error: eventError,
   } = useEventWithContracts(eventId);
-  
+
   // Get contracts for this event
   const {
     contracts: eventContracts,
     isLoading: isLoadingContracts,
-    needsSignature
+    needsSignature,
   } = useEventContracts(eventId);
 
   // Get quotes for this event
-  const {
-    data: quotesData
-  } = useEventQuotes(eventId);
+  const { data: quotesData } = useEventQuotes(eventId);
   const quotesCount = quotesData?.results?.length || 0;
 
   // Get invoices for this event
-  const {
-    data: invoicesData
-  } = useInvoices({ event: eventId });
+  const { data: invoicesData } = useInvoices({ event: eventId });
   const invoicesCount = invoicesData?.results?.length || 0;
 
   // Mutations
@@ -178,7 +190,7 @@ const EventDetail: React.FC = () => {
   };
 
   const handleBack = () => {
-    navigate('/events');
+    navigate("/events");
   };
 
   const handlePreferencesOpen = () => {
@@ -202,7 +214,7 @@ const EventDetail: React.FC = () => {
   };
 
   const handlePreferenceChange = (key: string, value: unknown) => {
-    setPreferencesData(prev => ({
+    setPreferencesData((prev) => ({
       ...prev,
       [key]: value,
     }));
@@ -215,7 +227,8 @@ const EventDetail: React.FC = () => {
       setSelectedContract(fullContract);
       setSigningDialogOpen(true);
     } catch (error) {
-      if (import.meta.env.DEV) console.error('Error fetching contract details for signing:', error);
+      if (import.meta.env.DEV)
+        console.error("Error fetching contract details for signing:", error);
       // Fallback to showing contract without content
       setSelectedContract(contract);
       setSigningDialogOpen(true);
@@ -231,7 +244,7 @@ const EventDetail: React.FC = () => {
   };
 
   const handleSignError = (error: string) => {
-    if (import.meta.env.DEV) console.error('Contract signing error:', error);
+    if (import.meta.env.DEV) console.error("Contract signing error:", error);
     // Error is already shown in the dialog
   };
 
@@ -254,7 +267,7 @@ const EventDetail: React.FC = () => {
     return (
       <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
         <Alert severity="error" sx={{ mb: 3 }}>
-          {eventError ? 'Unable to load event details.' : 'Event not found.'}
+          {eventError ? "Unable to load event details." : "Event not found."}
         </Alert>
         <Button startIcon={<BackIcon />} onClick={handleBack}>
           Back to Events
@@ -271,7 +284,7 @@ const EventDetail: React.FC = () => {
           component="button"
           variant="body2"
           onClick={handleBack}
-          sx={{ textDecoration: 'none' }}
+          sx={{ textDecoration: "none" }}
         >
           Events
         </Link>
@@ -290,9 +303,9 @@ const EventDetail: React.FC = () => {
         }}
       >
         <Stack
-          direction={{ xs: 'column', md: 'row' }}
+          direction={{ xs: "column", md: "row" }}
           justifyContent="space-between"
-          alignItems={{ xs: 'flex-start', md: 'center' }}
+          alignItems={{ xs: "flex-start", md: "center" }}
           spacing={3}
         >
           <Box flex={1}>
@@ -318,12 +331,15 @@ const EventDetail: React.FC = () => {
               {event.payment_status && (
                 <Chip
                   icon={<PaymentIcon fontSize="small" />}
-                  label={event.payment_status.replace('_', ' ')}
+                  label={event.payment_status.replace("_", " ")}
                   color={
-                    event.payment_status === 'PAID' ? 'success' :
-                    event.payment_status === 'OVERDUE' ? 'error' :
-                    event.payment_status === 'PARTIAL' ? 'warning' :
-                    'default'
+                    event.payment_status === "PAID"
+                      ? "success"
+                      : event.payment_status === "OVERDUE"
+                        ? "error"
+                        : event.payment_status === "PARTIAL"
+                          ? "warning"
+                          : "default"
                   }
                   variant="outlined"
                 />
@@ -339,42 +355,71 @@ const EventDetail: React.FC = () => {
               />
             </Stack>
 
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+            <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2 }}>
               {event.start_date && (
-                <Box sx={(theme) => ({
-                  flexGrow: 0,
-                  flexBasis: { xs: '100%', sm: `calc(50% - ${theme.spacing(1)})` },
-                })}>
+                <Box
+                  sx={(theme) => ({
+                    flexGrow: 0,
+                    flexBasis: {
+                      xs: "100%",
+                      sm: `calc(50% - ${theme.spacing(1)})`,
+                    },
+                  })}
+                >
                   <Stack direction="row" spacing={1} alignItems="center">
                     <CalendarIcon fontSize="small" color="action" />
                     <Typography variant="body1">
-                      {formatPhilippinesTime(event.start_date, false, 'EEEE, MMMM dd, yyyy')}
-                      {event.end_date && formatPhilippinesTime(event.start_date, false, 'yyyy-MM-dd') !== formatPhilippinesTime(event.end_date, false, 'yyyy-MM-dd') &&
-                        ` - ${formatPhilippinesTime(event.end_date, false, 'MMMM dd, yyyy')}`
-                      }
+                      {formatPhilippinesTime(
+                        event.start_date,
+                        false,
+                        "EEEE, MMMM dd, yyyy",
+                      )}
+                      {event.end_date &&
+                        formatPhilippinesTime(
+                          event.start_date,
+                          false,
+                          "yyyy-MM-dd",
+                        ) !==
+                          formatPhilippinesTime(
+                            event.end_date,
+                            false,
+                            "yyyy-MM-dd",
+                          ) &&
+                        ` - ${formatPhilippinesTime(event.end_date, false, "MMMM dd, yyyy")}`}
                     </Typography>
                   </Stack>
                 </Box>
               )}
-              
+
               {event.current_stage && (
-                <Box sx={(theme) => ({
-                  flexGrow: 0,
-                  flexBasis: { xs: '100%', sm: `calc(50% - ${theme.spacing(1)})` },
-                })}>
+                <Box
+                  sx={(theme) => ({
+                    flexGrow: 0,
+                    flexBasis: {
+                      xs: "100%",
+                      sm: `calc(50% - ${theme.spacing(1)})`,
+                    },
+                  })}
+                >
                   <Typography variant="body1">
                     <strong>Current Stage:</strong> {event.current_stage.name}
                   </Typography>
                 </Box>
               )}
-              
+
               {event.total_price && (
-                <Box sx={(theme) => ({
-                  flexGrow: 0,
-                  flexBasis: { xs: '100%', sm: `calc(50% - ${theme.spacing(1)})` },
-                })}>
+                <Box
+                  sx={(theme) => ({
+                    flexGrow: 0,
+                    flexBasis: {
+                      xs: "100%",
+                      sm: `calc(50% - ${theme.spacing(1)})`,
+                    },
+                  })}
+                >
                   <Typography variant="body1">
-                    <strong>Total Price:</strong> {formatAmount(event.total_price)}
+                    <strong>Total Price:</strong>{" "}
+                    {formatAmount(event.total_price)}
                   </Typography>
                 </Box>
               )}
@@ -382,10 +427,11 @@ const EventDetail: React.FC = () => {
           </Box>
 
           <Stack spacing={2} alignItems="center">
-            {event.days_until_event !== null && event.days_until_event !== undefined && (
-              <EventCountdown daysUntil={event.days_until_event} />
-            )}
-            
+            {event.days_until_event !== null &&
+              event.days_until_event !== undefined && (
+                <EventCountdown daysUntil={event.days_until_event} />
+              )}
+
             <Stack direction="row" spacing={1}>
               <Button
                 variant="outlined"
@@ -395,10 +441,7 @@ const EventDetail: React.FC = () => {
               >
                 Preferences
               </Button>
-              <IconButton
-                aria-label="Share event"
-                size="small"
-              >
+              <IconButton aria-label="Share event" size="small">
                 <ShareIcon />
               </IconButton>
             </Stack>
@@ -411,12 +454,14 @@ const EventDetail: React.FC = () => {
 
       {/* Quick Stats */}
       {event.upcoming_tasks.length > 0 && (
-        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mb: 3 }}>
-          <Box sx={(theme) => ({
-            flexGrow: 0,
-            flexBasis: { xs: '100%', sm: `calc(50% - ${theme.spacing(1)})` },
-          })}>
-            <Paper sx={{ p: 2, textAlign: 'center' }}>
+        <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2, mb: 3 }}>
+          <Box
+            sx={(theme) => ({
+              flexGrow: 0,
+              flexBasis: { xs: "100%", sm: `calc(50% - ${theme.spacing(1)})` },
+            })}
+          >
+            <Paper sx={{ p: 2, textAlign: "center" }}>
               <Typography variant="h4" color="warning.main">
                 {event.upcoming_tasks.length}
               </Typography>
@@ -436,7 +481,7 @@ const EventDetail: React.FC = () => {
           variant="scrollable"
           scrollButtons="auto"
           allowScrollButtonsMobile
-          sx={{ borderBottom: 1, borderColor: 'divider' }}
+          sx={{ borderBottom: 1, borderColor: "divider" }}
         >
           <Tab
             label="Timeline"
@@ -453,7 +498,7 @@ const EventDetail: React.FC = () => {
             aria-controls="event-tabpanel-1"
           />
           <Tab
-            label={`Contracts${eventContracts.length > 0 ? ` (${eventContracts.length})` : ''}`}
+            label={`Contracts${eventContracts.length > 0 ? ` (${eventContracts.length})` : ""}`}
             icon={<ContractIcon />}
             iconPosition="start"
             id="event-tab-2"
@@ -481,14 +526,14 @@ const EventDetail: React.FC = () => {
             aria-controls="event-tabpanel-5"
           />
           <Tab
-            label={`Quotes${quotesCount > 0 ? ` (${quotesCount})` : ''}`}
+            label={`Quotes${quotesCount > 0 ? ` (${quotesCount})` : ""}`}
             icon={<RequestQuoteIcon />}
             iconPosition="start"
             id="event-tab-6"
             aria-controls="event-tabpanel-6"
           />
           <Tab
-            label={`Invoices${invoicesCount > 0 ? ` (${invoicesCount})` : ''}`}
+            label={`Invoices${invoicesCount > 0 ? ` (${invoicesCount})` : ""}`}
             icon={<InvoiceIcon />}
             iconPosition="start"
             id="event-tab-7"
@@ -524,12 +569,19 @@ const EventDetail: React.FC = () => {
           {isLoadingContracts ? (
             <Box>
               {[1, 2].map((item) => (
-                <Skeleton key={item} variant="rectangular" height={120} sx={{ mb: 2 }} />
+                <Skeleton
+                  key={item}
+                  variant="rectangular"
+                  height={120}
+                  sx={{ mb: 2 }}
+                />
               ))}
             </Box>
           ) : eventContracts.length === 0 ? (
-            <Box sx={{ textAlign: 'center', py: 4 }}>
-              <ContractIcon sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }} />
+            <Box sx={{ textAlign: "center", py: 4 }}>
+              <ContractIcon
+                sx={{ fontSize: 48, color: "text.secondary", mb: 2 }}
+              />
               <Typography variant="h6" color="text.secondary">
                 No contracts yet
               </Typography>
@@ -545,7 +597,8 @@ const EventDetail: React.FC = () => {
                     Action Required: Contract Signature Needed
                   </Typography>
                   <Typography variant="body2" sx={{ mt: 1 }}>
-                    You have contracts that require your signature to proceed with your event.
+                    You have contracts that require your signature to proceed
+                    with your event.
                   </Typography>
                 </Alert>
               )}
@@ -553,7 +606,13 @@ const EventDetail: React.FC = () => {
               {eventContracts.map((contract) => (
                 <Paper key={contract.id} sx={{ p: 3 }}>
                   <Stack spacing={2}>
-                    <Box display="flex" justifyContent="space-between" alignItems="flex-start">
+                    <Box
+                      display="flex"
+                      flexWrap="wrap"
+                      justifyContent="space-between"
+                      alignItems="flex-start"
+                      gap={1}
+                    >
                       <Box>
                         <Typography variant="h6" gutterBottom>
                           {contract.template.name}
@@ -575,23 +634,44 @@ const EventDetail: React.FC = () => {
 
                     {contract.signature_progress && (
                       <Box>
-                        <Typography variant="body2" color="text.secondary" gutterBottom>
-                          Signature Progress: {contract.signature_progress.signed_count} of {contract.signature_progress.total_required} signatures
+                        <Typography
+                          variant="body2"
+                          color="text.secondary"
+                          gutterBottom
+                        >
+                          Signature Progress:{" "}
+                          {contract.signature_progress.signed_count} of{" "}
+                          {contract.signature_progress.total_required}{" "}
+                          signatures
                         </Typography>
-                        <Box sx={{ width: '100%', bgcolor: 'grey.200', borderRadius: 1, overflow: 'hidden' }}>
+                        <Box
+                          sx={{
+                            width: "100%",
+                            bgcolor: "grey.200",
+                            borderRadius: 1,
+                            overflow: "hidden",
+                          }}
+                        >
                           <Box
                             sx={{
                               width: `${contract.signature_progress.percentage}%`,
-                              bgcolor: contract.signature_progress.percentage === 100 ? 'success.main' : 'warning.main',
+                              bgcolor:
+                                contract.signature_progress.percentage === 100
+                                  ? "success.main"
+                                  : "warning.main",
                               height: 8,
-                              transition: 'width 0.3s ease',
+                              transition: "width 0.3s ease",
                             }}
                           />
                         </Box>
                       </Box>
                     )}
 
-                    <Stack direction="row" spacing={2} sx={{ mt: 2 }}>
+                    <Stack
+                      direction={{ xs: "column", sm: "row" }}
+                      spacing={{ xs: 1, sm: 2 }}
+                      sx={{ mt: 2 }}
+                    >
                       <Button
                         variant="outlined"
                         size="small"
@@ -658,38 +738,50 @@ const EventDetail: React.FC = () => {
         <DialogTitle>Event Preferences</DialogTitle>
         <DialogContent>
           <Typography variant="body2" color="text.secondary" paragraph>
-            Update your preferences for this event. These settings help us tailor the experience to your needs.
+            Update your preferences for this event. These settings help us
+            tailor the experience to your needs.
           </Typography>
-          
+
           <Stack spacing={2} sx={{ mt: 2 }}>
             <TextField
               label="Special Requests"
               multiline
               rows={3}
-              value={(preferencesData.special_requests as string) || ''}
-              onChange={(e) => handlePreferenceChange('special_requests', e.target.value)}
+              value={(preferencesData.special_requests as string) || ""}
+              onChange={(e) =>
+                handlePreferenceChange("special_requests", e.target.value)
+              }
               placeholder="Any special requests or requirements..."
               fullWidth
             />
-            
+
             <TextField
               label="Dietary Restrictions"
-              value={(preferencesData.dietary_restrictions as string) || ''}
-              onChange={(e) => handlePreferenceChange('dietary_restrictions', e.target.value)}
+              value={(preferencesData.dietary_restrictions as string) || ""}
+              onChange={(e) =>
+                handlePreferenceChange("dietary_restrictions", e.target.value)
+              }
               placeholder="Allergies, dietary preferences, etc."
               fullWidth
             />
-            
+
             <TextField
               label="Communication Preferences"
-              value={(preferencesData.communication_preferences as string) || ''}
-              onChange={(e) => handlePreferenceChange('communication_preferences', e.target.value)}
+              value={
+                (preferencesData.communication_preferences as string) || ""
+              }
+              onChange={(e) =>
+                handlePreferenceChange(
+                  "communication_preferences",
+                  e.target.value,
+                )
+              }
               placeholder="Preferred contact method, frequency, etc."
               fullWidth
             />
           </Stack>
         </DialogContent>
-        
+
         <DialogActions>
           <Button onClick={handlePreferencesClose}>Cancel</Button>
           <Button
