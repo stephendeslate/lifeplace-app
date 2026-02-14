@@ -1,5 +1,4 @@
 # backend/core/domains/clients/serializers.py
-from core.domains.events.serializers import EventSerializer
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
@@ -42,16 +41,15 @@ class ClientListSerializer(serializers.ModelSerializer):
 class ClientDetailSerializer(serializers.ModelSerializer):
     """Detailed serializer for client data"""
     profile = ClientProfileSerializer(required=False)
-    events = EventSerializer(many=True, read_only=True)
-    has_account = serializers.SerializerMethodField()  # ADD THIS FIELD
-    
+    has_account = serializers.SerializerMethodField()
+
     class Meta:
         model = User
         fields = [
-            'id', 'email', 'first_name', 'last_name', 
-            'profile', 'date_joined', 'is_active', 'events', 'has_account'  # ADD has_account
+            'id', 'email', 'first_name', 'last_name',
+            'profile', 'date_joined', 'is_active', 'has_account'
         ]
-        read_only_fields = ['id', 'date_joined', 'email', 'events', 'has_account']
+        read_only_fields = ['id', 'date_joined', 'email', 'has_account']
     
     def get_has_account(self, obj):
         # Check if user has completed account setup (password or Google OAuth)

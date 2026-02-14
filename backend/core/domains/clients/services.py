@@ -61,7 +61,44 @@ class ClientInvitationService:
         except User.DoesNotExist:
             logger.error(f"Admin with ID {invited_by_id} not found")
             raise ClientInvitationError(detail="Invalid admin ID")
-    
+
+        with transaction.atomic():
+            # Create invitation record
+            invitation = ClientInvitation.objects.create(
+                client=client,
+                invited_by=invited_by,
+                expires_at=timezone.now() + timedelta(days=7),
+            )
+
+        # Build invitation URL using existing ClientPortalURLBuilder
+        from core.utils.url_builder import ClientPortalURLBuilder
+        invitation_url = ClientPortalURLBuilder.accept_invitation_url(invitation.id)
+
+        # Send invitation email via CommunicationService
+        # Template: "Client Invitation" (fixture pk=3)
+        # Expected variables: first_name, last_name, invitation_link, expiry_date, invited_by
+        try:
+            comm_service = CommunicationService()
+            comm_service.send_communication(
+                template_name='Client Invitation',
+                recipient=client.email,
+                context_data={
+                    'first_name': client.first_name,
+                    'last_name': client.last_name,
+                    'invitation_link': invitation_url,
+                    'expiry_date': invitation.expires_at.strftime('%B %d, %Y at %I:%M %p'),
+                    'invited_by': f"{invited_by.first_name} {invited_by.last_name}".strip(),
+                },
+                client=client,
+                sent_by=invited_by,
+                skip_preference_check=True,
+            )
+        except Exception as e:
+            logger.warning(f"Failed to send invitation email to {client.email}: {e}")
+
+        logger.info(f"Invitation created for {client.email} (id={invitation.id})")
+        return invitation
+
     @staticmethod
     def get_invitation_by_id(invitation_id):
         """
@@ -259,9 +296,11 @@ class ClientService:
             profile_data = client_data.pop('profile', {})
             password = client_data.pop('password', None)
             
-            # Update user fields
+            # SECURITY: Only update explicitly allowed fields to prevent mass assignment
+            ALLOWED_UPDATE_FIELDS = {'first_name', 'last_name', 'is_active'}
             for key, value in client_data.items():
-                setattr(client, key, value)
+                if key in ALLOWED_UPDATE_FIELDS:
+                    setattr(client, key, value)
             
             # Update password if provided
             if password:

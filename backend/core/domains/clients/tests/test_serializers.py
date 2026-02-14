@@ -176,18 +176,7 @@ class TestClientDetailSerializer:
         assert serializer.data['email'] == 'client@example.com'
         assert serializer.data['first_name'] == 'John'
         assert serializer.data['last_name'] == 'Doe'
-        assert 'events' in serializer.data
         assert 'has_account' in serializer.data
-
-    def test_includes_events(self, user_factory, event_factory):
-        """Test that events are included in serialization."""
-        user = user_factory(role='CLIENT')
-        event = event_factory(client=user)
-
-        serializer = ClientDetailSerializer(user)
-
-        assert len(serializer.data['events']) == 1
-        assert serializer.data['events'][0]['id'] == event.id
 
     def test_has_account_field(self, user_factory):
         """Test has_account field in detail view."""

@@ -131,7 +131,6 @@ class TestClientViewSetRetrieve:
         assert response.data['email'] == 'client@example.com'
         assert response.data['first_name'] == 'John'
         assert response.data['last_name'] == 'Doe'
-        assert 'events' in response.data
         assert 'has_account' in response.data
 
     def test_retrieve_nonexistent_client(self, admin_client):
@@ -390,9 +389,10 @@ class TestClientViewSetSendInvitation:
 
         response = admin_client.post(f'/api/clients/{client.id}/send_invitation/')
 
-        # The current implementation may return 200 or 400 depending on
-        # completion of the send_client_invitation method
-        assert response.status_code in [status.HTTP_200_OK, status.HTTP_400_BAD_REQUEST]
+        assert response.status_code == status.HTTP_200_OK
+        assert 'id' in response.data
+        assert response.data['client'] == client.email
+        assert response.data['is_accepted'] is False
 
     def test_send_invitation_to_client_with_account_fails(self, admin_client, user_factory):
         """Test sending invitation to client with active account fails."""

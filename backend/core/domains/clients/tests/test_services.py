@@ -326,6 +326,38 @@ class TestClientServiceUpdateClient:
         assert updated.email == 'client@example.com'
         assert updated.first_name == 'Updated'
 
+    def test_update_client_email_blocked_by_whitelist(self, user_factory):
+        """Test that email field is blocked by the update whitelist."""
+        client = user_factory(role='CLIENT', email='original@example.com')
+
+        data = {'email': 'changed@example.com', 'first_name': 'Updated'}
+        updated = ClientService.update_client(client.id, data)
+
+        updated.refresh_from_db()
+        assert updated.email == 'original@example.com'
+        assert updated.first_name == 'Updated'
+
+    def test_update_client_role_blocked_by_whitelist(self, user_factory):
+        """Test that role field is blocked by the update whitelist."""
+        client = user_factory(role='CLIENT')
+
+        data = {'role': 'ADMIN', 'first_name': 'Updated'}
+        updated = ClientService.update_client(client.id, data)
+
+        updated.refresh_from_db()
+        assert updated.role == 'CLIENT'
+        assert updated.first_name == 'Updated'
+
+    def test_update_client_is_staff_blocked_by_whitelist(self, user_factory):
+        """Test that is_staff field is blocked by the update whitelist."""
+        client = user_factory(role='CLIENT')
+
+        data = {'is_staff': True, 'first_name': 'Updated'}
+        updated = ClientService.update_client(client.id, data)
+
+        updated.refresh_from_db()
+        assert updated.is_staff is False
+
 
 @pytest.mark.django_db
 class TestClientServiceDeactivateClient:
@@ -431,15 +463,16 @@ class TestClientInvitationServiceSendInvitation:
         client.save()
         admin = user_factory(admin=True)
 
-        # The current implementation returns None since it doesn't create invitation
-        # This tests the validation part
         result = ClientInvitationService.send_client_invitation(
             client_id=client.id,
             invited_by_id=admin.id
         )
 
-        # Since the method is incomplete (doesn't return), we just verify no exception
-        # In a real implementation, we'd verify the invitation was created
+        assert isinstance(result, ClientInvitation)
+        assert result.client == client
+        assert result.invited_by == admin
+        assert result.is_accepted is False
+        assert result.expires_at > timezone.now()
 
     def test_send_invitation_to_nonexistent_client_fails(self, user_factory):
         """Test sending invitation to nonexistent client raises exception."""

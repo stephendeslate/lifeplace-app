@@ -89,7 +89,13 @@ export const ClientForm: React.FC<ClientFormProps> = ({
       newErrors.phone = "Please enter a valid phone number";
     }
 
-    if ((createAccount || isEditing) && formData.password) {
+    if (createAccount && !isEditing) {
+      if (!formData.password) {
+        newErrors.password = "Password is required when creating an account";
+      } else if (formData.password.length < 8) {
+        newErrors.password = "Password must be at least 8 characters long";
+      }
+    } else if (formData.password) {
       if (formData.password.length < 8) {
         newErrors.password = "Password must be at least 8 characters long";
       }
@@ -137,7 +143,6 @@ export const ClientForm: React.FC<ClientFormProps> = ({
     if (isEditing) {
       // For editing, create UpdateClientData
       const updateData: UpdateClientData = {
-        email: formData.email,
         first_name: formData.first_name,
         last_name: formData.last_name,
         profile: formData.profile,
