@@ -1,14 +1,16 @@
-import React from 'react';
-import { Box, Skeleton } from '@mui/material';
-import type { BoxProps } from '@mui/material';
+import React from "react";
+import { Box, Skeleton } from "@mui/material";
+import type { BoxProps } from "@mui/material";
 
-interface OptimizedImageProps extends Omit<BoxProps, 'component'> {
+interface OptimizedImageProps extends Omit<BoxProps, "component"> {
   src: string;
   alt: string;
   width?: number | string;
   height?: number | string;
   priority?: boolean;
-  objectFit?: 'cover' | 'contain' | 'fill' | 'none' | 'scale-down';
+  objectFit?: "cover" | "contain" | "fill" | "none" | "scale-down";
+  srcSet?: string;
+  sizes?: string;
 }
 
 export const OptimizedImage: React.FC<OptimizedImageProps> = ({
@@ -17,7 +19,9 @@ export const OptimizedImage: React.FC<OptimizedImageProps> = ({
   width,
   height,
   priority = false,
-  objectFit = 'cover',
+  objectFit = "cover",
+  srcSet,
+  sizes,
   sx,
   ...props
 }) => {
@@ -27,10 +31,10 @@ export const OptimizedImage: React.FC<OptimizedImageProps> = ({
   return (
     <Box
       sx={{
-        position: 'relative',
-        width: width || '100%',
-        height: height || 'auto',
-        ...sx
+        position: "relative",
+        width: width || "100%",
+        height: height || "auto",
+        ...sx,
       }}
       {...props}
     >
@@ -39,23 +43,30 @@ export const OptimizedImage: React.FC<OptimizedImageProps> = ({
           variant="rectangular"
           width="100%"
           height="100%"
-          sx={{ position: 'absolute', top: 0, left: 0 }}
+          sx={{ position: "absolute", top: 0, left: 0 }}
         />
       )}
       <Box
         component="img"
         src={src}
         alt={alt}
-        loading={priority ? 'eager' : 'lazy'}
+        srcSet={srcSet}
+        sizes={sizes}
+        role={alt ? "img" : undefined}
+        aria-label={alt || "Image"}
+        loading={priority ? "eager" : "lazy"}
         decoding="async"
         onLoad={() => setLoaded(true)}
         onError={() => setError(true)}
         sx={{
-          width: '100%',
-          height: '100%',
+          width: "100%",
+          height: "100%",
           objectFit,
           opacity: loaded ? 1 : 0,
-          transition: 'opacity 0.3s ease-in-out',
+          transition: "opacity 0.3s ease-in-out",
+          "@media (prefers-reduced-motion: reduce)": {
+            transition: "none",
+          },
         }}
       />
     </Box>

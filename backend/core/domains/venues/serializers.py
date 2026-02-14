@@ -1,6 +1,6 @@
 # backend/core/domains/venues/serializers.py
 from rest_framework import serializers
-from .models import Venue, VenueOperatingRules, PackageVenue, VenueBlockedDate, VenueEventTypeConfiguration
+from .models import Venue, VenueOperatingRules, PackageVenue, VenueBlockedDate, VenueEventTypeConfiguration, GalleryPhoto
 
 
 class VenueOperatingRulesSerializer(serializers.ModelSerializer):
@@ -345,6 +345,7 @@ class PublicVenueSerializer(serializers.ModelSerializer):
         source='venue_operating_rules',
         read_only=True
     )
+    gallery_images = serializers.SerializerMethodField()
 
     class Meta:
         model = Venue
@@ -354,6 +355,15 @@ class PublicVenueSerializer(serializers.ModelSerializer):
             'location_description', 'featured_image', 'gallery_images',
             'amenities', 'is_featured', 'sort_order', 'operating_rules'
         ]
+
+    def get_gallery_images(self, obj):
+        """Return absolute URLs for gallery images"""
+        if not obj.gallery_images:
+            return []
+        request = self.context.get('request')
+        if request:
+            return [request.build_absolute_uri(url) if url.startswith('/') else url for url in obj.gallery_images]
+        return obj.gallery_images
 
 
 class PublicPackageVenueSerializer(serializers.ModelSerializer):
@@ -588,3 +598,43 @@ class RentableVenueWithEventTypeSerializer(serializers.ModelSerializer):
                 'latest_end_time': rules.latest_end_time,
             }
         return None
+
+
+class GalleryPhotoPublicSerializer(serializers.ModelSerializer):
+    """Public serializer for gallery photos."""
+    image = serializers.SerializerMethodField()
+    venue_id = serializers.IntegerField(read_only=True)
+    venue_name = serializers.CharField(source='venue.name', read_only=True, default=None)
+    event_type_id = serializers.IntegerField(read_only=True)
+    event_type_name = serializers.CharField(source='event_type.name', read_only=True, default=None)
+
+    class Meta:
+        model = GalleryPhoto
+        fields = [
+            'id', 'image', 'title', 'description', 'category',
+            'venue_id', 'venue_name', 'event_type_id', 'event_type_name',
+            'is_featured', 'sort_order',
+        ]
+
+    def get_image(self, obj):
+        request = self.context.get('request')
+        if obj.image and request:
+            return request.build_absolute_uri(obj.image.url)
+        elif obj.image:
+            return obj.image.url
+        return None
+
+
+class GalleryPhotoAdminSerializer(serializers.ModelSerializer):
+    """Admin serializer for gallery photo CRUD."""
+    venue_name = serializers.CharField(source='venue.name', read_only=True, default=None)
+    event_type_name = serializers.CharField(source='event_type.name', read_only=True, default=None)
+
+    class Meta:
+        model = GalleryPhoto
+        fields = [
+            'id', 'image', 'title', 'description', 'category',
+            'venue', 'venue_name', 'event_type', 'event_type_name',
+            'is_featured', 'is_active', 'sort_order',
+            'created_at', 'updated_at',
+        ]

@@ -8,6 +8,9 @@ export interface EventType {
   description: string;
   is_active: boolean;
   color: string;
+  featured_image: string | null;
+  gallery_images: string[];
+  sort_order: number;
   created_at: string;
   updated_at: string;
 }

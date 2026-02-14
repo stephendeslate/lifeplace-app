@@ -21,14 +21,6 @@ export interface AvailabilitySectionProps {
   onNavigateToBooking?: () => void;
 }
 
-export interface VenueInfo {
-  id: string;
-  title: string;
-  description: string;
-  capacity: string;
-  icon: React.ReactNode;
-}
-
 export interface ServiceInfo {
   id: string;
   title: string;

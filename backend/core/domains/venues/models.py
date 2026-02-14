@@ -611,3 +611,40 @@ class VenueBlockedDate(BaseModel):
         if self.is_full_day:
             return f"{self.venue.name} blocked on {self.date}: {self.reason}"
         return f"{self.venue.name} blocked on {self.date} {self.blocked_start_time}-{self.blocked_end_time}: {self.reason}"
+
+
+class GalleryPhoto(BaseModel):
+    """Standalone gallery photos for the public gallery page."""
+    CATEGORY_CHOICES = [
+        ('GENERAL', 'General'),
+        ('WEDDING', 'Wedding'),
+        ('TEAM_BUILDING', 'Team Building'),
+        ('RETREAT', 'Retreat'),
+        ('WORKSHOP', 'Workshop'),
+        ('CAMPING', 'Camping'),
+        ('ATMOSPHERE', 'Atmosphere & Details'),
+    ]
+
+    image = models.ImageField(upload_to='gallery/')
+    title = models.CharField(max_length=200, blank=True)
+    description = models.TextField(blank=True)
+    category = models.CharField(max_length=20, choices=CATEGORY_CHOICES, default='GENERAL')
+    venue = models.ForeignKey(
+        Venue, null=True, blank=True, on_delete=models.SET_NULL,
+        related_name='gallery_photos'
+    )
+    event_type = models.ForeignKey(
+        'events.EventType', null=True, blank=True, on_delete=models.SET_NULL,
+        related_name='gallery_photos'
+    )
+    is_featured = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=True)
+    sort_order = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ['sort_order', '-created_at']
+        verbose_name = 'Gallery Photo'
+        verbose_name_plural = 'Gallery Photos'
+
+    def __str__(self):
+        return self.title or f"Gallery Photo #{self.pk}"

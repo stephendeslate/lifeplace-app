@@ -28,6 +28,7 @@ const navigationItems: NavigationItem[] = [
   { id: "services", label: "Services", path: "/services" },
   { id: "rates", label: "Rates", path: "/rates" },
   { id: "facilities", label: "Facilities", path: "/facilities" },
+  { id: "gallery", label: "Gallery", path: "/gallery" },
   { id: "partner", label: "Partner With Us", path: "/partner" },
   { id: "reviews", label: "Reviews", path: "/reviews" },
   { id: "podcasts", label: "Podcasts", path: "/podcasts" },

@@ -5,7 +5,7 @@ import json
 import uuid
 
 from core.utils.permissions import IsAdmin
-from django.db import transaction
+from django.db import models, transaction
 from django.utils import timezone
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
@@ -16,7 +16,7 @@ from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import AllowAny, IsAuthenticated
 import logging
 
-from .models import Venue, VenueOperatingRules, PackageVenue, VenueBlockedDate
+from .models import Venue, VenueOperatingRules, PackageVenue, VenueBlockedDate, GalleryPhoto
 from .serializers import (
     VenueSerializer,
     VenueListSerializer,
@@ -31,6 +31,8 @@ from .serializers import (
     RentableVenueSerializer,
     RentableVenueWithEventTypeSerializer,
     VenueEventTypeConfigurationSerializer,
+    GalleryPhotoPublicSerializer,
+    GalleryPhotoAdminSerializer,
 )
 from .models import VenueEventTypeConfiguration
 from .services import VenueService, VenueAvailabilityService
@@ -597,3 +599,35 @@ class PublicVenueViewSet(viewsets.ReadOnlyModelViewSet):
                 'warnings': validation.warnings,
             }
         })
+
+
+class PublicGalleryPhotoViewSet(viewsets.ReadOnlyModelViewSet):
+    """Public API for gallery photos."""
+    permission_classes = [AllowAny]
+    serializer_class = GalleryPhotoPublicSerializer
+
+    def get_queryset(self):
+        qs = GalleryPhoto.objects.filter(is_active=True).select_related('venue', 'event_type')
+        category = self.request.query_params.get('category')
+        if category:
+            qs = qs.filter(category=category.upper())
+        return qs
+
+
+class GalleryPhotoViewSet(viewsets.ModelViewSet):
+    """Admin API for gallery photo management."""
+    permission_classes = [IsAdmin]
+    serializer_class = GalleryPhotoAdminSerializer
+    queryset = GalleryPhoto.objects.all().select_related('venue', 'event_type')
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        category = self.request.query_params.get('category')
+        if category:
+            qs = qs.filter(category=category.upper())
+        search = self.request.query_params.get('search')
+        if search:
+            qs = qs.filter(
+                models.Q(title__icontains=search) | models.Q(description__icontains=search)
+            )
+        return qs

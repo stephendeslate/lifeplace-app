@@ -50,7 +50,23 @@ export const eventsApi = {
     return response.data;
   },
 
-  createEventType: async (data: CreateEventTypeData): Promise<EventType> => {
+  createEventType: async (
+    data: CreateEventTypeData,
+    formData?: FormData,
+  ): Promise<EventType> => {
+    // Use FormData if provided (for image uploads), otherwise use JSON
+    if (formData) {
+      const response = await api.post<EventType>(
+        "/events/event-types/",
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        },
+      );
+      return response.data;
+    }
     const response = await api.post<EventType>("/events/event-types/", data);
     return response.data;
   },
@@ -58,7 +74,21 @@ export const eventsApi = {
   updateEventType: async (
     id: number,
     data: UpdateEventTypeData,
+    formData?: FormData,
   ): Promise<EventType> => {
+    // Use FormData if provided (for image uploads), otherwise use JSON
+    if (formData) {
+      const response = await api.patch<EventType>(
+        `/events/event-types/${id}/`,
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        },
+      );
+      return response.data;
+    }
     const response = await api.patch<EventType>(
       `/events/event-types/${id}/`,
       data,

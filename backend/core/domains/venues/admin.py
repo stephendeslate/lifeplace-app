@@ -1,6 +1,6 @@
 # backend/core/domains/venues/admin.py
 from django.contrib import admin
-from .models import Venue, VenueOperatingRules, PackageVenue, VenueBlockedDate, VenueEventTypeConfiguration
+from .models import Venue, VenueOperatingRules, PackageVenue, VenueBlockedDate, VenueEventTypeConfiguration, GalleryPhoto
 
 
 class VenueOperatingRulesInline(admin.StackedInline):
@@ -238,3 +238,11 @@ class VenueEventTypeConfigurationAdmin(admin.ModelAdmin):
             'classes': ('collapse',)
         }),
     )
+
+
+@admin.register(GalleryPhoto)
+class GalleryPhotoAdmin(admin.ModelAdmin):
+    list_display = ['title', 'category', 'venue', 'event_type', 'is_featured', 'is_active', 'sort_order']
+    list_filter = ['category', 'is_featured', 'is_active', 'venue']
+    search_fields = ['title', 'description']
+    ordering = ['sort_order', '-created_at']

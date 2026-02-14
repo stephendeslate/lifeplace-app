@@ -7,6 +7,8 @@ from .views import (
     PackageVenueViewSet,
     VenueBlockedDateViewSet,
     PublicVenueViewSet,
+    PublicGalleryPhotoViewSet,
+    GalleryPhotoViewSet,
 )
 
 # Admin router
@@ -14,10 +16,12 @@ router = DefaultRouter()
 router.register(r'venues', VenueViewSet, basename='venue')
 router.register(r'package-venues', PackageVenueViewSet, basename='package-venue')
 router.register(r'blocked-dates', VenueBlockedDateViewSet, basename='venue-blocked-date')
+router.register(r'gallery-photos', GalleryPhotoViewSet, basename='gallery-photo')
 
 # Public router - register at root level (not under 'venues' again)
 public_router = DefaultRouter()
 public_router.register(r'', PublicVenueViewSet, basename='public-venue')
+public_router.register(r'gallery', PublicGalleryPhotoViewSet, basename='public-gallery')
 
 urlpatterns = [
     # Admin endpoints
@@ -25,5 +29,6 @@ urlpatterns = [
 
     # Public endpoints (nested under 'public/')
     # This gives us /api/venues/public/ and /api/venues/public/rentable/
+    # Gallery: /api/venues/public/gallery/
     path('public/', include(public_router.urls)),
 ]

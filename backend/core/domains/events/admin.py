@@ -7,12 +7,20 @@ from .models import Event, EventProductOption, EventType
 @admin.register(EventType)
 class EventTypeAdmin(admin.ModelAdmin):
     """Admin configuration for EventType model"""
-    list_display = ('name', 'is_active')
+    list_display = ('name', 'is_active', 'sort_order')
     list_filter = ('is_active',)
     search_fields = ('name', 'description')
+    list_editable = ('sort_order',)
+    ordering = ('sort_order', 'name')
     fieldsets = (
         (None, {
-            'fields': ('name', 'description', 'is_active')
+            'fields': ('name', 'description', 'is_active', 'color')
+        }),
+        ('Images', {
+            'fields': ('featured_image', 'gallery_images'),
+        }),
+        ('Display', {
+            'fields': ('sort_order',),
         }),
     )
     
