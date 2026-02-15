@@ -14,6 +14,10 @@ export interface ProductCategory {
   level: number;
   children_count: number;
   products_count: number;
+  includes: string[];
+  notes: string[];
+  badge_text: string;
+  rates_page_section: string;
   created_at: string;
   updated_at: string;
   children?: ProductCategory[];
@@ -27,13 +31,17 @@ export interface CreateCategoryData {
   sort_order?: number;
   requires_venue?: boolean;
   typical_duration_hours?: number | null;
+  includes?: string[];
+  notes?: string[];
+  badge_text?: string;
+  rates_page_section?: string;
 }
 
 export type UpdateCategoryData = Partial<CreateCategoryData>;
 
-export type PricingModel = 'FIXED' | 'HOURLY' | 'TIERED' | 'CUSTOM';
-export type PricingUnit = 'PER_EVENT' | 'PER_PERSON' | 'PER_HOUR';
-export type ProductType = 'PRODUCT' | 'PACKAGE';
+export type PricingModel = "FIXED" | "HOURLY" | "TIERED" | "CUSTOM";
+export type PricingUnit = "PER_EVENT" | "PER_PERSON" | "PER_HOUR";
+export type ProductType = "PRODUCT" | "PACKAGE";
 
 export interface ProductOption {
   id: number;
@@ -53,6 +61,8 @@ export interface ProductOption {
   type_display: string;
   is_active: boolean;
   is_featured: boolean;
+  is_highlighted: boolean;
+  tier_label: string;
   allow_multiple: boolean;
   maximum_quantity: number | null;
   requires_approval: boolean;
@@ -87,6 +97,8 @@ export interface CreateProductData {
   type: ProductType;
   is_active?: boolean;
   is_featured?: boolean;
+  is_highlighted?: boolean;
+  tier_label?: string;
   allow_multiple?: boolean;
   maximum_quantity?: number | null;
   requires_approval?: boolean;
@@ -118,6 +130,8 @@ export interface ProductFormData {
   type: ProductType;
   is_active: boolean;
   is_featured: boolean;
+  is_highlighted: boolean;
+  tier_label: string;
   allow_multiple: boolean;
   maximum_quantity: string;
   requires_approval: boolean;
@@ -135,8 +149,8 @@ export interface ProductFormData {
   gallery_images: (File | string)[];
 }
 
-export type DiscountType = 'PERCENTAGE' | 'FIXED' | 'FREE_HOURS';
-export type ApplicationType = 'AUTOMATIC' | 'CODE_REQUIRED' | 'ADMIN_ONLY';
+export type DiscountType = "PERCENTAGE" | "FIXED" | "FREE_HOURS";
+export type ApplicationType = "AUTOMATIC" | "CODE_REQUIRED" | "ADMIN_ONLY";
 
 export interface Discount {
   id: number;
@@ -167,7 +181,10 @@ export interface Discount {
   updated_at: string;
 }
 
-export interface DiscountDetail extends Omit<Discount, 'applicable_products' | 'applicable_categories'> {
+export interface DiscountDetail extends Omit<
+  Discount,
+  "applicable_products" | "applicable_categories"
+> {
   applicable_products: ProductOption[];
   applicable_categories: ProductCategory[];
 }
@@ -236,6 +253,10 @@ export interface CategoryFormData {
   sort_order: string;
   requires_venue: boolean;
   typical_duration_hours: string;
+  includes: string;
+  notes: string;
+  badge_text: string;
+  rates_page_section: string;
 }
 
 export interface DiscountFormData {

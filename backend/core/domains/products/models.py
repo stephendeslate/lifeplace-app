@@ -18,7 +18,31 @@ class ProductCategory(BaseModel):
     # Business metadata
     requires_venue = models.BooleanField(default=False, help_text="Category requires venue specification")
     typical_duration_hours = models.PositiveIntegerField(null=True, blank=True, help_text="Typical event duration in hours")
-    
+
+    # Rates page display metadata
+    includes = models.JSONField(
+        default=list,
+        blank=True,
+        help_text="List of included features shown on rates page (e.g., ['Swimming pool access', 'Upgraded sound system'])"
+    )
+    notes = models.JSONField(
+        default=list,
+        blank=True,
+        help_text="List of disclaimer notes shown on rates page (e.g., ['Kitchen use: P5,000/day'])"
+    )
+    badge_text = models.CharField(
+        max_length=50,
+        blank=True,
+        default='',
+        help_text="Custom badge label shown on rates page (e.g., 'Staff Pick'). Empty = no badge."
+    )
+    rates_page_section = models.CharField(
+        max_length=30,
+        blank=True,
+        default='',
+        help_text="Which rates page section this category appears in: 'event_packages', 'wedding_combos', 'all_in_weddings', or empty for hidden"
+    )
+
     class Meta:
         verbose_name_plural = "Product Categories"
         ordering = ['sort_order', 'name']
@@ -102,6 +126,16 @@ class ProductOption(BaseModel):
     type = models.CharField(max_length=10, choices=TYPE_CHOICES)
     is_active = models.BooleanField(default=True)
     is_featured = models.BooleanField(default=False)
+    is_highlighted = models.BooleanField(
+        default=False,
+        help_text="Highlight this tier on the rates page (e.g., 'Popular' badge)"
+    )
+    tier_label = models.CharField(
+        max_length=50,
+        blank=True,
+        default='',
+        help_text="Display label for this pricing tier on rates page (e.g., 'Day Trip', '2D1N', 'Under 100 pax')"
+    )
     allow_multiple = models.BooleanField(default=False, help_text="Allow multiple quantities per booking")
     maximum_quantity = models.PositiveIntegerField(
         null=True, blank=True,

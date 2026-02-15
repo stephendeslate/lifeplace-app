@@ -12,7 +12,11 @@
       "is_active": true,
       "sort_order": 1,
       "requires_venue": true,
-      "typical_duration_hours": 8
+      "typical_duration_hours": 8,
+      "rates_page_section": "",
+      "includes": [],
+      "notes": [],
+      "badge_text": ""
     }
   },
   {
@@ -28,7 +32,11 @@
       "is_active": true,
       "sort_order": 0,
       "requires_venue": false,
-      "typical_duration_hours": null
+      "typical_duration_hours": null,
+      "rates_page_section": "",
+      "includes": [],
+      "notes": [],
+      "badge_text": ""
     }
   },
   {
@@ -44,7 +52,11 @@
       "is_active": true,
       "sort_order": 1,
       "requires_venue": true,
-      "typical_duration_hours": 6
+      "typical_duration_hours": 6,
+      "rates_page_section": "",
+      "includes": [],
+      "notes": [],
+      "badge_text": ""
     }
   },
   {
@@ -60,7 +72,11 @@
       "is_active": true,
       "sort_order": 2,
       "requires_venue": true,
-      "typical_duration_hours": 6
+      "typical_duration_hours": 6,
+      "rates_page_section": "",
+      "includes": [],
+      "notes": [],
+      "badge_text": ""
     }
   },
   {
@@ -76,7 +92,11 @@
       "is_active": true,
       "sort_order": 0,
       "requires_venue": true,
-      "typical_duration_hours": null
+      "typical_duration_hours": null,
+      "rates_page_section": "",
+      "includes": [],
+      "notes": [],
+      "badge_text": ""
     }
   },
   {
@@ -92,7 +112,11 @@
       "is_active": true,
       "sort_order": 1,
       "requires_venue": true,
-      "typical_duration_hours": 6
+      "typical_duration_hours": 6,
+      "rates_page_section": "wedding_combos",
+      "includes": ["Free prenup", "4 cabana rooms"],
+      "notes": [],
+      "badge_text": ""
     }
   },
   {
@@ -108,7 +132,11 @@
       "is_active": true,
       "sort_order": 10,
       "requires_venue": false,
-      "typical_duration_hours": null
+      "typical_duration_hours": null,
+      "rates_page_section": "",
+      "includes": [],
+      "notes": [],
+      "badge_text": ""
     }
   },
   {
@@ -124,7 +152,19 @@
       "is_active": true,
       "sort_order": 1,
       "requires_venue": false,
-      "typical_duration_hours": null
+      "typical_duration_hours": null,
+      "rates_page_section": "event_packages",
+      "includes": [
+        "Use of all venue facilities",
+        "Camping tent accommodation (overnight)"
+      ],
+      "notes": [
+        "Kitchen use: \u20b15,000/day",
+        "Swimming pool: \u20b1150/person/day",
+        "Cabana: Starting at \u20b13,300/night",
+        "A/C function halls: \u20b110,000 full day or \u20b15,000 half-day"
+      ],
+      "badge_text": ""
     }
   },
   {
@@ -140,7 +180,21 @@
       "is_active": true,
       "sort_order": 2,
       "requires_venue": false,
-      "typical_duration_hours": null
+      "typical_duration_hours": null,
+      "rates_page_section": "event_packages",
+      "includes": [
+        "Use of Havilah accommodations",
+        "Use of all facilities",
+        "Swimming pool access",
+        "Upgraded sound system",
+        "Service charge included",
+        "Meals (2-10 depending on duration)"
+      ],
+      "notes": [
+        "Cabanas start at \u20b13,300/night",
+        "A/C function halls: \u20b110,000 full day or \u20b15,000 half-day"
+      ],
+      "badge_text": ""
     }
   },
   {
@@ -156,7 +210,20 @@
       "is_active": true,
       "sort_order": 3,
       "requires_venue": false,
-      "typical_duration_hours": null
+      "typical_duration_hours": null,
+      "rates_page_section": "event_packages",
+      "includes": [
+        "Use of Havilah accommodations",
+        "Access to all venue facilities",
+        "Swimming pool privileges",
+        "Upgraded sound system",
+        "Four cabanas included",
+        "Function hall usage",
+        "Service charge included",
+        "Meals (2-10 depending on duration)"
+      ],
+      "notes": [],
+      "badge_text": "Staff Pick"
     }
   },
   {
@@ -172,7 +239,11 @@
       "is_active": true,
       "sort_order": 20,
       "requires_venue": false,
-      "typical_duration_hours": null
+      "typical_duration_hours": null,
+      "rates_page_section": "",
+      "includes": [],
+      "notes": [],
+      "badge_text": ""
     }
   },
   {
@@ -188,7 +259,20 @@
       "is_active": true,
       "sort_order": 1,
       "requires_venue": false,
-      "typical_duration_hours": null
+      "typical_duration_hours": null,
+      "rates_page_section": "event_packages",
+      "includes": [
+        "Professional team-building facilitator",
+        "Certificates for participants",
+        "Activity materials and supplies",
+        "Game prizes",
+        "Evaluation summary documentation",
+        "Raw photos/videos"
+      ],
+      "notes": [
+        "Partnered with MZone Team Building (www.mzoneteambuilding.com)"
+      ],
+      "badge_text": ""
     }
   },
   {
@@ -204,7 +288,20 @@
       "is_active": true,
       "sort_order": 2,
       "requires_venue": false,
-      "typical_duration_hours": null
+      "typical_duration_hours": null,
+      "rates_page_section": "event_packages",
+      "includes": [
+        "Facility access and swimming pool",
+        "Plated meals (quantity varies by duration)",
+        "Professional team-building facilitation",
+        "Audio and visual equipment",
+        "Certificates of participation",
+        "Activity materials and game prizes",
+        "Evaluation summary documentation",
+        "Raw photos and video footage"
+      ],
+      "notes": ["Partnered with MZone Team Building"],
+      "badge_text": ""
     }
   },
   {
@@ -220,7 +317,19 @@
       "is_active": true,
       "sort_order": 5,
       "requires_venue": true,
-      "typical_duration_hours": null
+      "typical_duration_hours": null,
+      "rates_page_section": "all_in_weddings",
+      "includes": [
+        "Catering with buffet selections",
+        "Photography and videography",
+        "Professional coordination team",
+        "Lighting and sound equipment",
+        "Floral arrangements",
+        "Table setup with linens",
+        "Host/emcee services"
+      ],
+      "notes": [],
+      "badge_text": ""
     }
   },
   {
@@ -236,7 +345,11 @@
       "is_active": true,
       "sort_order": 100,
       "requires_venue": false,
-      "typical_duration_hours": null
+      "typical_duration_hours": null,
+      "rates_page_section": "",
+      "includes": [],
+      "notes": [],
+      "badge_text": ""
     }
   }
 ]

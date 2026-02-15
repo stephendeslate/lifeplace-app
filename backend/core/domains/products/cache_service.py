@@ -27,7 +27,7 @@ class ProductCacheService(VersionedCacheService):
     # Version groups - invalidating a group increments its version
     version_groups = {
         'categories': ['categories', 'tree'],  # Category lists and tree
-        'products': ['list', 'featured', 'active', 'by_category', 'batch'],  # Product lists
+        'products': ['list', 'featured', 'active', 'by_category', 'batch', 'rates_page'],  # Product lists
         'discounts': ['discounts'],  # Discount lists
         'pricing': ['pricing'],  # Pricing calculations
     }
@@ -43,6 +43,7 @@ class ProductCacheService(VersionedCacheService):
     DISCOUNT_LIST_KEY = "discounts:list:{query_hash}"
     DISCOUNT_VALID_KEY = "discounts:valid"
     DISCOUNT_BY_TYPE_KEY = "discounts:by_type:{discount_type}"
+    RATES_PAGE_KEY = "rates_page"
     PRICING_CALCULATION_KEY = "pricing:{product_ids_hash}:{params_hash}"
 
     # Non-versioned keys (specific to individual entities - direct deletion)

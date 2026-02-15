@@ -410,6 +410,7 @@ class VenueEventTypeConfigurationSerializer(serializers.ModelSerializer):
             'is_all_day_access',
             'default_check_in_time', 'default_checkout_time',
             'checkout_next_day', 'maximum_program_hours', 'is_fixed_duration',
+            'includes', 'capacity_label',
             'notes',
             'created_at', 'updated_at'
         ]
@@ -426,6 +427,7 @@ class VenueEventTypeConfigurationInlineSerializer(serializers.ModelSerializer):
             'id', 'event_type', 'event_type_name',
             'base_price', 'included_hours', 'excess_hour_price',
             'is_all_day_access',
+            'includes', 'capacity_label',
         ]
 
 

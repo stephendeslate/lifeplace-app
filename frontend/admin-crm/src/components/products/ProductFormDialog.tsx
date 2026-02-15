@@ -1,6 +1,6 @@
 // frontend/admin-crm/src/components/products/ProductFormDialog.tsx
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   Dialog,
   DialogTitle,
@@ -24,48 +24,53 @@ import {
   OutlinedInput,
   Checkbox,
   ListItemText,
-} from '@mui/material';
-import { useProductCategories } from '../../hooks/useProducts';
-import { useEventTypes } from '../../hooks/useEvents';
-import { ImageUploadField, GalleryUploadField } from '../common';
+} from "@mui/material";
+import { useProductCategories } from "../../hooks/useProducts";
+import { useEventTypes } from "../../hooks/useEvents";
+import { ImageUploadField, GalleryUploadField } from "../common";
 import type {
   ProductOption,
   CreateProductData,
   UpdateProductData,
   ProductFormData,
-} from '../../types/products.types';
-import { PackageVenuesSection } from './PackageVenuesSection';
+} from "../../types/products.types";
+import { PackageVenuesSection } from "./PackageVenuesSection";
 
 interface ProductFormDialogProps {
   open: boolean;
   onClose: () => void;
   editingProduct?: ProductOption | null;
-  onSubmit: (data: CreateProductData | UpdateProductData, formData?: FormData) => void;
+  onSubmit: (
+    data: CreateProductData | UpdateProductData,
+    formData?: FormData,
+  ) => void;
   isLoading: boolean;
 }
 
 const defaultFormData: ProductFormData = {
-  name: '',
-  description: '',
-  category: '',
-  pricing_model: 'FIXED',
-  pricing_unit: 'PER_EVENT',
-  base_price: '',
-  currency: 'PHP',
+  name: "",
+  description: "",
+  category: "",
+  pricing_model: "FIXED",
+  pricing_unit: "PER_EVENT",
+  base_price: "",
+  currency: "PHP",
   is_tax_inclusive: false,
-  type: 'PRODUCT',
+  type: "PRODUCT",
   is_active: true,
   is_featured: false,
+  is_highlighted: false,
+  tier_label: "",
   allow_multiple: false,
-  maximum_quantity: '',
+  maximum_quantity: "",
   requires_approval: false,
-  minimum_hours: '',
-  maximum_hours: '',
-  advance_booking_days: '7',
-  maximum_booking_days: '',
-  event_days: '',
-  sku: '',
-  sort_order: '0',
+  minimum_hours: "",
+  maximum_hours: "",
+  advance_booking_days: "7",
+  maximum_booking_days: "",
+  event_days: "",
+  sku: "",
+  sort_order: "0",
   // Event types - which booking flows this package is available for
   event_type_ids: [],
   // Images
@@ -83,34 +88,42 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
   const [formData, setFormData] = useState<ProductFormData>(defaultFormData);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const { categories, isLoadingCategories } = useProductCategories({ is_active: true });
-  const { eventTypes, isLoadingEventTypes } = useEventTypes({ is_active: true });
+  const { categories, isLoadingCategories } = useProductCategories({
+    is_active: true,
+  });
+  const { eventTypes, isLoadingEventTypes } = useEventTypes({
+    is_active: true,
+  });
 
   useEffect(() => {
     if (open) {
       if (editingProduct) {
         setFormData({
-          name: editingProduct.name || '',
-          description: editingProduct.description || '',
-          category: editingProduct.category?.toString() || '',
-          pricing_model: editingProduct.pricing_model || 'FIXED',
-          pricing_unit: editingProduct.pricing_unit || 'PER_EVENT',
-          base_price: editingProduct.base_price || '',
-          currency: editingProduct.currency || 'PHP',
+          name: editingProduct.name || "",
+          description: editingProduct.description || "",
+          category: editingProduct.category?.toString() || "",
+          pricing_model: editingProduct.pricing_model || "FIXED",
+          pricing_unit: editingProduct.pricing_unit || "PER_EVENT",
+          base_price: editingProduct.base_price || "",
+          currency: editingProduct.currency || "PHP",
           is_tax_inclusive: editingProduct.is_tax_inclusive ?? false,
-          type: editingProduct.type || 'PRODUCT',
+          type: editingProduct.type || "PRODUCT",
           is_active: editingProduct.is_active ?? true,
           is_featured: editingProduct.is_featured ?? false,
+          is_highlighted: editingProduct.is_highlighted ?? false,
+          tier_label: editingProduct.tier_label || "",
           allow_multiple: editingProduct.allow_multiple ?? false,
-          maximum_quantity: editingProduct.maximum_quantity?.toString() || '',
+          maximum_quantity: editingProduct.maximum_quantity?.toString() || "",
           requires_approval: editingProduct.requires_approval ?? false,
-          minimum_hours: editingProduct.minimum_hours?.toString() || '',
-          maximum_hours: editingProduct.maximum_hours?.toString() || '',
-          advance_booking_days: editingProduct.advance_booking_days?.toString() || '7',
-          maximum_booking_days: editingProduct.maximum_booking_days?.toString() || '',
-          event_days: editingProduct.event_days?.toString() || '',
-          sku: editingProduct.sku || '',
-          sort_order: editingProduct.sort_order?.toString() || '0',
+          minimum_hours: editingProduct.minimum_hours?.toString() || "",
+          maximum_hours: editingProduct.maximum_hours?.toString() || "",
+          advance_booking_days:
+            editingProduct.advance_booking_days?.toString() || "7",
+          maximum_booking_days:
+            editingProduct.maximum_booking_days?.toString() || "",
+          event_days: editingProduct.event_days?.toString() || "",
+          sku: editingProduct.sku || "",
+          sort_order: editingProduct.sort_order?.toString() || "0",
           // Event types - which booking flows this package is available for
           event_type_ids: editingProduct.event_type_ids || [],
           // Images
@@ -124,45 +137,50 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
     }
   }, [editingProduct, open]);
 
-  const handleInputChange = (field: keyof ProductFormData) => (
-    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | 
-           { target: { value: unknown } }
-  ) => {
-    const value = event.target.value;
-    setFormData(prev => ({
-      ...prev,
-      [field]: value,
-    }));
-    
-    // Clear error when user starts typing
-    if (errors[field]) {
-      setErrors(prev => ({
+  const handleInputChange =
+    (field: keyof ProductFormData) =>
+    (
+      event:
+        | React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+        | { target: { value: unknown } },
+    ) => {
+      const value = event.target.value;
+      setFormData((prev) => ({
         ...prev,
-        [field]: '',
+        [field]: value,
       }));
-    }
-  };
 
-  const handleSwitchChange = (field: keyof ProductFormData) => (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: event.target.checked,
-      // Clear maximum_quantity when allow_multiple is turned off
-      ...(field === 'allow_multiple' && !event.target.checked ? { maximum_quantity: '' } : {}),
-    }));
-  };
+      // Clear error when user starts typing
+      if (errors[field]) {
+        setErrors((prev) => ({
+          ...prev,
+          [field]: "",
+        }));
+      }
+    };
+
+  const handleSwitchChange =
+    (field: keyof ProductFormData) =>
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      setFormData((prev) => ({
+        ...prev,
+        [field]: event.target.checked,
+        // Clear maximum_quantity when allow_multiple is turned off
+        ...(field === "allow_multiple" && !event.target.checked
+          ? { maximum_quantity: "" }
+          : {}),
+      }));
+    };
 
   const handleFeaturedImageChange = (file: File | null) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       featured_image: file,
     }));
   };
 
   const handleGalleryImagesChange = (files: (File | string)[]) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       gallery_images: files,
     }));
@@ -170,7 +188,7 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
 
   const handleEventTypesChange = (event: { target: { value: unknown } }) => {
     const value = event.target.value as number[];
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       event_type_ids: value,
     }));
@@ -180,26 +198,27 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
     const newErrors: Record<string, string> = {};
 
     if (!formData.name.trim()) {
-      newErrors.name = 'Name is required';
+      newErrors.name = "Name is required";
     }
 
     if (!formData.description.trim()) {
-      newErrors.description = 'Description is required';
+      newErrors.description = "Description is required";
     }
 
-    if (!formData.category || formData.category === '') {
-      newErrors.category = 'Category is required';
+    if (!formData.category || formData.category === "") {
+      newErrors.category = "Category is required";
     }
 
     if (!formData.base_price || parseFloat(formData.base_price) <= 0) {
-      newErrors.base_price = 'Valid price is required';
+      newErrors.base_price = "Valid price is required";
     }
 
     if (formData.minimum_hours && formData.maximum_hours) {
       const min = parseInt(formData.minimum_hours);
       const max = parseInt(formData.maximum_hours);
       if (min > max) {
-        newErrors.maximum_hours = 'Maximum hours must be greater than minimum hours';
+        newErrors.maximum_hours =
+          "Maximum hours must be greater than minimum hours";
       }
     }
 
@@ -222,14 +241,24 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
       type: formData.type,
       is_active: formData.is_active,
       is_featured: formData.is_featured,
+      is_highlighted: formData.is_highlighted,
+      tier_label: formData.tier_label,
       allow_multiple: formData.allow_multiple,
-      maximum_quantity: formData.allow_multiple && formData.maximum_quantity
-        ? parseInt(formData.maximum_quantity) : null,
+      maximum_quantity:
+        formData.allow_multiple && formData.maximum_quantity
+          ? parseInt(formData.maximum_quantity)
+          : null,
       requires_approval: formData.requires_approval,
-      minimum_hours: formData.minimum_hours ? parseInt(formData.minimum_hours) : null,
-      maximum_hours: formData.maximum_hours ? parseInt(formData.maximum_hours) : null,
+      minimum_hours: formData.minimum_hours
+        ? parseInt(formData.minimum_hours)
+        : null,
+      maximum_hours: formData.maximum_hours
+        ? parseInt(formData.maximum_hours)
+        : null,
       advance_booking_days: parseInt(formData.advance_booking_days) || 7,
-      maximum_booking_days: formData.maximum_booking_days ? parseInt(formData.maximum_booking_days) : null,
+      maximum_booking_days: formData.maximum_booking_days
+        ? parseInt(formData.maximum_booking_days)
+        : null,
       event_days: formData.event_days ? parseInt(formData.event_days) : null,
       sku: formData.sku || null,
       sort_order: parseInt(formData.sort_order) || 0,
@@ -239,7 +268,9 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
 
     // Check if we need to send FormData (for image uploads)
     const hasNewFeaturedImage = formData.featured_image instanceof File;
-    const hasNewGalleryImages = formData.gallery_images.some(img => img instanceof File);
+    const hasNewGalleryImages = formData.gallery_images.some(
+      (img) => img instanceof File,
+    );
 
     if (hasNewFeaturedImage || hasNewGalleryImages) {
       // Build FormData for image uploads
@@ -259,21 +290,22 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
 
       // Add featured image if it's a new file
       if (hasNewFeaturedImage && formData.featured_image instanceof File) {
-        formDataObj.append('featured_image', formData.featured_image);
+        formDataObj.append("featured_image", formData.featured_image);
       }
 
       // Add gallery images - new files get uploaded, existing URLs are preserved
-      const existingUrls = formData.gallery_images
-        .filter((img): img is string => typeof img === 'string');
+      const existingUrls = formData.gallery_images.filter(
+        (img): img is string => typeof img === "string",
+      );
       if (existingUrls.length > 0) {
-        formDataObj.append('gallery_images', JSON.stringify(existingUrls));
+        formDataObj.append("gallery_images", JSON.stringify(existingUrls));
       }
 
       // Add new gallery image files
       formData.gallery_images
         .filter((img): img is File => img instanceof File)
         .forEach((file) => {
-          formDataObj.append('gallery_image_files', file);
+          formDataObj.append("gallery_image_files", file);
         });
 
       onSubmit(submitData, formDataObj);
@@ -289,42 +321,47 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
   };
 
   return (
-    <Dialog 
-      open={open} 
+    <Dialog
+      open={open}
       onClose={handleClose}
       maxWidth="md"
       fullWidth
       PaperProps={{
-        sx: { minHeight: '80vh' }
+        sx: { minHeight: "80vh" },
       }}
     >
       {open && (
         <>
           <DialogTitle>
-            {editingProduct ? 'Edit Product' : 'Create New Product'}
+            {editingProduct ? "Edit Product" : "Create New Product"}
           </DialogTitle>
-      
+
           <DialogContent>
             <Box component="form" noValidate sx={{ mt: 1 }}>
               {/* Info Alert */}
               <Alert severity="info" sx={{ mb: 3 }}>
                 Hours and excess pricing are now managed at the venue level.
-                Edit venue settings to configure included hours and excess hour rates.
+                Edit venue settings to configure included hours and excess hour
+                rates.
               </Alert>
 
               {/* Basic Information */}
               <Typography variant="h6" gutterBottom>
                 Basic Information
               </Typography>
-              
+
               <Box display="flex" flexDirection="column" gap={2}>
-                <Box display="flex" flexDirection={{ xs: 'column', sm: 'row' }} gap={2}>
+                <Box
+                  display="flex"
+                  flexDirection={{ xs: "column", sm: "row" }}
+                  gap={2}
+                >
                   <Box flex={2}>
                     <TextField
                       fullWidth
                       label="Product Name"
                       value={formData.name}
-                      onChange={handleInputChange('name')}
+                      onChange={handleInputChange("name")}
                       error={!!errors.name}
                       helperText={errors.name}
                       required
@@ -335,7 +372,7 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
                       <InputLabel>Type</InputLabel>
                       <Select
                         value={formData.type}
-                        onChange={handleInputChange('type')}
+                        onChange={handleInputChange("type")}
                         label="Type"
                       >
                         <MenuItem value="PRODUCT">Product</MenuItem>
@@ -344,26 +381,41 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
                     </FormControl>
                   </Box>
                 </Box>
-                
+
                 <TextField
                   fullWidth
                   label="Description"
                   value={formData.description}
-                  onChange={handleInputChange('description')}
+                  onChange={handleInputChange("description")}
                   error={!!errors.description}
                   helperText={errors.description}
                   multiline
                   rows={3}
                   required
                 />
-                
-                <Box display="flex" flexDirection={{ xs: 'column', sm: 'row' }} gap={2}>
+
+                <TextField
+                  fullWidth
+                  label="Tier Label"
+                  value={formData.tier_label}
+                  onChange={(e) =>
+                    setFormData({ ...formData, tier_label: e.target.value })
+                  }
+                  helperText="Display label on rates page (e.g., Day Trip, 2D1N, Under 100 pax)"
+                  size="small"
+                />
+
+                <Box
+                  display="flex"
+                  flexDirection={{ xs: "column", sm: "row" }}
+                  gap={2}
+                >
                   <Box flex={1}>
                     <FormControl fullWidth error={!!errors.category}>
                       <InputLabel>Category</InputLabel>
                       <Select
                         value={formData.category}
-                        onChange={handleInputChange('category')}
+                        onChange={handleInputChange("category")}
                         label="Category"
                         disabled={isLoadingCategories}
                       >
@@ -380,13 +432,13 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
                       )}
                     </FormControl>
                   </Box>
-                  
+
                   <Box flex={1}>
                     <TextField
                       fullWidth
                       label="SKU (Optional)"
                       value={formData.sku}
-                      onChange={handleInputChange('sku')}
+                      onChange={handleInputChange("sku")}
                       placeholder="Auto-generated if empty"
                     />
                   </Box>
@@ -399,15 +451,19 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
               <Typography variant="h6" gutterBottom>
                 Pricing
               </Typography>
-              
+
               <Box display="flex" flexDirection="column" gap={2}>
-                <Box display="flex" flexDirection={{ xs: 'column', sm: 'row' }} gap={2}>
+                <Box
+                  display="flex"
+                  flexDirection={{ xs: "column", sm: "row" }}
+                  gap={2}
+                >
                   <Box flex={1}>
                     <FormControl fullWidth>
                       <InputLabel>Pricing Model</InputLabel>
                       <Select
                         value={formData.pricing_model}
-                        onChange={handleInputChange('pricing_model')}
+                        onChange={handleInputChange("pricing_model")}
                         label="Pricing Model"
                       >
                         <MenuItem value="FIXED">Fixed Price</MenuItem>
@@ -423,7 +479,7 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
                       <InputLabel>Pricing Unit</InputLabel>
                       <Select
                         value={formData.pricing_unit}
-                        onChange={handleInputChange('pricing_unit')}
+                        onChange={handleInputChange("pricing_unit")}
                         label="Pricing Unit"
                       >
                         <MenuItem value="PER_EVENT">Per Event</MenuItem>
@@ -434,20 +490,28 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
                   </Box>
                 </Box>
 
-                <Box display="flex" flexDirection={{ xs: 'column', sm: 'row' }} gap={2}>
+                <Box
+                  display="flex"
+                  flexDirection={{ xs: "column", sm: "row" }}
+                  gap={2}
+                >
                   <Box flex={1}>
                     <TextField
                       fullWidth
                       label="Base Price"
                       value={formData.base_price}
-                      onChange={handleInputChange('base_price')}
+                      onChange={handleInputChange("base_price")}
                       error={!!errors.base_price}
                       helperText={errors.base_price}
                       type="number"
                       InputProps={{
-                        startAdornment: <InputAdornment position="start">{formData.currency}</InputAdornment>,
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            {formData.currency}
+                          </InputAdornment>
+                        ),
                       }}
-                      disabled={formData.pricing_model === 'CUSTOM'}
+                      disabled={formData.pricing_model === "CUSTOM"}
                       required
                     />
                   </Box>
@@ -457,7 +521,7 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
                       control={
                         <Switch
                           checked={formData.is_tax_inclusive}
-                          onChange={handleSwitchChange('is_tax_inclusive')}
+                          onChange={handleSwitchChange("is_tax_inclusive")}
                         />
                       }
                       label="Tax Inclusive"
@@ -465,8 +529,9 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
                   </Box>
                 </Box>
                 <Typography variant="caption" color="text.secondary">
-                  Pricing Unit determines how the price is displayed to clients (e.g., "per person" for camps, "per event" for weddings).
-                  If Tax Inclusive is enabled, the base price already includes tax.
+                  Pricing Unit determines how the price is displayed to clients
+                  (e.g., "per person" for camps, "per event" for weddings). If
+                  Tax Inclusive is enabled, the base price already includes tax.
                 </Typography>
               </Box>
 
@@ -478,13 +543,17 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
               </Typography>
 
               <Box display="flex" flexDirection="column" gap={2}>
-                <Box display="flex" flexDirection={{ xs: 'column', sm: 'row' }} gap={2}>
+                <Box
+                  display="flex"
+                  flexDirection={{ xs: "column", sm: "row" }}
+                  gap={2}
+                >
                   <Box flex={1}>
                     <TextField
                       fullWidth
                       label="Minimum Hours (Optional)"
                       value={formData.minimum_hours}
-                      onChange={handleInputChange('minimum_hours')}
+                      onChange={handleInputChange("minimum_hours")}
                       type="number"
                       helperText="Minimum booking duration for this product"
                     />
@@ -494,9 +563,12 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
                       fullWidth
                       label="Maximum Hours (Optional)"
                       value={formData.maximum_hours}
-                      onChange={handleInputChange('maximum_hours')}
+                      onChange={handleInputChange("maximum_hours")}
                       error={!!errors.maximum_hours}
-                      helperText={errors.maximum_hours || 'Maximum booking duration for this product'}
+                      helperText={
+                        errors.maximum_hours ||
+                        "Maximum booking duration for this product"
+                      }
                       type="number"
                     />
                   </Box>
@@ -504,26 +576,31 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
               </Box>
 
               {/* Event Duration - Only show for PACKAGE type */}
-              {formData.type === 'PACKAGE' && (
+              {formData.type === "PACKAGE" && (
                 <>
                   <Divider sx={{ my: 3 }} />
 
                   <Typography variant="h6" gutterBottom>
                     Event Duration
                   </Typography>
-                  <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                    For multi-day packages (camps, retreats). Leave blank for hourly packages.
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ mb: 2 }}
+                  >
+                    For multi-day packages (camps, retreats). Leave blank for
+                    hourly packages.
                   </Typography>
 
                   <TextField
                     fullWidth
                     label="Event Days"
                     value={formData.event_days}
-                    onChange={handleInputChange('event_days')}
+                    onChange={handleInputChange("event_days")}
                     type="number"
                     helperText="e.g., 2 for 2D1N, 3 for 3D2N, 5 for 5D4N"
                     InputProps={{
-                      inputProps: { min: 1 }
+                      inputProps: { min: 1 },
                     }}
                     sx={{ maxWidth: 300 }}
                   />
@@ -536,14 +613,18 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
               <Typography variant="h6" gutterBottom>
                 Booking Configuration
               </Typography>
-              
-              <Box display="flex" flexDirection={{ xs: 'column', sm: 'row' }} gap={2}>
+
+              <Box
+                display="flex"
+                flexDirection={{ xs: "column", sm: "row" }}
+                gap={2}
+              >
                 <Box flex={1}>
                   <TextField
                     fullWidth
                     label="Advance Booking Days"
                     value={formData.advance_booking_days}
-                    onChange={handleInputChange('advance_booking_days')}
+                    onChange={handleInputChange("advance_booking_days")}
                     type="number"
                     helperText="Minimum days in advance for booking"
                   />
@@ -553,7 +634,7 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
                     fullWidth
                     label="Maximum Booking Days (Optional)"
                     value={formData.maximum_booking_days}
-                    onChange={handleInputChange('maximum_booking_days')}
+                    onChange={handleInputChange("maximum_booking_days")}
                     type="number"
                     helperText="Maximum days in advance for booking"
                   />
@@ -567,7 +648,10 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
                 Available For Event Types
               </Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                Select which booking flows this {formData.type === 'PACKAGE' ? 'package' : 'product'} should appear in. If none selected, it will not appear in any booking flow.
+                Select which booking flows this{" "}
+                {formData.type === "PACKAGE" ? "package" : "product"} should
+                appear in. If none selected, it will not appear in any booking
+                flow.
               </Typography>
 
               <FormControl fullWidth>
@@ -580,9 +664,9 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
                   input={<OutlinedInput label="Event Types" />}
                   disabled={isLoadingEventTypes}
                   renderValue={(selected) => (
-                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                    <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
                       {(selected as number[]).map((id) => {
-                        const eventType = eventTypes.find(et => et.id === id);
+                        const eventType = eventTypes.find((et) => et.id === id);
                         return (
                           <Chip
                             key={id}
@@ -596,7 +680,9 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
                 >
                   {eventTypes.map((eventType) => (
                     <MenuItem key={eventType.id} value={eventType.id}>
-                      <Checkbox checked={formData.event_type_ids.includes(eventType.id)} />
+                      <Checkbox
+                        checked={formData.event_type_ids.includes(eventType.id)}
+                      />
                       <ListItemText primary={eventType.name} />
                     </MenuItem>
                   ))}
@@ -606,7 +692,7 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
               <Divider sx={{ my: 3 }} />
 
               {/* Included Venues (only for existing packages) */}
-              {formData.type === 'PACKAGE' && (
+              {formData.type === "PACKAGE" && (
                 <>
                   {editingProduct?.id ? (
                     <PackageVenuesSection packageId={editingProduct.id} />
@@ -629,7 +715,8 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
                 Images
               </Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                Upload images for this product/package. If not set, images from assigned venues will be used.
+                Upload images for this product/package. If not set, images from
+                assigned venues will be used.
               </Typography>
 
               <Box display="flex" flexDirection="column" gap={3}>
@@ -639,7 +726,7 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
                   onChange={handleFeaturedImageChange}
                   helperText="Main image shown in listings and cards. Recommended: 800x600px"
                   maxSizeMB={5}
-                  aspectRatio={4/3}
+                  aspectRatio={4 / 3}
                   previewHeight={180}
                 />
 
@@ -661,13 +748,17 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
               </Typography>
 
               <Box display="flex" flexDirection="column" gap={2}>
-                <Box display="flex" flexDirection={{ xs: 'column', sm: 'row' }} gap={2}>
+                <Box
+                  display="flex"
+                  flexDirection={{ xs: "column", sm: "row" }}
+                  gap={2}
+                >
                   <Box flex={1}>
                     <FormControlLabel
                       control={
                         <Switch
                           checked={formData.is_active}
-                          onChange={handleSwitchChange('is_active')}
+                          onChange={handleSwitchChange("is_active")}
                         />
                       }
                       label="Active"
@@ -678,20 +769,38 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
                       control={
                         <Switch
                           checked={formData.is_featured}
-                          onChange={handleSwitchChange('is_featured')}
+                          onChange={handleSwitchChange("is_featured")}
                         />
                       }
                       label="Featured"
                     />
                   </Box>
                 </Box>
-                <Box display="flex" flexDirection={{ xs: 'column', sm: 'row' }} gap={2}>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={formData.is_highlighted}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          is_highlighted: e.target.checked,
+                        })
+                      }
+                    />
+                  }
+                  label="Highlight on Rates Page"
+                />
+                <Box
+                  display="flex"
+                  flexDirection={{ xs: "column", sm: "row" }}
+                  gap={2}
+                >
                   <Box flex={1}>
                     <FormControlLabel
                       control={
                         <Switch
                           checked={formData.allow_multiple}
-                          onChange={handleSwitchChange('allow_multiple')}
+                          onChange={handleSwitchChange("allow_multiple")}
                         />
                       }
                       label="Allow Multiple Quantities"
@@ -702,7 +811,7 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
                       control={
                         <Switch
                           checked={formData.requires_approval}
-                          onChange={handleSwitchChange('requires_approval')}
+                          onChange={handleSwitchChange("requires_approval")}
                         />
                       }
                       label="Requires Admin Approval"
@@ -710,56 +819,57 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
                   </Box>
                 </Box>
                 {formData.allow_multiple && (
-                  <Box display="flex" flexDirection={{ xs: 'column', sm: 'row' }} gap={2}>
+                  <Box
+                    display="flex"
+                    flexDirection={{ xs: "column", sm: "row" }}
+                    gap={2}
+                  >
                     <Box flex={1}>
                       <TextField
                         fullWidth
                         label="Maximum Quantity (Optional)"
                         value={formData.maximum_quantity}
-                        onChange={handleInputChange('maximum_quantity')}
+                        onChange={handleInputChange("maximum_quantity")}
                         type="number"
                         helperText="Leave blank for unlimited. Must be at least 2."
                         InputProps={{ inputProps: { min: 2 } }}
                       />
                     </Box>
-                    <Box flex={1}>
-                      {/* Empty box for alignment */}
-                    </Box>
+                    <Box flex={1}>{/* Empty box for alignment */}</Box>
                   </Box>
                 )}
-                <Box display="flex" flexDirection={{ xs: 'column', sm: 'row' }} gap={2}>
+                <Box
+                  display="flex"
+                  flexDirection={{ xs: "column", sm: "row" }}
+                  gap={2}
+                >
                   <Box flex={1}>
                     <TextField
                       fullWidth
                       label="Sort Order"
                       value={formData.sort_order}
-                      onChange={handleInputChange('sort_order')}
+                      onChange={handleInputChange("sort_order")}
                       type="number"
                       helperText="Lower numbers appear first"
                     />
                   </Box>
-                  <Box flex={1}>
-                    {/* Empty box for alignment */}
-                  </Box>
+                  <Box flex={1}>{/* Empty box for alignment */}</Box>
                 </Box>
               </Box>
             </Box>
           </DialogContent>
-          
+
           <DialogActions sx={{ p: 3 }}>
-            <Button 
-              onClick={handleClose}
-              disabled={isLoading}
-            >
+            <Button onClick={handleClose} disabled={isLoading}>
               Cancel
             </Button>
-            <Button 
+            <Button
               onClick={handleSubmit}
               variant="contained"
               disabled={isLoading}
               startIcon={isLoading ? <CircularProgress size={20} /> : undefined}
             >
-              {isLoading ? 'Saving...' : editingProduct ? 'Update' : 'Create'}
+              {isLoading ? "Saving..." : editingProduct ? "Update" : "Create"}
             </Button>
           </DialogActions>
         </>

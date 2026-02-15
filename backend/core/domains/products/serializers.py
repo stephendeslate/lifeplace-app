@@ -21,6 +21,7 @@ class ProductCategorySerializer(serializers.ModelSerializer):
         fields = [
             'id', 'name', 'description', 'slug', 'parent', 'is_active',
             'sort_order', 'requires_venue', 'typical_duration_hours',
+            'includes', 'notes', 'badge_text', 'rates_page_section',
             'full_path', 'level', 'children_count', 'products_count',
             'created_at', 'updated_at'
         ]
@@ -125,7 +126,8 @@ class ProductOptionSerializer(serializers.ModelSerializer):
             'pricing_model', 'pricing_model_display', 'pricing_unit', 'pricing_unit_display',
             'base_price', 'currency',
             'is_tax_inclusive',  # Indicates if base_price already includes tax
-            'type', 'type_display', 'is_active', 'is_featured', 'allow_multiple', 'maximum_quantity', 'requires_approval',
+            'type', 'type_display', 'is_active', 'is_featured', 'is_highlighted', 'tier_label',
+            'allow_multiple', 'maximum_quantity', 'requires_approval',
             'minimum_hours', 'maximum_hours', 'advance_booking_days', 'maximum_booking_days',
             'event_days', 'minimum_guests', 'maximum_guests',
             'sku', 'sort_order', 'event_types', 'event_type_ids', 'event_type_names',

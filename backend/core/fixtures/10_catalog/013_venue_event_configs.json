@@ -16,7 +16,9 @@
       "checkout_next_day": null,
       "maximum_program_hours": null,
       "is_fixed_duration": null,
-      "notes": ""
+      "notes": "",
+      "includes": [],
+      "capacity_label": ""
     }
   },
   {
@@ -36,7 +38,9 @@
       "checkout_next_day": null,
       "maximum_program_hours": null,
       "is_fixed_duration": null,
-      "notes": ""
+      "notes": "",
+      "includes": [],
+      "capacity_label": ""
     }
   },
   {
@@ -56,7 +60,9 @@
       "checkout_next_day": null,
       "maximum_program_hours": null,
       "is_fixed_duration": null,
-      "notes": ""
+      "notes": "",
+      "includes": [],
+      "capacity_label": ""
     }
   },
   {
@@ -76,7 +82,9 @@
       "checkout_next_day": null,
       "maximum_program_hours": null,
       "is_fixed_duration": null,
-      "notes": ""
+      "notes": "",
+      "includes": [],
+      "capacity_label": ""
     }
   },
   {
@@ -96,7 +104,144 @@
       "checkout_next_day": null,
       "maximum_program_hours": null,
       "is_fixed_duration": null,
-      "notes": ""
+      "notes": "",
+      "includes": [],
+      "capacity_label": ""
+    }
+  },
+  {
+    "model": "venues.venueeventtypeconfiguration",
+    "pk": 6,
+    "fields": {
+      "created_at": "2026-02-14T00:00:00.000",
+      "updated_at": "2026-02-14T00:00:00.000",
+      "venue": 2,
+      "event_type": 5,
+      "base_price": null,
+      "included_hours": null,
+      "excess_hour_price": null,
+      "is_all_day_access": false,
+      "default_check_in_time": null,
+      "default_checkout_time": null,
+      "checkout_next_day": null,
+      "maximum_program_hours": null,
+      "is_fixed_duration": null,
+      "notes": "",
+      "includes": [
+        "Free prenup venue",
+        "Ceiling treatment available (\u20b140,000)"
+      ],
+      "capacity_label": "130-150 guests"
+    }
+  },
+  {
+    "model": "venues.venueeventtypeconfiguration",
+    "pk": 7,
+    "fields": {
+      "created_at": "2026-02-14T00:00:00.000",
+      "updated_at": "2026-02-14T00:00:00.000",
+      "venue": 3,
+      "event_type": 5,
+      "base_price": null,
+      "included_hours": null,
+      "excess_hour_price": null,
+      "is_all_day_access": false,
+      "default_check_in_time": null,
+      "default_checkout_time": null,
+      "checkout_next_day": null,
+      "maximum_program_hours": null,
+      "is_fixed_duration": null,
+      "notes": "",
+      "includes": ["Free prenup venue"],
+      "capacity_label": "100-130 guests"
+    }
+  },
+  {
+    "model": "venues.venueeventtypeconfiguration",
+    "pk": 8,
+    "fields": {
+      "created_at": "2026-02-14T00:00:00.000",
+      "updated_at": "2026-02-14T00:00:00.000",
+      "venue": 6,
+      "event_type": 5,
+      "base_price": null,
+      "included_hours": null,
+      "excess_hour_price": null,
+      "is_all_day_access": false,
+      "default_check_in_time": null,
+      "default_checkout_time": null,
+      "checkout_next_day": null,
+      "maximum_program_hours": null,
+      "is_fixed_duration": null,
+      "notes": "",
+      "includes": ["Free prenup venue", "String lights included"],
+      "capacity_label": "150-200 guests"
+    }
+  },
+  {
+    "model": "venues.venueeventtypeconfiguration",
+    "pk": 9,
+    "fields": {
+      "created_at": "2026-02-14T00:00:00.000",
+      "updated_at": "2026-02-14T00:00:00.000",
+      "venue": 4,
+      "event_type": 5,
+      "base_price": null,
+      "included_hours": null,
+      "excess_hour_price": null,
+      "is_all_day_access": false,
+      "default_check_in_time": null,
+      "default_checkout_time": null,
+      "checkout_next_day": null,
+      "maximum_program_hours": null,
+      "is_fixed_duration": null,
+      "notes": "",
+      "includes": ["White draping", "Basic styling", "Basic sound system"],
+      "capacity_label": "Ceremony venue"
+    }
+  },
+  {
+    "model": "venues.venueeventtypeconfiguration",
+    "pk": 10,
+    "fields": {
+      "created_at": "2026-02-14T00:00:00.000",
+      "updated_at": "2026-02-14T00:00:00.000",
+      "venue": 11,
+      "event_type": 5,
+      "base_price": null,
+      "included_hours": null,
+      "excess_hour_price": null,
+      "is_all_day_access": false,
+      "default_check_in_time": null,
+      "default_checkout_time": null,
+      "checkout_next_day": null,
+      "maximum_program_hours": null,
+      "is_fixed_duration": null,
+      "notes": "",
+      "includes": ["String lights included"],
+      "capacity_label": "70-80 guests"
+    }
+  },
+  {
+    "model": "venues.venueeventtypeconfiguration",
+    "pk": 11,
+    "fields": {
+      "created_at": "2026-02-14T00:00:00.000",
+      "updated_at": "2026-02-14T00:00:00.000",
+      "venue": 7,
+      "event_type": 5,
+      "base_price": null,
+      "included_hours": null,
+      "excess_hour_price": null,
+      "is_all_day_access": false,
+      "default_check_in_time": null,
+      "default_checkout_time": null,
+      "checkout_next_day": null,
+      "maximum_program_hours": null,
+      "is_fixed_duration": null,
+      "notes": "",
+      "includes": [],
+      "capacity_label": "Intimate dining"
     }
   }
 ]

@@ -920,3 +920,144 @@ class CustomPackageService:
             'partial_matches': partial_matches,
             'custom_package_estimate': custom_package_estimate,
         }
+
+
+class RatesPageService:
+    """Service for assembling rates page data from the database"""
+
+    WEDDING_EVENT_TYPE_ID = 5  # From fixtures: Wedding event type pk=5
+
+    @classmethod
+    def get_rates_page_data(cls):
+        """
+        Build complete rates page response from database.
+
+        Returns structured data for the four sections of the rates page:
+        - event_packages: grouped by category with tiers
+        - wedding_venues: standalone venues with wedding-specific config
+        - wedding_combos: multi-venue wedding packages
+        - all_in_weddings: comprehensive wedding packages
+        """
+        from core.domains.venues.models import Venue, VenueEventTypeConfiguration
+
+        return {
+            'event_packages': cls._get_event_packages(),
+            'wedding_venues': cls._get_wedding_venues(),
+            'wedding_combos': cls._get_section_products('wedding_combos'),
+            'all_in_weddings': cls._get_section_products('all_in_weddings'),
+        }
+
+    @classmethod
+    def _get_event_packages(cls):
+        """Get event packages grouped by category with tiers"""
+        categories = ProductCategory.objects.filter(
+            is_active=True,
+            rates_page_section='event_packages',
+        ).prefetch_related(
+            Prefetch(
+                'products',
+                queryset=ProductOption.objects.filter(
+                    is_active=True
+                ).order_by('sort_order', 'name'),
+                to_attr='active_products'
+            )
+        ).order_by('sort_order', 'name')
+
+        packages = []
+        for cat in categories:
+            products = cat.active_products
+            if not products:
+                continue
+
+            tiers = []
+            for product in products:
+                tiers.append({
+                    'id': product.id,
+                    'label': product.tier_label or product.name,
+                    'price': str(product.base_price),
+                    'pricing_unit': product.pricing_unit,
+                    'is_highlighted': product.is_highlighted,
+                    'event_days': product.event_days,
+                    'sort_order': product.sort_order,
+                })
+
+            packages.append({
+                'id': cat.id,
+                'name': cat.name,
+                'description': cat.description,
+                'slug': cat.slug,
+                'includes': cat.includes or [],
+                'notes': cat.notes or [],
+                'badge': cat.badge_text or '',
+                'minimum_participants': products[0].minimum_guests,
+                'tiers': tiers,
+                'sort_order': cat.sort_order,
+            })
+
+        return packages
+
+    @classmethod
+    def _get_wedding_venues(cls):
+        """Get wedding venue pricing from VenueEventTypeConfiguration"""
+        from core.domains.venues.models import Venue, VenueEventTypeConfiguration
+
+        configs = VenueEventTypeConfiguration.objects.filter(
+            event_type_id=cls.WEDDING_EVENT_TYPE_ID,
+            venue__is_active=True,
+            venue__is_rentable_standalone=True,
+        ).select_related('venue').order_by('venue__sort_order', 'venue__name')
+
+        venues = []
+        for config in configs:
+            venue = config.venue
+            effective_hours = config.get_effective_included_hours()
+            effective_excess = config.get_effective_excess_hour_price()
+
+            venues.append({
+                'id': venue.id,
+                'name': venue.name,
+                'price': str(config.get_effective_base_price() or 0),
+                'duration': f"{int(effective_hours)} hours" if effective_hours else None,
+                'capacity': config.capacity_label or f"{venue.minimum_capacity}-{venue.maximum_capacity} guests",
+                'includes': config.includes or [],
+                'excess_hour_rate': str(effective_excess) if effective_excess else None,
+            })
+
+        return venues
+
+    @classmethod
+    def _get_section_products(cls, section):
+        """Get products for a rates page section (wedding_combos or all_in_weddings)"""
+        categories = ProductCategory.objects.filter(
+            is_active=True,
+            rates_page_section=section,
+        ).prefetch_related(
+            Prefetch(
+                'products',
+                queryset=ProductOption.objects.filter(
+                    is_active=True
+                ).order_by('sort_order', 'name'),
+                to_attr='active_products'
+            )
+        ).order_by('sort_order', 'name')
+
+        items = []
+        for cat in categories:
+            for product in cat.active_products:
+                item = {
+                    'id': product.id,
+                    'name': product.name,
+                    'price': str(product.base_price),
+                    'includes': cat.includes or [],
+                }
+
+                if section == 'wedding_combos':
+                    item['duration'] = f"{product.minimum_hours} hours" if product.minimum_hours else None
+                elif section == 'all_in_weddings':
+                    item['starting_price'] = item.pop('price')
+                    item['guest_count'] = product.minimum_guests
+                    item['venues'] = product.tier_label or product.name
+
+                items.append(item)
+
+        return items

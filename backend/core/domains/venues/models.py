@@ -526,6 +526,19 @@ class VenueEventTypeConfiguration(BaseModel):
         help_text="Override: duration is fixed"
     )
 
+    # Rates page display metadata
+    includes = models.JSONField(
+        default=list,
+        blank=True,
+        help_text="List of included features for this venue+event type on rates page (e.g., ['Free prenup venue'])"
+    )
+    capacity_label = models.CharField(
+        max_length=100,
+        blank=True,
+        default='',
+        help_text="Display label for guest capacity on rates page (e.g., '130-150 guests'). May differ from venue's physical capacity."
+    )
+
     # Description for admin clarity
     notes = models.TextField(
         blank=True,

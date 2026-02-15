@@ -32,13 +32,9 @@
       "is_custom": false,
       "booking_session_id": null,
       "bundle_discount_percent": "0.00",
-      "event_types": [
-        5,
-        7,
-        18,
-        20,
-        19
-      ]
+      "tier_label": "",
+      "is_highlighted": false,
+      "event_types": [5, 7, 18, 20, 19]
     }
   },
   {
@@ -74,9 +70,9 @@
       "is_custom": false,
       "booking_session_id": null,
       "bundle_discount_percent": "0.00",
-      "event_types": [
-        5
-      ]
+      "tier_label": "",
+      "is_highlighted": false,
+      "event_types": [5]
     }
   },
   {
@@ -112,9 +108,9 @@
       "is_custom": false,
       "booking_session_id": null,
       "bundle_discount_percent": "0.00",
-      "event_types": [
-        5
-      ]
+      "tier_label": "",
+      "is_highlighted": false,
+      "event_types": [5]
     }
   },
   {
@@ -150,11 +146,9 @@
       "is_custom": false,
       "booking_session_id": null,
       "bundle_discount_percent": "0.00",
-      "event_types": [
-        19,
-        20,
-        7
-      ]
+      "tier_label": "",
+      "is_highlighted": false,
+      "event_types": [19, 20, 7]
     }
   },
   {
@@ -190,11 +184,9 @@
       "is_custom": false,
       "booking_session_id": null,
       "bundle_discount_percent": "0.00",
-      "event_types": [
-        19,
-        20,
-        7
-      ]
+      "tier_label": "",
+      "is_highlighted": false,
+      "event_types": [19, 20, 7]
     }
   },
   {
@@ -230,9 +222,9 @@
       "is_custom": false,
       "booking_session_id": null,
       "bundle_discount_percent": "0.00",
-      "event_types": [
-        5
-      ]
+      "tier_label": "",
+      "is_highlighted": false,
+      "event_types": [5]
     }
   },
   {
@@ -268,9 +260,9 @@
       "is_custom": false,
       "booking_session_id": null,
       "bundle_discount_percent": "0.00",
-      "event_types": [
-        5
-      ]
+      "tier_label": "",
+      "is_highlighted": false,
+      "event_types": [5]
     }
   },
   {
@@ -306,9 +298,9 @@
       "is_custom": false,
       "booking_session_id": null,
       "bundle_discount_percent": "0.00",
-      "event_types": [
-        5
-      ]
+      "tier_label": "",
+      "is_highlighted": false,
+      "event_types": [5]
     }
   },
   {
@@ -344,9 +336,9 @@
       "is_custom": false,
       "booking_session_id": null,
       "bundle_discount_percent": "0.00",
-      "event_types": [
-        5
-      ]
+      "tier_label": "",
+      "is_highlighted": false,
+      "event_types": [5]
     }
   },
   {
@@ -382,9 +374,9 @@
       "is_custom": false,
       "booking_session_id": null,
       "bundle_discount_percent": "0.00",
-      "event_types": [
-        5
-      ]
+      "tier_label": "",
+      "is_highlighted": false,
+      "event_types": [5]
     }
   },
   {
@@ -420,11 +412,10 @@
       "is_custom": false,
       "booking_session_id": null,
       "bundle_discount_percent": "0.00",
-      "event_types": [
-        19,
-        20,
-        7
-      ]
+      "tier_label": "Day Trip",
+      "is_highlighted": false,
+      "pricing_unit": "PER_PERSON",
+      "event_types": [19, 20, 7]
     }
   },
   {
@@ -460,11 +451,10 @@
       "is_custom": false,
       "booking_session_id": null,
       "bundle_discount_percent": "0.00",
-      "event_types": [
-        19,
-        20,
-        7
-      ]
+      "tier_label": "Overnight",
+      "is_highlighted": false,
+      "pricing_unit": "PER_PERSON",
+      "event_types": [19, 20, 7]
     }
   },
   {
@@ -500,11 +490,10 @@
       "is_custom": false,
       "booking_session_id": null,
       "bundle_discount_percent": "0.00",
-      "event_types": [
-        19,
-        20,
-        7
-      ]
+      "tier_label": "Day Trip",
+      "is_highlighted": false,
+      "pricing_unit": "PER_PERSON",
+      "event_types": [19, 20, 7]
     }
   },
   {
@@ -540,11 +529,10 @@
       "is_custom": false,
       "booking_session_id": null,
       "bundle_discount_percent": "0.00",
-      "event_types": [
-        19,
-        20,
-        7
-      ]
+      "tier_label": "2D1N",
+      "is_highlighted": false,
+      "pricing_unit": "PER_PERSON",
+      "event_types": [19, 20, 7]
     }
   },
   {
@@ -580,11 +568,10 @@
       "is_custom": false,
       "booking_session_id": null,
       "bundle_discount_percent": "0.00",
-      "event_types": [
-        19,
-        20,
-        7
-      ]
+      "tier_label": "3D2N",
+      "is_highlighted": true,
+      "pricing_unit": "PER_PERSON",
+      "event_types": [19, 20, 7]
     }
   },
   {
@@ -620,11 +607,10 @@
       "is_custom": false,
       "booking_session_id": null,
       "bundle_discount_percent": "0.00",
-      "event_types": [
-        19,
-        20,
-        7
-      ]
+      "tier_label": "4D3N",
+      "is_highlighted": false,
+      "pricing_unit": "PER_PERSON",
+      "event_types": [19, 20, 7]
     }
   },
   {
@@ -660,11 +646,10 @@
       "is_custom": false,
       "booking_session_id": null,
       "bundle_discount_percent": "0.00",
-      "event_types": [
-        19,
-        20,
-        7
-      ]
+      "tier_label": "Day Trip",
+      "is_highlighted": false,
+      "pricing_unit": "PER_PERSON",
+      "event_types": [19, 20, 7]
     }
   },
   {
@@ -700,11 +685,10 @@
       "is_custom": false,
       "booking_session_id": null,
       "bundle_discount_percent": "0.00",
-      "event_types": [
-        19,
-        20,
-        7
-      ]
+      "tier_label": "2D1N",
+      "is_highlighted": false,
+      "pricing_unit": "PER_PERSON",
+      "event_types": [19, 20, 7]
     }
   },
   {
@@ -740,11 +724,10 @@
       "is_custom": false,
       "booking_session_id": null,
       "bundle_discount_percent": "0.00",
-      "event_types": [
-        19,
-        20,
-        7
-      ]
+      "tier_label": "3D2N",
+      "is_highlighted": false,
+      "pricing_unit": "PER_PERSON",
+      "event_types": [19, 20, 7]
     }
   },
   {
@@ -780,11 +763,10 @@
       "is_custom": false,
       "booking_session_id": null,
       "bundle_discount_percent": "0.00",
-      "event_types": [
-        19,
-        20,
-        7
-      ]
+      "tier_label": "4D3N",
+      "is_highlighted": false,
+      "pricing_unit": "PER_PERSON",
+      "event_types": [19, 20, 7]
     }
   },
   {
@@ -820,9 +802,10 @@
       "is_custom": false,
       "booking_session_id": null,
       "bundle_discount_percent": "0.00",
-      "event_types": [
-        18
-      ]
+      "tier_label": "Under 100 pax",
+      "is_highlighted": false,
+      "pricing_unit": "PER_PERSON",
+      "event_types": [18]
     }
   },
   {
@@ -858,9 +841,10 @@
       "is_custom": false,
       "booking_session_id": null,
       "bundle_discount_percent": "0.00",
-      "event_types": [
-        18
-      ]
+      "tier_label": "100+ pax",
+      "is_highlighted": false,
+      "pricing_unit": "PER_PERSON",
+      "event_types": [18]
     }
   },
   {
@@ -896,9 +880,10 @@
       "is_custom": false,
       "booking_session_id": null,
       "bundle_discount_percent": "0.00",
-      "event_types": [
-        18
-      ]
+      "tier_label": "Day Trip",
+      "is_highlighted": false,
+      "pricing_unit": "PER_PERSON",
+      "event_types": [18]
     }
   },
   {
@@ -934,9 +919,10 @@
       "is_custom": false,
       "booking_session_id": null,
       "bundle_discount_percent": "0.00",
-      "event_types": [
-        18
-      ]
+      "tier_label": "2D1N",
+      "is_highlighted": false,
+      "pricing_unit": "PER_PERSON",
+      "event_types": [18]
     }
   },
   {
@@ -972,9 +958,10 @@
       "is_custom": false,
       "booking_session_id": null,
       "bundle_discount_percent": "0.00",
-      "event_types": [
-        18
-      ]
+      "tier_label": "3D2N",
+      "is_highlighted": false,
+      "pricing_unit": "PER_PERSON",
+      "event_types": [18]
     }
   },
   {
@@ -1010,9 +997,9 @@
       "is_custom": false,
       "booking_session_id": null,
       "bundle_discount_percent": "0.00",
-      "event_types": [
-        5
-      ]
+      "tier_label": "Sanctuary + Pavilion",
+      "is_highlighted": false,
+      "event_types": [5]
     }
   },
   {
@@ -1048,9 +1035,9 @@
       "is_custom": false,
       "booking_session_id": null,
       "bundle_discount_percent": "0.00",
-      "event_types": [
-        5
-      ]
+      "tier_label": "Sanctuary + Open Field",
+      "is_highlighted": false,
+      "event_types": [5]
     }
   },
   {
@@ -1086,9 +1073,9 @@
       "is_custom": false,
       "booking_session_id": null,
       "bundle_discount_percent": "0.00",
-      "event_types": [
-        5
-      ]
+      "tier_label": "Angelic Field + Pavilion",
+      "is_highlighted": false,
+      "event_types": [5]
     }
   },
   {
@@ -1124,9 +1111,9 @@
       "is_custom": false,
       "booking_session_id": null,
       "bundle_discount_percent": "0.00",
-      "event_types": [
-        5
-      ]
+      "tier_label": "Angelic Field + Open Field",
+      "is_highlighted": false,
+      "event_types": [5]
     }
   },
   {
@@ -1162,9 +1149,9 @@
       "is_custom": false,
       "booking_session_id": null,
       "bundle_discount_percent": "0.00",
-      "event_types": [
-        5
-      ]
+      "tier_label": "",
+      "is_highlighted": false,
+      "event_types": [5]
     }
   },
   {
@@ -1200,9 +1187,9 @@
       "is_custom": false,
       "booking_session_id": null,
       "bundle_discount_percent": "0.00",
-      "event_types": [
-        5
-      ]
+      "tier_label": "",
+      "is_highlighted": false,
+      "event_types": [5]
     }
   },
   {
@@ -1238,9 +1225,9 @@
       "is_custom": false,
       "booking_session_id": null,
       "bundle_discount_percent": "0.00",
-      "event_types": [
-        5
-      ]
+      "tier_label": "",
+      "is_highlighted": false,
+      "event_types": [5]
     }
   },
   {
@@ -1276,9 +1263,9 @@
       "is_custom": false,
       "booking_session_id": null,
       "bundle_discount_percent": "0.00",
-      "event_types": [
-        5
-      ]
+      "tier_label": "",
+      "is_highlighted": false,
+      "event_types": [5]
     }
   },
   {
@@ -1314,9 +1301,9 @@
       "is_custom": false,
       "booking_session_id": null,
       "bundle_discount_percent": "0.00",
-      "event_types": [
-        5
-      ]
+      "tier_label": "",
+      "is_highlighted": false,
+      "event_types": [5]
     }
   },
   {
@@ -1352,9 +1339,9 @@
       "is_custom": false,
       "booking_session_id": null,
       "bundle_discount_percent": "0.00",
-      "event_types": [
-        5
-      ]
+      "tier_label": "",
+      "is_highlighted": false,
+      "event_types": [5]
     }
   },
   {
@@ -1390,9 +1377,9 @@
       "is_custom": false,
       "booking_session_id": null,
       "bundle_discount_percent": "0.00",
-      "event_types": [
-        5
-      ]
+      "tier_label": "",
+      "is_highlighted": false,
+      "event_types": [5]
     }
   },
   {
@@ -1428,9 +1415,9 @@
       "is_custom": false,
       "booking_session_id": null,
       "bundle_discount_percent": "0.00",
-      "event_types": [
-        5
-      ]
+      "tier_label": "",
+      "is_highlighted": false,
+      "event_types": [5]
     }
   }
 ]

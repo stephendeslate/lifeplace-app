@@ -1,142 +1,66 @@
 // pages/rates/components/WeddingPackages.tsx
 
-import React from 'react';
-import { Box, Typography, Stack, Button, Chip } from '@mui/material';
-import { ArrowForward, Check, Favorite } from '@mui/icons-material';
-import { Section } from '../../../design-system/components/Section';
-import { Container } from '../../../design-system/components/Container';
-import { AnimatedElement } from '../../../design-system/components/AnimatedElement';
-import { tokens } from '../../../design-system/tokens';
-import type { WeddingPackagesProps, WeddingVenue, WeddingCombo, AllInWeddingPackage } from '../types/rates.types';
+import React from "react";
+import { Box, Typography, Stack, Button, Chip } from "@mui/material";
+import { ArrowForward, Check, Favorite } from "@mui/icons-material";
+import { Section } from "../../../design-system/components/Section";
+import { Container } from "../../../design-system/components/Container";
+import { AnimatedElement } from "../../../design-system/components/AnimatedElement";
+import { tokens } from "../../../design-system/tokens";
+import type {
+  WeddingPackagesProps,
+  WeddingVenue,
+  WeddingCombo,
+  AllInWeddingPackage,
+  RatesWeddingVenue,
+  RatesWeddingComboApi,
+  RatesAllInWeddingApi,
+} from "../types/rates.types";
 
-const weddingVenues: WeddingVenue[] = [
-  {
-    id: 'open-field',
-    name: 'The Open Field',
-    price: 70000,
-    duration: '3 hours',
-    capacity: '130-150 guests',
-    includes: ['Free prenup venue', 'Ceiling treatment available (₱40,000)'],
-    excessHourRate: 10000,
-  },
-  {
-    id: 'pavilion',
-    name: 'The Pavilion',
-    price: 23200,
-    duration: '3 hours',
-    capacity: '100-130 guests',
-    includes: ['Free prenup venue'],
-    excessHourRate: 7000,
-  },
-  {
-    id: 'angelic-field',
-    name: 'The Angelic Field',
-    price: 26400,
-    duration: '3 hours',
-    capacity: '150-200 guests',
-    includes: ['Free prenup venue', 'String lights included'],
-    excessHourRate: 5000,
-  },
-  {
-    id: 'sanctuary',
-    name: 'The Sanctuary',
-    price: 36000,
-    duration: '3 hours',
-    capacity: 'Ceremony venue',
-    includes: ['White draping', 'Basic styling', 'Basic sound system'],
-    excessHourRate: 13000,
-  },
-  {
-    id: 'pool',
-    name: 'The Pool',
-    price: 45000,
-    duration: '3 hours',
-    capacity: '70-80 guests',
-    includes: ['String lights included'],
-    excessHourRate: 10000,
-  },
-  {
-    id: 'al-fresco',
-    name: 'The Al Fresco',
-    price: 7000,
-    duration: '3 hours',
-    capacity: 'Intimate dining',
-    includes: [],
-    excessHourRate: 2000,
-  },
-];
+export const WeddingPackages: React.FC<WeddingPackagesProps> = ({
+  onNavigateToBooking,
+  weddingVenues: weddingVenuesProp,
+  weddingCombos: weddingCombosProp,
+  allInWeddings: allInWeddingsProp,
+}) => {
+  const venues: WeddingVenue[] = (weddingVenuesProp ?? []).map(
+    (v: RatesWeddingVenue) => ({
+      id: v.id.toString(),
+      name: v.name,
+      price: parseFloat(v.price),
+      duration: v.duration ?? "3 hours",
+      capacity: v.capacity,
+      includes: v.includes,
+      excessHourRate: v.excess_hour_rate
+        ? parseFloat(v.excess_hour_rate)
+        : undefined,
+    }),
+  );
 
-const weddingCombos: WeddingCombo[] = [
-  {
-    id: 'sanctuary-open-field',
-    name: 'Sanctuary + Open Field',
-    price: 110000,
-    duration: '6 hours',
-    includes: ['Free prenup', '4 cabana rooms'],
-  },
-  {
-    id: 'sanctuary-pavilion',
-    name: 'Sanctuary + Pavilion',
-    price: 66000,
-    duration: '6 hours',
-    includes: ['Free prenup', '4 cabana rooms'],
-  },
-  {
-    id: 'angelic-open-field',
-    name: 'Angelic Field + Open Field',
-    price: 100000,
-    duration: '6 hours',
-    includes: ['Free prenup', '4 cabana rooms'],
-  },
-  {
-    id: 'angelic-pavilion',
-    name: 'Angelic Field + Pavilion',
-    price: 60000,
-    duration: '6 hours',
-    includes: ['Free prenup', '4 cabana rooms'],
-  },
-];
+  const combos: WeddingCombo[] = (weddingCombosProp ?? []).map(
+    (c: RatesWeddingComboApi) => ({
+      id: c.id.toString(),
+      name: c.name,
+      price: parseFloat(c.price),
+      duration: c.duration ?? "6 hours",
+      includes: c.includes,
+    }),
+  );
 
-const allInPackages: AllInWeddingPackage[] = [
-  {
-    id: 'all-in-100',
-    name: 'All-In Wedding Package',
-    startingPrice: 385770,
-    guestCount: 100,
-    venues: 'Sanctuary + Pavilion',
-    includes: [
-      'Catering with buffet selections',
-      'Photography and videography',
-      'Professional coordination team',
-      'Lighting and sound equipment',
-      'Floral arrangements',
-      'Table setup with linens',
-      'Host/emcee services',
-    ],
-  },
-  {
-    id: 'all-in-150',
-    name: 'All-In Wedding Package',
-    startingPrice: 517000,
-    guestCount: 150,
-    venues: 'Angelic Field + Open Field',
-    includes: [
-      'Catering with buffet selections',
-      'Photography and videography',
-      'Professional coordination team',
-      'Lighting and sound equipment',
-      'Floral arrangements',
-      'Table setup with linens',
-      'Host/emcee services',
-    ],
-  },
-];
-
-export const WeddingPackages: React.FC<WeddingPackagesProps> = ({ onNavigateToBooking }) => {
+  const allIn: AllInWeddingPackage[] = (allInWeddingsProp ?? []).map(
+    (p: RatesAllInWeddingApi) => ({
+      id: p.id.toString(),
+      name: p.name,
+      startingPrice: parseFloat(p.starting_price),
+      guestCount: p.guest_count ?? 0,
+      venues: p.venues,
+      includes: p.includes,
+    }),
+  );
   const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('en-PH', {
-      style: 'currency',
-      currency: 'PHP',
+    return new Intl.NumberFormat("en-PH", {
+      style: "currency",
+      currency: "PHP",
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(price);
@@ -148,9 +72,11 @@ export const WeddingPackages: React.FC<WeddingPackagesProps> = ({ onNavigateToBo
         <Stack spacing={8}>
           {/* Header */}
           <AnimatedElement animation="fadeIn" delay={100}>
-            <Stack spacing={2} alignItems="center" sx={{ textAlign: 'center' }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                <Favorite sx={{ fontSize: 40, color: tokens.color.semantic.error.main }} />
+            <Stack spacing={2} alignItems="center" sx={{ textAlign: "center" }}>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                <Favorite
+                  sx={{ fontSize: 40, color: tokens.color.semantic.error.main }}
+                />
                 <Typography
                   sx={{
                     ...tokens.typography.styles.h2,
@@ -177,7 +103,8 @@ export const WeddingPackages: React.FC<WeddingPackagesProps> = ({ onNavigateToBo
                   maxWidth: 700,
                 }}
               >
-                Create your perfect wedding day with our exclusive venue packages and all-inclusive options.
+                Create your perfect wedding day with our exclusive venue
+                packages and all-inclusive options.
               </Typography>
             </Stack>
           </AnimatedElement>
@@ -198,28 +125,32 @@ export const WeddingPackages: React.FC<WeddingPackagesProps> = ({ onNavigateToBo
 
             <Box
               sx={{
-                display: 'grid',
+                display: "grid",
                 gridTemplateColumns: {
-                  xs: '1fr',
-                  sm: 'repeat(2, 1fr)',
-                  lg: 'repeat(3, 1fr)',
+                  xs: "1fr",
+                  sm: "repeat(2, 1fr)",
+                  lg: "repeat(3, 1fr)",
                 },
                 gap: tokens.spacing.layout.grid.gap.lg,
               }}
             >
-              {weddingVenues.map((venue, index) => (
-                <AnimatedElement key={venue.id} animation="slideUp" delay={200 + index * 50}>
+              {venues.map((venue, index) => (
+                <AnimatedElement
+                  key={venue.id}
+                  animation="slideUp"
+                  delay={200 + index * 50}
+                >
                   <Box
                     sx={{
-                      height: '100%',
-                      backgroundColor: '#FFFFFF',
+                      height: "100%",
+                      backgroundColor: "#FFFFFF",
                       borderRadius: tokens.spacing.radius.card,
                       padding: tokens.spacing.space.cardPadding.lg,
                       boxShadow: tokens.shadow.elevation.sm,
                       transition: `all ${tokens.animation.duration.normal}ms ${tokens.animation.transition.smooth}`,
-                      '&:hover': {
+                      "&:hover": {
                         boxShadow: tokens.shadow.elevation.md,
-                        transform: 'translateY(-4px)',
+                        transform: "translateY(-4px)",
                       },
                     }}
                   >
@@ -297,27 +228,31 @@ export const WeddingPackages: React.FC<WeddingPackagesProps> = ({ onNavigateToBo
 
             <Box
               sx={{
-                display: 'grid',
+                display: "grid",
                 gridTemplateColumns: {
-                  xs: '1fr',
-                  sm: 'repeat(2, 1fr)',
+                  xs: "1fr",
+                  sm: "repeat(2, 1fr)",
                 },
                 gap: tokens.spacing.layout.grid.gap.lg,
               }}
             >
-              {weddingCombos.map((combo, index) => (
-                <AnimatedElement key={combo.id} animation="slideUp" delay={200 + index * 50}>
+              {combos.map((combo, index) => (
+                <AnimatedElement
+                  key={combo.id}
+                  animation="slideUp"
+                  delay={200 + index * 50}
+                >
                   <Box
                     sx={{
-                      height: '100%',
-                      backgroundColor: '#FFFFFF',
+                      height: "100%",
+                      backgroundColor: "#FFFFFF",
                       borderRadius: tokens.spacing.radius.card,
                       padding: tokens.spacing.space.cardPadding.lg,
                       boxShadow: tokens.shadow.elevation.sm,
                       transition: `all ${tokens.animation.duration.normal}ms ${tokens.animation.transition.smooth}`,
-                      '&:hover': {
+                      "&:hover": {
                         boxShadow: tokens.shadow.elevation.md,
-                        transform: 'translateY(-4px)',
+                        transform: "translateY(-4px)",
                       },
                     }}
                   >
@@ -349,7 +284,14 @@ export const WeddingPackages: React.FC<WeddingPackagesProps> = ({ onNavigateToBo
                       </Typography>
                       <Stack spacing={0.5}>
                         {combo.includes.map((item, idx) => (
-                          <Box key={idx} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <Box
+                            key={idx}
+                            sx={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 1,
+                            }}
+                          >
                             <Check
                               sx={{
                                 fontSize: 16,
@@ -390,31 +332,35 @@ export const WeddingPackages: React.FC<WeddingPackagesProps> = ({ onNavigateToBo
 
             <Box
               sx={{
-                display: 'grid',
+                display: "grid",
                 gridTemplateColumns: {
-                  xs: '1fr',
-                  md: 'repeat(2, 1fr)',
+                  xs: "1fr",
+                  md: "repeat(2, 1fr)",
                 },
                 gap: tokens.spacing.layout.grid.gap.lg,
               }}
             >
-              {allInPackages.map((pkg, index) => (
-                <AnimatedElement key={pkg.id} animation="slideUp" delay={200 + index * 100}>
+              {allIn.map((pkg, index) => (
+                <AnimatedElement
+                  key={pkg.id}
+                  animation="slideUp"
+                  delay={200 + index * 100}
+                >
                   <Box
                     sx={{
-                      height: '100%',
-                      backgroundColor: '#FFFFFF',
+                      height: "100%",
+                      backgroundColor: "#FFFFFF",
                       borderRadius: tokens.spacing.radius.card,
                       padding: tokens.spacing.space.cardPadding.lg,
                       boxShadow: tokens.shadow.elevation.md,
                       transition: `all ${tokens.animation.duration.normal}ms ${tokens.animation.transition.smooth}`,
-                      '&:hover': {
+                      "&:hover": {
                         boxShadow: tokens.shadow.elevation.lg,
-                        transform: 'translateY(-4px)',
+                        transform: "translateY(-4px)",
                       },
                     }}
                   >
-                    <Stack spacing={3} sx={{ height: '100%' }}>
+                    <Stack spacing={3} sx={{ height: "100%" }}>
                       <Box>
                         <Chip
                           label="All-Inclusive"
@@ -474,7 +420,14 @@ export const WeddingPackages: React.FC<WeddingPackagesProps> = ({ onNavigateToBo
                           Major Inclusions:
                         </Typography>
                         {pkg.includes.map((item, idx) => (
-                          <Box key={idx} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <Box
+                            key={idx}
+                            sx={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 1,
+                            }}
+                          >
                             <Check
                               sx={{
                                 fontSize: 18,
@@ -499,14 +452,14 @@ export const WeddingPackages: React.FC<WeddingPackagesProps> = ({ onNavigateToBo
                         onClick={onNavigateToBooking}
                         fullWidth
                         sx={{
-                          mt: 'auto',
+                          mt: "auto",
                           backgroundColor: tokens.color.base.sage[700],
-                          color: '#FFFFFF',
+                          color: "#FFFFFF",
                           padding: tokens.spacing.space.buttonPadding.md,
                           borderRadius: tokens.spacing.radius.button,
-                          textTransform: 'none',
+                          textTransform: "none",
                           fontWeight: tokens.typography.weights.semibold,
-                          '&:hover': {
+                          "&:hover": {
                             backgroundColor: tokens.color.base.sage[800],
                           },
                         }}

@@ -1,24 +1,24 @@
 // frontend/client-portal/src/apis/booking/products.api.ts
 
-import api from '../../utils/api';
-import { ErrorHandler } from '../../utils/errorHandler';
+import api from "../../utils/api";
+import { ErrorHandler } from "../../utils/errorHandler";
 import type {
   ProductCategory,
   ProductOption,
   Discount,
-} from '../../types/booking';
+} from "../../types/booking";
+import type { RatesPageData } from "../../pages/rates/types/rates.types";
 
 /**
  * Products API functions for managing products, packages, and discounts
  */
 export class ProductsApi {
-  
   /**
    * Get all active product categories
    */
   static async getCategories(): Promise<ProductCategory[]> {
-    const response = await api.get<ProductCategory[]>('/products/categories/', {
-      params: { is_active: true }
+    const response = await api.get<ProductCategory[]>("/products/categories/", {
+      params: { is_active: true },
     });
     return response.data;
   }
@@ -27,7 +27,9 @@ export class ProductsApi {
    * Get category by ID
    */
   static async getCategory(categoryId: number): Promise<ProductCategory> {
-    const response = await api.get<ProductCategory>(`/products/categories/${categoryId}/`);
+    const response = await api.get<ProductCategory>(
+      `/products/categories/${categoryId}/`,
+    );
     return response.data;
   }
 
@@ -40,8 +42,9 @@ export class ProductsApi {
       next: string | null;
       previous: string | null;
       results: ProductOption[];
-    }>('/products/products/', {  // Fixed: removed ${id} and corrected endpoint
-      params: { is_active: true }
+    }>("/products/products/", {
+      // Fixed: removed ${id} and corrected endpoint
+      params: { is_active: true },
     });
     // Handle paginated response structure
     return response.data.results || [];
@@ -56,7 +59,7 @@ export class ProductsApi {
   static async getPackages(eventTypeId?: number): Promise<ProductOption[]> {
     const params: Record<string, unknown> = {
       is_active: true,
-      type: 'PACKAGE'
+      type: "PACKAGE",
     };
 
     // Add event_type_id filter if provided
@@ -69,7 +72,7 @@ export class ProductsApi {
       next: string | null;
       previous: string | null;
       results: ProductOption[];
-    }>('/products/products/', { params });
+    }>("/products/products/", { params });
     // Handle paginated response structure
     return response.data.results || [];
   }
@@ -83,11 +86,12 @@ export class ProductsApi {
       next: string | null;
       previous: string | null;
       results: ProductOption[];
-    }>('/products/products/', {  // Fixed: changed from /options/ to /products/
-      params: { 
+    }>("/products/products/", {
+      // Fixed: changed from /options/ to /products/
+      params: {
         is_active: true,
-        type: 'PRODUCT'
-      }
+        type: "PRODUCT",
+      },
     });
     // Handle paginated response structure
     return response.data.results || [];
@@ -96,18 +100,21 @@ export class ProductsApi {
   /**
    * Get packages by category
    */
-  static async getPackagesByCategory(categoryId: number): Promise<ProductOption[]> {
+  static async getPackagesByCategory(
+    categoryId: number,
+  ): Promise<ProductOption[]> {
     const response = await api.get<{
       count: number;
       next: string | null;
       previous: string | null;
       results: ProductOption[];
-    }>('/products/products/', {  // Fixed: changed from /options/ to /products/
-      params: { 
+    }>("/products/products/", {
+      // Fixed: changed from /options/ to /products/
+      params: {
         is_active: true,
-        type: 'PACKAGE',
-        category_id: categoryId  // Fixed: changed from 'category' to 'category_id' to match backend
-      }
+        type: "PACKAGE",
+        category_id: categoryId, // Fixed: changed from 'category' to 'category_id' to match backend
+      },
     });
     // Handle paginated response structure
     return response.data.results || [];
@@ -116,18 +123,21 @@ export class ProductsApi {
   /**
    * Get addons by category
    */
-  static async getAddonsByCategory(categoryId: number): Promise<ProductOption[]> {
+  static async getAddonsByCategory(
+    categoryId: number,
+  ): Promise<ProductOption[]> {
     const response = await api.get<{
       count: number;
       next: string | null;
       previous: string | null;
       results: ProductOption[];
-    }>('/products/products/', {  // Fixed: changed from /options/ to /products/
-      params: { 
+    }>("/products/products/", {
+      // Fixed: changed from /options/ to /products/
+      params: {
         is_active: true,
-        type: 'PRODUCT',
-        category_id: categoryId  // Fixed: changed from 'category' to 'category_id' to match backend
-      }
+        type: "PRODUCT",
+        category_id: categoryId, // Fixed: changed from 'category' to 'category_id' to match backend
+      },
     });
     // Handle paginated response structure
     return response.data.results || [];
@@ -137,53 +147,63 @@ export class ProductsApi {
    * Get product option by ID
    */
   static async getProductOption(productId: number): Promise<ProductOption> {
-    const response = await api.get<ProductOption>(`/products/products/${productId}/`);  // Fixed: changed from /options/ to /products/
+    const response = await api.get<ProductOption>(
+      `/products/products/${productId}/`,
+    ); // Fixed: changed from /options/ to /products/
     return response.data;
   }
 
   /**
    * Get multiple products by IDs using batch API endpoint
    * Returns a Map for efficient lookup
-   * 
+   *
    * CRITICAL FIX: This method was causing infinite loops in pricing summary
    * by making individual API calls. Now uses single batch request.
    */
-  static async getProductsByIds(productIds: number[]): Promise<Map<number, ProductOption>> {
+  static async getProductsByIds(
+    productIds: number[],
+  ): Promise<Map<number, ProductOption>> {
     if (productIds.length === 0) {
       return new Map();
     }
 
     try {
       // Use batch endpoint for single API call instead of multiple individual calls
-      const idsString = productIds.join(',');
-      const response = await api.get<{count: number, products: ProductOption[]}>(`/products/products/batch/`, {
-        params: { ids: idsString }
+      const idsString = productIds.join(",");
+      const response = await api.get<{
+        count: number;
+        products: ProductOption[];
+      }>(`/products/products/batch/`, {
+        params: { ids: idsString },
       });
-      
+
       // Convert to Map for efficient lookup
       const productMap = new Map<number, ProductOption>();
-      response.data.products.forEach(product => {
+      response.data.products.forEach((product) => {
         productMap.set(product.id, product);
       });
-      
+
       return productMap;
     } catch (error) {
-      if (import.meta.env.DEV) console.error('Failed to fetch products by IDs via batch API:', error);
+      if (import.meta.env.DEV)
+        console.error("Failed to fetch products by IDs via batch API:", error);
 
       // Fallback to individual requests only if batch API fails
-      if (import.meta.env.DEV) console.warn('Falling back to individual product requests');
+      if (import.meta.env.DEV)
+        console.warn("Falling back to individual product requests");
       const productMap = new Map<number, ProductOption>();
-      
+
       // Try fetching individually and handle failures gracefully
       for (const id of productIds) {
         try {
           const product = await this.getProductOption(id);
           productMap.set(id, product);
         } catch (err) {
-          if (import.meta.env.DEV) console.warn(`Failed to fetch product ${id}:`, err);
+          if (import.meta.env.DEV)
+            console.warn(`Failed to fetch product ${id}:`, err);
         }
       }
-      
+
       return productMap;
     }
   }
@@ -192,9 +212,17 @@ export class ProductsApi {
    * Get active discounts
    */
   static async getDiscounts(): Promise<Discount[]> {
-    const response = await api.get<Discount[]>('/products/discounts/', {
-      params: { is_active: true }
+    const response = await api.get<Discount[]>("/products/discounts/", {
+      params: { is_active: true },
     });
+    return response.data;
+  }
+
+  /**
+   * Get rates page data (single cached endpoint)
+   */
+  static async getRatesPageData(): Promise<RatesPageData> {
+    const response = await api.get("/products/products/rates-page/");
     return response.data;
   }
 
@@ -205,28 +233,29 @@ export class ProductsApi {
    */
   static calculatePackagePrice(
     packageOption: ProductOption,
-    duration: number
+    duration: number,
   ): number {
     const basePrice = parseFloat(packageOption.base_price);
-    
+
     if (packageOption.has_excess_hours && packageOption.included_hours) {
-      const includedHours = typeof packageOption.included_hours === 'number'
-        ? packageOption.included_hours
-        : parseFloat(String(packageOption.included_hours)) || 0;
+      const includedHours =
+        typeof packageOption.included_hours === "number"
+          ? packageOption.included_hours
+          : parseFloat(String(packageOption.included_hours)) || 0;
 
       if (duration <= includedHours) {
         return basePrice;
       } else {
         const excessHours = duration - includedHours;
-        const excessPrice = parseFloat(packageOption.excess_hour_price || '0');
-        return basePrice + (excessHours * excessPrice);
+        const excessPrice = parseFloat(packageOption.excess_hour_price || "0");
+        return basePrice + excessHours * excessPrice;
       }
     }
-    
-    if (packageOption.pricing_model === 'HOURLY') {
+
+    if (packageOption.pricing_model === "HOURLY") {
       return basePrice * duration;
     }
-    
+
     return basePrice;
   }
 
@@ -235,7 +264,7 @@ export class ProductsApi {
    */
   static calculateAddonPrice(
     addon: ProductOption,
-    quantity: number = 1
+    quantity: number = 1,
   ): number {
     const basePrice = parseFloat(addon.base_price);
     return basePrice * quantity;
@@ -247,13 +276,13 @@ export class ProductsApi {
   static calculateTotalWithExcessHours(
     basePrice: number,
     venues: Array<{ id: number; standalone_excess_hour_price: string }>,
-    venueAdditionalHours: Record<number, number>
+    venueAdditionalHours: Record<number, number>,
   ): number {
     let total = basePrice;
 
-    venues.forEach(venue => {
+    venues.forEach((venue) => {
       const additionalHours = venueAdditionalHours[venue.id] || 0;
-      const excessPrice = parseFloat(venue.standalone_excess_hour_price || '0');
+      const excessPrice = parseFloat(venue.standalone_excess_hour_price || "0");
       total += additionalHours * excessPrice;
     });
 
@@ -265,10 +294,10 @@ export class ProductsApi {
    */
   static calculatePriceWithTax(
     price: number,
-    taxRate: string | number
+    taxRate: string | number,
   ): number {
-    const rate = typeof taxRate === 'string' ? parseFloat(taxRate) : taxRate;
-    const taxMultiplier = 1 + (rate / 100);
+    const rate = typeof taxRate === "string" ? parseFloat(taxRate) : taxRate;
+    const taxMultiplier = 1 + rate / 100;
     return price * taxMultiplier;
   }
 
@@ -277,20 +306,20 @@ export class ProductsApi {
    */
   static formatPrice(
     amount: string | number,
-    currency: string = 'PHP'
+    currency: string = "PHP",
   ): string {
-    const num = typeof amount === 'string' ? parseFloat(amount) : amount;
-    
-    if (currency === 'PHP') {
-      return new Intl.NumberFormat('en-PH', {
-        style: 'currency',
-        currency: 'PHP',
+    const num = typeof amount === "string" ? parseFloat(amount) : amount;
+
+    if (currency === "PHP") {
+      return new Intl.NumberFormat("en-PH", {
+        style: "currency",
+        currency: "PHP",
         minimumFractionDigits: 2,
       }).format(num);
     }
-    
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
+
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
       currency: currency,
       minimumFractionDigits: 2,
     }).format(num);
@@ -301,7 +330,7 @@ export class ProductsApi {
    */
   static isProductAvailable(
     product: ProductOption,
-    bookingDate?: string
+    bookingDate?: string,
   ): boolean {
     if (!product.is_active) {
       return false;
@@ -310,13 +339,18 @@ export class ProductsApi {
     if (bookingDate && product.advance_booking_days) {
       const booking = new Date(bookingDate);
       const today = new Date();
-      const daysDifference = Math.ceil((booking.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-      
+      const daysDifference = Math.ceil(
+        (booking.getTime() - today.getTime()) / (1000 * 60 * 60 * 24),
+      );
+
       if (daysDifference < product.advance_booking_days) {
         return false;
       }
-      
-      if (product.maximum_booking_days && daysDifference > product.maximum_booking_days) {
+
+      if (
+        product.maximum_booking_days &&
+        daysDifference > product.maximum_booking_days
+      ) {
         return false;
       }
     }
@@ -329,25 +363,30 @@ export class ProductsApi {
    */
   static filterAvailableProducts(
     products: ProductOption[],
-    bookingDate?: string
+    bookingDate?: string,
   ): ProductOption[] {
-    return products.filter(product => 
-      this.isProductAvailable(product, bookingDate)
+    return products.filter((product) =>
+      this.isProductAvailable(product, bookingDate),
     );
   }
 
   /**
    * Group products by category
    */
-  static groupProductsByCategory(products: ProductOption[]): Record<string, ProductOption[]> {
-    return products.reduce((grouped, product) => {
-      const categoryName = product.category_name || 'Uncategorized';
-      if (!grouped[categoryName]) {
-        grouped[categoryName] = [];
-      }
-      grouped[categoryName].push(product);
-      return grouped;
-    }, {} as Record<string, ProductOption[]>);
+  static groupProductsByCategory(
+    products: ProductOption[],
+  ): Record<string, ProductOption[]> {
+    return products.reduce(
+      (grouped, product) => {
+        const categoryName = product.category_name || "Uncategorized";
+        if (!grouped[categoryName]) {
+          grouped[categoryName] = [];
+        }
+        grouped[categoryName].push(product);
+        return grouped;
+      },
+      {} as Record<string, ProductOption[]>,
+    );
   }
 
   /**

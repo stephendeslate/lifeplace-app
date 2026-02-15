@@ -22,7 +22,7 @@ from .serializers import (
     ProductCategorySerializer,
     ProductCategoryTreeSerializer,
 )
-from .services import DiscountService, ProductService, ProductCategoryService, CustomPackageService
+from .services import DiscountService, ProductService, ProductCategoryService, CustomPackageService, RatesPageService
 from .cache_service import product_cache_service
 
 logger = logging.getLogger(__name__)
@@ -181,7 +181,8 @@ class ProductOptionViewSet(viewsets.ModelViewSet):
         # Public endpoints for reading and booking flow
         if self.action in ['list', 'retrieve', 'packages', 'products', 'active',
                            'batch', 'featured', 'by_category', 'all',
-                           'create_from_venues', 'find_matching_packages']:
+                           'create_from_venues', 'find_matching_packages',
+                           'rates_page']:
             return [AllowAny()]
         # Admin required for create, update, destroy
         return [IsAdmin()]
@@ -484,6 +485,25 @@ class ProductOptionViewSet(viewsets.ModelViewSet):
         products = ProductService.get_all_products(is_active=is_active)
         serializer = self.get_serializer(products, many=True)
         return Response(serializer.data)
+
+    @action(detail=False, methods=['get'], url_path='rates-page')
+    def rates_page(self, request):
+        """
+        Get all data needed for the public rates page in a single API call.
+        Public endpoint, cached for 1 hour.
+        """
+        cache_key = product_cache_service._versioned_key(
+            'products', product_cache_service.RATES_PAGE_KEY
+        )
+        cached_data = product_cache_service.cache.get(cache_key)
+        if cached_data is not None:
+            return Response(cached_data)
+
+        data = RatesPageService.get_rates_page_data()
+        product_cache_service.cache.set(
+            cache_key, data, product_cache_service.TIMEOUT_LONG
+        )
+        return Response(data)
 
     @action(detail=False, methods=['post'])
     def create_from_venues(self, request):
