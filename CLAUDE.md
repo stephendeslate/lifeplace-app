@@ -35,7 +35,8 @@ npm run type-check   # TypeScript check
 ### Backend Domain Structure
 The backend follows Domain-Driven Design with these core domains:
 
-- **analytics**, **bookingflow**, **clients**, **communications**, **contracts**, **events**, **notes**, **notifications**, **payments**, **products**, **questionnaires**, **sales**, **users**, **workflows**
+- **analytics**, **bookingflow**, **clients**, **communications**, **contracts**, **events**, **messaging**, **notes**, **notifications**, **payments**, **products**, **questionnaires**, **sales**, **security**, **settings**, **users**, **vendors**, **venues**, **vip**, **workflows**
+- **infrastructure** (DLQ, circuit breakers, health checks)
 
 Each domain contains: `models.py`, `serializers.py`, `views.py`, `services.py`, `urls.py`, `signals.py`
 
@@ -54,6 +55,26 @@ Each domain contains: `models.py`, `serializers.py`, `views.py`, `services.py`, 
 ### Payment Integration
 
 Stripe integration with multiple payment gateways per booking flow, invoice/quote generation, and payment plan management.
+
+## CI/CD & Deployment
+
+All deployments are automated via GitHub Actions on push to `main` (`.github/workflows/ci-cd.yml`):
+
+1. **Tests run** for backend (pytest), admin-crm (vitest), and client-portal (vitest)
+2. **Backend deploys** to Fly.io (`flyctl deploy`). Migrations run automatically via `release_command`
+3. **Frontends deploy** to Cloudflare Pages (`wrangler pages deploy`)
+4. **Sentry releases** are created for all 3 projects with commit association
+
+| Service | Platform | URL |
+|---------|----------|-----|
+| Backend API | Fly.io (Singapore) | https://lifeplace-api.fly.dev |
+| Admin CRM | Cloudflare Pages | https://admin.lifeplace.dev |
+| Client Portal | Cloudflare Pages | https://lifeplace.dev |
+| Deep Linking | Cloudflare Workers | https://app.lifeplace.dev |
+
+Mobile app tests run separately via `.github/workflows/mobile-tests.yml` (only when `mobile-app/` changes).
+
+See [docs/PRODUCTION_SERVICES_GUIDE.md](docs/PRODUCTION_SERVICES_GUIDE.md) for full deployment documentation.
 
 ## Timezone
 

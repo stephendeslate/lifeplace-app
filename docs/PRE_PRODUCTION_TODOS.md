@@ -2,7 +2,7 @@
 
 > **Items requiring external service configuration, accounts, or third-party setup**
 > **Target Region: Philippines**
-> **Generated: January 2026**
+> **Generated: January 2026 | Updated: February 2026**
 
 ---
 
@@ -34,7 +34,7 @@
 - [ ] Install Fly CLI (`brew install flyctl`)
 - [ ] Create application (`fly apps create lifeplace-api`)
 - [ ] Deploy initial build (`fly deploy`)
-- [ ] Configure custom domain (`fly certs create api.yourdomain.com`)
+- [ ] Configure custom domain (`fly certs create lifeplace-api.fly.dev`)
 - [ ] Verify health endpoint responds
 
 ### 1.2 Database (Fly Postgres)
@@ -105,19 +105,19 @@ DATABASE_URL="postgres://..."
 REDIS_URL="rediss://..."
 
 # Security
-ALLOWED_HOSTS="api.yourdomain.com"
-CSRF_TRUSTED_ORIGINS="https://api.yourdomain.com,https://admin.yourdomain.com,https://book.yourdomain.com"
-CORS_ALLOWED_ORIGINS="https://admin.yourdomain.com,https://book.yourdomain.com"
+ALLOWED_HOSTS="lifeplace-api.fly.dev"
+CSRF_TRUSTED_ORIGINS="https://lifeplace-api.fly.dev,https://admin.lifeplace.dev,https://lifeplace.dev"
+CORS_ALLOWED_ORIGINS="https://admin.lifeplace.dev,https://lifeplace.dev"
 
 # Communications
 BREVO_API_KEY="xkeysib-..."
 BREVO_WEBHOOK_SECRET="..."
-DEFAULT_FROM_EMAIL="noreply@yourdomain.com"
+DEFAULT_FROM_EMAIL="noreply@lifeplace.com"
 DEFAULT_FROM_NAME="LifePlace"
 
 # Frontend URLs
-ADMIN_FRONTEND_URL="https://admin.yourdomain.com"
-CLIENT_FRONTEND_URL="https://book.yourdomain.com"
+ADMIN_FRONTEND_URL="https://admin.lifeplace.dev"
+CLIENT_FRONTEND_URL="https://lifeplace.dev"
 
 # Error Monitoring
 SENTRY_DSN="https://...@sentry.io/..."
@@ -130,8 +130,8 @@ R2_ENDPOINT_URL="https://....r2.cloudflarestorage.com"
 R2_PUBLIC_URL="pub-....r2.dev"
 
 # Philippines Compliance
-DPO_EMAIL="dpo@yourdomain.com"
-SECURITY_TEAM_EMAIL="security@yourdomain.com"
+DPO_EMAIL="dpo@lifeplace.com"
+SECURITY_TEAM_EMAIL="security@lifeplace.com"
 ```
 
 **Key Generation Commands:**
@@ -156,7 +156,7 @@ python -c "import secrets; print(secrets.token_urlsafe(24))"
 - [ ] Create Stripe account and complete verification
 - [ ] Get production API keys (pk_live, sk_live)
 - [ ] Configure PaymentGateway in Django admin with encrypted config
-- [ ] Set up webhook endpoint: `https://api.yourdomain.com/api/payments/webhooks/stripe/`
+- [ ] Set up webhook endpoint: `https://lifeplace-api.fly.dev/api/payments/webhooks/stripe/`
 - [ ] Register webhook events in Stripe Dashboard:
   - [ ] payment_intent.succeeded
   - [ ] payment_intent.payment_failed
@@ -360,8 +360,8 @@ python -c "import secrets; print(secrets.token_urlsafe(24))"
 
 ### 8.1 Infrastructure Verification
 
-- [ ] API health check responds: `curl https://api.yourdomain.com/health/`
-- [ ] Readiness check responds: `curl https://api.yourdomain.com/ready/`
+- [ ] API health check responds: `curl https://lifeplace-api.fly.dev/health/`
+- [ ] Readiness check responds: `curl https://lifeplace-api.fly.dev/ready/`
 - [ ] Database connection healthy
 - [ ] Redis connection healthy
 - [ ] File storage (R2) working
@@ -483,8 +483,7 @@ Frontend (Cloudflare Pages)
 └── Client Portal (React 19 + MUI 7 + Stripe)
 
 Backend (Fly.io - Singapore Region)
-├── Django 5.2.1 REST API (Gunicorn)
-├── WebSocket Server (Daphne/Channels)
+├── Django 5.2.8 REST API + WebSocket (Daphne ASGI)
 ├── Celery Workers (async tasks)
 └── Celery Beat (scheduled tasks)
 
@@ -497,11 +496,12 @@ External Services
 ├── Stripe (payments)
 ├── Brevo (email/SMS)
 ├── Expo (push notifications)
-└── Sentry (error monitoring)
+├── Sentry (error monitoring)
+└── Google OAuth (client login)
 ```
 
 ---
 
 *Document contains only items requiring external service configuration.*
 *Code-only fixes are tracked in CODE_ONLY_TODOS.md*
-*Last updated: January 18, 2026*
+*Last updated: February 15, 2026*
