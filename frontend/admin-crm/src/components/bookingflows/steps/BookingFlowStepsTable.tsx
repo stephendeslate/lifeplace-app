@@ -195,6 +195,7 @@ export const BookingFlowStepsTable: React.FC<BookingFlowStepsTableProps> = ({
       key: "order",
       label: "Order",
       align: "center",
+      hideBelow: "md",
       render: (_, step) => (
         <Chip
           label={step.order}
@@ -216,6 +217,7 @@ export const BookingFlowStepsTable: React.FC<BookingFlowStepsTableProps> = ({
     {
       key: "configuration",
       label: "Configuration",
+      hideBelow: "md",
       render: (_, step) => (
         <Box display="flex" alignItems="center" gap={1}>
           {hasDisplayConditions(step) && (

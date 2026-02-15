@@ -1,6 +1,6 @@
 // Payments Overview - Flat design matching Analytics page style
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from "react";
 import {
   Box,
   Button,
@@ -25,7 +25,7 @@ import {
   TextField,
   Typography,
   CircularProgress,
-} from '@mui/material';
+} from "@mui/material";
 import {
   Add as AddIcon,
   MoreVert as MoreVertIcon,
@@ -40,28 +40,37 @@ import {
   Replay as ReplayIcon,
   AddCircle as AddCircleIcon,
   FileDownload as ExportIcon,
-} from '@mui/icons-material';
-import { useNavigate } from 'react-router-dom';
-import { useLayout } from '../../contexts/LayoutContext';
-import { usePayments } from '../../hooks/usePayments';
-import { useCurrencySettings } from '../../hooks/useCurrency';
-import { formatCurrency } from '../../utils/currency';
-import { PaymentForm } from '../../components/payments/PaymentForm';
-import type { Payment, PaymentFilters, CreatePaymentData, PaymentStatus } from '../../types/payments.types';
-import { PAYMENT_STATUSES } from '../../types/payments.types';
-import { ModernPageLayout, ModernPageHeader, ModernEmptyState } from '../../components/common';
+} from "@mui/icons-material";
+import { useNavigate } from "react-router-dom";
+import { useLayout } from "../../contexts/LayoutContext";
+import { usePayments } from "../../hooks/usePayments";
+import { useCurrencySettings } from "../../hooks/useCurrency";
+import { formatCurrency } from "../../utils/currency";
+import { PaymentForm } from "../../components/payments/PaymentForm";
+import type {
+  Payment,
+  PaymentFilters,
+  CreatePaymentData,
+  PaymentStatus,
+} from "../../types/payments.types";
+import { PAYMENT_STATUSES } from "../../types/payments.types";
+import {
+  ModernPageLayout,
+  ModernPageHeader,
+  ModernEmptyState,
+} from "../../components/common";
 
 export const PaymentsOverview: React.FC = () => {
   const navigate = useNavigate();
   const { setBreadcrumbs } = useLayout();
-  
+
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(25);
   const [filters, setFilters] = useState<PaymentFilters>({});
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
-  const [searchValue, setSearchValue] = useState('');
+  const [searchValue, setSearchValue] = useState("");
 
   const {
     payments = [], // Add default empty array
@@ -79,17 +88,15 @@ export const PaymentsOverview: React.FC = () => {
   const { settings: currencySettings } = useCurrencySettings();
 
   useEffect(() => {
-    setBreadcrumbs([
-      { label: 'Payments' },
-    ]);
+    setBreadcrumbs([{ label: "Payments" }]);
   }, [setBreadcrumbs]);
 
   useEffect(() => {
     // Debounce search
     const timer = setTimeout(() => {
-      setFilters(prev => ({
+      setFilters((prev) => ({
         ...prev,
-        search: searchValue || undefined
+        search: searchValue || undefined,
       }));
       setPage(0); // Reset to first page when searching
     }, 300);
@@ -101,7 +108,10 @@ export const PaymentsOverview: React.FC = () => {
     navigate(`/payments/${payment.id}`);
   };
 
-  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, payment: Payment) => {
+  const handleMenuOpen = (
+    event: React.MouseEvent<HTMLElement>,
+    payment: Payment,
+  ) => {
     event.stopPropagation();
     setMenuAnchor(event.currentTarget);
     setSelectedPayment(payment);
@@ -117,50 +127,49 @@ export const PaymentsOverview: React.FC = () => {
   };
 
   const handleFilterChange = (key: keyof PaymentFilters, value: string) => {
-    setFilters(prev => ({
+    setFilters((prev) => ({
       ...prev,
-      [key]: value === 'all' ? undefined : value
+      [key]: value === "all" ? undefined : value,
     }));
     setPage(0); // Reset to first page when filtering
   };
 
   const getStatusColor = (status: PaymentStatus) => {
     switch (status) {
-      case 'CREATED':
-        return 'default';
-      case 'PENDING':
-        return 'warning';
-      case 'PROCESSING':
-        return 'info';
-      case 'COMPLETED':
-        return 'success';
-      case 'FAILED':
-        return 'error';
-      case 'CANCELLED':
-        return 'default';
-      case 'REFUNDED':
-        return 'secondary';
+      case "CREATED":
+        return "default";
+      case "PENDING":
+        return "warning";
+      case "PROCESSING":
+        return "info";
+      case "COMPLETED":
+        return "success";
+      case "FAILED":
+        return "error";
+      case "CANCELLED":
+        return "default";
+      case "REFUNDED":
+        return "secondary";
       default:
-        return 'default';
+        return "default";
     }
   };
 
-
   const getStatusIcon = (status: PaymentStatus) => {
     switch (status) {
-      case 'CREATED':
+      case "CREATED":
         return <AddCircleIcon sx={{ fontSize: 16 }} />;
-      case 'PENDING':
+      case "PENDING":
         return <ScheduleIcon sx={{ fontSize: 16 }} />;
-      case 'PROCESSING':
+      case "PROCESSING":
         return <HourglassEmptyIcon sx={{ fontSize: 16 }} />;
-      case 'COMPLETED':
+      case "COMPLETED":
         return <CheckCircleIcon sx={{ fontSize: 16 }} />;
-      case 'FAILED':
+      case "FAILED":
         return <CancelIcon sx={{ fontSize: 16 }} />;
-      case 'CANCELLED':
+      case "CANCELLED":
         return <CancelIcon sx={{ fontSize: 16 }} />;
-      case 'REFUNDED':
+      case "REFUNDED":
         return <ReplayIcon sx={{ fontSize: 16 }} />;
       default:
         return <WarningIcon sx={{ fontSize: 16 }} />;
@@ -172,30 +181,30 @@ export const PaymentsOverview: React.FC = () => {
     const today = new Date();
     const diffTime = due.getTime() - today.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
+
     if (diffDays < 0) {
       return {
         text: `${Math.abs(diffDays)} days overdue`,
-        color: 'error.main',
-        severity: 'overdue'
+        color: "error.main",
+        severity: "overdue",
       };
     } else if (diffDays === 0) {
       return {
-        text: 'Due today',
-        color: 'warning.main',
-        severity: 'today'
+        text: "Due today",
+        color: "warning.main",
+        severity: "today",
       };
     } else if (diffDays <= 7) {
       return {
         text: `${diffDays} days remaining`,
-        color: 'warning.main',
-        severity: 'soon'
+        color: "warning.main",
+        severity: "soon",
       };
     } else {
       return {
         text: `${diffDays} days remaining`,
-        color: 'text.secondary',
-        severity: 'normal'
+        color: "text.secondary",
+        severity: "normal",
       };
     }
   };
@@ -203,10 +212,14 @@ export const PaymentsOverview: React.FC = () => {
   // Format currency based on payment's currency and user's settings
   const formatPaymentAmount = (payment: Payment) => {
     return formatCurrency(payment.amount, payment.currency, {
-      showSymbol: currencySettings?.displayFormat !== 'code',
-      showCode: currencySettings?.displayFormat === 'code' || currencySettings?.displayFormat === 'both',
-      minimumFractionDigits: currencySettings?.decimalPlaces ?? (payment.currency === 'PHP' ? 0 : 2),
-      maximumFractionDigits: currencySettings?.decimalPlaces ?? (payment.currency === 'PHP' ? 0 : 2),
+      showSymbol: currencySettings?.displayFormat !== "code",
+      showCode:
+        currencySettings?.displayFormat === "code" ||
+        currencySettings?.displayFormat === "both",
+      minimumFractionDigits:
+        currencySettings?.decimalPlaces ?? (payment.currency === "PHP" ? 0 : 2),
+      maximumFractionDigits:
+        currencySettings?.decimalPlaces ?? (payment.currency === "PHP" ? 0 : 2),
     });
   };
 
@@ -220,25 +233,32 @@ export const PaymentsOverview: React.FC = () => {
         label: "Create First Payment",
         onClick: () => setCreateDialogOpen(true),
         icon: <AddIcon />,
-        color: 'primary'
+        color: "primary",
       }}
       tip={{
         text: "Payments can be linked to events and invoices for complete tracking and better organization.",
-        type: 'info'
+        type: "info",
       }}
       size="large"
       color="primary"
     />
   );
 
-  const hasActiveFilters = Object.values(filters).some(value => value !== undefined);
+  const hasActiveFilters = Object.values(filters).some(
+    (value) => value !== undefined,
+  );
   const filteredCount = totalPayments ?? 0;
 
   // Loading state
   if (isLoadingPayments) {
     return (
       <ModernPageLayout backgroundPattern="default">
-        <Box display="flex" justifyContent="center" alignItems="center" minHeight={400}>
+        <Box
+          display="flex"
+          justifyContent="center"
+          alignItems="center"
+          minHeight={400}
+        >
           <CircularProgress />
         </Box>
       </ModernPageLayout>
@@ -250,7 +270,9 @@ export const PaymentsOverview: React.FC = () => {
     setPage(newPage);
   };
 
-  const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChangeRowsPerPage = (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
     setRowsPerPage(parseInt(event.target.value, 10));
     setPage(0);
   };
@@ -260,22 +282,22 @@ export const PaymentsOverview: React.FC = () => {
       {/* Page Header - flat style */}
       <ModernPageHeader
         title="Payments"
-        subtitle={`${filteredCount} payment${filteredCount !== 1 ? 's' : ''} found`}
+        subtitle={`${filteredCount} payment${filteredCount !== 1 ? "s" : ""} found`}
         icon={<AccountBalanceIcon />}
         size="medium"
         primaryAction={{
-          label: 'Add Payment',
+          label: "Add Payment",
           icon: <AddIcon />,
           onClick: () => setCreateDialogOpen(true),
-          variant: 'contained',
-          color: 'primary',
+          variant: "contained",
+          color: "primary",
         }}
         secondaryActions={[
           {
-            label: 'Export',
+            label: "Export",
             icon: <ExportIcon />,
             onClick: handleExport,
-            variant: 'outlined',
+            variant: "outlined",
           },
         ]}
       />
@@ -285,15 +307,19 @@ export const PaymentsOverview: React.FC = () => {
       ) : (
         <>
           {/* Filters - flat style */}
-          <Box sx={{ mb: 3, p: 2, borderRadius: 1, bgcolor: 'action.hover' }}>
-            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems="center">
+          <Box sx={{ mb: 3, p: 2, borderRadius: 1, bgcolor: "action.hover" }}>
+            <Stack
+              direction={{ xs: "column", sm: "row" }}
+              spacing={2}
+              alignItems="center"
+            >
               <TextField
                 size="small"
                 placeholder="Search payments..."
                 value={searchValue}
                 onChange={(e) => setSearchValue(e.target.value)}
                 InputProps={{
-                  startAdornment: <SearchIcon color="action" sx={{ mr: 1 }} />
+                  startAdornment: <SearchIcon color="action" sx={{ mr: 1 }} />,
                 }}
                 sx={{ flex: 1, minWidth: 200 }}
               />
@@ -301,9 +327,9 @@ export const PaymentsOverview: React.FC = () => {
               <FormControl size="small" sx={{ minWidth: 130 }}>
                 <InputLabel>Status</InputLabel>
                 <Select
-                  value={filters.status || 'all'}
+                  value={filters.status || "all"}
                   label="Status"
-                  onChange={(e) => handleFilterChange('status', e.target.value)}
+                  onChange={(e) => handleFilterChange("status", e.target.value)}
                 >
                   <MenuItem value="all">All Status</MenuItem>
                   {PAYMENT_STATUSES.map((status) => (
@@ -321,7 +347,7 @@ export const PaymentsOverview: React.FC = () => {
                   color="warning"
                   onClick={() => {
                     setFilters({});
-                    setSearchValue('');
+                    setSearchValue("");
                   }}
                 >
                   Clear Filters
@@ -331,22 +357,45 @@ export const PaymentsOverview: React.FC = () => {
           </Box>
 
           {/* Payments Table - flat style */}
-          <Box sx={{ borderRadius: 1, bgcolor: 'background.paper', overflow: 'hidden' }}>
-              <TableContainer>
-                <Table size="small">
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Status</TableCell>
-                      <TableCell>Due Date</TableCell>
-                      <TableCell>Invoice ID</TableCell>
-                      <TableCell>Client</TableCell>
-                      <TableCell>Event</TableCell>
-                      <TableCell>Balance Due</TableCell>
-                      <TableCell width="50"></TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {Array.isArray(payments) && payments.map((payment) => {
+          <Box
+            sx={{
+              borderRadius: 1,
+              bgcolor: "background.paper",
+              overflow: "hidden",
+            }}
+          >
+            <TableContainer sx={{ overflowX: "auto" }}>
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Status</TableCell>
+                    <TableCell
+                      sx={{ display: { xs: "none", lg: "table-cell" } }}
+                    >
+                      Due Date
+                    </TableCell>
+                    <TableCell
+                      sx={{ display: { xs: "none", md: "table-cell" } }}
+                    >
+                      Invoice ID
+                    </TableCell>
+                    <TableCell
+                      sx={{ display: { xs: "none", md: "table-cell" } }}
+                    >
+                      Client
+                    </TableCell>
+                    <TableCell
+                      sx={{ display: { xs: "none", md: "table-cell" } }}
+                    >
+                      Event
+                    </TableCell>
+                    <TableCell>Balance Due</TableCell>
+                    <TableCell width="50"></TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {Array.isArray(payments) &&
+                    payments.map((payment) => {
                       const daysRemaining = getDaysRemaining(payment.due_date);
 
                       return (
@@ -354,28 +403,39 @@ export const PaymentsOverview: React.FC = () => {
                           key={payment.id}
                           hover
                           onClick={() => handleRowClick(payment)}
-                          sx={{ cursor: 'pointer' }}
+                          sx={{ cursor: "pointer" }}
                         >
                           <TableCell>
                             <Chip
                               icon={getStatusIcon(payment.status)}
-                              label={PAYMENT_STATUSES.find(s => s.value === payment.status)?.label || payment.status}
+                              label={
+                                PAYMENT_STATUSES.find(
+                                  (s) => s.value === payment.status,
+                                )?.label || payment.status
+                              }
                               color={getStatusColor(payment.status)}
                               size="small"
                               variant="outlined"
                             />
                           </TableCell>
 
-                          <TableCell>
+                          <TableCell
+                            sx={{ display: { xs: "none", lg: "table-cell" } }}
+                          >
                             <Box>
                               <Typography variant="body2" fontWeight="600">
-                                {new Date(payment.due_date).toLocaleDateString()}
+                                {new Date(
+                                  payment.due_date,
+                                ).toLocaleDateString()}
                               </Typography>
                               <Typography
                                 variant="caption"
                                 sx={{
                                   color: daysRemaining.color,
-                                  fontWeight: daysRemaining.severity === 'overdue' ? 'bold' : 'normal'
+                                  fontWeight:
+                                    daysRemaining.severity === "overdue"
+                                      ? "bold"
+                                      : "normal",
                                 }}
                               >
                                 {daysRemaining.text}
@@ -383,21 +443,33 @@ export const PaymentsOverview: React.FC = () => {
                             </Box>
                           </TableCell>
 
-                          <TableCell>
-                            <Typography variant="body2" fontFamily="monospace" fontWeight="600">
-                              {payment.invoice_details?.invoice_id || payment.payment_number}
+                          <TableCell
+                            sx={{ display: { xs: "none", md: "table-cell" } }}
+                          >
+                            <Typography
+                              variant="body2"
+                              fontFamily="monospace"
+                              fontWeight="600"
+                            >
+                              {payment.invoice_details?.invoice_id ||
+                                payment.payment_number}
                             </Typography>
                           </TableCell>
 
-                          <TableCell>
+                          <TableCell
+                            sx={{ display: { xs: "none", md: "table-cell" } }}
+                          >
                             <Typography variant="body2" color="text.secondary">
-                              {payment.event_details?.client_name || 'Unknown Client'}
+                              {payment.event_details?.client_name ||
+                                "Unknown Client"}
                             </Typography>
                           </TableCell>
 
-                          <TableCell>
+                          <TableCell
+                            sx={{ display: { xs: "none", md: "table-cell" } }}
+                          >
                             <Typography variant="body2" color="text.secondary">
-                              {payment.event_details?.name || 'No Event'}
+                              {payment.event_details?.name || "No Event"}
                             </Typography>
                           </TableCell>
 
@@ -405,36 +477,45 @@ export const PaymentsOverview: React.FC = () => {
                             <Typography
                               variant="body2"
                               fontWeight="600"
-                              color={payment.status === 'COMPLETED' ? 'success.main' : 'text.primary'}
+                              color={
+                                payment.status === "COMPLETED"
+                                  ? "success.main"
+                                  : "text.primary"
+                              }
                             >
-                              {payment.status === 'COMPLETED' ? 'Paid' : formatPaymentAmount(payment)}
+                              {payment.status === "COMPLETED"
+                                ? "Paid"
+                                : formatPaymentAmount(payment)}
                             </Typography>
                           </TableCell>
 
                           <TableCell>
-                            <IconButton size="small" onClick={(e) => handleMenuOpen(e, payment)}>
+                            <IconButton
+                              size="small"
+                              onClick={(e) => handleMenuOpen(e, payment)}
+                            >
                               <MoreVertIcon sx={{ fontSize: 16 }} />
                             </IconButton>
                           </TableCell>
                         </TableRow>
                       );
                     })}
-                  </TableBody>
-                </Table>
-              </TableContainer>
+                </TableBody>
+              </Table>
+            </TableContainer>
 
-              {/* Pagination */}
-              <Box sx={{ p: 2, borderTop: 1, borderColor: 'divider' }}>
-                <TablePagination
-                  rowsPerPageOptions={[10, 25, 50, 100]}
-                  component="div"
-                  count={totalPayments || 0}
-                  rowsPerPage={rowsPerPage}
-                  page={page}
-                  onPageChange={handleChangePage}
-                  onRowsPerPageChange={handleChangeRowsPerPage}
-                />
-              </Box>
+            {/* Pagination */}
+            <Box sx={{ p: 2, borderTop: 1, borderColor: "divider" }}>
+              <TablePagination
+                rowsPerPageOptions={[10, 25, 50, 100]}
+                component="div"
+                count={totalPayments || 0}
+                rowsPerPage={rowsPerPage}
+                page={page}
+                onPageChange={handleChangePage}
+                onRowsPerPageChange={handleChangeRowsPerPage}
+              />
+            </Box>
           </Box>
         </>
       )}
@@ -468,7 +549,7 @@ export const PaymentsOverview: React.FC = () => {
           <PaymentForm
             onSubmit={(data) => {
               createPayment(data as CreatePaymentData, {
-                onSuccess: () => setCreateDialogOpen(false)
+                onSuccess: () => setCreateDialogOpen(false),
               });
             }}
             onCancel={() => setCreateDialogOpen(false)}

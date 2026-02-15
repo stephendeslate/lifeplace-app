@@ -1,17 +1,22 @@
 // frontend/admin-crm/src/components/products/CategoriesTable.tsx
 
-import React, { useMemo } from 'react';
-import { Box, Typography, Chip, IconButton } from '@mui/material';
+import React, { useMemo } from "react";
+import { Box, Typography, Chip, IconButton } from "@mui/material";
 import {
   Category as CategoryIcon,
   ExpandMore as ExpandMoreIcon,
   ChevronRight as ChevronRightIcon,
   Folder as FolderIcon,
-} from '@mui/icons-material';
-import type { ProductCategory } from '../../types/products.types';
-import { ModernTable, ModernLoadingStates, ModernEmptyState, createStandardActions } from '../common';
-import type { ModernTableColumn, ModernTableAction } from '../common';
-import { tokens } from '../../design-system/tokens';
+} from "@mui/icons-material";
+import type { ProductCategory } from "../../types/products.types";
+import {
+  ModernTable,
+  ModernLoadingStates,
+  ModernEmptyState,
+  createStandardActions,
+} from "../common";
+import type { ModernTableColumn, ModernTableAction } from "../common";
+import { tokens } from "../../design-system/tokens";
 
 interface CategoriesTableProps {
   categories: ProductCategory[];
@@ -32,7 +37,9 @@ export const CategoriesTable: React.FC<CategoriesTableProps> = ({
   onEdit,
   onDelete,
 }) => {
-  const [expandedCategories, setExpandedCategories] = React.useState<Set<number>>(new Set());
+  const [expandedCategories, setExpandedCategories] = React.useState<
+    Set<number>
+  >(new Set());
 
   // Build hierarchical structure
   const hierarchicalCategories = useMemo(() => {
@@ -40,12 +47,12 @@ export const CategoriesTable: React.FC<CategoriesTableProps> = ({
     const rootCategories: HierarchicalCategory[] = [];
 
     // Initialize all categories with empty children
-    categories.forEach(category => {
+    categories.forEach((category) => {
       categoryMap.set(category.id, { ...category, children: [], level: 0 });
     });
 
     // Build hierarchy
-    categories.forEach(category => {
+    categories.forEach((category) => {
       const cat = categoryMap.get(category.id)!;
       if (category.parent) {
         const parent = categoryMap.get(category.parent);
@@ -61,9 +68,11 @@ export const CategoriesTable: React.FC<CategoriesTableProps> = ({
     });
 
     // Flatten for table display, respecting expansion state
-    const flattenCategories = (cats: HierarchicalCategory[]): HierarchicalCategory[] => {
+    const flattenCategories = (
+      cats: HierarchicalCategory[],
+    ): HierarchicalCategory[] => {
       const result: HierarchicalCategory[] = [];
-      cats.forEach(cat => {
+      cats.forEach((cat) => {
         result.push(cat);
         if (expandedCategories.has(cat.id) && cat.children.length > 0) {
           result.push(...flattenCategories(cat.children));
@@ -87,68 +96,77 @@ export const CategoriesTable: React.FC<CategoriesTableProps> = ({
 
   const getStatusChip = (isActive: boolean) => (
     <Chip
-      label={isActive ? 'Active' : 'Inactive'}
+      label={isActive ? "Active" : "Inactive"}
       size="small"
-      color={isActive ? 'success' : 'default'}
-      variant={isActive ? 'filled' : 'outlined'}
+      color={isActive ? "success" : "default"}
+      variant={isActive ? "filled" : "outlined"}
     />
   );
 
   const columns: ModernTableColumn[] = [
     {
-      key: 'name',
-      label: 'Category Name',
+      key: "name",
+      label: "Category Name",
       sortable: true,
       render: (_, row) => {
         const category = row as unknown as HierarchicalCategory;
         return (
-        <Box display="flex" alignItems="center" sx={{ ml: category.level * 2 }}>
-          {category.children && category.children.length > 0 ? (
-            <IconButton
-              size="small"
-              onClick={(e) => {
-                e.stopPropagation();
-                toggleExpansion(category.id);
-              }}
-              sx={{ mr: 1 }}
-            >
-              {expandedCategories.has(category.id) ? <ExpandMoreIcon /> : <ChevronRightIcon />}
-            </IconButton>
-          ) : (
-            <Box sx={{ width: 32 }} />
-          )}
-          <CategoryIcon color="primary" fontSize="small" sx={{ mr: 1 }} />
-          <Box>
-            <Typography variant="body2" fontWeight="medium">
-              {category.name}
-            </Typography>
-            {category.description && (
-              <Typography variant="caption" color="text.secondary">
-                {category.description}
-              </Typography>
+          <Box
+            display="flex"
+            alignItems="center"
+            sx={{ ml: category.level * 2 }}
+          >
+            {category.children && category.children.length > 0 ? (
+              <IconButton
+                size="small"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleExpansion(category.id);
+                }}
+                sx={{ mr: 1 }}
+              >
+                {expandedCategories.has(category.id) ? (
+                  <ExpandMoreIcon />
+                ) : (
+                  <ChevronRightIcon />
+                )}
+              </IconButton>
+            ) : (
+              <Box sx={{ width: 32 }} />
             )}
+            <CategoryIcon color="primary" fontSize="small" sx={{ mr: 1 }} />
+            <Box>
+              <Typography variant="body2" fontWeight="medium">
+                {category.name}
+              </Typography>
+              {category.description && (
+                <Typography variant="caption" color="text.secondary">
+                  {category.description}
+                </Typography>
+              )}
+            </Box>
           </Box>
-        </Box>
         );
       },
     },
     {
-      key: 'full_path',
-      label: 'Path',
+      key: "full_path",
+      label: "Path",
+      hideBelow: "md",
       render: (_, row) => {
         const category = row as unknown as ProductCategory;
         return (
-          <Typography 
-            variant="body2" 
+          <Typography
+            variant="body2"
             color="text.secondary"
             sx={{
-              fontFamily: 'monospace',
+              fontFamily: "monospace",
               background: tokens.color.neutral[100],
               px: 1,
               py: 0.5,
               borderRadius: tokens.spacing.radius.sm,
-              fontSize: '0.75rem',
-              display: 'inline-block',
+              fontSize: "0.75rem",
+              display: "inline-block",
             }}
           >
             {category.full_path}
@@ -157,42 +175,43 @@ export const CategoriesTable: React.FC<CategoriesTableProps> = ({
       },
     },
     {
-      key: 'requires_venue',
-      label: 'Venue Required',
+      key: "requires_venue",
+      label: "Venue Required",
+      hideBelow: "lg",
       render: (_, row) => {
         const category = row as unknown as ProductCategory;
         return (
           <Chip
-            label={category.requires_venue ? 'Yes' : 'No'}
+            label={category.requires_venue ? "Yes" : "No"}
             size="small"
-            color={category.requires_venue ? 'warning' : 'default'}
+            color={category.requires_venue ? "warning" : "default"}
             variant="outlined"
           />
         );
       },
     },
     {
-      key: 'typical_duration_hours',
-      label: 'Duration',
+      key: "typical_duration_hours",
+      label: "Duration",
+      hideBelow: "lg",
       render: (_, row) => {
         const category = row as unknown as ProductCategory;
-        return (
-          category.typical_duration_hours ? (
-            <Typography variant="body2">
-              {category.typical_duration_hours}h
-            </Typography>
-          ) : (
-            <Typography variant="body2" color="text.secondary">
-              —
-            </Typography>
-          )
+        return category.typical_duration_hours ? (
+          <Typography variant="body2">
+            {category.typical_duration_hours}h
+          </Typography>
+        ) : (
+          <Typography variant="body2" color="text.secondary">
+            —
+          </Typography>
         );
       },
     },
     {
-      key: 'sort_order',
-      label: 'Order',
-      align: 'center',
+      key: "sort_order",
+      label: "Order",
+      align: "center",
+      hideBelow: "lg",
       render: (_, row) => {
         const category = row as unknown as ProductCategory;
         return (
@@ -203,8 +222,8 @@ export const CategoriesTable: React.FC<CategoriesTableProps> = ({
       },
     },
     {
-      key: 'is_active',
-      label: 'Status',
+      key: "is_active",
+      label: "Status",
       render: (_, row) => {
         const category = row as unknown as ProductCategory;
         return getStatusChip(category.is_active);
@@ -216,9 +235,9 @@ export const CategoriesTable: React.FC<CategoriesTableProps> = ({
     (category: ProductCategory) => onEdit(category),
     (category: ProductCategory) => onDelete(category.id),
     {
-      editLabel: 'Edit Category',
-      deleteLabel: 'Delete Category',
-    }
+      editLabel: "Edit Category",
+      deleteLabel: "Delete Category",
+    },
   );
 
   if (isLoading) {
@@ -231,16 +250,23 @@ export const CategoriesTable: React.FC<CategoriesTableProps> = ({
         icon={FolderIcon}
         title="No categories found"
         description="Create product categories to organize your inventory"
-        tip={{ text: "Start with broad categories like 'Services' and 'Products', then add subcategories", type: "info" }}
+        tip={{
+          text: "Start with broad categories like 'Services' and 'Products', then add subcategories",
+          type: "info",
+        }}
       />
     );
   }
 
   return (
     <ModernTable
-      columns={columns as unknown as ModernTableColumn<Record<string, unknown>>[]}
+      columns={
+        columns as unknown as ModernTableColumn<Record<string, unknown>>[]
+      }
       data={hierarchicalCategories as unknown as Record<string, unknown>[]}
-      actions={actions as unknown as ModernTableAction<Record<string, unknown>>[]}
+      actions={
+        actions as unknown as ModernTableAction<Record<string, unknown>>[]
+      }
       onRowClick={(row) => onEdit(row as unknown as ProductCategory)}
       sortBy="sort_order"
       sortOrder="asc"

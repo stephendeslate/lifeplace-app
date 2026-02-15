@@ -1,7 +1,7 @@
 // frontend/admin-crm/src/components/vendors/VendorsTable.tsx
 
-import React from 'react';
-import { Box, Typography, Chip, Tooltip, Stack } from '@mui/material';
+import React from "react";
+import { Box, Typography, Chip, Tooltip, Stack } from "@mui/material";
 import {
   Store as VendorIcon,
   Settings as RulesIcon,
@@ -18,10 +18,18 @@ import {
   Church as OfficiantIcon,
   EventNote as CoordinationIcon,
   MoreHoriz as OtherIcon,
-} from '@mui/icons-material';
-import type { VendorListItem, VendorServiceCategory } from '../../types/vendors.types';
-import { ModernTable, ModernLoadingStates, ModernEmptyState, createStandardActions } from '../common';
-import type { ModernTableColumn, ModernTableAction } from '../common';
+} from "@mui/icons-material";
+import type {
+  VendorListItem,
+  VendorServiceCategory,
+} from "../../types/vendors.types";
+import {
+  ModernTable,
+  ModernLoadingStates,
+  ModernEmptyState,
+  createStandardActions,
+} from "../common";
+import type { ModernTableColumn, ModernTableAction } from "../common";
 
 interface VendorsTableProps {
   vendors: VendorListItem[];
@@ -52,40 +60,58 @@ const getCategoryIcon = (category: VendorServiceCategory) => {
 
 const getCategoryLabel = (category: VendorServiceCategory): string => {
   const labels: Record<VendorServiceCategory, string> = {
-    CATERING: 'Catering',
-    PHOTOGRAPHY: 'Photography',
-    VIDEOGRAPHY: 'Videography',
-    DJ: 'DJ / Music',
-    FLORIST: 'Florist',
-    DECORATOR: 'Decorator',
-    ENTERTAINMENT: 'Entertainment',
-    TRANSPORTATION: 'Transportation',
-    MAKEUP: 'Makeup & Styling',
-    RENTALS: 'Equipment Rentals',
-    OFFICIANT: 'Officiant',
-    COORDINATION: 'Event Coordination',
-    OTHER: 'Other',
+    CATERING: "Catering",
+    PHOTOGRAPHY: "Photography",
+    VIDEOGRAPHY: "Videography",
+    DJ: "DJ / Music",
+    FLORIST: "Florist",
+    DECORATOR: "Decorator",
+    ENTERTAINMENT: "Entertainment",
+    TRANSPORTATION: "Transportation",
+    MAKEUP: "Makeup & Styling",
+    RENTALS: "Equipment Rentals",
+    OFFICIANT: "Officiant",
+    COORDINATION: "Event Coordination",
+    OTHER: "Other",
   };
-  return labels[category] || 'Other';
+  return labels[category] || "Other";
 };
 
-const getCategoryColor = (category: VendorServiceCategory): 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning' => {
-  const colors: Record<VendorServiceCategory, 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning'> = {
-    CATERING: 'warning',
-    PHOTOGRAPHY: 'info',
-    VIDEOGRAPHY: 'info',
-    DJ: 'secondary',
-    FLORIST: 'success',
-    DECORATOR: 'primary',
-    ENTERTAINMENT: 'secondary',
-    TRANSPORTATION: 'default',
-    MAKEUP: 'error',
-    RENTALS: 'default',
-    OFFICIANT: 'primary',
-    COORDINATION: 'warning',
-    OTHER: 'default',
+const getCategoryColor = (
+  category: VendorServiceCategory,
+):
+  | "default"
+  | "primary"
+  | "secondary"
+  | "error"
+  | "info"
+  | "success"
+  | "warning" => {
+  const colors: Record<
+    VendorServiceCategory,
+    | "default"
+    | "primary"
+    | "secondary"
+    | "error"
+    | "info"
+    | "success"
+    | "warning"
+  > = {
+    CATERING: "warning",
+    PHOTOGRAPHY: "info",
+    VIDEOGRAPHY: "info",
+    DJ: "secondary",
+    FLORIST: "success",
+    DECORATOR: "primary",
+    ENTERTAINMENT: "secondary",
+    TRANSPORTATION: "default",
+    MAKEUP: "error",
+    RENTALS: "default",
+    OFFICIANT: "primary",
+    COORDINATION: "warning",
+    OTHER: "default",
   };
-  return colors[category] || 'default';
+  return colors[category] || "default";
 };
 
 export const VendorsTable: React.FC<VendorsTableProps> = ({
@@ -97,16 +123,16 @@ export const VendorsTable: React.FC<VendorsTableProps> = ({
   const getStatusChip = (isActive: boolean, isBookable: boolean) => (
     <Stack direction="row" spacing={0.5}>
       <Chip
-        label={isActive ? 'Active' : 'Inactive'}
+        label={isActive ? "Active" : "Inactive"}
         size="small"
-        color={isActive ? 'success' : 'default'}
-        variant={isActive ? 'filled' : 'outlined'}
+        color={isActive ? "success" : "default"}
+        variant={isActive ? "filled" : "outlined"}
       />
       {isActive && (
         <Chip
-          label={isBookable ? 'Bookable' : 'Not Bookable'}
+          label={isBookable ? "Bookable" : "Not Bookable"}
           size="small"
-          color={isBookable ? 'info' : 'warning'}
+          color={isBookable ? "info" : "warning"}
           variant="outlined"
         />
       )}
@@ -115,8 +141,8 @@ export const VendorsTable: React.FC<VendorsTableProps> = ({
 
   const columns: ModernTableColumn[] = [
     {
-      key: 'name',
-      label: 'Vendor',
+      key: "name",
+      label: "Vendor",
       sortable: true,
       render: (_, row) => {
         const vendor = row as unknown as VendorListItem;
@@ -136,8 +162,8 @@ export const VendorsTable: React.FC<VendorsTableProps> = ({
       },
     },
     {
-      key: 'service_category',
-      label: 'Category',
+      key: "service_category",
+      label: "Category",
       render: (_, row) => {
         const vendor = row as unknown as VendorListItem;
         return (
@@ -152,36 +178,36 @@ export const VendorsTable: React.FC<VendorsTableProps> = ({
       },
     },
     {
-      key: 'status',
-      label: 'Status',
+      key: "status",
+      label: "Status",
       render: (_, row) => {
         const vendor = row as unknown as VendorListItem;
         return getStatusChip(vendor.is_active, vendor.is_bookable);
       },
     },
     {
-      key: 'has_operating_rules',
-      label: 'Rules',
-      align: 'center',
+      key: "has_operating_rules",
+      label: "Rules",
+      hideBelow: "md",
+      align: "center",
       render: (_, row) => {
         const vendor = row as unknown as VendorListItem;
-        return (
-          vendor.has_operating_rules ? (
-            <Tooltip title="Has operating rules configured">
-              <RulesIcon color="success" />
-            </Tooltip>
-          ) : (
-            <Tooltip title="No operating rules configured">
-              <RulesIcon color="disabled" />
-            </Tooltip>
-          )
+        return vendor.has_operating_rules ? (
+          <Tooltip title="Has operating rules configured">
+            <RulesIcon color="success" />
+          </Tooltip>
+        ) : (
+          <Tooltip title="No operating rules configured">
+            <RulesIcon color="disabled" />
+          </Tooltip>
         );
       },
     },
     {
-      key: 'packages_count',
-      label: 'Packages',
-      align: 'center',
+      key: "packages_count",
+      label: "Packages",
+      hideBelow: "lg",
+      align: "center",
       render: (_, row) => {
         const vendor = row as unknown as VendorListItem;
         return (
@@ -189,7 +215,7 @@ export const VendorsTable: React.FC<VendorsTableProps> = ({
             label={vendor.packages_count}
             size="small"
             variant="outlined"
-            color={vendor.packages_count > 0 ? 'primary' : 'default'}
+            color={vendor.packages_count > 0 ? "primary" : "default"}
           />
         );
       },
@@ -200,9 +226,9 @@ export const VendorsTable: React.FC<VendorsTableProps> = ({
     (vendor: VendorListItem) => onEdit(vendor),
     (vendor: VendorListItem) => onDelete(vendor.id),
     {
-      editLabel: 'Edit Vendor',
-      deleteLabel: 'Delete Vendor',
-    }
+      editLabel: "Edit Vendor",
+      deleteLabel: "Delete Vendor",
+    },
   );
 
   if (isLoading) {
@@ -215,16 +241,23 @@ export const VendorsTable: React.FC<VendorsTableProps> = ({
         icon={VendorIcon}
         title="No vendors found"
         description="Create your first vendor to get started with managing service providers"
-        tip={{ text: "Vendors are service providers like caterers, photographers, DJs, etc.", type: "info" }}
+        tip={{
+          text: "Vendors are service providers like caterers, photographers, DJs, etc.",
+          type: "info",
+        }}
       />
     );
   }
 
   return (
     <ModernTable
-      columns={columns as unknown as ModernTableColumn<Record<string, unknown>>[]}
+      columns={
+        columns as unknown as ModernTableColumn<Record<string, unknown>>[]
+      }
       data={vendors as unknown as Record<string, unknown>[]}
-      actions={actions as unknown as ModernTableAction<Record<string, unknown>>[]}
+      actions={
+        actions as unknown as ModernTableAction<Record<string, unknown>>[]
+      }
       onRowClick={(row) => onEdit(row as unknown as VendorListItem)}
       sortBy="name"
       sortOrder="asc"

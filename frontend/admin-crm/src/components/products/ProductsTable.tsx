@@ -1,11 +1,20 @@
 // frontend/admin-crm/src/components/products/ProductsTable.tsx
 
-import React from 'react';
-import { Box, Typography, Chip, Tooltip } from '@mui/material';
-import { Inventory as ProductIcon, Star as StarIcon, StarBorder as StarBorderIcon } from '@mui/icons-material';
-import type { ProductOption } from '../../types/products.types';
-import { ModernTable, ModernLoadingStates, ModernEmptyState, createStandardActions } from '../common';
-import type { ModernTableColumn, ModernTableAction } from '../common';
+import React from "react";
+import { Box, Typography, Chip, Tooltip } from "@mui/material";
+import {
+  Inventory as ProductIcon,
+  Star as StarIcon,
+  StarBorder as StarBorderIcon,
+} from "@mui/icons-material";
+import type { ProductOption } from "../../types/products.types";
+import {
+  ModernTable,
+  ModernLoadingStates,
+  ModernEmptyState,
+  createStandardActions,
+} from "../common";
+import type { ModernTableColumn, ModernTableAction } from "../common";
 
 interface ProductsTableProps {
   products: ProductOption[];
@@ -13,7 +22,7 @@ interface ProductsTableProps {
   onEdit: (product: ProductOption) => void;
   onDelete: (id: number) => void;
   isDeleting: boolean;
-  typeFilter?: 'PRODUCT' | 'PACKAGE';
+  typeFilter?: "PRODUCT" | "PACKAGE";
 }
 
 export const ProductsTable: React.FC<ProductsTableProps> = ({
@@ -25,23 +34,27 @@ export const ProductsTable: React.FC<ProductsTableProps> = ({
 }) => {
   // Filter products by type if typeFilter is provided
   const filteredProducts = typeFilter
-    ? products.filter(p => p.type === typeFilter)
+    ? products.filter((p) => p.type === typeFilter)
     : products;
 
-  const isPackageView = typeFilter === 'PACKAGE';
-  const itemLabel = isPackageView ? 'Package' : typeFilter === 'PRODUCT' ? 'Product' : 'Product';
+  const isPackageView = typeFilter === "PACKAGE";
+  const itemLabel = isPackageView
+    ? "Package"
+    : typeFilter === "PRODUCT"
+      ? "Product"
+      : "Product";
   const formatPrice = (product: ProductOption) => {
-    if (product.pricing_model === 'CUSTOM') {
-      return 'Custom Quote';
+    if (product.pricing_model === "CUSTOM") {
+      return "Custom Quote";
     }
-    
+
     const price = parseFloat(product.base_price);
     const formattedPrice = `${product.currency} ${price.toLocaleString()}`;
-    
-    if (product.pricing_model === 'HOURLY') {
+
+    if (product.pricing_model === "HOURLY") {
       return `${formattedPrice}/hour`;
     }
-    
+
     return formattedPrice;
   };
 
@@ -49,24 +62,24 @@ export const ProductsTable: React.FC<ProductsTableProps> = ({
     <Chip
       label={type}
       size="small"
-      color={isPackage ? 'secondary' : 'primary'}
+      color={isPackage ? "secondary" : "primary"}
       variant="outlined"
     />
   );
 
   const getStatusChip = (isActive: boolean) => (
     <Chip
-      label={isActive ? 'Active' : 'Inactive'}
+      label={isActive ? "Active" : "Inactive"}
       size="small"
-      color={isActive ? 'success' : 'default'}
-      variant={isActive ? 'filled' : 'outlined'}
+      color={isActive ? "success" : "default"}
+      variant={isActive ? "filled" : "outlined"}
     />
   );
 
   const baseColumns: ModernTableColumn[] = [
     {
-      key: 'name',
-      label: 'Name',
+      key: "name",
+      label: "Name",
       sortable: true,
       render: (_, row) => {
         const product = row as unknown as ProductOption;
@@ -88,8 +101,9 @@ export const ProductsTable: React.FC<ProductsTableProps> = ({
       },
     },
     {
-      key: 'category',
-      label: 'Category',
+      key: "category",
+      label: "Category",
+      hideBelow: "md",
       render: (_, row) => {
         const product = row as unknown as ProductOption;
         return (
@@ -105,8 +119,8 @@ export const ProductsTable: React.FC<ProductsTableProps> = ({
       },
     },
     {
-      key: 'pricing',
-      label: 'Pricing',
+      key: "pricing",
+      label: "Pricing",
       render: (_, row) => {
         const product = row as unknown as ProductOption;
         return (
@@ -122,27 +136,26 @@ export const ProductsTable: React.FC<ProductsTableProps> = ({
       },
     },
     {
-      key: 'is_active',
-      label: 'Status',
+      key: "is_active",
+      label: "Status",
       render: (_, row) => {
         const product = row as unknown as ProductOption;
         return getStatusChip(product.is_active);
       },
     },
     {
-      key: 'is_featured',
-      label: 'Featured',
-      align: 'center',
+      key: "is_featured",
+      label: "Featured",
+      align: "center",
+      hideBelow: "lg",
       render: (_, row) => {
         const product = row as unknown as ProductOption;
-        return (
-          product.is_featured ? (
-            <Tooltip title={`Featured ${itemLabel.toLowerCase()}`}>
-              <StarIcon color="warning" />
-            </Tooltip>
-          ) : (
-            <StarBorderIcon color="disabled" />
-          )
+        return product.is_featured ? (
+          <Tooltip title={`Featured ${itemLabel.toLowerCase()}`}>
+            <StarIcon color="warning" />
+          </Tooltip>
+        ) : (
+          <StarBorderIcon color="disabled" />
         );
       },
     },
@@ -150,11 +163,11 @@ export const ProductsTable: React.FC<ProductsTableProps> = ({
 
   // Only add type column if not filtering by a specific type
   const typeColumn: ModernTableColumn = {
-    key: 'type',
-    label: 'Type',
+    key: "type",
+    label: "Type",
     render: (_, row) => {
       const product = row as unknown as ProductOption;
-      return getTypeChip(product.type_display, product.type === 'PACKAGE');
+      return getTypeChip(product.type_display, product.type === "PACKAGE");
     },
   };
 
@@ -168,7 +181,7 @@ export const ProductsTable: React.FC<ProductsTableProps> = ({
     {
       editLabel: `Edit ${itemLabel}`,
       deleteLabel: `Delete ${itemLabel}`,
-    }
+    },
   );
 
   if (isLoading) {
@@ -177,22 +190,22 @@ export const ProductsTable: React.FC<ProductsTableProps> = ({
 
   if (filteredProducts.length === 0) {
     const emptyTitle = isPackageView
-      ? 'No packages found'
-      : typeFilter === 'PRODUCT'
-        ? 'No products found'
-        : 'No products found';
+      ? "No packages found"
+      : typeFilter === "PRODUCT"
+        ? "No products found"
+        : "No products found";
 
     const emptyDescription = isPackageView
-      ? 'Create your first package to bundle services together'
-      : typeFilter === 'PRODUCT'
-        ? 'Create your first product to get started'
-        : 'Create your first product or package to get started';
+      ? "Create your first package to bundle services together"
+      : typeFilter === "PRODUCT"
+        ? "Create your first product to get started"
+        : "Create your first product or package to get started";
 
     const emptyTip = isPackageView
-      ? 'Packages bundle multiple products and services together for clients'
-      : typeFilter === 'PRODUCT'
-        ? 'Products are individual services you offer to clients'
-        : 'Start with individual products, then create packages to bundle services together';
+      ? "Packages bundle multiple products and services together for clients"
+      : typeFilter === "PRODUCT"
+        ? "Products are individual services you offer to clients"
+        : "Start with individual products, then create packages to bundle services together";
 
     return (
       <ModernEmptyState
@@ -206,9 +219,13 @@ export const ProductsTable: React.FC<ProductsTableProps> = ({
 
   return (
     <ModernTable
-      columns={columns as unknown as ModernTableColumn<Record<string, unknown>>[]}
+      columns={
+        columns as unknown as ModernTableColumn<Record<string, unknown>>[]
+      }
       data={filteredProducts as unknown as Record<string, unknown>[]}
-      actions={actions as unknown as ModernTableAction<Record<string, unknown>>[]}
+      actions={
+        actions as unknown as ModernTableAction<Record<string, unknown>>[]
+      }
       onRowClick={(row) => onEdit(row as unknown as ProductOption)}
       sortBy="name"
       sortOrder="asc"

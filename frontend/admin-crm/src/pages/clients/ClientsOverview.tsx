@@ -1,6 +1,6 @@
 // Clients Overview - Flat design matching Analytics page style
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from "react";
 import {
   Box,
   Button,
@@ -28,7 +28,7 @@ import {
   Alert,
   Tooltip,
   CircularProgress,
-} from '@mui/material';
+} from "@mui/material";
 import {
   Add as AddIcon,
   FileUpload as ImportIcon,
@@ -38,20 +38,31 @@ import {
   Search as SearchIcon,
   People as PeopleIcon,
   FileDownload as ExportIcon,
-} from '@mui/icons-material';
-import { useNavigate } from 'react-router-dom';
-import { useLayout } from '../../contexts/LayoutContext';
-import { useClients } from '../../hooks/useClients';
-import { ClientForm } from '../../components/clients/ClientForm';
-import { clientsApi } from '../../apis/clients.api';
-import { getClientRegistrationStatus, getClientActiveStatus } from '../../utils/clientStatus';
-import type { Client, ClientFilters, CreateClientData } from '../../types/clients.types';
-import { ModernPageLayout, ModernPageHeader, ModernEmptyState } from '../../components/common';
+} from "@mui/icons-material";
+import { useNavigate } from "react-router-dom";
+import { useLayout } from "../../contexts/LayoutContext";
+import { useClients } from "../../hooks/useClients";
+import { ClientForm } from "../../components/clients/ClientForm";
+import { clientsApi } from "../../apis/clients.api";
+import {
+  getClientRegistrationStatus,
+  getClientActiveStatus,
+} from "../../utils/clientStatus";
+import type {
+  Client,
+  ClientFilters,
+  CreateClientData,
+} from "../../types/clients.types";
+import {
+  ModernPageLayout,
+  ModernPageHeader,
+  ModernEmptyState,
+} from "../../components/common";
 
 export const ClientsOverview: React.FC = () => {
   const navigate = useNavigate();
   const { setBreadcrumbs } = useLayout();
-  
+
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(25);
   const [filters, setFilters] = useState<ClientFilters>({});
@@ -59,7 +70,7 @@ export const ClientsOverview: React.FC = () => {
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
-  const [searchValue, setSearchValue] = useState('');
+  const [searchValue, setSearchValue] = useState("");
 
   const {
     clients = [], // Add default empty array
@@ -77,17 +88,15 @@ export const ClientsOverview: React.FC = () => {
   });
 
   useEffect(() => {
-    setBreadcrumbs([
-      { label: 'Clients' },
-    ]);
+    setBreadcrumbs([{ label: "Clients" }]);
   }, [setBreadcrumbs]);
 
   useEffect(() => {
     // Debounce search
     const timer = setTimeout(() => {
-      setFilters(prev => ({
+      setFilters((prev) => ({
         ...prev,
-        search: searchValue || undefined
+        search: searchValue || undefined,
       }));
       setPage(0);
     }, 300);
@@ -99,7 +108,10 @@ export const ClientsOverview: React.FC = () => {
     navigate(`/clients/${client.id}`);
   };
 
-  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, client: Client) => {
+  const handleMenuOpen = (
+    event: React.MouseEvent<HTMLElement>,
+    client: Client,
+  ) => {
     event.stopPropagation();
     setMenuAnchor(event.currentTarget);
     setSelectedClient(client);
@@ -121,15 +133,15 @@ export const ClientsOverview: React.FC = () => {
     try {
       const blob = await clientsApi.exportClients(filters);
       const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
+      const a = document.createElement("a");
       a.href = url;
-      a.download = `clients-${new Date().toISOString().split('T')[0]}.csv`;
+      a.download = `clients-${new Date().toISOString().split("T")[0]}.csv`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
     } catch (error) {
-      console.error('Export failed:', error);
+      console.error("Export failed:", error);
     }
   };
 
@@ -139,9 +151,9 @@ export const ClientsOverview: React.FC = () => {
   };
 
   const handleFilterChange = (key: keyof ClientFilters, value: string) => {
-    setFilters(prev => ({
+    setFilters((prev) => ({
       ...prev,
-      [key]: value === 'all' ? undefined : value === 'true'
+      [key]: value === "all" ? undefined : value === "true",
     }));
     setPage(0);
   };
@@ -156,30 +168,37 @@ export const ClientsOverview: React.FC = () => {
         label: "Add First Client",
         onClick: () => setCreateDialogOpen(true),
         icon: <AddIcon />,
-        color: 'primary'
+        color: "primary",
       }}
       secondaryAction={{
         label: "Import Clients",
         onClick: () => setImportDialogOpen(true),
-        icon: <ImportIcon />
+        icon: <ImportIcon />,
       }}
       tip={{
         text: "Import clients from your previous system to get started quickly with your existing client relationships.",
-        type: 'info'
+        type: "info",
       }}
       size="large"
       color="primary"
     />
   );
 
-  const hasActiveFilters = Object.values(filters).some(value => value !== undefined);
+  const hasActiveFilters = Object.values(filters).some(
+    (value) => value !== undefined,
+  );
   const filteredCount = totalClients ?? 0;
 
   // Loading state
   if (isLoadingClients) {
     return (
       <ModernPageLayout backgroundPattern="default">
-        <Box display="flex" justifyContent="center" alignItems="center" minHeight={400}>
+        <Box
+          display="flex"
+          justifyContent="center"
+          alignItems="center"
+          minHeight={400}
+        >
           <CircularProgress />
         </Box>
       </ModernPageLayout>
@@ -191,7 +210,9 @@ export const ClientsOverview: React.FC = () => {
     setPage(newPage);
   };
 
-  const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChangeRowsPerPage = (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
     setRowsPerPage(parseInt(event.target.value, 10));
     setPage(0);
   };
@@ -201,28 +222,28 @@ export const ClientsOverview: React.FC = () => {
       {/* Page Header - flat style */}
       <ModernPageHeader
         title="Clients"
-        subtitle={`${filteredCount} client${filteredCount !== 1 ? 's' : ''} found`}
+        subtitle={`${filteredCount} client${filteredCount !== 1 ? "s" : ""} found`}
         icon={<PeopleIcon />}
         size="medium"
         primaryAction={{
-          label: 'Add Client',
+          label: "Add Client",
           icon: <AddIcon />,
           onClick: () => setCreateDialogOpen(true),
-          variant: 'contained',
-          color: 'primary',
+          variant: "contained",
+          color: "primary",
         }}
         secondaryActions={[
           {
-            label: 'Import',
+            label: "Import",
             icon: <ImportIcon />,
             onClick: () => setImportDialogOpen(true),
-            variant: 'outlined',
+            variant: "outlined",
           },
           {
-            label: 'Export',
+            label: "Export",
             icon: <ExportIcon />,
             onClick: handleExport,
-            variant: 'outlined',
+            variant: "outlined",
           },
         ]}
       />
@@ -232,23 +253,35 @@ export const ClientsOverview: React.FC = () => {
       ) : (
         <>
           {/* Filters - flat style */}
-          <Box sx={{ mb: 3, p: 2, borderRadius: 1, bgcolor: 'action.hover' }}>
-            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems="center">
+          <Box sx={{ mb: 3, p: 2, borderRadius: 1, bgcolor: "action.hover" }}>
+            <Stack
+              direction={{ xs: "column", sm: "row" }}
+              spacing={2}
+              alignItems="center"
+            >
               <TextField
                 size="small"
                 placeholder="Search clients..."
                 value={searchValue}
                 onChange={(e) => setSearchValue(e.target.value)}
-                InputProps={{ startAdornment: <SearchIcon color="action" sx={{ mr: 1 }} /> }}
+                InputProps={{
+                  startAdornment: <SearchIcon color="action" sx={{ mr: 1 }} />,
+                }}
                 sx={{ flex: 1, minWidth: 200 }}
               />
 
               <FormControl size="small" sx={{ minWidth: 140 }}>
                 <InputLabel>Status</InputLabel>
                 <Select
-                  value={filters.is_active === undefined ? 'all' : filters.is_active.toString()}
+                  value={
+                    filters.is_active === undefined
+                      ? "all"
+                      : filters.is_active.toString()
+                  }
                   label="Status"
-                  onChange={(e) => handleFilterChange('is_active', e.target.value)}
+                  onChange={(e) =>
+                    handleFilterChange("is_active", e.target.value)
+                  }
                 >
                   <MenuItem value="all">All Status</MenuItem>
                   <MenuItem value="true">Active</MenuItem>
@@ -259,9 +292,15 @@ export const ClientsOverview: React.FC = () => {
               <FormControl size="small" sx={{ minWidth: 140 }}>
                 <InputLabel>Registration</InputLabel>
                 <Select
-                  value={filters.has_account === undefined ? 'all' : filters.has_account.toString()}
+                  value={
+                    filters.has_account === undefined
+                      ? "all"
+                      : filters.has_account.toString()
+                  }
                   label="Registration"
-                  onChange={(e) => handleFilterChange('has_account', e.target.value)}
+                  onChange={(e) =>
+                    handleFilterChange("has_account", e.target.value)
+                  }
                 >
                   <MenuItem value="all">All Types</MenuItem>
                   <MenuItem value="true">Registered</MenuItem>
@@ -270,7 +309,15 @@ export const ClientsOverview: React.FC = () => {
               </FormControl>
 
               {hasActiveFilters && (
-                <Button variant="outlined" color="warning" size="small" onClick={() => { setFilters({}); setSearchValue(''); }}>
+                <Button
+                  variant="outlined"
+                  color="warning"
+                  size="small"
+                  onClick={() => {
+                    setFilters({});
+                    setSearchValue("");
+                  }}
+                >
                   Clear Filters
                 </Button>
               )}
@@ -278,83 +325,143 @@ export const ClientsOverview: React.FC = () => {
           </Box>
 
           {/* Clients Table - flat style */}
-          <Box sx={{ borderRadius: 1, bgcolor: 'background.paper', overflow: 'hidden' }}>
-            <TableContainer>
+          <Box
+            sx={{
+              borderRadius: 1,
+              bgcolor: "background.paper",
+              overflow: "hidden",
+            }}
+          >
+            <TableContainer sx={{ overflowX: "auto" }}>
               <Table size="small">
                 <TableHead>
                   <TableRow>
                     <TableCell>Name</TableCell>
-                    <TableCell>Email</TableCell>
-                    <TableCell>Company</TableCell>
-                    <TableCell>Phone</TableCell>
+                    <TableCell
+                      sx={{ display: { xs: "none", md: "table-cell" } }}
+                    >
+                      Email
+                    </TableCell>
+                    <TableCell
+                      sx={{ display: { xs: "none", lg: "table-cell" } }}
+                    >
+                      Company
+                    </TableCell>
+                    <TableCell
+                      sx={{ display: { xs: "none", lg: "table-cell" } }}
+                    >
+                      Phone
+                    </TableCell>
                     <TableCell>Status</TableCell>
-                    <TableCell>Registration</TableCell>
-                    <TableCell>Joined</TableCell>
+                    <TableCell
+                      sx={{ display: { xs: "none", md: "table-cell" } }}
+                    >
+                      Registration
+                    </TableCell>
+                    <TableCell
+                      sx={{ display: { xs: "none", md: "table-cell" } }}
+                    >
+                      Joined
+                    </TableCell>
                     <TableCell width="50"></TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {Array.isArray(clients) && clients.map((client) => {
-                    const registrationStatus = getClientRegistrationStatus(client);
-                    const activeStatus = getClientActiveStatus(client);
+                  {Array.isArray(clients) &&
+                    clients.map((client) => {
+                      const registrationStatus =
+                        getClientRegistrationStatus(client);
+                      const activeStatus = getClientActiveStatus(client);
 
-                    return (
-                      <TableRow key={client.id} hover onClick={() => handleRowClick(client)} sx={{ cursor: 'pointer' }}>
-                        <TableCell>
-                          <Typography variant="body2" fontWeight="600">{client.first_name} {client.last_name}</Typography>
-                        </TableCell>
-                        <TableCell>
-                          <Typography variant="body2" color="text.secondary">{client.email}</Typography>
-                        </TableCell>
-                        <TableCell>
-                          <Typography variant="body2" color="text.secondary">
-                            {client.profile?.company || '-'}
-                          </Typography>
-                        </TableCell>
-                        <TableCell>
-                          <Typography variant="body2" color="text.secondary">
-                            {client.profile?.phone || '-'}
-                          </Typography>
-                        </TableCell>
-                        <TableCell>
-                          <Chip
-                            icon={activeStatus.icon}
-                            label={activeStatus.label}
-                            color={activeStatus.color === 'default' ? 'primary' : activeStatus.color}
-                            size="small"
-                            variant="outlined"
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Tooltip title={registrationStatus.tooltip}>
+                      return (
+                        <TableRow
+                          key={client.id}
+                          hover
+                          onClick={() => handleRowClick(client)}
+                          sx={{ cursor: "pointer" }}
+                        >
+                          <TableCell>
+                            <Typography variant="body2" fontWeight="600">
+                              {client.first_name} {client.last_name}
+                            </Typography>
+                          </TableCell>
+                          <TableCell
+                            sx={{ display: { xs: "none", md: "table-cell" } }}
+                          >
+                            <Typography variant="body2" color="text.secondary">
+                              {client.email}
+                            </Typography>
+                          </TableCell>
+                          <TableCell
+                            sx={{ display: { xs: "none", lg: "table-cell" } }}
+                          >
+                            <Typography variant="body2" color="text.secondary">
+                              {client.profile?.company || "-"}
+                            </Typography>
+                          </TableCell>
+                          <TableCell
+                            sx={{ display: { xs: "none", lg: "table-cell" } }}
+                          >
+                            <Typography variant="body2" color="text.secondary">
+                              {client.profile?.phone || "-"}
+                            </Typography>
+                          </TableCell>
+                          <TableCell>
                             <Chip
-                              icon={registrationStatus.icon}
-                              label={registrationStatus.label}
-                              color={registrationStatus.color === 'default' ? 'primary' : registrationStatus.color}
+                              icon={activeStatus.icon}
+                              label={activeStatus.label}
+                              color={
+                                activeStatus.color === "default"
+                                  ? "primary"
+                                  : activeStatus.color
+                              }
                               size="small"
                               variant="outlined"
                             />
-                          </Tooltip>
-                        </TableCell>
-                        <TableCell>
-                          <Typography variant="body2" color="text.secondary">
-                            {new Date(client.date_joined).toLocaleDateString()}
-                          </Typography>
-                        </TableCell>
-                        <TableCell>
-                          <IconButton size="small" onClick={(e) => handleMenuOpen(e, client)}>
-                            <MoreVertIcon sx={{ fontSize: 16 }} />
-                          </IconButton>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
+                          </TableCell>
+                          <TableCell
+                            sx={{ display: { xs: "none", md: "table-cell" } }}
+                          >
+                            <Tooltip title={registrationStatus.tooltip}>
+                              <Chip
+                                icon={registrationStatus.icon}
+                                label={registrationStatus.label}
+                                color={
+                                  registrationStatus.color === "default"
+                                    ? "primary"
+                                    : registrationStatus.color
+                                }
+                                size="small"
+                                variant="outlined"
+                              />
+                            </Tooltip>
+                          </TableCell>
+                          <TableCell
+                            sx={{ display: { xs: "none", md: "table-cell" } }}
+                          >
+                            <Typography variant="body2" color="text.secondary">
+                              {new Date(
+                                client.date_joined,
+                              ).toLocaleDateString()}
+                            </Typography>
+                          </TableCell>
+                          <TableCell>
+                            <IconButton
+                              size="small"
+                              onClick={(e) => handleMenuOpen(e, client)}
+                            >
+                              <MoreVertIcon sx={{ fontSize: 16 }} />
+                            </IconButton>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
                 </TableBody>
               </Table>
             </TableContainer>
 
             {/* Pagination */}
-            <Box sx={{ p: 2, borderTop: 1, borderColor: 'divider' }}>
+            <Box sx={{ p: 2, borderTop: 1, borderColor: "divider" }}>
               <TablePagination
                 rowsPerPageOptions={[10, 25, 50, 100]}
                 component="div"
@@ -370,13 +477,25 @@ export const ClientsOverview: React.FC = () => {
       )}
 
       {/* Action Menu */}
-      <Menu anchorEl={menuAnchor} open={Boolean(menuAnchor)} onClose={handleMenuClose}>
-        <MenuItem onClick={() => { if (selectedClient) navigate(`/clients/${selectedClient.id}`); handleMenuClose(); }}>
+      <Menu
+        anchorEl={menuAnchor}
+        open={Boolean(menuAnchor)}
+        onClose={handleMenuClose}
+      >
+        <MenuItem
+          onClick={() => {
+            if (selectedClient) navigate(`/clients/${selectedClient.id}`);
+            handleMenuClose();
+          }}
+        >
           <PersonIcon sx={{ mr: 1.5 }} color="primary" />
           View Profile
         </MenuItem>
         {selectedClient && !selectedClient.has_account && (
-          <MenuItem onClick={handleSendInvitation} disabled={isSendingInvitation}>
+          <MenuItem
+            onClick={handleSendInvitation}
+            disabled={isSendingInvitation}
+          >
             <PersonAddIcon sx={{ mr: 1.5 }} color="success" />
             Send Invitation
           </MenuItem>
@@ -384,12 +503,19 @@ export const ClientsOverview: React.FC = () => {
       </Menu>
 
       {/* Modern Create Client Dialog */}
-      <Dialog open={createDialogOpen} onClose={() => setCreateDialogOpen(false)} maxWidth="md" fullWidth>
+      <Dialog
+        open={createDialogOpen}
+        onClose={() => setCreateDialogOpen(false)}
+        maxWidth="md"
+        fullWidth
+      >
         <DialogTitle color="primary">Add New Client</DialogTitle>
         <DialogContent sx={{ pt: 2 }}>
           <ClientForm
             onSubmit={(data) => {
-              createClient(data as CreateClientData, { onSuccess: () => setCreateDialogOpen(false) });
+              createClient(data as CreateClientData, {
+                onSuccess: () => setCreateDialogOpen(false),
+              });
             }}
             isLoading={isCreatingClient}
           />
@@ -397,11 +523,17 @@ export const ClientsOverview: React.FC = () => {
       </Dialog>
 
       {/* Import Dialog */}
-      <Dialog open={importDialogOpen} onClose={() => setImportDialogOpen(false)} maxWidth="sm" fullWidth>
+      <Dialog
+        open={importDialogOpen}
+        onClose={() => setImportDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
         <DialogTitle>Import Clients</DialogTitle>
         <DialogContent sx={{ pt: 2 }}>
           <Alert severity="info" sx={{ mb: 3 }}>
-            Upload a CSV file with client data. Required columns: first_name, last_name, email
+            Upload a CSV file with client data. Required columns: first_name,
+            last_name, email
           </Alert>
           <Box
             component="input"
@@ -412,14 +544,14 @@ export const ClientsOverview: React.FC = () => {
               if (file) handleImport(file);
             }}
             sx={{
-              width: '100%',
+              width: "100%",
               p: 3,
-              border: '2px dashed',
-              borderColor: 'divider',
+              border: "2px dashed",
+              borderColor: "divider",
               borderRadius: 2,
-              bgcolor: 'action.hover',
-              cursor: 'pointer',
-              '&:hover': { borderColor: 'primary.main' }
+              bgcolor: "action.hover",
+              cursor: "pointer",
+              "&:hover": { borderColor: "primary.main" },
             }}
           />
         </DialogContent>

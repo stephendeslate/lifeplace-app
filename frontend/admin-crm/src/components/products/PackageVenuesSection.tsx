@@ -1,6 +1,6 @@
 // frontend/admin-crm/src/components/products/PackageVenuesSection.tsx
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo } from "react";
 import {
   Box,
   Typography,
@@ -23,16 +23,19 @@ import {
   Chip,
   Alert,
   Tooltip,
-} from '@mui/material';
+} from "@mui/material";
 import {
   Add as AddIcon,
   Delete as DeleteIcon,
   NightsStay as OvernightIcon,
   WbSunny as DayIcon,
   Star as PrimaryIcon,
-} from '@mui/icons-material';
-import { useVenues, usePackageVenues } from '../../hooks/useVenues';
-import type { VenueListItem, PackageVenueInline } from '../../types/venues.types';
+} from "@mui/icons-material";
+import { useVenues, usePackageVenues } from "../../hooks/useVenues";
+import type {
+  VenueListItem,
+  PackageVenueInline,
+} from "../../types/venues.types";
 
 interface PackageVenuesSectionProps {
   packageId: number;
@@ -42,10 +45,18 @@ export const PackageVenuesSection: React.FC<PackageVenuesSectionProps> = ({
   packageId,
 }) => {
   const [addDialogOpen, setAddDialogOpen] = useState(false);
-  const [selectedVenue, setSelectedVenue] = useState<VenueListItem | null>(null);
+  const [selectedVenue, setSelectedVenue] = useState<VenueListItem | null>(
+    null,
+  );
   const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
-  const [editingNotes, setEditingNotes] = useState<{ id: number; notes: string } | null>(null);
-  const [editingDuration, setEditingDuration] = useState<{ id: number; hours: string } | null>(null);
+  const [editingNotes, setEditingNotes] = useState<{
+    id: number;
+    notes: string;
+  } | null>(null);
+  const [editingDuration, setEditingDuration] = useState<{
+    id: number;
+    hours: string;
+  } | null>(null);
 
   // Get all venues for selection
   const { venues: allVenues, isLoadingVenues } = useVenues({ is_active: true });
@@ -61,11 +72,14 @@ export const PackageVenuesSection: React.FC<PackageVenuesSectionProps> = ({
     isDeletingPackageVenue,
   } = usePackageVenues();
 
-  const { data: assignedVenues = [], isLoading: isLoadingAssigned } = useVenuesForPackage(packageId);
+  const { data: assignedVenues = [], isLoading: isLoadingAssigned } =
+    useVenuesForPackage(packageId);
 
   // Filter out already-assigned venues
   const availableVenues = useMemo(() => {
-    const assignedIds = new Set(assignedVenues.map((v: PackageVenueInline) => v.venue));
+    const assignedIds = new Set(
+      assignedVenues.map((v: PackageVenueInline) => v.venue),
+    );
     return allVenues.filter((v) => !assignedIds.has(v.id));
   }, [allVenues, assignedVenues]);
 
@@ -73,9 +87,12 @@ export const PackageVenuesSection: React.FC<PackageVenuesSectionProps> = ({
   const handleAddVenue = () => {
     if (!selectedVenue) return;
 
-    const nextOrder = assignedVenues.length > 0
-      ? Math.max(...assignedVenues.map((v: PackageVenueInline) => v.access_order)) + 1
-      : 1;
+    const nextOrder =
+      assignedVenues.length > 0
+        ? Math.max(
+            ...assignedVenues.map((v: PackageVenueInline) => v.access_order),
+          ) + 1
+        : 1;
 
     createPackageVenue({
       package: packageId,
@@ -106,23 +123,35 @@ export const PackageVenuesSection: React.FC<PackageVenuesSectionProps> = ({
 
   const handleSaveNotes = () => {
     if (!editingNotes) return;
-    updatePackageVenue({ id: editingNotes.id, data: { notes: editingNotes.notes } });
+    updatePackageVenue({
+      id: editingNotes.id,
+      data: { notes: editingNotes.notes },
+    });
     setEditingNotes(null);
   };
 
   const handleSaveDuration = () => {
     if (!editingDuration) return;
     const hours = editingDuration.hours ? editingDuration.hours : null;
-    updatePackageVenue({ id: editingDuration.id, data: { access_duration_hours: hours } });
+    updatePackageVenue({
+      id: editingDuration.id,
+      data: { access_duration_hours: hours },
+    });
     setEditingDuration(null);
   };
 
   const isLoading = isLoadingVenues || isLoadingAssigned;
-  const isMutating = isCreatingPackageVenue || isUpdatingPackageVenue || isDeletingPackageVenue;
+  const isMutating =
+    isCreatingPackageVenue || isUpdatingPackageVenue || isDeletingPackageVenue;
 
   return (
     <Box>
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+      <Box
+        display="flex"
+        justifyContent="space-between"
+        alignItems="center"
+        mb={2}
+      >
         <Typography variant="h6">Included Venues</Typography>
         <Button
           variant="outlined"
@@ -141,24 +170,35 @@ export const PackageVenuesSection: React.FC<PackageVenuesSectionProps> = ({
         </Box>
       ) : assignedVenues.length === 0 ? (
         <Alert severity="info">
-          No venues assigned to this package yet. Add venues to define which spaces are included.
+          No venues assigned to this package yet. Add venues to define which
+          spaces are included.
         </Alert>
       ) : (
-        <TableContainer>
+        <TableContainer sx={{ overflowX: "auto" }}>
           <Table size="small">
             <TableHead>
               <TableRow>
                 <TableCell width={80}>Primary</TableCell>
                 <TableCell>Venue</TableCell>
                 <TableCell width={100}>Type</TableCell>
-                <TableCell width={120}>Duration</TableCell>
-                <TableCell>Notes</TableCell>
+                <TableCell
+                  sx={{ display: { xs: "none", md: "table-cell" } }}
+                  width={120}
+                >
+                  Duration
+                </TableCell>
+                <TableCell sx={{ display: { xs: "none", md: "table-cell" } }}>
+                  Notes
+                </TableCell>
                 <TableCell width={60}>Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {assignedVenues
-                .sort((a: PackageVenueInline, b: PackageVenueInline) => a.access_order - b.access_order)
+                .sort(
+                  (a: PackageVenueInline, b: PackageVenueInline) =>
+                    a.access_order - b.access_order,
+                )
                 .map((pv: PackageVenueInline) => (
                   <TableRow key={pv.id}>
                     <TableCell>
@@ -171,7 +211,10 @@ export const PackageVenuesSection: React.FC<PackageVenuesSectionProps> = ({
                     </TableCell>
                     <TableCell>
                       <Box display="flex" alignItems="center" gap={1}>
-                        <Typography variant="body2" fontWeight={pv.is_primary ? 600 : 400}>
+                        <Typography
+                          variant="body2"
+                          fontWeight={pv.is_primary ? 600 : 400}
+                        >
                           {pv.venue_name}
                         </Typography>
                         {pv.is_primary && (
@@ -187,20 +230,35 @@ export const PackageVenuesSection: React.FC<PackageVenuesSectionProps> = ({
                     <TableCell>
                       <Chip
                         size="small"
-                        icon={pv.venue_is_overnight ? <OvernightIcon /> : <DayIcon />}
-                        label={pv.venue_is_overnight ? 'Overnight' : 'Day'}
+                        icon={
+                          pv.venue_is_overnight ? (
+                            <OvernightIcon />
+                          ) : (
+                            <DayIcon />
+                          )
+                        }
+                        label={pv.venue_is_overnight ? "Overnight" : "Day"}
                         variant="outlined"
-                        color={pv.venue_is_overnight ? 'secondary' : 'default'}
+                        color={pv.venue_is_overnight ? "secondary" : "default"}
                       />
                     </TableCell>
-                    <TableCell>
+                    <TableCell
+                      sx={{ display: { xs: "none", md: "table-cell" } }}
+                    >
                       {editingDuration?.id === pv.id ? (
                         <TextField
                           size="small"
                           value={editingDuration.hours}
-                          onChange={(e) => setEditingDuration({ id: pv.id, hours: e.target.value })}
+                          onChange={(e) =>
+                            setEditingDuration({
+                              id: pv.id,
+                              hours: e.target.value,
+                            })
+                          }
                           onBlur={handleSaveDuration}
-                          onKeyDown={(e) => e.key === 'Enter' && handleSaveDuration()}
+                          onKeyDown={(e) =>
+                            e.key === "Enter" && handleSaveDuration()
+                          }
                           placeholder="Default"
                           type="number"
                           sx={{ width: 80 }}
@@ -209,21 +267,40 @@ export const PackageVenuesSection: React.FC<PackageVenuesSectionProps> = ({
                       ) : (
                         <Typography
                           variant="body2"
-                          sx={{ cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
-                          onClick={() => setEditingDuration({ id: pv.id, hours: pv.access_duration_hours || '' })}
+                          sx={{
+                            cursor: "pointer",
+                            "&:hover": { textDecoration: "underline" },
+                          }}
+                          onClick={() =>
+                            setEditingDuration({
+                              id: pv.id,
+                              hours: pv.access_duration_hours || "",
+                            })
+                          }
                         >
-                          {pv.access_duration_hours ? `${pv.access_duration_hours}h` : 'Default'}
+                          {pv.access_duration_hours
+                            ? `${pv.access_duration_hours}h`
+                            : "Default"}
                         </Typography>
                       )}
                     </TableCell>
-                    <TableCell>
+                    <TableCell
+                      sx={{ display: { xs: "none", md: "table-cell" } }}
+                    >
                       {editingNotes?.id === pv.id ? (
                         <TextField
                           size="small"
                           value={editingNotes.notes}
-                          onChange={(e) => setEditingNotes({ id: pv.id, notes: e.target.value })}
+                          onChange={(e) =>
+                            setEditingNotes({
+                              id: pv.id,
+                              notes: e.target.value,
+                            })
+                          }
                           onBlur={handleSaveNotes}
-                          onKeyDown={(e) => e.key === 'Enter' && handleSaveNotes()}
+                          onKeyDown={(e) =>
+                            e.key === "Enter" && handleSaveNotes()
+                          }
                           placeholder="Add notes..."
                           fullWidth
                           autoFocus
@@ -231,11 +308,19 @@ export const PackageVenuesSection: React.FC<PackageVenuesSectionProps> = ({
                       ) : (
                         <Typography
                           variant="body2"
-                          color={pv.notes ? 'text.primary' : 'text.secondary'}
-                          sx={{ cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
-                          onClick={() => setEditingNotes({ id: pv.id, notes: pv.notes || '' })}
+                          color={pv.notes ? "text.primary" : "text.secondary"}
+                          sx={{
+                            cursor: "pointer",
+                            "&:hover": { textDecoration: "underline" },
+                          }}
+                          onClick={() =>
+                            setEditingNotes({
+                              id: pv.id,
+                              notes: pv.notes || "",
+                            })
+                          }
                         >
-                          {pv.notes || 'Click to add notes'}
+                          {pv.notes || "Click to add notes"}
                         </Typography>
                       )}
                     </TableCell>
@@ -257,7 +342,12 @@ export const PackageVenuesSection: React.FC<PackageVenuesSectionProps> = ({
       )}
 
       {/* Add Venue Dialog */}
-      <Dialog open={addDialogOpen} onClose={() => setAddDialogOpen(false)} maxWidth="sm" fullWidth>
+      <Dialog
+        open={addDialogOpen}
+        onClose={() => setAddDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
         <DialogTitle>Add Venue to Package</DialogTitle>
         <DialogContent>
           <Box pt={1}>
@@ -272,7 +362,11 @@ export const PackageVenuesSection: React.FC<PackageVenuesSectionProps> = ({
                   {...params}
                   label="Select Venue"
                   placeholder="Search venues..."
-                  helperText={availableVenues.length === 0 ? 'All venues are already assigned' : undefined}
+                  helperText={
+                    availableVenues.length === 0
+                      ? "All venues are already assigned"
+                      : undefined
+                  }
                 />
               )}
               renderOption={(props, option) => {
@@ -292,7 +386,8 @@ export const PackageVenuesSection: React.FC<PackageVenuesSectionProps> = ({
                         </Typography>
                       </Box>
                       <Typography variant="caption" color="text.secondary">
-                        Capacity: {option.minimum_capacity}-{option.maximum_capacity} guests
+                        Capacity: {option.minimum_capacity}-
+                        {option.maximum_capacity} guests
                       </Typography>
                     </Box>
                   </li>
@@ -307,7 +402,11 @@ export const PackageVenuesSection: React.FC<PackageVenuesSectionProps> = ({
             variant="contained"
             onClick={handleAddVenue}
             disabled={!selectedVenue || isCreatingPackageVenue}
-            startIcon={isCreatingPackageVenue ? <CircularProgress size={16} /> : undefined}
+            startIcon={
+              isCreatingPackageVenue ? (
+                <CircularProgress size={16} />
+              ) : undefined
+            }
           >
             Add Venue
           </Button>
@@ -315,7 +414,10 @@ export const PackageVenuesSection: React.FC<PackageVenuesSectionProps> = ({
       </Dialog>
 
       {/* Delete Confirmation Dialog */}
-      <Dialog open={deleteConfirmId !== null} onClose={() => setDeleteConfirmId(null)}>
+      <Dialog
+        open={deleteConfirmId !== null}
+        onClose={() => setDeleteConfirmId(null)}
+      >
         <DialogTitle>Remove Venue</DialogTitle>
         <DialogContent>
           <Typography>
@@ -327,9 +429,15 @@ export const PackageVenuesSection: React.FC<PackageVenuesSectionProps> = ({
           <Button
             variant="contained"
             color="error"
-            onClick={() => deleteConfirmId && handleDeleteVenue(deleteConfirmId)}
+            onClick={() =>
+              deleteConfirmId && handleDeleteVenue(deleteConfirmId)
+            }
             disabled={isDeletingPackageVenue}
-            startIcon={isDeletingPackageVenue ? <CircularProgress size={16} /> : undefined}
+            startIcon={
+              isDeletingPackageVenue ? (
+                <CircularProgress size={16} />
+              ) : undefined
+            }
           >
             Remove
           </Button>

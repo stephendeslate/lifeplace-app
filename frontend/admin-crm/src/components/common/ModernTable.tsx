@@ -1,6 +1,6 @@
 // frontend/admin-crm/src/components/common/ModernTable.tsx
 
-import React from 'react';
+import React from "react";
 import {
   Table,
   TableBody,
@@ -14,28 +14,34 @@ import {
   MenuItem,
   ListItemIcon,
   ListItemText,
-} from '@mui/material';
+} from "@mui/material";
 import {
   MoreVert as MoreVertIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
-} from '@mui/icons-material';
-import { tokens } from '../../design-system/tokens';
+} from "@mui/icons-material";
+import { tokens } from "../../design-system/tokens";
 
 export interface ModernTableColumn<T = Record<string, unknown>> {
   key: string;
   label: string;
   sortable?: boolean;
-  align?: 'left' | 'center' | 'right';
+  align?: "left" | "center" | "right";
   width?: string;
+  hideBelow?: "sm" | "md" | "lg" | "xl";
   render?: (value: unknown, row: T, index: number) => React.ReactNode;
 }
+
+const getResponsiveDisplay = (hideBelow?: "sm" | "md" | "lg" | "xl") => {
+  if (!hideBelow) return {};
+  return { display: { xs: "none", [hideBelow]: "table-cell" } };
+};
 
 export interface ModernTableAction<T = Record<string, unknown>> {
   label: string;
   icon: React.ReactNode;
   onClick: (row: T) => void;
-  color?: 'default' | 'primary' | 'secondary' | 'error';
+  color?: "default" | "primary" | "secondary" | "error";
   show?: (row: T) => boolean;
 }
 
@@ -45,7 +51,7 @@ export interface ModernTableProps<T = Record<string, unknown>> {
   actions?: ModernTableAction<T>[];
   onRowClick?: (row: T, index: number) => void;
   sortBy?: string;
-  sortOrder?: 'asc' | 'desc';
+  sortOrder?: "asc" | "desc";
   onSort?: (column: string) => void;
   loading?: boolean;
   emptyState?: React.ReactNode;
@@ -104,22 +110,22 @@ export const ModernTable = <T extends Record<string, unknown>>({
       <TableContainer
         className={className}
         sx={{
-          bgcolor: 'background.paper',
+          bgcolor: "background.paper",
           borderRadius: tokens.spacing.radius.lg,
           border: `1px solid ${tokens.color.borders.subtle}`,
-          overflowX: 'auto',
-          overflowY: 'visible',
-          '&::-webkit-scrollbar': {
+          overflowX: "auto",
+          overflowY: "visible",
+          "&::-webkit-scrollbar": {
             width: 8,
             height: 8,
           },
-          '&::-webkit-scrollbar-track': {
-            background: 'transparent',
+          "&::-webkit-scrollbar-track": {
+            background: "transparent",
           },
-          '&::-webkit-scrollbar-thumb': {
+          "&::-webkit-scrollbar-thumb": {
             background: tokens.color.neutral[300],
             borderRadius: 4,
-            '&:hover': {
+            "&:hover": {
               background: tokens.color.neutral[400],
             },
           },
@@ -129,14 +135,14 @@ export const ModernTable = <T extends Record<string, unknown>>({
           <TableHead>
             <TableRow
               sx={{
-                '& .MuiTableCell-head': {
+                "& .MuiTableCell-head": {
                   bgcolor: tokens.color.neutral[50],
                   fontWeight: 600,
                   color: tokens.color.neutral[700],
                   borderBottom: `1px solid ${tokens.color.borders.subtle}`,
-                  fontSize: '0.875rem',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.5px',
+                  fontSize: "0.875rem",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.5px",
                   py: 2,
                 },
               }}
@@ -144,22 +150,25 @@ export const ModernTable = <T extends Record<string, unknown>>({
               {columns.map((column) => (
                 <TableCell
                   key={column.key}
-                  align={column.align || 'left'}
-                  sx={{ width: column.width }}
+                  align={column.align || "left"}
+                  sx={{
+                    width: column.width,
+                    ...getResponsiveDisplay(column.hideBelow),
+                  }}
                 >
                   {column.sortable ? (
                     <TableSortLabel
                       active={sortBy === column.key}
-                      direction={sortBy === column.key ? sortOrder : 'asc'}
+                      direction={sortBy === column.key ? sortOrder : "asc"}
                       onClick={() => handleSort(column.key)}
                       sx={{
-                        '& .MuiTableSortLabel-icon': {
+                        "& .MuiTableSortLabel-icon": {
                           color: `${tokens.color.primary[500]} !important`,
                         },
-                        '&:hover': {
+                        "&:hover": {
                           color: tokens.color.primary[600],
                         },
-                        '&.Mui-active': {
+                        "&.Mui-active": {
                           color: tokens.color.primary[600],
                         },
                       }}
@@ -181,11 +190,11 @@ export const ModernTable = <T extends Record<string, unknown>>({
               <TableRow
                 key={(row as { id?: string | number }).id || index}
                 sx={{
-                  cursor: onRowClick ? 'pointer' : 'default',
-                  '&:hover': {
+                  cursor: onRowClick ? "pointer" : "default",
+                  "&:hover": {
                     bgcolor: tokens.color.neutral[50],
                   },
-                  '& .MuiTableCell-root': {
+                  "& .MuiTableCell-root": {
                     borderBottom: `1px solid ${tokens.color.borders.subtle}`,
                     py: 2,
                   },
@@ -195,12 +204,12 @@ export const ModernTable = <T extends Record<string, unknown>>({
                 {columns.map((column) => (
                   <TableCell
                     key={column.key}
-                    align={column.align || 'left'}
+                    align={column.align || "left"}
+                    sx={getResponsiveDisplay(column.hideBelow)}
                   >
                     {column.render
                       ? column.render(row[column.key], row, index)
-                      : String(row[column.key] || '')
-                    }
+                      : String(row[column.key] || "")}
                   </TableCell>
                 ))}
                 {actions.length > 0 && (
@@ -209,7 +218,7 @@ export const ModernTable = <T extends Record<string, unknown>>({
                       size="small"
                       onClick={(e) => handleMenuOpen(e, row)}
                       sx={{
-                        '&:hover': {
+                        "&:hover": {
                           bgcolor: tokens.color.neutral[100],
                         },
                       }}
@@ -232,16 +241,19 @@ export const ModernTable = <T extends Record<string, unknown>>({
           onClose={handleMenuClose}
           PaperProps={{
             sx: {
-              bgcolor: 'background.paper',
+              bgcolor: "background.paper",
               borderRadius: tokens.spacing.radius.md,
               border: `1px solid ${tokens.color.borders.subtle}`,
               minWidth: 160,
-              boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+              boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
             },
           }}
         >
           {actions.map((action, index) => {
-            const shouldShow = action.show && selectedRow ? action.show(selectedRow) : !action.show;
+            const shouldShow =
+              action.show && selectedRow
+                ? action.show(selectedRow)
+                : !action.show;
             if (!shouldShow) return null;
 
             return (
@@ -249,17 +261,18 @@ export const ModernTable = <T extends Record<string, unknown>>({
                 key={index}
                 onClick={() => handleActionClick(action)}
                 sx={{
-                  color: action.color === 'error' ? 'error.main' : 'inherit',
-                  '&:hover': {
-                    bgcolor: action.color === 'error'
-                      ? tokens.color.error[50]
-                      : tokens.color.neutral[50],
+                  color: action.color === "error" ? "error.main" : "inherit",
+                  "&:hover": {
+                    bgcolor:
+                      action.color === "error"
+                        ? tokens.color.error[50]
+                        : tokens.color.neutral[50],
                   },
                 }}
               >
                 <ListItemIcon
                   sx={{
-                    color: action.color === 'error' ? 'error.main' : 'inherit',
+                    color: action.color === "error" ? "error.main" : "inherit",
                   }}
                 >
                   {action.icon}
@@ -275,7 +288,7 @@ export const ModernTable = <T extends Record<string, unknown>>({
 };
 
 // Convenience component for common Edit/Delete actions
-export const createStandardActions = <T = Record<string, unknown>>(
+export const createStandardActions = <T = Record<string, unknown>,>(
   onEdit: (row: T) => void,
   onDelete: (row: T) => void,
   options?: {
@@ -283,19 +296,19 @@ export const createStandardActions = <T = Record<string, unknown>>(
     deleteLabel?: string;
     showEdit?: (row: T) => boolean;
     showDelete?: (row: T) => boolean;
-  }
+  },
 ): ModernTableAction<T>[] => [
   {
-    label: options?.editLabel || 'Edit',
+    label: options?.editLabel || "Edit",
     icon: <EditIcon fontSize="small" />,
     onClick: onEdit,
     show: options?.showEdit,
   },
   {
-    label: options?.deleteLabel || 'Delete',
+    label: options?.deleteLabel || "Delete",
     icon: <DeleteIcon fontSize="small" />,
     onClick: onDelete,
-    color: 'error' as const,
+    color: "error" as const,
     show: options?.showDelete,
   },
 ];

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   Box,
   TextField,
@@ -15,7 +15,7 @@ import {
   Alert,
   Chip,
   Tooltip,
-} from '@mui/material';
+} from "@mui/material";
 import {
   AdminPanelSettings,
   Email,
@@ -24,21 +24,34 @@ import {
   Search as SearchIcon,
   Delete as DeleteIcon,
   Security as SecurityIcon,
-} from '@mui/icons-material';
-import { useLayout } from '../../../contexts/LayoutContext';
-import { useAdminUsers, useAdminPermissions } from '../../../hooks/useSettings';
-import { useCommunications } from '../../../hooks/useCommunications';
-import { usePermissions } from '../../../hooks/usePermissions';
-import { PermissionEditor } from '../../../components/settings/PermissionEditor';
-import type { AdminPermissions } from '../../../types/permissions.types';
-import { FULL_ADMIN_PERMISSIONS } from '../../../types/permissions.types';
+} from "@mui/icons-material";
+import { useLayout } from "../../../contexts/LayoutContext";
+import { useAdminUsers, useAdminPermissions } from "../../../hooks/useSettings";
+import { useCommunications } from "../../../hooks/useCommunications";
+import { usePermissions } from "../../../hooks/usePermissions";
+import { PermissionEditor } from "../../../components/settings/PermissionEditor";
+import type { AdminPermissions } from "../../../types/permissions.types";
+import { FULL_ADMIN_PERMISSIONS } from "../../../types/permissions.types";
 
 // Modern Design System imports
-import { ModernSettingsLayout } from '../../../components/common/ModernPageLayout';
-import { ModernPageHeader, type HeaderAction, createRefreshAction, createAddAction } from '../../../components/common/ModernPageHeader';
-import { ModernTable, type ModernTableColumn, type ModernTableAction } from '../../../components/common';
-import { ModernEmptyState } from '../../../components/common/ModernEmptyState';
-import type { InviteAdminFormData, AdminUser, AdminInvitation } from '../../../types/settings.types';
+import { ModernSettingsLayout } from "../../../components/common/ModernPageLayout";
+import {
+  ModernPageHeader,
+  type HeaderAction,
+  createRefreshAction,
+  createAddAction,
+} from "../../../components/common/ModernPageHeader";
+import {
+  ModernTable,
+  type ModernTableColumn,
+  type ModernTableAction,
+} from "../../../components/common";
+import { ModernEmptyState } from "../../../components/common/ModernEmptyState";
+import type {
+  InviteAdminFormData,
+  AdminUser,
+  AdminInvitation,
+} from "../../../types/settings.types";
 
 export const AdminUsers: React.FC = () => {
   const { setBreadcrumbs } = useLayout();
@@ -48,24 +61,26 @@ export const AdminUsers: React.FC = () => {
   const [viewRecordsDialogOpen, setViewRecordsDialogOpen] = useState(false);
   const [permissionsDialogOpen, setPermissionsDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
-  const [selectedInvitation, setSelectedInvitation] = useState<AdminInvitation | null>(null);
-  const [menuType, setMenuType] = useState<'user' | 'invitation'>('user');
-  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedInvitation, setSelectedInvitation] =
+    useState<AdminInvitation | null>(null);
+  const [menuType, setMenuType] = useState<"user" | "invitation">("user");
+  const [searchQuery, setSearchQuery] = useState("");
   const [showSearchField, setShowSearchField] = useState(false);
 
   // Permission editing state
-  const [editingPermissions, setEditingPermissions] = useState<AdminPermissions>(FULL_ADMIN_PERMISSIONS);
+  const [editingPermissions, setEditingPermissions] =
+    useState<AdminPermissions>(FULL_ADMIN_PERMISSIONS);
 
   const [inviteForm, setInviteForm] = useState<InviteAdminFormData>({
-    email: '',
-    first_name: '',
-    last_name: '',
+    email: "",
+    first_name: "",
+    last_name: "",
     permissions: FULL_ADMIN_PERMISSIONS,
   });
 
   // Get current user's permissions for UI visibility
   const { hasPermission } = usePermissions();
-  const canManageAdmins = hasPermission('can_manage_admins');
+  const canManageAdmins = hasPermission("can_manage_admins");
 
   const {
     adminUsers,
@@ -82,24 +97,21 @@ export const AdminUsers: React.FC = () => {
   } = useAdminUsers();
 
   // Permission management hook
-  const {
-    updatePermissions,
-    isUpdatingPermissions,
-  } = useAdminPermissions();
+  const { updatePermissions, isUpdatingPermissions } = useAdminPermissions();
 
   const { useRecords } = useCommunications();
 
   // Get communication records for admin invitations
   const { data: communicationRecords } = useRecords({
-    template_name: 'Admin Invitation'
+    template_name: "Admin Invitation",
   });
 
   // Set breadcrumbs
   useEffect(() => {
     setBreadcrumbs([
-      { label: 'Settings' },
-      { label: 'Account Management' },
-      { label: 'Admin Users' },
+      { label: "Settings" },
+      { label: "Account Management" },
+      { label: "Admin Users" },
     ]);
   }, [setBreadcrumbs]);
 
@@ -119,7 +131,7 @@ export const AdminUsers: React.FC = () => {
   const handleToggleSearch = () => {
     setShowSearchField(!showSearchField);
     if (!showSearchField) {
-      setSearchQuery('');
+      setSearchQuery("");
     }
   };
 
@@ -128,7 +140,12 @@ export const AdminUsers: React.FC = () => {
     createInvitation(inviteForm, {
       onSuccess: () => {
         setInviteDialogOpen(false);
-        setInviteForm({ email: '', first_name: '', last_name: '', permissions: FULL_ADMIN_PERMISSIONS });
+        setInviteForm({
+          email: "",
+          first_name: "",
+          last_name: "",
+          permissions: FULL_ADMIN_PERMISSIONS,
+        });
       },
     });
   };
@@ -151,13 +168,16 @@ export const AdminUsers: React.FC = () => {
           setSelectedUser(null);
           refetchAdminUsers();
         },
-      }
+      },
     );
   };
 
-  const handleDeleteClick = (type: 'user' | 'invitation', item: AdminUser | AdminInvitation) => {
+  const handleDeleteClick = (
+    type: "user" | "invitation",
+    item: AdminUser | AdminInvitation,
+  ) => {
     setMenuType(type);
-    if (type === 'user') {
+    if (type === "user") {
       setSelectedUser(item as AdminUser);
     } else {
       setSelectedInvitation(item as AdminInvitation);
@@ -170,14 +190,14 @@ export const AdminUsers: React.FC = () => {
   };
 
   const handleDeleteConfirm = () => {
-    if (menuType === 'user' && selectedUser) {
+    if (menuType === "user" && selectedUser) {
       deleteAdminUser(selectedUser.id, {
         onSuccess: () => {
           setDeleteDialogOpen(false);
           setSelectedUser(null);
         },
       });
-    } else if (menuType === 'invitation' && selectedInvitation) {
+    } else if (menuType === "invitation" && selectedInvitation) {
       deleteInvitation(selectedInvitation.id, {
         onSuccess: () => {
           setDeleteDialogOpen(false);
@@ -192,34 +212,35 @@ export const AdminUsers: React.FC = () => {
     const expiresAt = new Date(invitation.expires_at);
 
     if (invitation.is_accepted) {
-      return { label: 'Accepted', color: 'success' as const };
+      return { label: "Accepted", color: "success" as const };
     } else if (now > expiresAt) {
-      return { label: 'Expired', color: 'error' as const };
+      return { label: "Expired", color: "error" as const };
     } else {
-      return { label: 'Pending', color: 'warning' as const };
+      return { label: "Pending", color: "warning" as const };
     }
   };
 
   const getInvitationRecord = (invitation: AdminInvitation) => {
-    return communicationRecords?.find(record =>
-      record.recipient === invitation.email &&
-      record.template_name === 'Admin Invitation'
+    return communicationRecords?.find(
+      (record) =>
+        record.recipient === invitation.email &&
+        record.template_name === "Admin Invitation",
     );
   };
 
   // Filter data based on search
-  const filteredAdminUsers = adminUsers.filter(user => {
+  const filteredAdminUsers = adminUsers.filter((user) => {
     if (!searchQuery) return true;
     const searchLower = searchQuery.toLowerCase();
     return (
       user.first_name.toLowerCase().includes(searchLower) ||
       user.last_name.toLowerCase().includes(searchLower) ||
       user.email.toLowerCase().includes(searchLower) ||
-      (user.profile?.company || '').toLowerCase().includes(searchLower)
+      (user.profile?.company || "").toLowerCase().includes(searchLower)
     );
   });
 
-  const filteredInvitations = invitations.filter(invitation => {
+  const filteredInvitations = invitations.filter((invitation) => {
     if (!searchQuery) return true;
     const searchLower = searchQuery.toLowerCase();
     return (
@@ -234,8 +255,8 @@ export const AdminUsers: React.FC = () => {
   // Table columns for Admin Users
   const getAdminUsersColumns = (): ModernTableColumn<AdminUser>[] => [
     {
-      key: 'name',
-      label: 'Name',
+      key: "name",
+      label: "Name",
       sortable: true,
       render: (_, user) => (
         <Box display="flex" alignItems="center" gap={1.5}>
@@ -247,8 +268,8 @@ export const AdminUsers: React.FC = () => {
       ),
     },
     {
-      key: 'email',
-      label: 'Email',
+      key: "email",
+      label: "Email",
       render: (_, user) => (
         <Typography variant="body2" color="text.secondary">
           {user.email}
@@ -256,18 +277,20 @@ export const AdminUsers: React.FC = () => {
       ),
     },
     {
-      key: 'company',
-      label: 'Company',
+      key: "company",
+      label: "Company",
+      hideBelow: "md",
       render: (_, user) => (
         <Typography variant="body2" color="text.secondary">
-          {user.profile?.company || '-'}
+          {user.profile?.company || "-"}
         </Typography>
       ),
     },
     {
-      key: 'date_joined',
-      label: 'Joined',
+      key: "date_joined",
+      label: "Joined",
       sortable: true,
+      hideBelow: "md",
       render: (_, user) => (
         <Typography variant="body2" color="text.secondary">
           {new Date(user.date_joined).toLocaleDateString()}
@@ -275,29 +298,32 @@ export const AdminUsers: React.FC = () => {
       ),
     },
     {
-      key: 'permission_level',
-      label: 'Permission Level',
+      key: "permission_level",
+      label: "Permission Level",
+      hideBelow: "lg",
       render: (_, user) => {
-        const isFullAdmin = user.is_full_admin || !user.admin_permissions ||
-          Object.values(user.admin_permissions).every(v => v === true);
+        const isFullAdmin =
+          user.is_full_admin ||
+          !user.admin_permissions ||
+          Object.values(user.admin_permissions).every((v) => v === true);
         return (
           <Chip
-            label={isFullAdmin ? 'Full Admin' : 'Limited Admin'}
+            label={isFullAdmin ? "Full Admin" : "Limited Admin"}
             size="small"
-            color={isFullAdmin ? 'primary' : 'default'}
-            variant={isFullAdmin ? 'filled' : 'outlined'}
+            color={isFullAdmin ? "primary" : "default"}
+            variant={isFullAdmin ? "filled" : "outlined"}
             sx={{ fontWeight: 600 }}
           />
         );
       },
     },
     {
-      key: 'is_active',
-      label: 'Status',
+      key: "is_active",
+      label: "Status",
       render: (_, user) => (
         <Chip
-          label={user.is_active ? 'Active' : 'Inactive'}
-          color={user.is_active ? 'success' : 'default'}
+          label={user.is_active ? "Active" : "Inactive"}
+          color={user.is_active ? "success" : "default"}
           size="small"
           sx={{ fontWeight: 600 }}
         />
@@ -312,16 +338,16 @@ export const AdminUsers: React.FC = () => {
 
     return [
       {
-        label: 'Edit Permissions',
+        label: "Edit Permissions",
         icon: <SecurityIcon />,
         onClick: (user) => handleEditPermissionsClick(user),
-        color: 'primary',
+        color: "primary",
       },
       {
-        label: 'Delete User',
+        label: "Delete User",
         icon: <DeleteIcon />,
-        onClick: (user) => handleDeleteClick('user', user),
-        color: 'error',
+        onClick: (user) => handleDeleteClick("user", user),
+        color: "error",
       },
     ];
   };
@@ -329,8 +355,8 @@ export const AdminUsers: React.FC = () => {
   // Table columns for Invitations
   const getInvitationsColumns = (): ModernTableColumn<AdminInvitation>[] => [
     {
-      key: 'name',
-      label: 'Name',
+      key: "name",
+      label: "Name",
       sortable: true,
       render: (_, invitation) => (
         <Box display="flex" alignItems="center" gap={1.5}>
@@ -342,8 +368,8 @@ export const AdminUsers: React.FC = () => {
       ),
     },
     {
-      key: 'email',
-      label: 'Email',
+      key: "email",
+      label: "Email",
       render: (_, invitation) => (
         <Typography variant="body2" color="text.secondary">
           {invitation.email}
@@ -351,8 +377,9 @@ export const AdminUsers: React.FC = () => {
       ),
     },
     {
-      key: 'invited_by',
-      label: 'Invited By',
+      key: "invited_by",
+      label: "Invited By",
+      hideBelow: "md",
       render: (_, invitation) => (
         <Typography variant="body2" color="text.secondary">
           {invitation.invited_by}
@@ -360,9 +387,10 @@ export const AdminUsers: React.FC = () => {
       ),
     },
     {
-      key: 'created_at',
-      label: 'Sent',
+      key: "created_at",
+      label: "Sent",
       sortable: true,
+      hideBelow: "md",
       render: (_, invitation) => (
         <Typography variant="body2" color="text.secondary">
           {new Date(invitation.created_at).toLocaleDateString()}
@@ -370,8 +398,9 @@ export const AdminUsers: React.FC = () => {
       ),
     },
     {
-      key: 'status',
-      label: 'Status',
+      key: "status",
+      label: "Status",
+      hideBelow: "lg",
       render: (_, invitation) => {
         const status = getInvitationStatus(invitation);
         return (
@@ -385,8 +414,9 @@ export const AdminUsers: React.FC = () => {
       },
     },
     {
-      key: 'email_status',
-      label: 'Email Status',
+      key: "email_status",
+      label: "Email Status",
+      hideBelow: "lg",
       render: (_, invitation) => {
         const record = getInvitationRecord(invitation);
         return record ? (
@@ -394,8 +424,13 @@ export const AdminUsers: React.FC = () => {
             <Chip
               label={record.delivery_status}
               size="small"
-              color={record.delivery_status === 'DELIVERED' ? 'success' :
-                     record.delivery_status === 'FAILED' ? 'error' : 'warning'}
+              color={
+                record.delivery_status === "DELIVERED"
+                  ? "success"
+                  : record.delivery_status === "FAILED"
+                    ? "error"
+                    : "warning"
+              }
               variant="outlined"
               clickable
               onClick={() => handleViewRecordsClick()}
@@ -421,10 +456,10 @@ export const AdminUsers: React.FC = () => {
 
     return [
       {
-        label: 'Delete Invitation',
+        label: "Delete Invitation",
         icon: <DeleteIcon />,
-        onClick: (invitation) => handleDeleteClick('invitation', invitation),
-        color: 'error',
+        onClick: (invitation) => handleDeleteClick("invitation", invitation),
+        color: "error",
       },
     ];
   };
@@ -437,17 +472,19 @@ export const AdminUsers: React.FC = () => {
   const headerActions: HeaderAction[] = [
     {
       icon: <SearchIcon />,
-      label: showSearchField ? 'Hide Search' : 'Search',
+      label: showSearchField ? "Hide Search" : "Search",
       onClick: handleToggleSearch,
-      variant: 'icon',
-      tooltip: showSearchField ? 'Hide search field' : 'Search users and invitations',
+      variant: "icon",
+      tooltip: showSearchField
+        ? "Hide search field"
+        : "Search users and invitations",
     },
     createRefreshAction(handleRefresh),
   ];
 
   // Only show invite button if user has can_manage_admins permission
   const primaryAction = canManageAdmins
-    ? createAddAction('Invite Admin', handleCreateNew, 'primary')
+    ? createAddAction("Invite Admin", handleCreateNew, "primary")
     : undefined;
 
   return (
@@ -458,26 +495,28 @@ export const AdminUsers: React.FC = () => {
         subtitle="Manage administrator accounts and invitations for your LifePlace account"
         icon={<AdminPanelSettings />}
         breadcrumbs={[
-          { label: 'Settings' },
-          { label: 'Account Management' },
-          { label: 'Admin Users' },
+          { label: "Settings" },
+          { label: "Account Management" },
+          { label: "Admin Users" },
         ]}
         primaryAction={primaryAction}
         secondaryActions={headerActions}
         stats={[
-          { label: 'Total Users', value: totalUsers },
-          { label: 'Active Admins', value: adminUsers.length },
-          { label: 'Pending Invites', value: invitations.length },
+          { label: "Total Users", value: totalUsers },
+          { label: "Active Admins", value: adminUsers.length },
+          { label: "Pending Invites", value: invitations.length },
         ]}
         size="medium"
       />
 
       {/* Search Field - Conditionally Shown */}
       {showSearchField && (
-        <Box sx={{ mb: 4, borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
+        <Box sx={{ mb: 4, borderRadius: 1, bgcolor: "background.paper", p: 3 }}>
           <Box display="flex" alignItems="center" gap={1.5} mb={1}>
             <SearchIcon color="primary" />
-            <Typography variant="h6" fontWeight={600}>Search Users & Invitations</Typography>
+            <Typography variant="h6" fontWeight={600}>
+              Search Users & Invitations
+            </Typography>
           </Box>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
             Find admin users and invitations by name, email, or company
@@ -501,32 +540,52 @@ export const AdminUsers: React.FC = () => {
 
       {/* Main Content */}
       {totalUsers === 0 ? (
-        <Box sx={{ borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
+        <Box sx={{ borderRadius: 1, bgcolor: "background.paper", p: 3 }}>
           <ModernEmptyState
             icon={AdminPanelSettings}
             title="No Admin Users Yet"
-            description={canManageAdmins
-              ? "Start building your admin team by inviting other administrators to help manage your LifePlace account."
-              : "No other admin users have been added yet. Contact a full admin to invite new users."
+            description={
+              canManageAdmins
+                ? "Start building your admin team by inviting other administrators to help manage your LifePlace account."
+                : "No other admin users have been added yet. Contact a full admin to invite new users."
             }
-            primaryAction={canManageAdmins ? {
-              label: 'Invite Your First Admin',
-              onClick: handleCreateNew,
-              icon: <PersonAdd />,
-              color: 'primary',
-            } : undefined}
-            tip={canManageAdmins ? {
-              text: 'Invited admins will receive an email with instructions to set up their account',
-              type: 'info',
-            } : undefined}
+            primaryAction={
+              canManageAdmins
+                ? {
+                    label: "Invite Your First Admin",
+                    onClick: handleCreateNew,
+                    icon: <PersonAdd />,
+                    color: "primary",
+                  }
+                : undefined
+            }
+            tip={
+              canManageAdmins
+                ? {
+                    text: "Invited admins will receive an email with instructions to set up their account",
+                    type: "info",
+                  }
+                : undefined
+            }
             size="medium"
           />
         </Box>
       ) : (
-        <Box sx={{ borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
-          <Box sx={{ position: 'relative' }}>
+        <Box sx={{ borderRadius: 1, bgcolor: "background.paper", p: 3 }}>
+          <Box sx={{ position: "relative" }}>
             {isLoading && (
-              <Box sx={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255, 255, 255, 0.8)', zIndex: 10, borderRadius: 1 }}>
+              <Box
+                sx={{
+                  position: "absolute",
+                  inset: 0,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  backgroundColor: "rgba(255, 255, 255, 0.8)",
+                  zIndex: 10,
+                  borderRadius: 1,
+                }}
+              >
                 <CircularProgress />
               </Box>
             )}
@@ -536,20 +595,18 @@ export const AdminUsers: React.FC = () => {
               sx={{
                 fontWeight: 600,
                 mb: 1,
-                display: 'flex',
-                alignItems: 'center',
+                display: "flex",
+                alignItems: "center",
                 gap: 1.5,
               }}
             >
               <AdminPanelSettings color="primary" />
               User Management
             </Typography>
-            <Typography
-              variant="body2"
-              color="text.secondary"
-              sx={{ mb: 3 }}
-            >
-              {searchQuery ? `Search results for "${searchQuery}" - ${filteredAdminUsers.length + filteredInvitations.length} found` : `${totalUsers} total users and invitations`}
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+              {searchQuery
+                ? `Search results for "${searchQuery}" - ${filteredAdminUsers.length + filteredInvitations.length} found`
+                : `${totalUsers} total users and invitations`}
             </Typography>
 
             {/* Active Admin Users */}
@@ -560,24 +617,41 @@ export const AdminUsers: React.FC = () => {
                   fontWeight="600"
                   sx={{
                     mb: 2,
-                    display: 'flex',
-                    alignItems: 'center',
+                    display: "flex",
+                    alignItems: "center",
                     gap: 1,
                   }}
                 >
-                  <AdminPanelSettings color="success" sx={{ fontSize: '1rem' }} />
+                  <AdminPanelSettings
+                    color="success"
+                    sx={{ fontSize: "1rem" }}
+                  />
                   Active Administrators ({filteredAdminUsers.length})
                 </Typography>
                 <ModernTable
-                  columns={getAdminUsersColumns() as unknown as ModernTableColumn<Record<string, unknown>>[]}
-                  data={filteredAdminUsers as unknown as Record<string, unknown>[]}
-                  actions={getAdminUsersActions() as unknown as ModernTableAction<Record<string, unknown>>[]}
+                  columns={
+                    getAdminUsersColumns() as unknown as ModernTableColumn<
+                      Record<string, unknown>
+                    >[]
+                  }
+                  data={
+                    filteredAdminUsers as unknown as Record<string, unknown>[]
+                  }
+                  actions={
+                    getAdminUsersActions() as unknown as ModernTableAction<
+                      Record<string, unknown>
+                    >[]
+                  }
                   loading={false}
                   emptyState={
                     <ModernEmptyState
                       icon={AdminPanelSettings}
                       title="No Admin Users Found"
-                      description={searchQuery ? `No users match "${searchQuery}"` : "No admin users available"}
+                      description={
+                        searchQuery
+                          ? `No users match "${searchQuery}"`
+                          : "No admin users available"
+                      }
                       size="medium"
                       color="primary"
                     />
@@ -594,24 +668,38 @@ export const AdminUsers: React.FC = () => {
                   fontWeight="600"
                   sx={{
                     mb: 2,
-                    display: 'flex',
-                    alignItems: 'center',
+                    display: "flex",
+                    alignItems: "center",
                     gap: 1,
                   }}
                 >
-                  <PersonAdd color="warning" sx={{ fontSize: '1rem' }} />
+                  <PersonAdd color="warning" sx={{ fontSize: "1rem" }} />
                   Pending Invitations ({filteredInvitations.length})
                 </Typography>
                 <ModernTable
-                  columns={getInvitationsColumns() as unknown as ModernTableColumn<Record<string, unknown>>[]}
-                  data={filteredInvitations as unknown as Record<string, unknown>[]}
-                  actions={getInvitationsActions() as unknown as ModernTableAction<Record<string, unknown>>[]}
+                  columns={
+                    getInvitationsColumns() as unknown as ModernTableColumn<
+                      Record<string, unknown>
+                    >[]
+                  }
+                  data={
+                    filteredInvitations as unknown as Record<string, unknown>[]
+                  }
+                  actions={
+                    getInvitationsActions() as unknown as ModernTableAction<
+                      Record<string, unknown>
+                    >[]
+                  }
                   loading={false}
                   emptyState={
                     <ModernEmptyState
                       icon={PersonAdd}
                       title="No Pending Invitations"
-                      description={searchQuery ? `No invitations match "${searchQuery}"` : "All invitations have been accepted or expired"}
+                      description={
+                        searchQuery
+                          ? `No invitations match "${searchQuery}"`
+                          : "All invitations have been accepted or expired"
+                      }
                       size="medium"
                       color="primary"
                     />
@@ -621,23 +709,26 @@ export const AdminUsers: React.FC = () => {
             )}
 
             {/* Show unified empty state when both are empty but we have search */}
-            {filteredAdminUsers.length === 0 && filteredInvitations.length === 0 && searchQuery && (
-              <ModernEmptyState
-                icon={SearchIcon}
-                title="No Results Found"
-                description={`No users or invitations match "${searchQuery}"`}
-                size="medium"
-                color="primary"
-              />
-            )}
+            {filteredAdminUsers.length === 0 &&
+              filteredInvitations.length === 0 &&
+              searchQuery && (
+                <ModernEmptyState
+                  icon={SearchIcon}
+                  title="No Results Found"
+                  description={`No users or invitations match "${searchQuery}"`}
+                  size="medium"
+                  color="primary"
+                />
+              )}
 
             {/* Communication Tracking Info */}
             {communicationRecords && communicationRecords.length > 0 && (
               <Box sx={{ mt: 4 }}>
                 <Alert severity="info" icon={<Email />}>
                   <Typography variant="body2">
-                    <strong>Email Tracking:</strong> Admin invitation emails are now tracked through the communication system.
-                    You can view delivery status and open rates for each invitation above.
+                    <strong>Email Tracking:</strong> Admin invitation emails are
+                    now tracked through the communication system. You can view
+                    delivery status and open rates for each invitation above.
                   </Typography>
                 </Alert>
               </Box>
@@ -647,36 +738,70 @@ export const AdminUsers: React.FC = () => {
       )}
 
       {/* Invite Dialog */}
-      <Dialog open={inviteDialogOpen} onClose={() => setInviteDialogOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+      <Dialog
+        open={inviteDialogOpen}
+        onClose={() => setInviteDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle sx={{ display: "flex", alignItems: "center", gap: 2 }}>
           <PersonAdd color="primary" />
           Invite Admin User
         </DialogTitle>
         <DialogContent>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-            Enter the details for the new administrator. They will receive an invitation email with instructions to set up their account.
+            Enter the details for the new administrator. They will receive an
+            invitation email with instructions to set up their account.
           </Typography>
 
           <Box component="form" onSubmit={handleInviteSubmit}>
             <Stack spacing={3}>
-              <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2 }}>
+              <Box
+                sx={{
+                  display: "flex",
+                  flexDirection: { xs: "column", sm: "row" },
+                  gap: 2,
+                }}
+              >
                 <TextField
                   fullWidth
                   label="First Name"
                   value={inviteForm.first_name}
-                  onChange={(e) => setInviteForm(prev => ({ ...prev, first_name: e.target.value }))}
+                  onChange={(e) =>
+                    setInviteForm((prev) => ({
+                      ...prev,
+                      first_name: e.target.value,
+                    }))
+                  }
                   required
                   disabled={isCreatingInvitation}
-                  InputProps={{ startAdornment: <InputAdornment position="start"><Person color="primary" /></InputAdornment> }}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <Person color="primary" />
+                      </InputAdornment>
+                    ),
+                  }}
                 />
                 <TextField
                   fullWidth
                   label="Last Name"
                   value={inviteForm.last_name}
-                  onChange={(e) => setInviteForm(prev => ({ ...prev, last_name: e.target.value }))}
+                  onChange={(e) =>
+                    setInviteForm((prev) => ({
+                      ...prev,
+                      last_name: e.target.value,
+                    }))
+                  }
                   required
                   disabled={isCreatingInvitation}
-                  InputProps={{ startAdornment: <InputAdornment position="start"><Person color="primary" /></InputAdornment> }}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <Person color="primary" />
+                      </InputAdornment>
+                    ),
+                  }}
                 />
               </Box>
 
@@ -685,96 +810,187 @@ export const AdminUsers: React.FC = () => {
                 label="Email Address"
                 type="email"
                 value={inviteForm.email}
-                onChange={(e) => setInviteForm(prev => ({ ...prev, email: e.target.value }))}
+                onChange={(e) =>
+                  setInviteForm((prev) => ({ ...prev, email: e.target.value }))
+                }
                 required
                 disabled={isCreatingInvitation}
-                InputProps={{ startAdornment: <InputAdornment position="start"><Email color="primary" /></InputAdornment> }}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <Email color="primary" />
+                    </InputAdornment>
+                  ),
+                }}
               />
 
               {/* Permission Editor */}
               <Box sx={{ mt: 1 }}>
-                <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <SecurityIcon sx={{ fontSize: '1rem' }} color="primary" />
+                <Typography
+                  variant="subtitle2"
+                  color="text.secondary"
+                  sx={{
+                    mb: 1.5,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1,
+                  }}
+                >
+                  <SecurityIcon sx={{ fontSize: "1rem" }} color="primary" />
                   Permission Level
                 </Typography>
                 <PermissionEditor
                   value={inviteForm.permissions || FULL_ADMIN_PERMISSIONS}
-                  onChange={(permissions) => setInviteForm(prev => ({ ...prev, permissions }))}
+                  onChange={(permissions) =>
+                    setInviteForm((prev) => ({ ...prev, permissions }))
+                  }
                   disabled={isCreatingInvitation}
                 />
               </Box>
 
               <Alert severity="info">
-                An invitation email will be sent to this address with instructions to set up their admin account.
+                An invitation email will be sent to this address with
+                instructions to set up their admin account.
               </Alert>
             </Stack>
           </Box>
         </DialogContent>
         <DialogActions sx={{ p: 2, gap: 1 }}>
-          <Button onClick={() => setInviteDialogOpen(false)} disabled={isCreatingInvitation}>Cancel</Button>
+          <Button
+            onClick={() => setInviteDialogOpen(false)}
+            disabled={isCreatingInvitation}
+          >
+            Cancel
+          </Button>
           <Button
             onClick={handleInviteSubmit}
             variant="contained"
             disabled={isCreatingInvitation}
-            startIcon={isCreatingInvitation ? <CircularProgress size={20} color="inherit" /> : <Email />}
+            startIcon={
+              isCreatingInvitation ? (
+                <CircularProgress size={20} color="inherit" />
+              ) : (
+                <Email />
+              )
+            }
           >
-            {isCreatingInvitation ? 'Sending...' : 'Send Invitation'}
+            {isCreatingInvitation ? "Sending..." : "Send Invitation"}
           </Button>
         </DialogActions>
       </Dialog>
 
       {/* Delete Confirmation Dialog */}
-      <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 2, color: 'error.main' }}>
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={() => setDeleteDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            gap: 2,
+            color: "error.main",
+          }}
+        >
           <DeleteIcon color="error" />
-          {menuType === 'user' ? 'Deactivate Admin User' : 'Cancel Invitation'}
+          {menuType === "user" ? "Deactivate Admin User" : "Cancel Invitation"}
         </DialogTitle>
         <DialogContent>
           {(isDeletingUser || isDeletingInvitation) && (
-            <Box sx={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: 'rgba(255, 255, 255, 0.8)', zIndex: 10 }}>
+            <Box
+              sx={{
+                position: "absolute",
+                inset: 0,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                bgcolor: "rgba(255, 255, 255, 0.8)",
+                zIndex: 10,
+              }}
+            >
               <CircularProgress />
             </Box>
           )}
           <Typography color="text.secondary" sx={{ mb: 2 }}>
-            Are you sure you want to {menuType === 'user' ? 'deactivate' : 'cancel'}{' '}
-            {menuType === 'user'
+            Are you sure you want to{" "}
+            {menuType === "user" ? "deactivate" : "cancel"}{" "}
+            {menuType === "user"
               ? `${selectedUser?.first_name} ${selectedUser?.last_name}`
-              : `the invitation for ${selectedInvitation?.first_name} ${selectedInvitation?.last_name}`
-            }?
+              : `the invitation for ${selectedInvitation?.first_name} ${selectedInvitation?.last_name}`}
+            ?
           </Typography>
           {(selectedUser || selectedInvitation) && (
-            <Box sx={{ mt: 2, p: 2, borderRadius: 2, bgcolor: 'error.50', border: 1, borderColor: 'error.200' }}>
+            <Box
+              sx={{
+                mt: 2,
+                p: 2,
+                borderRadius: 2,
+                bgcolor: "error.50",
+                border: 1,
+                borderColor: "error.200",
+              }}
+            >
               <Stack spacing={1}>
                 <Typography variant="body2">
-                  <strong>Name:</strong> {selectedUser
+                  <strong>Name:</strong>{" "}
+                  {selectedUser
                     ? `${selectedUser.first_name} ${selectedUser.last_name}`
-                    : `${selectedInvitation?.first_name} ${selectedInvitation?.last_name}`
-                  }
+                    : `${selectedInvitation?.first_name} ${selectedInvitation?.last_name}`}
                 </Typography>
                 <Typography variant="body2">
-                  <strong>Email:</strong> {selectedUser?.email || selectedInvitation?.email}
+                  <strong>Email:</strong>{" "}
+                  {selectedUser?.email || selectedInvitation?.email}
                 </Typography>
               </Stack>
             </Box>
           )}
         </DialogContent>
         <DialogActions sx={{ p: 2, gap: 1 }}>
-          <Button onClick={() => setDeleteDialogOpen(false)} disabled={isDeletingUser || isDeletingInvitation}>Cancel</Button>
+          <Button
+            onClick={() => setDeleteDialogOpen(false)}
+            disabled={isDeletingUser || isDeletingInvitation}
+          >
+            Cancel
+          </Button>
           <Button
             onClick={handleDeleteConfirm}
             color="error"
             variant="contained"
             disabled={isDeletingUser || isDeletingInvitation}
-            startIcon={(isDeletingUser || isDeletingInvitation) ? <CircularProgress size={16} color="inherit" /> : <DeleteIcon />}
+            startIcon={
+              isDeletingUser || isDeletingInvitation ? (
+                <CircularProgress size={16} color="inherit" />
+              ) : (
+                <DeleteIcon />
+              )
+            }
           >
-            {(isDeletingUser || isDeletingInvitation) ? 'Deleting...' : (menuType === 'user' ? 'Deactivate' : 'Cancel Invitation')}
+            {isDeletingUser || isDeletingInvitation
+              ? "Deleting..."
+              : menuType === "user"
+                ? "Deactivate"
+                : "Cancel Invitation"}
           </Button>
         </DialogActions>
       </Dialog>
 
       {/* View Communication Records Dialog */}
-      <Dialog open={viewRecordsDialogOpen} onClose={() => setViewRecordsDialogOpen(false)} maxWidth="md" fullWidth>
-        <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 2, color: 'info.main' }}>
+      <Dialog
+        open={viewRecordsDialogOpen}
+        onClose={() => setViewRecordsDialogOpen(false)}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            gap: 2,
+            color: "info.main",
+          }}
+        >
           <Email color="info" />
           Email Communication Status
         </DialogTitle>
@@ -782,7 +998,11 @@ export const AdminUsers: React.FC = () => {
           {selectedInvitation && (
             <Box>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                Invitation for: <strong>{selectedInvitation.first_name} {selectedInvitation.last_name}</strong> ({selectedInvitation.email})
+                Invitation for:{" "}
+                <strong>
+                  {selectedInvitation.first_name} {selectedInvitation.last_name}
+                </strong>{" "}
+                ({selectedInvitation.email})
               </Typography>
 
               {(() => {
@@ -790,39 +1010,65 @@ export const AdminUsers: React.FC = () => {
                 if (!record) {
                   return (
                     <Alert severity="warning">
-                      No email record found for this invitation. The invitation may have been created before the communication system was implemented.
+                      No email record found for this invitation. The invitation
+                      may have been created before the communication system was
+                      implemented.
                     </Alert>
                   );
                 }
 
                 return (
-                  <Box sx={{ p: 2, borderRadius: 2, bgcolor: 'action.hover' }}>
+                  <Box sx={{ p: 2, borderRadius: 2, bgcolor: "action.hover" }}>
                     <Stack spacing={2}>
-                      <Box display="flex" justifyContent="space-between" alignItems="center">
-                        <Typography variant="body2" fontWeight="600">Status:</Typography>
+                      <Box
+                        display="flex"
+                        justifyContent="space-between"
+                        alignItems="center"
+                      >
+                        <Typography variant="body2" fontWeight="600">
+                          Status:
+                        </Typography>
                         <Chip
                           label={record.delivery_status}
                           size="small"
-                          color={record.delivery_status === 'DELIVERED' ? 'success' : record.delivery_status === 'FAILED' ? 'error' : 'warning'}
+                          color={
+                            record.delivery_status === "DELIVERED"
+                              ? "success"
+                              : record.delivery_status === "FAILED"
+                                ? "error"
+                                : "warning"
+                          }
                         />
                       </Box>
                       <Divider />
                       <Box display="flex" justifyContent="space-between">
-                        <Typography variant="body2" fontWeight="600">Sent:</Typography>
+                        <Typography variant="body2" fontWeight="600">
+                          Sent:
+                        </Typography>
                         <Typography variant="body2" color="text.secondary">
-                          {record.sent_at ? new Date(record.sent_at).toLocaleString() : 'Not sent'}
+                          {record.sent_at
+                            ? new Date(record.sent_at).toLocaleString()
+                            : "Not sent"}
                         </Typography>
                       </Box>
                       <Box display="flex" justifyContent="space-between">
-                        <Typography variant="body2" fontWeight="600">Delivered:</Typography>
+                        <Typography variant="body2" fontWeight="600">
+                          Delivered:
+                        </Typography>
                         <Typography variant="body2" color="text.secondary">
-                          {record.delivered_at ? new Date(record.delivered_at).toLocaleString() : 'Not delivered'}
+                          {record.delivered_at
+                            ? new Date(record.delivered_at).toLocaleString()
+                            : "Not delivered"}
                         </Typography>
                       </Box>
                       <Box display="flex" justifyContent="space-between">
-                        <Typography variant="body2" fontWeight="600">Opened:</Typography>
+                        <Typography variant="body2" fontWeight="600">
+                          Opened:
+                        </Typography>
                         <Typography variant="body2" color="text.secondary">
-                          {record.is_opened ? `Yes - ${new Date(record.opened_at!).toLocaleString()}` : 'Not opened'}
+                          {record.is_opened
+                            ? `Yes - ${new Date(record.opened_at!).toLocaleString()}`
+                            : "Not opened"}
                         </Typography>
                       </Box>
                     </Stack>
@@ -838,21 +1084,40 @@ export const AdminUsers: React.FC = () => {
       </Dialog>
 
       {/* Edit Permissions Dialog */}
-      <Dialog open={permissionsDialogOpen} onClose={() => setPermissionsDialogOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+      <Dialog
+        open={permissionsDialogOpen}
+        onClose={() => setPermissionsDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle sx={{ display: "flex", alignItems: "center", gap: 2 }}>
           <SecurityIcon color="primary" />
           Edit Permissions
         </DialogTitle>
-        <DialogContent sx={{ position: 'relative' }}>
+        <DialogContent sx={{ position: "relative" }}>
           {isUpdatingPermissions && (
-            <Box sx={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: 'rgba(255, 255, 255, 0.8)', zIndex: 10 }}>
+            <Box
+              sx={{
+                position: "absolute",
+                inset: 0,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                bgcolor: "rgba(255, 255, 255, 0.8)",
+                zIndex: 10,
+              }}
+            >
               <CircularProgress />
             </Box>
           )}
           {selectedUser && (
             <Box>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                Edit permissions for: <strong>{selectedUser.first_name} {selectedUser.last_name}</strong> ({selectedUser.email})
+                Edit permissions for:{" "}
+                <strong>
+                  {selectedUser.first_name} {selectedUser.last_name}
+                </strong>{" "}
+                ({selectedUser.email})
               </Typography>
               <PermissionEditor
                 value={editingPermissions}
@@ -864,14 +1129,25 @@ export const AdminUsers: React.FC = () => {
           )}
         </DialogContent>
         <DialogActions sx={{ p: 2, gap: 1 }}>
-          <Button onClick={() => setPermissionsDialogOpen(false)} disabled={isUpdatingPermissions}>Cancel</Button>
+          <Button
+            onClick={() => setPermissionsDialogOpen(false)}
+            disabled={isUpdatingPermissions}
+          >
+            Cancel
+          </Button>
           <Button
             onClick={handleSavePermissions}
             variant="contained"
             disabled={isUpdatingPermissions}
-            startIcon={isUpdatingPermissions ? <CircularProgress size={20} color="inherit" /> : <SecurityIcon />}
+            startIcon={
+              isUpdatingPermissions ? (
+                <CircularProgress size={20} color="inherit" />
+              ) : (
+                <SecurityIcon />
+              )
+            }
           >
-            {isUpdatingPermissions ? 'Saving...' : 'Save Permissions'}
+            {isUpdatingPermissions ? "Saving..." : "Save Permissions"}
           </Button>
         </DialogActions>
       </Dialog>

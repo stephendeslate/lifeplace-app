@@ -1,5 +1,5 @@
 // frontend/admin-crm/src/pages/analytics/tabs/CustomersReportsTab.tsx
-import React from 'react';
+import React from "react";
 import {
   Box,
   Typography,
@@ -12,43 +12,54 @@ import {
   Button,
   Skeleton,
   Chip,
-} from '@mui/material';
-import { ModernCard } from '../../../components/common/ModernCard';
-import DownloadIcon from '@mui/icons-material/Download';
+} from "@mui/material";
+import { ModernCard } from "../../../components/common/ModernCard";
+import DownloadIcon from "@mui/icons-material/Download";
 
-import { KPICard, KPIGrid, LeadSourceChart } from '../../../components/analytics';
+import {
+  KPICard,
+  KPIGrid,
+  LeadSourceChart,
+} from "../../../components/analytics";
 import {
   useLeadSources,
   useConversionRates,
   useCustomerList,
   exportCustomers,
   exportLeadSources,
-} from '../../../hooks/useAnalytics';
-import type { DateRange } from '../../../types/analytics.types';
-import { formatCurrency } from '../../../utils/currency';
+} from "../../../hooks/useAnalytics";
+import type { DateRange } from "../../../types/analytics.types";
+import { formatCurrency } from "../../../utils/currency";
 
 interface CustomersReportsTabProps {
   dateRange: DateRange;
 }
 
-export const CustomersReportsTab: React.FC<CustomersReportsTabProps> = ({ dateRange }) => {
-  const { data: leadSources, isLoading: leadSourcesLoading } = useLeadSources(dateRange);
-  const { data: conversion, isLoading: conversionLoading } = useConversionRates(dateRange);
-  const { data: customers, isLoading: customersLoading } = useCustomerList(dateRange, 20);
+export const CustomersReportsTab: React.FC<CustomersReportsTabProps> = ({
+  dateRange,
+}) => {
+  const { data: leadSources, isLoading: leadSourcesLoading } =
+    useLeadSources(dateRange);
+  const { data: conversion, isLoading: conversionLoading } =
+    useConversionRates(dateRange);
+  const { data: customers, isLoading: customersLoading } = useCustomerList(
+    dateRange,
+    20,
+  );
 
   const handleExportCustomers = async () => {
     try {
-      await exportCustomers(dateRange, 'csv');
+      await exportCustomers(dateRange, "csv");
     } catch (error) {
-      console.error('Export failed:', error);
+      console.error("Export failed:", error);
     }
   };
 
   const handleExportLeadSources = async () => {
     try {
-      await exportLeadSources(dateRange, 'csv');
+      await exportLeadSources(dateRange, "csv");
     } catch (error) {
-      console.error('Export failed:', error);
+      console.error("Export failed:", error);
     }
   };
 
@@ -111,7 +122,12 @@ export const CustomersReportsTab: React.FC<CustomersReportsTabProps> = ({ dateRa
 
       {/* Lead Sources */}
       <Box mb={4}>
-        <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+        <Box
+          display="flex"
+          justifyContent="space-between"
+          alignItems="center"
+          mb={2}
+        >
           <Typography variant="h6">Lead Sources</Typography>
           <Button
             variant="outlined"
@@ -124,34 +140,67 @@ export const CustomersReportsTab: React.FC<CustomersReportsTabProps> = ({ dateRa
         </Box>
         <Box display="flex" gap={3} flexWrap="wrap">
           <Box flex="1 1 400px" minWidth={300}>
-            <LeadSourceChart data={leadSources || []} isLoading={leadSourcesLoading} />
+            <LeadSourceChart
+              data={leadSources || []}
+              isLoading={leadSourcesLoading}
+            />
           </Box>
           <Box flex="1 1 400px" minWidth={300}>
             {leadSourcesLoading ? (
               <Skeleton variant="rectangular" height={300} />
             ) : (
-              <ModernCard variant="flat" size="medium" sx={{ height: 300, overflow: 'auto' }}>
-                <TableContainer>
+              <ModernCard
+                variant="flat"
+                size="medium"
+                sx={{ height: 300, overflow: "auto" }}
+              >
+                <TableContainer sx={{ overflowX: "auto" }}>
                   <Table size="small" stickyHeader>
                     <TableHead>
                       <TableRow>
                         <TableCell>Source</TableCell>
                         <TableCell align="right">Leads</TableCell>
                         <TableCell align="right">Converted</TableCell>
-                        <TableCell align="right">Conv. Rate</TableCell>
-                        <TableCell align="right">Value</TableCell>
+                        <TableCell
+                          align="right"
+                          sx={{ display: { xs: "none", lg: "table-cell" } }}
+                        >
+                          Conv. Rate
+                        </TableCell>
+                        <TableCell
+                          align="right"
+                          sx={{ display: { xs: "none", lg: "table-cell" } }}
+                        >
+                          Value
+                        </TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
                       {leadSources?.map((item, index) => (
                         <TableRow key={index}>
                           <TableCell>
-                            <Chip label={item.label} size="small" variant="outlined" />
+                            <Chip
+                              label={item.label}
+                              size="small"
+                              variant="outlined"
+                            />
                           </TableCell>
                           <TableCell align="right">{item.lead_count}</TableCell>
-                          <TableCell align="right">{item.converted_count}</TableCell>
-                          <TableCell align="right">{item.conversion_rate}%</TableCell>
-                          <TableCell align="right">{formatCurrency(item.total_value)}</TableCell>
+                          <TableCell align="right">
+                            {item.converted_count}
+                          </TableCell>
+                          <TableCell
+                            align="right"
+                            sx={{ display: { xs: "none", lg: "table-cell" } }}
+                          >
+                            {item.conversion_rate}%
+                          </TableCell>
+                          <TableCell
+                            align="right"
+                            sx={{ display: { xs: "none", lg: "table-cell" } }}
+                          >
+                            {formatCurrency(item.total_value)}
+                          </TableCell>
                         </TableRow>
                       ))}
                       {(!leadSources || leadSources.length === 0) && (
@@ -172,7 +221,12 @@ export const CustomersReportsTab: React.FC<CustomersReportsTabProps> = ({ dateRa
 
       {/* Customer List */}
       <Box>
-        <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+        <Box
+          display="flex"
+          justifyContent="space-between"
+          alignItems="center"
+          mb={2}
+        >
           <Typography variant="h6">Top Customers</Typography>
           <Button
             variant="outlined"
@@ -187,30 +241,58 @@ export const CustomersReportsTab: React.FC<CustomersReportsTabProps> = ({ dateRa
           <Skeleton variant="rectangular" height={300} />
         ) : (
           <ModernCard variant="flat" size="medium">
-            <TableContainer>
+            <TableContainer sx={{ overflowX: "auto" }}>
               <Table size="small">
                 <TableHead>
                   <TableRow>
                     <TableCell>Name</TableCell>
-                    <TableCell>Email</TableCell>
+                    <TableCell
+                      sx={{ display: { xs: "none", md: "table-cell" } }}
+                    >
+                      Email
+                    </TableCell>
                     <TableCell align="right">Total Events</TableCell>
-                    <TableCell align="right">Completed</TableCell>
+                    <TableCell
+                      align="right"
+                      sx={{ display: { xs: "none", lg: "table-cell" } }}
+                    >
+                      Completed
+                    </TableCell>
                     <TableCell align="right">Total Spent</TableCell>
-                    <TableCell>Member Since</TableCell>
+                    <TableCell
+                      sx={{ display: { xs: "none", md: "table-cell" } }}
+                    >
+                      Member Since
+                    </TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
                   {customers?.map((customer) => (
                     <TableRow key={customer.id}>
                       <TableCell>{customer.full_name}</TableCell>
-                      <TableCell>{customer.email}</TableCell>
-                      <TableCell align="right">{customer.total_events}</TableCell>
-                      <TableCell align="right">{customer.completed_events}</TableCell>
-                      <TableCell align="right">{formatCurrency(customer.total_spent)}</TableCell>
-                      <TableCell>
+                      <TableCell
+                        sx={{ display: { xs: "none", md: "table-cell" } }}
+                      >
+                        {customer.email}
+                      </TableCell>
+                      <TableCell align="right">
+                        {customer.total_events}
+                      </TableCell>
+                      <TableCell
+                        align="right"
+                        sx={{ display: { xs: "none", lg: "table-cell" } }}
+                      >
+                        {customer.completed_events}
+                      </TableCell>
+                      <TableCell align="right">
+                        {formatCurrency(customer.total_spent)}
+                      </TableCell>
+                      <TableCell
+                        sx={{ display: { xs: "none", md: "table-cell" } }}
+                      >
                         {customer.created_at
                           ? new Date(customer.created_at).toLocaleDateString()
-                          : 'N/A'}
+                          : "N/A"}
                       </TableCell>
                     </TableRow>
                   ))}

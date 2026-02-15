@@ -1,12 +1,7 @@
 // frontend/admin-crm/src/components/products/DiscountsTable.tsx
 
-import React from 'react';
-import {
-  Chip,
-  Typography,
-  Box,
-  LinearProgress,
-} from '@mui/material';
+import React from "react";
+import { Chip, Typography, Box, LinearProgress } from "@mui/material";
 import {
   CheckCircle as ValidIcon,
   Cancel as InvalidIcon,
@@ -14,10 +9,15 @@ import {
   AutoAwesome as AutoIcon,
   AdminPanelSettings as AdminIcon,
   LocalOffer as DiscountIcon,
-} from '@mui/icons-material';
-import type { Discount } from '../../types/products.types';
-import { ModernTable, ModernLoadingStates, ModernEmptyState, createStandardActions } from '../common';
-import type { ModernTableColumn, ModernTableAction } from '../common';
+} from "@mui/icons-material";
+import type { Discount } from "../../types/products.types";
+import {
+  ModernTable,
+  ModernLoadingStates,
+  ModernEmptyState,
+  createStandardActions,
+} from "../common";
+import type { ModernTableColumn, ModernTableAction } from "../common";
 
 interface DiscountsTableProps {
   discounts: Discount[];
@@ -33,7 +33,6 @@ export const DiscountsTable: React.FC<DiscountsTableProps> = ({
   onEdit,
   onDelete,
 }) => {
-
   const getStatusChip = (isValid: boolean, isActive: boolean) => {
     if (!isActive) {
       return (
@@ -45,13 +44,13 @@ export const DiscountsTable: React.FC<DiscountsTableProps> = ({
         />
       );
     }
-    
+
     return (
       <Chip
         icon={isValid ? <ValidIcon /> : <InvalidIcon />}
-        label={isValid ? 'Valid' : 'Invalid'}
+        label={isValid ? "Valid" : "Invalid"}
         size="small"
-        color={isValid ? 'success' : 'error'}
+        color={isValid ? "success" : "error"}
         variant="filled"
       />
     );
@@ -59,16 +58,16 @@ export const DiscountsTable: React.FC<DiscountsTableProps> = ({
 
   const getTypeChip = (discountType: string) => {
     const colors = {
-      PERCENTAGE: 'primary',
-      FIXED: 'secondary',
-      FREE_HOURS: 'warning',
+      PERCENTAGE: "primary",
+      FIXED: "secondary",
+      FREE_HOURS: "warning",
     } as const;
 
     return (
       <Chip
-        label={discountType.replace('_', ' ')}
+        label={discountType.replace("_", " ")}
         size="small"
-        color={colors[discountType as keyof typeof colors] || 'default'}
+        color={colors[discountType as keyof typeof colors] || "default"}
         variant="outlined"
       />
     );
@@ -76,11 +75,11 @@ export const DiscountsTable: React.FC<DiscountsTableProps> = ({
 
   const getApplicationIcon = (applicationType: string) => {
     switch (applicationType) {
-      case 'CODE_REQUIRED':
+      case "CODE_REQUIRED":
         return <CodeIcon fontSize="small" />;
-      case 'AUTOMATIC':
+      case "AUTOMATIC":
         return <AutoIcon fontSize="small" />;
-      case 'ADMIN_ONLY':
+      case "ADMIN_ONLY":
         return <AdminIcon fontSize="small" />;
       default:
         return null;
@@ -89,13 +88,13 @@ export const DiscountsTable: React.FC<DiscountsTableProps> = ({
 
   const formatValue = (discount: Discount) => {
     const value = parseFloat(discount.value);
-    
+
     switch (discount.discount_type) {
-      case 'PERCENTAGE':
+      case "PERCENTAGE":
         return `${value}%`;
-      case 'FIXED':
-        return `${discount.currency || 'PHP'} ${value.toLocaleString()}`;
-      case 'FREE_HOURS':
+      case "FIXED":
+        return `${discount.currency || "PHP"} ${value.toLocaleString()}`;
+      case "FREE_HOURS":
         return `${value} hours`;
       default:
         return discount.value;
@@ -110,9 +109,9 @@ export const DiscountsTable: React.FC<DiscountsTableProps> = ({
         </Typography>
       );
     }
-    
+
     const percentage = (discount.current_uses / discount.max_uses) * 100;
-    
+
     return (
       <Box sx={{ minWidth: 100 }}>
         <Box display="flex" alignItems="center" gap={1}>
@@ -120,7 +119,13 @@ export const DiscountsTable: React.FC<DiscountsTableProps> = ({
             variant="determinate"
             value={Math.min(percentage, 100)}
             sx={{ flex: 1, height: 6, borderRadius: 3 }}
-            color={percentage >= 90 ? 'error' : percentage >= 70 ? 'warning' : 'primary'}
+            color={
+              percentage >= 90
+                ? "error"
+                : percentage >= 70
+                  ? "warning"
+                  : "primary"
+            }
           />
           <Typography variant="caption" color="text.secondary">
             {discount.current_uses}/{discount.max_uses}
@@ -132,8 +137,8 @@ export const DiscountsTable: React.FC<DiscountsTableProps> = ({
 
   const columns: ModernTableColumn[] = [
     {
-      key: 'name',
-      label: 'Name & Code',
+      key: "name",
+      label: "Name & Code",
       sortable: true,
       render: (_, row) => {
         const discount = row as unknown as Discount;
@@ -155,16 +160,16 @@ export const DiscountsTable: React.FC<DiscountsTableProps> = ({
       },
     },
     {
-      key: 'discount_type',
-      label: 'Type',
+      key: "discount_type",
+      label: "Type",
       render: (_, row) => {
         const discount = row as unknown as Discount;
         return getTypeChip(discount.discount_type);
       },
     },
     {
-      key: 'value',
-      label: 'Value',
+      key: "value",
+      label: "Value",
       render: (_, row) => {
         const discount = row as unknown as Discount;
         return (
@@ -175,8 +180,9 @@ export const DiscountsTable: React.FC<DiscountsTableProps> = ({
       },
     },
     {
-      key: 'application_type',
-      label: 'Application',
+      key: "application_type",
+      label: "Application",
+      hideBelow: "lg",
       render: (_, row) => {
         const discount = row as unknown as Discount;
         return (
@@ -190,8 +196,9 @@ export const DiscountsTable: React.FC<DiscountsTableProps> = ({
       },
     },
     {
-      key: 'valid_period',
-      label: 'Valid Period',
+      key: "valid_period",
+      label: "Valid Period",
+      hideBelow: "md",
       render: (_, row) => {
         const discount = row as unknown as Discount;
         return (
@@ -209,16 +216,17 @@ export const DiscountsTable: React.FC<DiscountsTableProps> = ({
       },
     },
     {
-      key: 'usage',
-      label: 'Usage',
+      key: "usage",
+      label: "Usage",
+      hideBelow: "md",
       render: (_, row) => {
         const discount = row as unknown as Discount;
         return getUsageProgress(discount);
       },
     },
     {
-      key: 'status',
-      label: 'Status',
+      key: "status",
+      label: "Status",
       render: (_, row) => {
         const discount = row as unknown as Discount;
         return getStatusChip(discount.is_valid_now, discount.is_active);
@@ -230,9 +238,9 @@ export const DiscountsTable: React.FC<DiscountsTableProps> = ({
     (discount: Discount) => onEdit(discount),
     (discount: Discount) => onDelete(discount.id),
     {
-      editLabel: 'Edit Discount',
-      deleteLabel: 'Delete Discount',
-    }
+      editLabel: "Edit Discount",
+      deleteLabel: "Delete Discount",
+    },
   );
 
   if (isLoading) {
@@ -245,16 +253,23 @@ export const DiscountsTable: React.FC<DiscountsTableProps> = ({
         icon={DiscountIcon}
         title="No discounts found"
         description="Create your first discount to offer special pricing to clients"
-        tip={{ text: "Start with percentage discounts for common promotions", type: "info" }}
+        tip={{
+          text: "Start with percentage discounts for common promotions",
+          type: "info",
+        }}
       />
     );
   }
 
   return (
     <ModernTable
-      columns={columns as unknown as ModernTableColumn<Record<string, unknown>>[]}
+      columns={
+        columns as unknown as ModernTableColumn<Record<string, unknown>>[]
+      }
       data={discounts as unknown as Record<string, unknown>[]}
-      actions={actions as unknown as ModernTableAction<Record<string, unknown>>[]}
+      actions={
+        actions as unknown as ModernTableAction<Record<string, unknown>>[]
+      }
       onRowClick={(row) => onEdit(row as unknown as Discount)}
       sortBy="name"
       sortOrder="asc"
