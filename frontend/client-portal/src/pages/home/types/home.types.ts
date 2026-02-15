@@ -27,11 +27,3 @@ export interface ServiceInfo {
   description: string;
   icon: React.ReactNode;
 }
-
-export interface SocialProofStats {
-  totalEvents: number;
-  completedEvents: number;
-  activeEvents: number;
-  eventsThisMonth: number;
-  clientSatisfactionRate: number;
-}
