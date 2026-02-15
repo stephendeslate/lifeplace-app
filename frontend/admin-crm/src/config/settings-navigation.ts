@@ -20,6 +20,7 @@ import {
   DesignServices,
   School,
   PhotoLibrary,
+  PhoneAndroid,
 } from "@mui/icons-material";
 import type { SettingsNavigationGroup } from "../types/settings.types";
 
@@ -62,6 +63,13 @@ export const settingsNavigationConfig: SettingsNavigationGroup[] = [
         path: "/settings/account/guided-tours",
         icon: School,
         description: "Manage tour preferences and restart tours",
+      },
+      {
+        id: "push-devices",
+        label: "Push Devices",
+        path: "/settings/account/push-devices",
+        icon: PhoneAndroid,
+        description: "Manage registered push notification devices",
       },
     ],
   },
@@ -136,6 +144,13 @@ export const settingsNavigationConfig: SettingsNavigationGroup[] = [
         path: "/settings/templates/email-layouts",
         icon: DesignServices,
         description: "Manage email layout branding",
+      },
+      {
+        id: "notification-types",
+        label: "Notification Types",
+        path: "/settings/templates/notification-types",
+        icon: Notifications,
+        description: "Manage notification types and templates",
       },
     ],
   },

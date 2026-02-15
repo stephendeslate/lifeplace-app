@@ -1,28 +1,30 @@
 // frontend/admin-crm/src/pages/analytics/AnalyticsDashboard.tsx
-import React, { useEffect } from 'react';
-import { Box, Tabs, Tab, Divider } from '@mui/material';
-import AssessmentIcon from '@mui/icons-material/Assessment';
-import EventIcon from '@mui/icons-material/Event';
-import PeopleIcon from '@mui/icons-material/People';
-import BusinessIcon from '@mui/icons-material/Business';
-import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
-import GroupAddIcon from '@mui/icons-material/GroupAdd';
-import PercentIcon from '@mui/icons-material/Percent';
-import TimelineIcon from '@mui/icons-material/Timeline';
-import QuizIcon from '@mui/icons-material/Quiz';
+import React, { useEffect } from "react";
+import { Box, Tabs, Tab, Divider } from "@mui/material";
+import AssessmentIcon from "@mui/icons-material/Assessment";
+import EventIcon from "@mui/icons-material/Event";
+import PeopleIcon from "@mui/icons-material/People";
+import BusinessIcon from "@mui/icons-material/Business";
+import AttachMoneyIcon from "@mui/icons-material/AttachMoney";
+import GroupAddIcon from "@mui/icons-material/GroupAdd";
+import PercentIcon from "@mui/icons-material/Percent";
+import TimelineIcon from "@mui/icons-material/Timeline";
+import QuizIcon from "@mui/icons-material/Quiz";
 
-import { KPICard, DateRangeFilter } from '../../components/analytics';
-import { useDashboardKPIs, useDateRange } from '../../hooks/useAnalytics';
-import { useLayout } from '../../contexts/LayoutContext';
-import { ModernPageLayout } from '../../components/common/ModernPageLayout';
-import { ModernCard } from '../../components/common/ModernCard';
-import { ModernPageHeader } from '../../components/common/ModernPageHeader';
-import { SalesReportsTab } from './tabs/SalesReportsTab';
-import { EventsReportsTab } from './tabs/EventsReportsTab';
-import { CustomersReportsTab } from './tabs/CustomersReportsTab';
-import { OperationsReportsTab } from './tabs/OperationsReportsTab';
-import { BookingFlowTab } from './tabs/BookingFlowTab';
-import { QuestionnairesTab } from './tabs/QuestionnairesTab';
+import { KPICard, DateRangeFilter } from "../../components/analytics";
+import { useDashboardKPIs, useDateRange } from "../../hooks/useAnalytics";
+import { useLayout } from "../../contexts/LayoutContext";
+import { ModernPageLayout } from "../../components/common/ModernPageLayout";
+import { ModernCard } from "../../components/common/ModernCard";
+import { ModernPageHeader } from "../../components/common/ModernPageHeader";
+import { SalesReportsTab } from "./tabs/SalesReportsTab";
+import { EventsReportsTab } from "./tabs/EventsReportsTab";
+import { CustomersReportsTab } from "./tabs/CustomersReportsTab";
+import { OperationsReportsTab } from "./tabs/OperationsReportsTab";
+import { BookingFlowTab } from "./tabs/BookingFlowTab";
+import { QuestionnairesTab } from "./tabs/QuestionnairesTab";
+import { CommunicationsTab } from "./tabs/CommunicationsTab";
+import EmailIcon from "@mui/icons-material/Email";
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -44,13 +46,13 @@ export const AnalyticsDashboard: React.FC = () => {
 
   // Set breadcrumbs
   useEffect(() => {
-    setBreadcrumbs([{ label: 'Analytics' }]);
+    setBreadcrumbs([{ label: "Analytics" }]);
   }, [setBreadcrumbs]);
 
   const formatCurrency = (value: number) =>
-    new Intl.NumberFormat('en-PH', {
-      style: 'currency',
-      currency: 'PHP',
+    new Intl.NumberFormat("en-PH", {
+      style: "currency",
+      currency: "PHP",
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(value);
@@ -80,11 +82,15 @@ export const AnalyticsDashboard: React.FC = () => {
         gap={2}
         mb={4}
         sx={{
-          flexWrap: 'wrap',
-          '& > *': {
-            flex: '1 1 200px',
+          flexWrap: "wrap",
+          "& > *": {
+            flex: "1 1 200px",
             minWidth: 200,
-            maxWidth: { xs: '100%', sm: 'calc(50% - 8px)', md: 'calc(25% - 12px)' },
+            maxWidth: {
+              xs: "100%",
+              sm: "calc(50% - 8px)",
+              md: "calc(25% - 12px)",
+            },
           },
         }}
       >
@@ -129,11 +135,15 @@ export const AnalyticsDashboard: React.FC = () => {
         gap={2}
         mb={4}
         sx={{
-          flexWrap: 'wrap',
-          '& > *': {
-            flex: '1 1 150px',
+          flexWrap: "wrap",
+          "& > *": {
+            flex: "1 1 150px",
             minWidth: 150,
-            maxWidth: { xs: '100%', sm: 'calc(33% - 11px)', md: 'calc(25% - 12px)' },
+            maxWidth: {
+              xs: "100%",
+              sm: "calc(33% - 11px)",
+              md: "calc(25% - 12px)",
+            },
           },
         }}
       >
@@ -173,9 +183,9 @@ export const AnalyticsDashboard: React.FC = () => {
           variant="scrollable"
           scrollButtons="auto"
           sx={{
-            '& .MuiTab-root': {
+            "& .MuiTab-root": {
               minHeight: 56,
-              textTransform: 'none',
+              textTransform: "none",
             },
           }}
         >
@@ -209,6 +219,11 @@ export const AnalyticsDashboard: React.FC = () => {
             iconPosition="start"
             label="Questionnaires"
           />
+          <Tab
+            icon={<EmailIcon />}
+            iconPosition="start"
+            label="Communications"
+          />
         </Tabs>
       </ModernCard>
 
@@ -230,6 +245,9 @@ export const AnalyticsDashboard: React.FC = () => {
       </TabPanel>
       <TabPanel value={activeTab} index={5}>
         <QuestionnairesTab dateRange={dateRange} />
+      </TabPanel>
+      <TabPanel value={activeTab} index={6}>
+        <CommunicationsTab dateRange={dateRange} />
       </TabPanel>
     </ModernPageLayout>
   );

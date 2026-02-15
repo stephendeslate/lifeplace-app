@@ -1,6 +1,6 @@
 // frontend/admin-crm/src/apis/notifications.api.ts
 
-import api from '../utils/api';
+import api from "../utils/api";
 import type {
   Notification,
   NotificationType,
@@ -8,10 +8,14 @@ import type {
   NotificationFilters,
   NotificationBulkActionData,
   CreateNotificationData,
+  CreateNotificationTypeData,
+  UpdateNotificationTypeData,
   UpdateNotificationPreferenceData,
   NotificationCounts,
   NotificationStats,
-} from '../types/notifications.types';
+  DevicePushToken,
+  TestPushData,
+} from "../types/notifications.types";
 
 interface PaginatedResponse<T> {
   count: number;
@@ -24,41 +28,60 @@ export const notificationsApi = {
   /**
    * Notifications
    */
-  getNotifications: async (filters?: NotificationFilters): Promise<Notification[]> => {
+  getNotifications: async (
+    filters?: NotificationFilters,
+  ): Promise<Notification[]> => {
     const params = new URLSearchParams();
-    if (filters?.is_read !== undefined) params.append('is_read', filters.is_read.toString());
-    if (filters?.type) params.append('type', filters.type);
-    if (filters?.category) params.append('category', filters.category);
-    if (filters?.priority) params.append('priority', filters.priority);
-    if (filters?.user_id) params.append('user_id', filters.user_id.toString());
-    if (filters?.limit) params.append('limit', filters.limit.toString());
+    if (filters?.is_read !== undefined)
+      params.append("is_read", filters.is_read.toString());
+    if (filters?.type) params.append("type", filters.type);
+    if (filters?.category) params.append("category", filters.category);
+    if (filters?.priority) params.append("priority", filters.priority);
+    if (filters?.user_id) params.append("user_id", filters.user_id.toString());
+    if (filters?.limit) params.append("limit", filters.limit.toString());
 
-    const response = await api.get<PaginatedResponse<Notification>>(`/notifications/notifications/?${params.toString()}`);
+    const response = await api.get<PaginatedResponse<Notification>>(
+      `/notifications/notifications/?${params.toString()}`,
+    );
     return response.data.results;
   },
 
   getNotification: async (id: number): Promise<Notification> => {
-    const response = await api.get<Notification>(`/notifications/notifications/${id}/`);
+    const response = await api.get<Notification>(
+      `/notifications/notifications/${id}/`,
+    );
     return response.data;
   },
 
   markAsRead: async (id: number): Promise<Notification> => {
-    const response = await api.post<Notification>(`/notifications/notifications/${id}/mark_read/`);
+    const response = await api.post<Notification>(
+      `/notifications/notifications/${id}/mark_read/`,
+    );
     return response.data;
   },
 
   markAsUnread: async (id: number): Promise<Notification> => {
-    const response = await api.post<Notification>(`/notifications/notifications/${id}/mark_unread/`);
+    const response = await api.post<Notification>(
+      `/notifications/notifications/${id}/mark_unread/`,
+    );
     return response.data;
   },
 
   markAllAsRead: async (): Promise<{ marked_read: number }> => {
-    const response = await api.post<{ marked_read: number }>('/notifications/notifications/mark_all_read/');
+    const response = await api.post<{ marked_read: number }>(
+      "/notifications/notifications/mark_all_read/",
+    );
     return response.data;
   },
 
-  bulkAction: async (data: NotificationBulkActionData): Promise<{ action: string; count: number; message: string }> => {
-    const response = await api.post<{ action: string; count: number; message: string }>('/notifications/notifications/bulk_action/', data);
+  bulkAction: async (
+    data: NotificationBulkActionData,
+  ): Promise<{ action: string; count: number; message: string }> => {
+    const response = await api.post<{
+      action: string;
+      count: number;
+      message: string;
+    }>("/notifications/notifications/bulk_action/", data);
     return response.data;
   },
 
@@ -67,27 +90,35 @@ export const notificationsApi = {
   },
 
   getCounts: async (): Promise<NotificationCounts> => {
-    const response = await api.get<NotificationCounts>('/notifications/notifications/counts/');
+    const response = await api.get<NotificationCounts>(
+      "/notifications/notifications/counts/",
+    );
     return response.data;
   },
 
   getUnread: async (limit?: number): Promise<Notification[]> => {
     const params = new URLSearchParams();
-    if (limit) params.append('limit', limit.toString());
-    
-    const response = await api.get<Notification[]>(`/notifications/notifications/unread/?${params.toString()}`);
+    if (limit) params.append("limit", limit.toString());
+
+    const response = await api.get<Notification[]>(
+      `/notifications/notifications/unread/?${params.toString()}`,
+    );
     return response.data;
   },
 
   getRecent: async (limit?: number): Promise<Notification[]> => {
     const params = new URLSearchParams();
-    if (limit) params.append('limit', limit.toString());
-    
-    const response = await api.get<Notification[]>(`/notifications/notifications/recent/?${params.toString()}`);
+    if (limit) params.append("limit", limit.toString());
+
+    const response = await api.get<Notification[]>(
+      `/notifications/notifications/recent/?${params.toString()}`,
+    );
     return response.data;
   },
 
-  createNotification: async (data: CreateNotificationData): Promise<{
+  createNotification: async (
+    data: CreateNotificationData,
+  ): Promise<{
     created_count: number;
     total_recipients: number;
     notifications: Notification[];
@@ -96,15 +127,17 @@ export const notificationsApi = {
       created_count: number;
       total_recipients: number;
       notifications: Notification[];
-    }>('/notifications/notifications/create_notification/', data);
+    }>("/notifications/notifications/create_notification/", data);
     return response.data;
   },
 
   getStats: async (days?: number): Promise<NotificationStats> => {
     const params = new URLSearchParams();
-    if (days) params.append('days', days.toString());
-    
-    const response = await api.get<NotificationStats>(`/notifications/notifications/stats/?${params.toString()}`);
+    if (days) params.append("days", days.toString());
+
+    const response = await api.get<NotificationStats>(
+      `/notifications/notifications/stats/?${params.toString()}`,
+    );
     return response.data;
   },
 
@@ -117,39 +150,85 @@ export const notificationsApi = {
     is_system?: boolean;
   }): Promise<NotificationType[]> => {
     const params = new URLSearchParams();
-    if (filters?.category) params.append('category', filters.category);
-    if (filters?.is_active !== undefined) params.append('is_active', filters.is_active.toString());
-    if (filters?.is_system !== undefined) params.append('is_system', filters.is_system.toString());
+    if (filters?.category) params.append("category", filters.category);
+    if (filters?.is_active !== undefined)
+      params.append("is_active", filters.is_active.toString());
+    if (filters?.is_system !== undefined)
+      params.append("is_system", filters.is_system.toString());
 
-    const response = await api.get<PaginatedResponse<NotificationType>>(`/notifications/types/?${params.toString()}`);
+    const response = await api.get<PaginatedResponse<NotificationType>>(
+      `/notifications/types/?${params.toString()}`,
+    );
     return response.data.results;
   },
 
   getNotificationType: async (id: number): Promise<NotificationType> => {
-    const response = await api.get<NotificationType>(`/notifications/types/${id}/`);
+    const response = await api.get<NotificationType>(
+      `/notifications/types/${id}/`,
+    );
     return response.data;
   },
 
-  getNotificationCategories: async (): Promise<Array<{ value: string; label: string }>> => {
-    const response = await api.get<Array<{ value: string; label: string }>>('/notifications/types/categories/');
+  getNotificationCategories: async (): Promise<
+    Array<{ value: string; label: string }>
+  > => {
+    const response = await api.get<Array<{ value: string; label: string }>>(
+      "/notifications/types/categories/",
+    );
     return response.data;
   },
 
-  getNotificationPriorities: async (): Promise<Array<{ value: string; label: string }>> => {
-    const response = await api.get<Array<{ value: string; label: string }>>('/notifications/types/priorities/');
+  getNotificationPriorities: async (): Promise<
+    Array<{ value: string; label: string }>
+  > => {
+    const response = await api.get<Array<{ value: string; label: string }>>(
+      "/notifications/types/priorities/",
+    );
     return response.data;
+  },
+
+  createNotificationType: async (
+    data: CreateNotificationTypeData,
+  ): Promise<NotificationType> => {
+    const response = await api.post<NotificationType>(
+      "/notifications/types/",
+      data,
+    );
+    return response.data;
+  },
+
+  updateNotificationType: async (
+    id: number,
+    data: UpdateNotificationTypeData,
+  ): Promise<NotificationType> => {
+    const response = await api.patch<NotificationType>(
+      `/notifications/types/${id}/`,
+      data,
+    );
+    return response.data;
+  },
+
+  deleteNotificationType: async (id: number): Promise<void> => {
+    await api.delete(`/notifications/types/${id}/`);
   },
 
   /**
    * Notification Preferences
    */
   getMyPreferences: async (): Promise<NotificationPreference> => {
-    const response = await api.get<NotificationPreference>('/notifications/preferences/my_preferences/');
+    const response = await api.get<NotificationPreference>(
+      "/notifications/preferences/my_preferences/",
+    );
     return response.data;
   },
 
-  updatePreferences: async (data: UpdateNotificationPreferenceData): Promise<NotificationPreference> => {
-    const response = await api.put<NotificationPreference>('/notifications/preferences/update_preferences/', data);
+  updatePreferences: async (
+    data: UpdateNotificationPreferenceData,
+  ): Promise<NotificationPreference> => {
+    const response = await api.put<NotificationPreference>(
+      "/notifications/preferences/update_preferences/",
+      data,
+    );
     return response.data;
   },
 
@@ -160,20 +239,76 @@ export const notificationsApi = {
     const response = await api.post<{
       message: string;
       preferences: NotificationPreference;
-    }>('/notifications/preferences/reset_to_defaults/');
+    }>("/notifications/preferences/reset_to_defaults/");
     return response.data;
   },
 
-  getDigestFrequencies: async (): Promise<Array<{ value: string; label: string }>> => {
-    const response = await api.get<Array<{ value: string; label: string }>>('/notifications/preferences/digest_frequencies/');
+  getDigestFrequencies: async (): Promise<
+    Array<{ value: string; label: string }>
+  > => {
+    const response = await api.get<Array<{ value: string; label: string }>>(
+      "/notifications/preferences/digest_frequencies/",
+    );
     return response.data;
   },
 
-  getAllPreferences: async (userId?: number): Promise<NotificationPreference[]> => {
+  getAllPreferences: async (
+    userId?: number,
+  ): Promise<NotificationPreference[]> => {
     const params = new URLSearchParams();
-    if (userId) params.append('user_id', userId.toString());
+    if (userId) params.append("user_id", userId.toString());
 
-    const response = await api.get<PaginatedResponse<NotificationPreference>>(`/notifications/preferences/?${params.toString()}`);
+    const response = await api.get<PaginatedResponse<NotificationPreference>>(
+      `/notifications/preferences/?${params.toString()}`,
+    );
     return response.data.results;
+  },
+
+  updatePreferenceById: async (
+    id: number,
+    data: UpdateNotificationPreferenceData,
+  ): Promise<NotificationPreference> => {
+    const response = await api.patch<NotificationPreference>(
+      `/notifications/preferences/${id}/`,
+      data,
+    );
+    return response.data;
+  },
+
+  /**
+   * Push Device Tokens
+   */
+  getMyDevices: async (): Promise<{
+    devices: DevicePushToken[];
+    count: number;
+  }> => {
+    const response = await api.get<{
+      devices: DevicePushToken[];
+      count: number;
+    }>("/notifications/push-tokens/my_devices/");
+    return response.data;
+  },
+
+  deleteDevice: async (id: number): Promise<void> => {
+    await api.delete(`/notifications/push-tokens/${id}/`);
+  },
+
+  sendTestPush: async (
+    data: TestPushData,
+  ): Promise<{
+    message: string;
+    success?: boolean;
+    total_devices?: number;
+    successful?: number;
+    failed?: number;
+  }> => {
+    const response = await api.post<{
+      message: string;
+      success?: boolean;
+      total_devices?: number;
+      successful?: number;
+      failed?: number;
+    }>("/notifications/push-tokens/test_push/", data);
+    return response.data;
   },
 };

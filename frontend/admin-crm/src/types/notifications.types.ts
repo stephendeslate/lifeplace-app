@@ -17,6 +17,7 @@ export interface NotificationType {
   is_system: boolean;
   supports_email: boolean;
   supports_sms: boolean;
+  supports_push: boolean;
   auto_read_after_days: number | null;
   created_at: string;
   updated_at: string;
@@ -130,44 +131,44 @@ export interface Notification {
 }
 
 export type NotificationCategory =
-  | 'SYSTEM'
-  | 'EVENT'
-  | 'TASK'
-  | 'PAYMENT'
-  | 'CLIENT'
-  | 'CONTRACT'
-  | 'WORKFLOW'
-  | 'COMMUNICATION'
-  | 'MARKETING';
+  | "SYSTEM"
+  | "EVENT"
+  | "TASK"
+  | "PAYMENT"
+  | "CLIENT"
+  | "CONTRACT"
+  | "WORKFLOW"
+  | "COMMUNICATION"
+  | "MARKETING";
 
-export type NotificationPriority = 'LOW' | 'NORMAL' | 'HIGH' | 'URGENT';
+export type NotificationPriority = "LOW" | "NORMAL" | "HIGH" | "URGENT";
 
-export type DigestFrequency = 'IMMEDIATE' | 'HOURLY' | 'DAILY' | 'WEEKLY';
+export type DigestFrequency = "IMMEDIATE" | "HOURLY" | "DAILY" | "WEEKLY";
 
 export const NOTIFICATION_CATEGORIES = [
-  { value: 'SYSTEM', label: 'System' },
-  { value: 'EVENT', label: 'Event Management' },
-  { value: 'TASK', label: 'Task Management' },
-  { value: 'PAYMENT', label: 'Payment Processing' },
-  { value: 'CLIENT', label: 'Client Management' },
-  { value: 'CONTRACT', label: 'Contract Management' },
-  { value: 'WORKFLOW', label: 'Workflow Updates' },
-  { value: 'COMMUNICATION', label: 'Communication Updates' },
-  { value: 'MARKETING', label: 'Marketing & Promotions' },
+  { value: "SYSTEM", label: "System" },
+  { value: "EVENT", label: "Event Management" },
+  { value: "TASK", label: "Task Management" },
+  { value: "PAYMENT", label: "Payment Processing" },
+  { value: "CLIENT", label: "Client Management" },
+  { value: "CONTRACT", label: "Contract Management" },
+  { value: "WORKFLOW", label: "Workflow Updates" },
+  { value: "COMMUNICATION", label: "Communication Updates" },
+  { value: "MARKETING", label: "Marketing & Promotions" },
 ] as const;
 
 export const NOTIFICATION_PRIORITIES = [
-  { value: 'LOW', label: 'Low' },
-  { value: 'NORMAL', label: 'Normal' },
-  { value: 'HIGH', label: 'High' },
-  { value: 'URGENT', label: 'Urgent' },
+  { value: "LOW", label: "Low" },
+  { value: "NORMAL", label: "Normal" },
+  { value: "HIGH", label: "High" },
+  { value: "URGENT", label: "Urgent" },
 ] as const;
 
 export const DIGEST_FREQUENCIES = [
-  { value: 'IMMEDIATE', label: 'Immediate' },
-  { value: 'HOURLY', label: 'Hourly Digest' },
-  { value: 'DAILY', label: 'Daily Digest' },
-  { value: 'WEEKLY', label: 'Weekly Digest' },
+  { value: "IMMEDIATE", label: "Immediate" },
+  { value: "HOURLY", label: "Hourly Digest" },
+  { value: "DAILY", label: "Daily Digest" },
+  { value: "WEEKLY", label: "Weekly Digest" },
 ] as const;
 
 // Filter types
@@ -183,14 +184,14 @@ export interface NotificationFilters {
 // Action types
 export interface NotificationBulkActionData {
   notification_ids: number[];
-  action: 'mark_read' | 'mark_unread' | 'delete';
+  action: "mark_read" | "mark_unread" | "delete";
 }
 
 export interface CreateNotificationData {
   recipient_ids: number[];
   notification_type_code: string;
   context_data?: Record<string, unknown>;
-  force_delivery_methods?: ('email' | 'sms' | 'in_app')[];
+  force_delivery_methods?: ("email" | "sms" | "in_app")[];
 }
 
 export interface UpdateNotificationPreferenceData {
@@ -282,6 +283,49 @@ export interface NotificationStats {
     count: number;
   }>;
 }
+
+// Push device types
+export interface DevicePushToken {
+  id: number;
+  token: string;
+  device_id: string;
+  device_type: "ios" | "android" | "web";
+  device_name: string;
+  is_active: boolean;
+  last_used_at: string | null;
+  failure_count: number;
+  app_version: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TestPushData {
+  title?: string;
+  body?: string;
+  device_id?: string;
+}
+
+// Notification Type CRUD types
+export interface CreateNotificationTypeData {
+  code: string;
+  name: string;
+  description?: string;
+  category: NotificationCategory;
+  icon?: string;
+  color?: string;
+  priority: NotificationPriority;
+  default_title_template: string;
+  default_content_template: string;
+  default_email_template?: string;
+  default_sms_template?: string;
+  is_active?: boolean;
+  supports_email?: boolean;
+  supports_sms?: boolean;
+  supports_push?: boolean;
+  auto_read_after_days?: number | null;
+}
+
+export type UpdateNotificationTypeData = Partial<CreateNotificationTypeData>;
 
 // Form data types
 export interface NotificationPreferenceFormData {

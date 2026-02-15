@@ -41,6 +41,7 @@ import { useLayout } from "../../contexts/LayoutContext";
 import { useCommunications } from "../../hooks/useCommunications";
 import type { CommunicationFilters } from "../../types/communications.types";
 import { tokens } from "../../design-system";
+import { BulkSendDialog } from "../../components/communications/BulkSendDialog";
 
 export const CommunicationRecords: React.FC = () => {
   const { setBreadcrumbs } = useLayout();
@@ -48,6 +49,7 @@ export const CommunicationRecords: React.FC = () => {
   const [filters, setFilters] = useState<CommunicationFilters>({});
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [bulkSendOpen, setBulkSendOpen] = useState(false);
 
   const { useRecords } = useCommunications();
   const { data: records, isLoading } = useRecords(filters);
@@ -452,6 +454,14 @@ export const CommunicationRecords: React.FC = () => {
             )}
           </Box>
 
+          <Button
+            variant="contained"
+            startIcon={<SendIcon />}
+            size="small"
+            onClick={() => setBulkSendOpen(true)}
+          >
+            Bulk Send
+          </Button>
           <Button variant="outlined" startIcon={<DownloadIcon />} size="small">
             Export
           </Button>
@@ -603,6 +613,12 @@ export const CommunicationRecords: React.FC = () => {
           onRowsPerPageChange={handleChangeRowsPerPage}
         />
       </Box>
+
+      {/* Bulk Send Dialog */}
+      <BulkSendDialog
+        open={bulkSendOpen}
+        onClose={() => setBulkSendOpen(false)}
+      />
     </Box>
   );
 };

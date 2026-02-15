@@ -113,6 +113,9 @@ const CompanySettings = React.lazy(() =>
 const GuidedTours = React.lazy(() =>
   import("./pages/settings/account").then((m) => ({ default: m.GuidedTours })),
 );
+const PushDevices = React.lazy(() =>
+  import("./pages/settings/account").then((m) => ({ default: m.PushDevices })),
+);
 const Notifications = React.lazy(() =>
   import("./pages/settings/account/Notifications").then((m) => ({
     default: m.Notifications,
@@ -167,6 +170,11 @@ const CommunicationTemplates = React.lazy(() =>
 const EmailLayouts = React.lazy(() =>
   import("./pages/settings/templates/EmailLayouts").then((m) => ({
     default: m.EmailLayouts,
+  })),
+);
+const NotificationTypes = React.lazy(() =>
+  import("./pages/settings/templates/NotificationTypes").then((m) => ({
+    default: m.NotificationTypes,
   })),
 );
 const ProductsPackages = React.lazy(() =>
@@ -569,6 +577,14 @@ const AppRouter: React.FC = () => {
             </SettingsRoute>
           }
         />
+        <Route
+          path="/settings/account/push-devices"
+          element={
+            <SettingsRoute>
+              <PushDevices />
+            </SettingsRoute>
+          }
+        />
 
         {/* Booking Configuration */}
         <Route
@@ -668,6 +684,14 @@ const AppRouter: React.FC = () => {
           element={
             <SettingsRoute>
               <EmailLayouts />
+            </SettingsRoute>
+          }
+        />
+        <Route
+          path="/settings/templates/notification-types"
+          element={
+            <SettingsRoute>
+              <NotificationTypes />
             </SettingsRoute>
           }
         />

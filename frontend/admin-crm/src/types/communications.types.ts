@@ -1,6 +1,6 @@
 // frontend/admin-crm/src/types/communications.types.ts
 
-import type { ContextType, VariableSchemas } from './templates.types';
+import type { ContextType, VariableSchemas } from "./templates.types";
 
 // Re-export for convenience
 export type { VariableSchemas };
@@ -8,8 +8,8 @@ export type { VariableSchemas };
 export interface CommunicationTemplate {
   id: number;
   name: string;
-  channel: 'EMAIL' | 'SMS';
-  category: 'SYSTEM' | 'MANUAL' | 'AUTO';
+  channel: "EMAIL" | "SMS";
+  category: "SYSTEM" | "MANUAL" | "AUTO";
   context_type: ContextType;
   context_type_display: string;
   include_client_context: boolean;
@@ -26,8 +26,8 @@ export interface CommunicationTemplate {
 export interface CommunicationRecord {
   id: string;
   template_name: string;
-  channel: 'EMAIL' | 'SMS';
-  category: 'SYSTEM' | 'MANUAL' | 'AUTO';
+  channel: "EMAIL" | "SMS";
+  category: "SYSTEM" | "MANUAL" | "AUTO";
   recipient: string;
   subject?: string;
   body: string;
@@ -42,7 +42,7 @@ export interface CommunicationRecord {
     name: string;
   };
   external_message_id?: string;
-  delivery_status: 'PENDING' | 'SENT' | 'DELIVERED' | 'FAILED' | 'BOUNCED';
+  delivery_status: "PENDING" | "SENT" | "DELIVERED" | "FAILED" | "BOUNCED";
   sent_at?: string;
   delivered_at?: string;
   opened_at?: string;
@@ -53,8 +53,8 @@ export interface CommunicationRecord {
 
 export interface CreateTemplateData {
   name: string;
-  channel: 'EMAIL' | 'SMS';
-  category: 'SYSTEM' | 'MANUAL' | 'AUTO';
+  channel: "EMAIL" | "SMS";
+  category: "SYSTEM" | "MANUAL" | "AUTO";
   context_type: ContextType;
   include_client_context?: boolean;
   include_event_context?: boolean;
@@ -89,6 +89,12 @@ export interface BulkSendData {
     client_id?: number;
     context_data?: Record<string, unknown>;
   }>;
+}
+
+export interface SendTestData {
+  recipient: string;
+  client_id?: number;
+  event_id?: number;
 }
 
 export interface PreviewData {

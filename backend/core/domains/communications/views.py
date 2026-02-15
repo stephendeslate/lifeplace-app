@@ -343,6 +343,69 @@ class CommunicationTemplateViewSet(viewsets.ModelViewSet):
 
         return Response(preview_data)
     
+    @action(detail=True, methods=['post'], throttle_classes=[TemplatePreviewThrottle])
+    def send_test(self, request, pk=None):
+        """Send a test communication using this template - admin only"""
+        if request.user.role != 'ADMIN':
+            return Response(
+                {'error': 'Only administrators can send test communications'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        recipient = request.data.get('recipient')
+        if not recipient:
+            return Response(
+                {'error': 'recipient is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        template = self.get_object()
+
+        # Optional client/event context
+        client = None
+        client_id = request.data.get('client_id')
+        if client_id:
+            try:
+                client = User.objects.get(id=client_id)
+            except User.DoesNotExist:
+                pass
+
+        event = None
+        event_id = request.data.get('event_id')
+        if event_id:
+            try:
+                from core.domains.events.models import Event
+                event = Event.objects.get(id=event_id)
+            except Event.DoesNotExist:
+                pass
+
+        try:
+            communication_service = CommunicationService()
+            record = communication_service.send_communication_by_template(
+                template=template,
+                recipient=recipient,
+                context_data={'is_test': True},
+                client=client,
+                sent_by=request.user,
+                event=event,
+                skip_preference_check=True
+            )
+            if record:
+                return Response(
+                    CommunicationRecordSerializer(record).data,
+                    status=status.HTTP_201_CREATED
+                )
+            return Response(
+                {'error': 'Failed to send test communication'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        except Exception as e:
+            logger.error(f"send_test failed for template {pk}: {str(e)}")
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
     @action(detail=True, methods=['get'])
     def history(self, request, pk=None):
         """Get version history for a template - admin only"""

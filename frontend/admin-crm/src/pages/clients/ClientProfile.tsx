@@ -52,6 +52,7 @@ import {
   Message as MessageIcon,
   Person as PersonIcon,
   TrendingUp as TrendingUpIcon,
+  NotificationsActive as NotifPrefsIcon,
 } from "@mui/icons-material";
 import { useLayout } from "../../contexts/LayoutContext";
 import { useClients } from "../../hooks/useClients";
@@ -68,6 +69,7 @@ import { ClientInvoices } from "../../components/clients/ClientInvoices";
 import { NotesList, NoteFormDialog } from "../../components/notes";
 import { ClientCommunications } from "../../components/clients/ClientCommunications";
 import { SendMessageDialog } from "../../components/communications/SendMessageDialog";
+import { ClientNotificationPreferences } from "../../components/notifications";
 import { EventFormDialog } from "../../components/events";
 import { useNotes } from "../../hooks/useNotes";
 import { useEvents } from "../../hooks/useEvents";
@@ -119,6 +121,7 @@ export const ClientProfile: React.FC = () => {
   const [sendMessageDialogOpen, setSendMessageDialogOpen] = useState(false);
   const [addNoteDialogOpen, setAddNoteDialogOpen] = useState(false);
   const [createEventDialogOpen, setCreateEventDialogOpen] = useState(false);
+  const [notifPrefsDialogOpen, setNotifPrefsDialogOpen] = useState(false);
 
   // Hooks
   const {
@@ -555,6 +558,17 @@ export const ClientProfile: React.FC = () => {
             <ListItemText>Send Portal Invitation</ListItemText>
           </MenuItem>
         )}
+        <MenuItem
+          onClick={() => {
+            setNotifPrefsDialogOpen(true);
+            handleMenuClose();
+          }}
+        >
+          <ListItemIcon>
+            <NotifPrefsIcon />
+          </ListItemIcon>
+          <ListItemText>Notification Preferences</ListItemText>
+        </MenuItem>
         <Divider />
         <MenuItem onClick={handleDeactivateClient} sx={{ color: "error.main" }}>
           <ListItemIcon>
@@ -1092,6 +1106,16 @@ export const ClientProfile: React.FC = () => {
         }}
         isLoading={isCreatingEvent}
       />
+
+      {/* Client Notification Preferences Dialog */}
+      {client && (
+        <ClientNotificationPreferences
+          open={notifPrefsDialogOpen}
+          onClose={() => setNotifPrefsDialogOpen(false)}
+          userId={client.id}
+          clientName={`${client.first_name} ${client.last_name}`}
+        />
+      )}
     </ModernPageLayout>
   );
 };

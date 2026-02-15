@@ -57,6 +57,11 @@ const ContractDetail = React.lazy(() =>
 const SupportPage = React.lazy(() =>
   import("./pages/support").then((m) => ({ default: m.SupportPage })),
 );
+const NotificationsPage = React.lazy(() =>
+  import("./pages/notifications").then((m) => ({
+    default: m.NotificationsPage,
+  })),
+);
 
 // NotFound page (404) lazy import
 const NotFound = React.lazy(() =>
@@ -288,6 +293,18 @@ export const AppRouter: React.FC = () => {
             <ProtectedRoute>
               <ClientLayoutWrapper>
                 <RecordsPage />
+              </ClientLayoutWrapper>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Notifications Route */}
+        <Route
+          path="/notifications"
+          element={
+            <ProtectedRoute>
+              <ClientLayoutWrapper>
+                <NotificationsPage />
               </ClientLayoutWrapper>
             </ProtectedRoute>
           }
