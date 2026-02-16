@@ -999,12 +999,13 @@ class RatesPageService:
     @classmethod
     def _get_wedding_venues(cls):
         """Get wedding venue pricing from VenueEventTypeConfiguration"""
-        from core.domains.venues.models import Venue, VenueEventTypeConfiguration
+        from core.domains.venues.models import VenueEventTypeConfiguration
 
         configs = VenueEventTypeConfiguration.objects.filter(
             event_type_id=cls.WEDDING_EVENT_TYPE_ID,
             venue__is_active=True,
             venue__is_rentable_standalone=True,
+            venue__is_overnight=False,
         ).select_related('venue').order_by('venue__sort_order', 'venue__name')
 
         venues = []
