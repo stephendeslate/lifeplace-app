@@ -32,16 +32,22 @@ export interface ContractTemplate {
   amendment_requires_signature?: boolean;
 }
 
-export type SignatureRole = 'CLIENT' | 'WITNESS' | 'COMPANY_REP' | 'GUARDIAN' | 'PARTNER' | 'OTHER';
+export type SignatureRole =
+  | "CLIENT"
+  | "WITNESS"
+  | "COMPANY_REP"
+  | "GUARDIAN"
+  | "PARTNER"
+  | "OTHER";
 
-export type ContractStatus = 
-  | 'DRAFT' 
-  | 'SENT' 
-  | 'PARTIALLY_SIGNED' 
-  | 'SIGNED' 
-  | 'EXPIRED' 
-  | 'VOID' 
-  | 'AMENDED';
+export type ContractStatus =
+  | "DRAFT"
+  | "SENT"
+  | "PARTIALLY_SIGNED"
+  | "SIGNED"
+  | "EXPIRED"
+  | "VOID"
+  | "AMENDED";
 
 export interface ContractSignature {
   id: string;
@@ -69,14 +75,16 @@ export interface ContractSignature {
 // API Response structure (flattened)
 export interface ContractApiResponse {
   id: number;
-  event: number | {
-    id: number;
-    name: string;
-    client_name?: string;
-    status: string;
-    start_date?: string;
-    end_date?: string;
-  };
+  event:
+    | number
+    | {
+        id: number;
+        name: string;
+        client_name?: string;
+        status: string;
+        start_date?: string;
+        end_date?: string;
+      };
   template: number;
   template_name: string;
   status: ContractStatus;
@@ -118,7 +126,7 @@ export interface Contract {
   is_expired?: boolean;
   is_expiring_soon?: boolean;
   days_until_expiry?: number | null;
-  expiry_urgency?: 'CRITICAL' | 'HIGH' | 'NORMAL' | null;
+  expiry_urgency?: "CRITICAL" | "HIGH" | "NORMAL" | null;
   sign_disabled_reason?: string | null;
   missing_signatures?: SignatureRole[];
   signature_progress?: SignatureProgress;
@@ -145,13 +153,16 @@ export interface DetailedContractStatus {
     completed: number;
     percentage: number;
   };
-  signatures: Record<string, {
-    required: boolean;
-    signed: boolean;
-    signed_at: string | null;
-    signer_name: string | null;
-    is_current_user: boolean;
-  }>;
+  signatures: Record<
+    string,
+    {
+      required: boolean;
+      signed: boolean;
+      signed_at: string | null;
+      signer_name: string | null;
+      is_current_user: boolean;
+    }
+  >;
   can_client_sign: boolean;
   sign_disabled_reason?: string | null;
   expires_at: string | null;
@@ -184,12 +195,12 @@ export interface SigningSession {
   isSubmitting: boolean;
 }
 
-export type SigningStep = 
-  | 'review_contract' 
-  | 'legal_disclosure' 
-  | 'signature_capture' 
-  | 'confirmation' 
-  | 'completed';
+export type SigningStep =
+  | "review_contract"
+  | "legal_disclosure"
+  | "signature_capture"
+  | "confirmation"
+  | "completed";
 
 export interface SignatureMetadata {
   timestamp: string;
@@ -219,8 +230,8 @@ export interface SignaturePadConfig {
 export const DEFAULT_SIGNATURE_CONFIG: SignaturePadConfig = {
   width: 600,
   height: 300,
-  backgroundColor: '#ffffff',
-  penColor: '#000000',
+  backgroundColor: "#ffffff",
+  penColor: "#000000",
   minWidth: 1,
   maxWidth: 3,
   throttle: 16,
@@ -238,8 +249,13 @@ export interface ContractFilters {
   eventId?: string;
 }
 
-export type ContractSortField = 'created_at' | 'updated_at' | 'status' | 'event_date' | 'contract_value';
-export type SortDirection = 'asc' | 'desc';
+export type ContractSortField =
+  | "created_at"
+  | "updated_at"
+  | "status"
+  | "event_date"
+  | "contract_value";
+export type SortDirection = "asc" | "desc";
 
 export interface ContractSort {
   field: ContractSortField;
@@ -261,18 +277,18 @@ export interface SignatureValidationResult {
 }
 
 // Contract History and Activity types
-export type ContractActivityType = 
-  | 'CREATED'
-  | 'SENT'
-  | 'VIEWED'
-  | 'SIGNED'
-  | 'FULLY_SIGNED'
-  | 'AMENDED'
-  | 'VOIDED'
-  | 'EXPIRED'
-  | 'DOCUMENT_ADDED'
-  | 'NOTE_ADDED'
-  | 'VALUE_CHANGED';
+export type ContractActivityType =
+  | "CREATED"
+  | "SENT"
+  | "VIEWED"
+  | "SIGNED"
+  | "FULLY_SIGNED"
+  | "AMENDED"
+  | "VOIDED"
+  | "EXPIRED"
+  | "DOCUMENT_ADDED"
+  | "NOTE_ADDED"
+  | "VALUE_CHANGED";
 
 export interface ContractActivity {
   id: string;
@@ -294,7 +310,14 @@ export interface ContractAmendment {
   amendment_reason: string;
   changes_description: string;
   section_changes: Record<string, unknown>;
-  status: 'REQUESTED' | 'DRAFT' | 'SENT_FOR_REVIEW' | 'APPROVED' | 'SIGNED' | 'REJECTED' | 'CANCELLED';
+  status:
+    | "REQUESTED"
+    | "DRAFT"
+    | "SENT_FOR_REVIEW"
+    | "APPROVED"
+    | "SIGNED"
+    | "REJECTED"
+    | "CANCELLED";
   original_value?: string;
   new_value?: string;
   value_change?: string;
@@ -309,14 +332,20 @@ export interface ContractAmendment {
   updated_at: string;
 }
 
-export type DocumentType = 'ATTACHMENT' | 'ADDENDUM' | 'SCHEDULE' | 'TERMS' | 'WAIVER' | 'OTHER';
+export type ContractDocumentType =
+  | "ATTACHMENT"
+  | "ADDENDUM"
+  | "SCHEDULE"
+  | "TERMS"
+  | "WAIVER"
+  | "OTHER";
 
 export interface ContractDocument {
   id: string;
   contract: string;
   name: string;
   description: string;
-  document_type: DocumentType;
+  document_type: ContractDocumentType;
   document_type_display: string;
   file: string;
   version: number;
@@ -358,7 +387,7 @@ export interface ContractTimelineEvent {
   description: string;
   date: string;
   user?: User;
-  status?: 'completed' | 'pending' | 'failed';
+  status?: "completed" | "pending" | "failed";
   metadata?: Record<string, unknown>;
 }
 

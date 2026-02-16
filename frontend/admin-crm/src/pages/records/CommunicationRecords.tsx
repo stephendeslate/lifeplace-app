@@ -75,8 +75,7 @@ export const CommunicationRecords: React.FC = () => {
     setPage(0);
   };
 
-  // @ts-expect-error - Legacy code requiring type fix
-  const handleChangePage = (event: unknown, newPage: number) => {
+  const handleChangePage = (_event: unknown, newPage: number) => {
     setPage(newPage);
   };
 

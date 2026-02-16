@@ -134,3 +134,62 @@ class ClientEventService:
             
             logger.info(f"Client {client_id} updated preferences for event {event_id}")
             return event
+
+    @staticmethod
+    def request_cancellation(event_id, client_id, reason=''):
+        """
+        Submit a cancellation request for a client's event.
+        Does not directly cancel — creates a request for admin review.
+        """
+        try:
+            event = Event.objects.get(id=event_id, client_id=client_id)
+        except Event.DoesNotExist:
+            raise EventNotFound()
+
+        if event.status not in ('LEAD', 'CONFIRMED'):
+            raise ValueError("Only active events can be submitted for cancellation.")
+
+        if event.cancellation_requested:
+            raise ValueError("A cancellation request has already been submitted for this event.")
+
+        with transaction.atomic():
+            event.cancellation_requested = True
+            event.cancellation_requested_at = timezone.now()
+            event.cancellation_request_reason = reason
+            event.save(update_fields=[
+                'cancellation_requested',
+                'cancellation_requested_at',
+                'cancellation_request_reason',
+            ])
+
+            EventTimeline.objects.create(
+                event=event,
+                action_type='CANCELLATION_REQUESTED',
+                description=f"Client requested cancellation: {reason}" if reason else "Client requested cancellation",
+                actor_id=client_id,
+                is_public=True,
+            )
+
+            logger.info(f"Client {client_id} requested cancellation for event {event_id}")
+
+        # Notify all admins asynchronously
+        try:
+            from core.domains.notifications.services import NotificationService
+            from core.domains.users.models import User
+            admin_users = User.objects.filter(role='ADMIN', is_active=True)
+            for admin in admin_users:
+                NotificationService.create_notification(
+                    recipient=admin,
+                    notification_type_code='EVENT_CANCELLED',
+                    context={
+                        'event_id': event.id,
+                        'event_name': event.name or f'Event #{event.id}',
+                        'reason': reason or 'Not provided',
+                        'action': 'cancellation_request',
+                    },
+                    event=event,
+                )
+        except Exception as e:
+            logger.warning(f"Failed to send cancellation request notification: {e}")
+
+        return event

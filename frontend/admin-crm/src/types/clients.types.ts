@@ -1,6 +1,6 @@
 // frontend/admin-crm/src/types/clients.types.ts
 
-import type { Event } from './events.types';
+import type { Event } from "./events.types";
 
 export interface ClientProfile {
   phone?: string;
@@ -71,13 +71,12 @@ export interface AcceptInvitationResponse {
   user: Client;
 }
 
-
 // Communication Records interfaces
 export interface CommunicationRecord {
   id: string;
   template_name: string;
-  channel: 'EMAIL' | 'SMS';
-  category: 'SYSTEM' | 'MANUAL' | 'AUTO';
+  channel: "EMAIL" | "SMS";
+  category: "SYSTEM" | "MANUAL" | "AUTO";
   recipient: string;
   subject?: string;
   body: string;
@@ -87,7 +86,7 @@ export interface CommunicationRecord {
   sent_by?: number;
   sent_by_name?: string;
   external_message_id?: string;
-  delivery_status: 'PENDING' | 'SENT' | 'DELIVERED' | 'FAILED' | 'BOUNCED';
+  delivery_status: "PENDING" | "SENT" | "DELIVERED" | "FAILED" | "BOUNCED";
   sent_at?: string;
   delivered_at?: string;
   opened_at?: string;
@@ -98,27 +97,13 @@ export interface CommunicationRecord {
 
 export interface CommunicationFilters {
   template_name?: string;
-  channel?: 'EMAIL' | 'SMS';
-  category?: 'SYSTEM' | 'MANUAL' | 'AUTO';
-  delivery_status?: 'PENDING' | 'SENT' | 'DELIVERED' | 'FAILED' | 'BOUNCED';
+  channel?: "EMAIL" | "SMS";
+  category?: "SYSTEM" | "MANUAL" | "AUTO";
+  delivery_status?: "PENDING" | "SENT" | "DELIVERED" | "FAILED" | "BOUNCED";
   date_from?: string;
   date_to?: string;
   search?: string;
   client_id?: number;
-}
-
-// Communication Template interfaces
-export interface CommunicationTemplate {
-  id: number;
-  name: string;
-  channel: 'EMAIL' | 'SMS';
-  category: 'SYSTEM' | 'MANUAL' | 'AUTO';
-  subject_template?: string;
-  body_template: string;
-  is_system: boolean;
-  variables_schema: Record<string, unknown>;
-  created_at: string;
-  updated_at: string;
 }
 
 // Send Communication interfaces

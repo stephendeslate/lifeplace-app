@@ -1,4 +1,6 @@
 # backend/core/domains/workflows/basic_serializers.py
+import re
+
 from rest_framework import serializers
 
 from .models import WorkflowStage, WorkflowTemplate
@@ -59,3 +61,40 @@ class WorkflowStageSerializer(serializers.ModelSerializer):
             'metadata', 'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
+
+    # Valid trigger_time patterns from the model help_text
+    TRIGGER_TIME_PATTERN = re.compile(
+        r'^(ON_CREATION|AFTER_\d+_(DAYS?|HOURS?|WEEKS?)|'
+        r'\d+_(DAYS?|HOURS?|WEEKS?)_BEFORE_EVENT)$',
+        re.IGNORECASE,
+    )
+
+    # Automation types that require a specific template
+    AUTOMATION_TEMPLATE_MAP = {
+        'EMAIL': 'email_template',
+        'CONTRACT': 'contract_template',
+        'QUESTIONNAIRE': 'questionnaire_template',
+    }
+
+    def validate_trigger_time(self, value):
+        if value and not self.TRIGGER_TIME_PATTERN.match(value):
+            raise serializers.ValidationError(
+                f"Invalid trigger_time format '{value}'. "
+                "Supported: ON_CREATION, AFTER_X_DAYS/HOURS/WEEKS, X_DAYS_BEFORE_EVENT"
+            )
+        return value
+
+    def validate(self, data):
+        is_automated = data.get('is_automated', getattr(self.instance, 'is_automated', False))
+        automation_type = data.get('automation_type', getattr(self.instance, 'automation_type', ''))
+
+        if is_automated and automation_type:
+            template_field = self.AUTOMATION_TEMPLATE_MAP.get(automation_type)
+            if template_field:
+                template_val = data.get(template_field, getattr(self.instance, template_field, None) if self.instance else None)
+                if not template_val:
+                    raise serializers.ValidationError({
+                        template_field: f"A {template_field.replace('_', ' ')} is required when automation_type is '{automation_type}'."
+                    })
+
+        return data

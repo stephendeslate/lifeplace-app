@@ -1,9 +1,17 @@
 # backend/core/domains/questionnaires/views.py
+import logging
+import uuid
+
 from core.utils.permissions import IsAdmin, IsAdminOrClient, IsOwnerOrAdmin
+from django.core.files.base import ContentFile
+from django.core.files.storage import default_storage
 from django.db import transaction
 from rest_framework import filters, status, viewsets
 from rest_framework.decorators import action
+from rest_framework.parsers import MultiPartParser
 from rest_framework.response import Response
+
+logger = logging.getLogger(__name__)
 
 from .models import (
     Questionnaire,
@@ -48,8 +56,8 @@ class QuestionnaireViewSet(viewsets.ModelViewSet):
         """
         SECURITY FIX (P0-B15): Granular permissions for different actions.
         """
-        # Read-only actions for admin and client
-        if self.action in ['list', 'retrieve', 'active', 'fields', 'validation_rules', 'for_event']:
+        # Read-only actions and file uploads for admin and client
+        if self.action in ['list', 'retrieve', 'active', 'fields', 'validation_rules', 'for_event', 'upload']:
             return [IsAdminOrClient()]
         # Analytics are admin-only
         if self.action in ['analytics', 'analytics_summary', 'response_trends']:
@@ -263,6 +271,78 @@ class QuestionnaireViewSet(viewsets.ModelViewSet):
 
         # If no booking flow and no responses, return empty list
         return Response([])
+
+    @action(detail=False, methods=['post'], parser_classes=[MultiPartParser])
+    def upload(self, request):
+        """
+        Upload a file for a questionnaire file-type field.
+
+        Validates the file against the field's constraints (max size, allowed types)
+        and stores it via Django's default storage backend (local dev / Cloudflare R2 prod).
+
+        Expected multipart/form-data:
+            - file: The uploaded file
+            - questionnaire: Questionnaire ID
+            - field: QuestionnaireField ID
+        """
+        uploaded_file = request.FILES.get('file')
+        field_id = request.data.get('field')
+
+        if not uploaded_file:
+            return Response(
+                {'detail': 'No file provided.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if not field_id:
+            return Response(
+                {'detail': 'Field ID is required.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            field = QuestionnaireField.objects.select_related('questionnaire').get(id=field_id)
+        except QuestionnaireField.DoesNotExist:
+            return Response(
+                {'detail': 'Questionnaire field not found.'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        if field.type != 'file':
+            return Response(
+                {'detail': 'This field does not accept file uploads.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Validate file size
+        max_bytes = field.max_file_size_mb * 1024 * 1024
+        if uploaded_file.size > max_bytes:
+            return Response(
+                {'detail': f'File exceeds maximum size of {field.max_file_size_mb} MB.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Validate file extension
+        ext = uploaded_file.name.rsplit('.', 1)[-1].lower() if '.' in uploaded_file.name else ''
+        if field.allowed_file_types and ext not in field.allowed_file_types:
+            return Response(
+                {'detail': f'File type .{ext} is not allowed. Allowed: {", ".join(field.allowed_file_types)}'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Save file
+        filename = f"questionnaires/{field.questionnaire_id}/{field_id}/{uuid.uuid4().hex}.{ext}"
+        saved_path = default_storage.save(filename, ContentFile(uploaded_file.read()))
+        file_url = default_storage.url(saved_path)
+
+        logger.info(
+            "Questionnaire file uploaded: field=%s, file=%s, user=%s",
+            field_id, saved_path, request.user.id if request.user.is_authenticated else 'anonymous',
+        )
+
+        return Response(
+            {'file_url': file_url, 'file_id': saved_path},
+            status=status.HTTP_201_CREATED,
+        )
 
     @action(detail=True, methods=['get'])
     def analytics(self, request, pk=None):

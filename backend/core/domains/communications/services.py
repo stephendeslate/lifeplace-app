@@ -287,7 +287,7 @@ class CommunicationService:
     def __init__(self):
         # Use provider manager for resilience
         self.provider_manager = provider_manager
-        print(f"🔧 CommunicationService initialized with ProviderManager ({len(self.provider_manager.providers)} providers)")
+        logger.debug(f"CommunicationService initialized with ProviderManager ({len(self.provider_manager.providers)} providers)")
 
     def _check_user_preferences(
         self,
@@ -350,9 +350,11 @@ class CommunicationService:
             return True, ""
 
         except Exception as e:
-            logger.warning(f"Error checking user preferences: {e}")
-            # On error, allow the send (fail open for communications)
-            return True, ""
+            logger.error(f"Error checking user preferences: {e}", exc_info=True)
+            # Fail closed: block non-critical communications when preferences can't be verified
+            # System/transactional messages (e.g., password resets) use skip_preference_check=True
+            # and never reach this code path, so blocking here is safe.
+            return False, f"Unable to verify user communication preferences: {e}"
     
     def send_communication(
         self,
@@ -388,7 +390,6 @@ class CommunicationService:
                 )
 
                 logger.info(f"Queued async communication: task_id={task_result.id}")
-                print(f"🚀 Queued async communication: {task_result.id}")
 
                 # Return a placeholder record (actual record will be created by task)
                 return None  # Async tasks don't return records immediately
@@ -403,7 +404,6 @@ class CommunicationService:
             template = CommunicationTemplateService.get_template_by_name(template_name)
         except TemplateNotFound:
             logger.error(f"Template '{template_name}' not found")
-            print(f"❌ Template '{template_name}' not found")
             return None
 
         return self.send_communication_by_template(
@@ -471,13 +471,12 @@ class CommunicationService:
                     f"Communication blocked by user preference: {template.name} to {recipient}. "
                     f"Reason: {reason}"
                 )
-                print(f"⏹️ Communication blocked by user preference: {reason}")
                 # Raise exception with details instead of returning None
                 from .exceptions import SendingFailed
                 raise SendingFailed(f"Communication blocked by user preference: {reason}")
 
-        print(f"🚀 Sending communication: {template.name} to {recipient}")
-        
+        logger.info(f"Sending communication: {template.name} to {recipient}")
+
         # Check if this is a manual message with custom content
         is_manual_message = (
             template.category == 'MANUAL' and 
@@ -523,7 +522,6 @@ class CommunicationService:
                 
         except Exception as e:
             logger.error(f"Failed to render template: {str(e)}")
-            print(f"❌ Failed to render template: {str(e)}")
             # Raise exception with details instead of returning None
             from .exceptions import SendingFailed
             raise SendingFailed(f"Failed to render template: {str(e)}")
@@ -543,8 +541,8 @@ class CommunicationService:
             delivery_status='PENDING'
         )
         
-        print(f"📝 Created communication record: {record.id}")
-        
+        logger.info(f"Created communication record: {record.id}")
+
         # Send communication with resilience and metrics
         start_time = timezone.now()
         try:
@@ -577,12 +575,11 @@ class CommunicationService:
                 response_time_ms=response_time_ms
             )
             
-            print(f"✅ Communication sent successfully via {provider_used}. External ID: {external_id}")
+            logger.info(f"Communication sent successfully via {provider_used}. External ID: {external_id}")
             return record
             
         except Exception as e:
             logger.error(f"Failed to send communication: {str(e)}")
-            print(f"❌ Failed to send communication: {str(e)}")
             
             # Calculate response time even for failures
             response_time_ms = (timezone.now() - start_time).total_seconds() * 1000
@@ -637,7 +634,6 @@ class CommunicationService:
                 )
                 
                 logger.info(f"Queued bulk communication: task_id={task_result.id}, {len(recipients)} recipients")
-                print(f"🚀 Queued bulk communication: {task_result.id} ({len(recipients)} recipients)")
                 
                 # Return empty list for async operations
                 return []

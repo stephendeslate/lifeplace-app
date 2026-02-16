@@ -1,14 +1,14 @@
 // frontend/client-portal/src/hooks/useInvoicePayments.ts
 
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useToast } from '../contexts/ToastContext';
-import FinancialApi from '../apis/financial.api';
-import { financialKeys } from './useFinancial';
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useToast } from "../contexts/ToastContext";
+import FinancialApi from "../apis/financial.api";
+import { financialKeys } from "./useFinancial";
 import type {
   Invoice,
   InvoicePaymentRequest,
   PaymentPlanRequest,
-} from '../types/financial.types';
+} from "../types/financial.types";
 
 /**
  * Hook for managing invoice payment operations
@@ -20,44 +20,52 @@ export const useInvoicePayments = () => {
 
   // Invoice payment mutation
   const payInvoiceMutation = useMutation({
-    mutationFn: ({ invoiceId, paymentData }: {
+    mutationFn: ({
+      invoiceId,
+      paymentData,
+    }: {
       invoiceId: number;
-      paymentData: InvoicePaymentRequest
+      paymentData: InvoicePaymentRequest;
     }) => FinancialApi.payInvoice(invoiceId, paymentData),
     onSuccess: (_, { invoiceId }) => {
       // Invalidate all related queries to trigger refresh
       queryClient.invalidateQueries({ queryKey: financialKeys.invoices() });
-      queryClient.invalidateQueries({ queryKey: financialKeys.invoice(invoiceId) });
+      queryClient.invalidateQueries({
+        queryKey: financialKeys.invoice(invoiceId),
+      });
       queryClient.invalidateQueries({ queryKey: financialKeys.payments() });
-      queryClient.invalidateQueries({ queryKey: financialKeys.paymentSummary() });
+      queryClient.invalidateQueries({
+        queryKey: financialKeys.paymentSummary(),
+      });
       queryClient.invalidateQueries({ queryKey: financialKeys.paymentPlans() });
 
       // Payment triggers backend workflow automation (PAYMENT_RECEIVED)
       // that may progress workflow stages, create tasks, update event status
       // Invalidate events and contracts to reflect any workflow-triggered changes
-      queryClient.invalidateQueries({ queryKey: ['events'] });
-      queryClient.invalidateQueries({ queryKey: ['contracts'] });
+      queryClient.invalidateQueries({ queryKey: ["events"] });
+      queryClient.invalidateQueries({ queryKey: ["contracts"] });
 
       showToast({
-        type: 'success',
-        title: 'Payment Successful'
+        type: "success",
+        title: "Payment Successful",
       });
     },
     onError: (error) => {
       showToast({
-        type: 'error',
-        title: FinancialApi.handleError(error)
+        type: "error",
+        title: FinancialApi.handleError(error),
       });
     },
   });
 
   // Payment intent creation for Stripe
   const createPaymentIntentMutation = useMutation({
-    mutationFn: (invoiceId: number) => FinancialApi.createInvoicePaymentIntent(invoiceId, 'stripe'),
+    mutationFn: (invoiceId: number) =>
+      FinancialApi.createInvoicePaymentIntent(invoiceId, "stripe"),
     onError: (error) => {
       showToast({
-        type: 'error',
-        title: FinancialApi.handleError(error)
+        type: "error",
+        title: FinancialApi.handleError(error),
       });
     },
   });
@@ -65,29 +73,36 @@ export const useInvoicePayments = () => {
   // Payment plan setup mutation
   // ⚠️ WORK IN PROGRESS - Payment Plan feature is being redesigned
   const setupPaymentPlanMutation = useMutation({
-    mutationFn: ({ invoiceId, planData }: {
+    mutationFn: ({
+      invoiceId,
+      planData,
+    }: {
       invoiceId: number;
-      planData: PaymentPlanRequest
+      planData: PaymentPlanRequest;
     }) => {
-      if (import.meta.env.DEV) console.warn('⚠️ WIP: Payment plan setup mutation is currently disabled');
+      if (import.meta.env.DEV)
+        console.warn(
+          "⚠️ WIP: Payment plan setup mutation is currently disabled",
+        );
       return FinancialApi.setupInvoicePaymentPlan(invoiceId, planData);
     },
     onSuccess: (_, { invoiceId }) => {
       // Invalidate related queries
       queryClient.invalidateQueries({ queryKey: financialKeys.invoices() });
-      queryClient.invalidateQueries({ queryKey: financialKeys.invoice(invoiceId) });
+      queryClient.invalidateQueries({
+        queryKey: financialKeys.invoice(invoiceId),
+      });
       queryClient.invalidateQueries({ queryKey: financialKeys.paymentPlans() });
-      queryClient.invalidateQueries({ queryKey: financialKeys.installments() });
 
       showToast({
-        type: 'success',
-        title: 'Payment Plan Created'
+        type: "success",
+        title: "Payment Plan Created",
       });
     },
     onError: (error) => {
       showToast({
-        type: 'error',
-        title: FinancialApi.handleError(error)
+        type: "error",
+        title: FinancialApi.handleError(error),
       });
     },
   });
@@ -95,7 +110,10 @@ export const useInvoicePayments = () => {
   /**
    * Pay an invoice with the provided payment data
    */
-  const payInvoice = (invoiceId: number, paymentData: InvoicePaymentRequest) => {
+  const payInvoice = (
+    invoiceId: number,
+    paymentData: InvoicePaymentRequest,
+  ) => {
     return payInvoiceMutation.mutate({ invoiceId, paymentData });
   };
 
@@ -110,8 +128,12 @@ export const useInvoicePayments = () => {
    * Set up a payment plan for an invoice
    * ⚠️ WORK IN PROGRESS - Payment Plan feature is being redesigned
    */
-  const setupPaymentPlan = (invoiceId: number, planData: PaymentPlanRequest) => {
-    if (import.meta.env.DEV) console.warn('⚠️ WIP: Payment plan setup is currently disabled');
+  const setupPaymentPlan = (
+    invoiceId: number,
+    planData: PaymentPlanRequest,
+  ) => {
+    if (import.meta.env.DEV)
+      console.warn("⚠️ WIP: Payment plan setup is currently disabled");
     return setupPaymentPlanMutation.mutate({ invoiceId, planData });
   };
 

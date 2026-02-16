@@ -346,6 +346,21 @@ class Event(BaseModel):
         help_text="Number of times the hold has been extended"
     )
 
+    # CLIENT CANCELLATION REQUEST
+    cancellation_requested = models.BooleanField(
+        default=False,
+        help_text="Whether the client has requested cancellation"
+    )
+    cancellation_requested_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="When the client requested cancellation"
+    )
+    cancellation_request_reason = models.TextField(
+        blank=True,
+        help_text="Client's reason for requesting cancellation"
+    )
+
     # RESCHEDULING TRACKING
     original_start_date = models.DateTimeField(
         null=True,
@@ -738,7 +753,8 @@ class EventTimeline(BaseModel):
         ('TASK_COMPLETED', 'Task Completed'),
         ('FEEDBACK_RECEIVED', 'Feedback Received'),
         ('CLIENT_MESSAGE', 'Client Message'),
-        ('SYSTEM_UPDATE', 'System Update')
+        ('SYSTEM_UPDATE', 'System Update'),
+        ('CANCELLATION_REQUESTED', 'Cancellation Requested'),
     ])
     description = models.TextField()
     actor = models.ForeignKey(

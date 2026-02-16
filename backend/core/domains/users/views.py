@@ -564,7 +564,15 @@ def accept_invitation(request, invitation_id):
             {"detail": "Passwords do not match."},
             status=status.HTTP_400_BAD_REQUEST
         )
-    
+
+    # Validate password strength (consistent with client_register)
+    password_validation = validate_password_strength(password)
+    if not password_validation['is_valid']:
+        return Response({
+            'detail': 'Password does not meet security requirements',
+            'password_feedback': password_validation['messages']
+        }, status=status.HTTP_400_BAD_REQUEST)
+
     with transaction.atomic():
         user = AdminInvitationService.accept_invitation(invitation_id, password)
     

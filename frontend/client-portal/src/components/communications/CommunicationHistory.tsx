@@ -31,6 +31,7 @@ import {
   useMediaQuery,
   alpha,
 } from "@mui/material";
+import { formatPhilippinesTime } from "../../utils/timezone";
 import { GlassCard } from "../../design-system/components/GlassCard";
 import { AnimatedElement } from "../../design-system/components/AnimatedElement";
 import {
@@ -428,7 +429,11 @@ export const CommunicationHistory: React.FC = () => {
                         sx={{ ml: "auto" }}
                       >
                         {record.sent_at
-                          ? new Date(record.sent_at).toLocaleDateString()
+                          ? formatPhilippinesTime(
+                              record.sent_at,
+                              false,
+                              "MMM d, yyyy",
+                            )
                           : "-"}
                       </Typography>
                     </Stack>
@@ -572,7 +577,11 @@ export const CommunicationHistory: React.FC = () => {
                           <TableCell>
                             <Typography variant="body2" color="text.secondary">
                               {record.sent_at
-                                ? new Date(record.sent_at).toLocaleDateString()
+                                ? formatPhilippinesTime(
+                                    record.sent_at,
+                                    false,
+                                    "MMM d, yyyy",
+                                  )
                                 : "-"}
                             </Typography>
                           </TableCell>

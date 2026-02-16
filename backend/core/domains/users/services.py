@@ -330,7 +330,8 @@ class AdminInvitationService:
                 template_name=template_name,
                 recipient=invitation.email,
                 context_data=context_data,
-                sent_by=invitation.invited_by
+                sent_by=invitation.invited_by,
+                skip_preference_check=True,
             )
 
             if record:

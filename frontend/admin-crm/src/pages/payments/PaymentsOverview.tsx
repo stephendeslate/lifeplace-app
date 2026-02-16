@@ -123,7 +123,7 @@ export const PaymentsOverview: React.FC = () => {
   };
 
   const handleExport = async () => {
-    // TODO: Implement export functionality once available in API
+    // Export not yet available — backend endpoint pending
   };
 
   const handleFilterChange = (key: keyof PaymentFilters, value: string) => {
@@ -265,8 +265,7 @@ export const PaymentsOverview: React.FC = () => {
     );
   }
 
-  // @ts-expect-error - Type compatibility issue requiring attention
-  const handleChangePage = (event: unknown, newPage: number) => {
+  const handleChangePage = (_event: unknown, newPage: number) => {
     setPage(newPage);
   };
 
@@ -298,6 +297,8 @@ export const PaymentsOverview: React.FC = () => {
             icon: <ExportIcon />,
             onClick: handleExport,
             variant: "outlined",
+            disabled: true,
+            tooltip: "Export coming soon",
           },
         ]}
       />

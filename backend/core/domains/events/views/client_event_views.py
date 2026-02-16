@@ -444,6 +444,45 @@ class ClientEventViewSet(viewsets.ReadOnlyModelViewSet):
             status=status.HTTP_200_OK
         )
 
+    @action(detail=True, methods=['post'])
+    def request_cancellation(self, request, pk=None):
+        """
+        Submit a cancellation request for the client's event.
+        Does not directly cancel — creates a request for admin review.
+
+        POST /client/events/{id}/request_cancellation/
+        Body: {"reason": "Optional reason for cancellation"}
+        """
+        reason = request.data.get('reason', '').strip()
+
+        try:
+            event = ClientEventService.request_cancellation(
+                event_id=pk,
+                client_id=request.user.id,
+                reason=reason,
+            )
+            return Response({
+                'detail': 'Cancellation request submitted successfully. Our team will review your request.',
+                'event_id': event.id,
+                'cancellation_requested': True,
+            })
+        except EventNotFound:
+            return Response(
+                {"detail": "Event not found or you don't have permission."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        except ValueError as e:
+            return Response(
+                {"detail": str(e)},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        except Exception as e:
+            logger.error(f"Error requesting cancellation for event {pk} by client {request.user.id}: {e}")
+            return Response(
+                {"detail": "An error occurred while submitting your cancellation request."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
     @action(detail=False, methods=['get'])
     def rebookable(self, request):
         """

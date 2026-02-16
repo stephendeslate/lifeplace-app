@@ -748,31 +748,6 @@ const AppRouter: React.FC = () => {
           }
         />
 
-        {/* Legacy Routes for backward compatibility */}
-        <Route
-          path="/invitations"
-          element={
-            <ProtectedRoute>
-              <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
-                <Typography variant="h4">Invitations</Typography>
-                <Typography color="text.secondary">Coming soon...</Typography>
-              </Box>
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/roles"
-          element={
-            <ProtectedRoute>
-              <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
-                <Typography variant="h4">Roles & Permissions</Typography>
-                <Typography color="text.secondary">Coming soon...</Typography>
-              </Box>
-            </ProtectedRoute>
-          }
-        />
-
         <Route
           path="/organizations"
           element={

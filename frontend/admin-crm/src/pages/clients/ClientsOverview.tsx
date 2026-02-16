@@ -205,8 +205,7 @@ export const ClientsOverview: React.FC = () => {
     );
   }
 
-  // @ts-expect-error - Type compatibility issue requiring attention
-  const handleChangePage = (event: unknown, newPage: number) => {
+  const handleChangePage = (_event: unknown, newPage: number) => {
     setPage(newPage);
   };
 

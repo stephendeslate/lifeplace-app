@@ -47,6 +47,7 @@ import {
   Delete as DeleteIcon,
 } from "@mui/icons-material";
 import { useDocumentTitle } from "../../hooks/useDocumentTitle";
+import { formatPhilippinesTime } from "../../utils/timezone";
 import { GlassCard } from "../../design-system/components/GlassCard";
 import { AnimatedElement } from "../../design-system/components/AnimatedElement";
 import {
@@ -1643,9 +1644,11 @@ const FinancialPortal: React.FC = () => {
                                   Created
                                 </Typography>
                                 <Typography variant="caption">
-                                  {new Date(
+                                  {formatPhilippinesTime(
                                     method.created_at,
-                                  ).toLocaleDateString()}
+                                    false,
+                                    "MMM d, yyyy",
+                                  )}
                                 </Typography>
                               </Box>
                             </Stack>
@@ -1799,9 +1802,11 @@ const FinancialPortal: React.FC = () => {
                                       variant="body2"
                                       color="text.secondary"
                                     >
-                                      {new Date(
+                                      {formatPhilippinesTime(
                                         method.created_at,
-                                      ).toLocaleDateString()}
+                                        false,
+                                        "MMM d, yyyy",
+                                      )}
                                     </Typography>
                                   </TableCell>
                                   <TableCell>

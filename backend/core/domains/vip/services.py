@@ -189,6 +189,13 @@ class VIPService:
         except ClientVIPStatus.DoesNotExist:
             return []
 
+        # Lazy expiration: update status field when expired at query time
+        if client_status.status == 'ACTIVE' and client_status.is_expired:
+            client_status.status = 'EXPIRED'
+            client_status.save(update_fields=['status', 'updated_at'])
+            logger.info(f"VIP status for client {client.id} expired (lazy update)")
+            return []
+
         if not client_status.current_tier or client_status.status != 'ACTIVE':
             return []
 
@@ -225,6 +232,12 @@ class VIPService:
             client_status = client.vip_status
         except ClientVIPStatus.DoesNotExist:
             return False, "Client has no VIP status"
+
+        # Lazy expiration: update status field when expired at query time
+        if client_status.status == 'ACTIVE' and client_status.is_expired:
+            client_status.status = 'EXPIRED'
+            client_status.save(update_fields=['status', 'updated_at'])
+            logger.info(f"VIP status for client {client.id} expired (lazy update in eligibility check)")
 
         if client_status.status != 'ACTIVE':
             return False, f"VIP status is {client_status.status}"

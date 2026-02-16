@@ -694,6 +694,7 @@ def send_overdue_payment_notices():
                     client=client,
                     event=invoice.event,
                     use_async=True,
+                    skip_preference_check=True,
                 )
 
                 # Record the notification
