@@ -13,7 +13,6 @@ import {
   ListItem,
   ListItemButton,
   ListItemText,
-  useMediaQuery,
   alpha,
 } from "@mui/material";
 import { Menu as MenuIcon, Close as CloseIcon } from "@mui/icons-material";
@@ -36,7 +35,6 @@ const navigationItems: NavigationItem[] = [
 ];
 
 export const PublicHeader: React.FC = () => {
-  const isMobile = useMediaQuery("(max-width:1199.95px)");
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -161,62 +159,60 @@ export const PublicHeader: React.FC = () => {
           </Box>
 
           {/* Center Section: Navigation (Desktop) */}
-          {!isMobile && (
-            <Box
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-evenly",
-                flex: 1,
-                minWidth: 0,
-              }}
-            >
-              {navigationItems.map((item) => (
-                <Button
-                  key={item.id}
-                  onClick={() => handleNavigation(item.path)}
-                  sx={{
-                    color: "inherit",
-                    fontWeight: 500,
-                    px: { lg: 1, xl: 1.5 },
-                    py: 1,
-                    borderRadius: 2,
-                    position: "relative",
-                    whiteSpace: "nowrap",
-                    "&:hover": {
+          <Box
+            sx={{
+              display: { xs: "none", lg: "flex" },
+              alignItems: "center",
+              justifyContent: "space-evenly",
+              flex: 1,
+              minWidth: 0,
+            }}
+          >
+            {navigationItems.map((item) => (
+              <Button
+                key={item.id}
+                onClick={() => handleNavigation(item.path)}
+                sx={{
+                  color: "inherit",
+                  fontWeight: 500,
+                  px: { lg: 1, xl: 1.5 },
+                  py: 1,
+                  borderRadius: 2,
+                  position: "relative",
+                  whiteSpace: "nowrap",
+                  "&:hover": {
+                    backgroundColor:
+                      isScrolled || !isHomePage
+                        ? alpha("#ffffff", 0.2)
+                        : alpha(tokens.color.base.sage[500], 0.1),
+                  },
+                  ...(isActivePath(item.path) && {
+                    color:
+                      isScrolled || !isHomePage
+                        ? "#ffffff"
+                        : tokens.color.base.sage[600],
+                    fontWeight: 600,
+                    "&::after": {
+                      content: '""',
+                      position: "absolute",
+                      bottom: 0,
+                      left: "50%",
+                      transform: "translateX(-50%)",
+                      width: 24,
+                      height: 2,
                       backgroundColor:
                         isScrolled || !isHomePage
-                          ? alpha("#ffffff", 0.2)
-                          : alpha(tokens.color.base.sage[500], 0.1),
-                    },
-                    ...(isActivePath(item.path) && {
-                      color:
-                        isScrolled || !isHomePage
                           ? "#ffffff"
-                          : tokens.color.base.sage[600],
-                      fontWeight: 600,
-                      "&::after": {
-                        content: '""',
-                        position: "absolute",
-                        bottom: 0,
-                        left: "50%",
-                        transform: "translateX(-50%)",
-                        width: 24,
-                        height: 2,
-                        backgroundColor:
-                          isScrolled || !isHomePage
-                            ? "#ffffff"
-                            : tokens.color.base.terracotta[500],
-                        borderRadius: 1,
-                      },
-                    }),
-                  }}
-                >
-                  {item.label}
-                </Button>
-              ))}
-            </Box>
-          )}
+                          : tokens.color.base.terracotta[500],
+                      borderRadius: 1,
+                    },
+                  }),
+                }}
+              >
+                {item.label}
+              </Button>
+            ))}
+          </Box>
 
           {/* Right Section: Actions */}
           <Box
@@ -228,11 +224,12 @@ export const PublicHeader: React.FC = () => {
             {/* User Actions */}
             <Box display="flex" alignItems="center" gap={1}>
               {/* Show dashboard link for authenticated users */}
-              {isAuthenticated && !isMobile && (
+              {isAuthenticated && (
                 <Button
                   variant="outlined"
                   onClick={() => navigate("/dashboard")}
                   sx={{
+                    display: { xs: "none", lg: "flex" },
                     borderColor: "currentColor",
                     color: "inherit",
                     "&:hover": {
@@ -249,11 +246,12 @@ export const PublicHeader: React.FC = () => {
               )}
 
               {/* Show login link for unauthenticated users on desktop */}
-              {!isAuthenticated && !isMobile && (
+              {!isAuthenticated && (
                 <Button
                   variant="text"
                   onClick={() => handleNavigation("/login")}
                   sx={{
+                    display: { xs: "none", lg: "flex" },
                     color: "inherit",
                     "&:hover": {
                       backgroundColor:
@@ -294,15 +292,17 @@ export const PublicHeader: React.FC = () => {
             </Box>
 
             {/* Mobile Menu Toggle */}
-            {isMobile && (
-              <IconButton
-                edge="end"
-                onClick={() => setMobileMenuOpen(true)}
-                sx={{ color: "inherit", ml: 1 }}
-              >
-                <MenuIcon />
-              </IconButton>
-            )}
+            <IconButton
+              edge="end"
+              onClick={() => setMobileMenuOpen(true)}
+              sx={{
+                display: { xs: "flex", lg: "none" },
+                color: "inherit",
+                ml: 1,
+              }}
+            >
+              <MenuIcon />
+            </IconButton>
           </Box>
         </Toolbar>
       </AppBar>
