@@ -121,8 +121,6 @@ export const EnhancedContactInfoStep: React.FC<
   }, []);
 
   const [showPassword, setShowPassword] = useState(false);
-  const [emailStrength, setEmailStrength] = useState(0);
-  const [phoneStrength, setPhoneStrength] = useState(0);
   const [signInDialogOpen, setSignInDialogOpen] = useState(false);
 
   // Get fresh auth state for sign-in success handling
@@ -147,9 +145,6 @@ export const EnhancedContactInfoStep: React.FC<
             ...prev,
             email: isValid ? "valid" : "invalid",
           }));
-          setEmailStrength(
-            isValid ? ((value as string).includes(".com") ? 100 : 80) : 0,
-          );
           if (isValid) {
             announceToScreenReader("Email address is valid");
           }
@@ -165,7 +160,6 @@ export const EnhancedContactInfoStep: React.FC<
             ...prev,
             phone: isValid ? "valid" : "invalid",
           }));
-          setPhoneStrength(isValid ? 100 : 0);
           if (isValid) {
             announceToScreenReader("Phone number is valid");
           }
@@ -212,43 +206,6 @@ export const EnhancedContactInfoStep: React.FC<
     }
   };
 
-  const getFieldStrength = (field: "email" | "phone") => {
-    const strength = field === "email" ? emailStrength : phoneStrength;
-    if (strength === 0) return null;
-
-    return (
-      <Box sx={{ display: "flex", alignItems: "center", gap: 1, mt: 1 }}>
-        <Box
-          sx={{
-            flex: 1,
-            height: 4,
-            backgroundColor: alpha("#fff", 0.2),
-            borderRadius: 2,
-          }}
-        >
-          <Box
-            sx={{
-              height: "100%",
-              width: `${strength}%`,
-              backgroundColor:
-                strength > 80
-                  ? theme.palette.success.main
-                  : theme.palette.warning.main,
-              borderRadius: 2,
-              transition: "all 0.3s ease",
-            }}
-          />
-        </Box>
-        <Typography
-          variant="caption"
-          color={strength > 80 ? "success.main" : "warning.main"}
-        >
-          {strength > 80 ? "Strong" : "Good"}
-        </Typography>
-      </Box>
-    );
-  };
-
   // Handle successful sign-in - set flag to trigger form update
   const handleSignInSuccess = useCallback(() => {
     // Set the ref to indicate sign-in just happened
@@ -279,14 +236,12 @@ export const EnhancedContactInfoStep: React.FC<
       // Update validation states for auto-filled fields
       if (newData.email) {
         setValidationState((prev) => ({ ...prev, email: "valid" }));
-        setEmailStrength(100);
       }
       if (newData.full_name && newData.full_name.includes(" ")) {
         setValidationState((prev) => ({ ...prev, full_name: "valid" }));
       }
       if (newData.phone && validatePhoneNumber(newData.phone)) {
         setValidationState((prev) => ({ ...prev, phone: "valid" }));
-        setPhoneStrength(100);
       }
 
       // Announce to screen reader
@@ -565,7 +520,6 @@ export const EnhancedContactInfoStep: React.FC<
                       },
                     }}
                   />
-                  {getFieldStrength("email")}
                 </Box>
 
                 <Box>
@@ -606,7 +560,6 @@ export const EnhancedContactInfoStep: React.FC<
                       },
                     }}
                   />
-                  {getFieldStrength("phone")}
                 </Box>
               </Box>
             </Box>
