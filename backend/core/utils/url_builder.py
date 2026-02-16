@@ -205,7 +205,7 @@ class ClientPortalURLBuilder:
 
     @classmethod
     def accept_invitation_url(cls, invitation_id) -> str:
-        """Admin invitation acceptance page. Route: /accept-invitation/:invitationId"""
+        """Client invitation acceptance page. Route: /accept-invitation/:invitationId"""
         return f"{cls.get_base_url()}/accept-invitation/{invitation_id}"
 
     # ==================== Public/Booking URLs ====================

@@ -691,7 +691,7 @@ class CommunicationContextService:
     @staticmethod
     def _get_admin_invitation_context(admin_invitation, user) -> Dict[str, Any]:
         """Get admin invitation context variables."""
-        frontend_url = getattr(settings, 'CLIENT_FRONTEND_URL', 'https://lifeplace.dev')
+        frontend_url = getattr(settings, 'ADMIN_FRONTEND_URL', 'https://admin.lifeplace.dev')
 
         # Get inviter name
         invited_by = ''
