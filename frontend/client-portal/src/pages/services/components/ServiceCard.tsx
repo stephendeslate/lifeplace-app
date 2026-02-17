@@ -30,9 +30,8 @@ const getGalleryCategoryParam = (name: string): string => {
   const categoryMap: Record<string, string> = {
     Wedding: "weddings",
     "Team Building": "team-building",
-    Retreat: "retreats",
+    "Camps & Retreats": "camps-retreats",
     Workshop: "workshops",
-    Camping: "retreats",
   };
 
   return categoryMap[name] || name.toLowerCase().replace(/\s+/g, "-");

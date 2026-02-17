@@ -3,7 +3,7 @@
 import React from "react";
 import { Box, Typography, Stack } from "@mui/material";
 import { styled } from "@mui/material/styles";
-import { Favorite, Groups, Spa, Nature } from "@mui/icons-material";
+import { Favorite, Groups, Nature } from "@mui/icons-material";
 import {
   Section,
   Container,
@@ -104,17 +104,10 @@ export const ServicesSection: React.FC = () => {
       ),
     },
     {
-      id: "retreats",
-      title: "Retreats",
+      id: "camps-retreats",
+      title: "Camps & Retreats",
       description:
-        "Connect with others and find spiritual renewal in our tranquil retreat setting.",
-      icon: <Spa sx={{ fontSize: 48, color: tokens.color.base.olive[500] }} />,
-    },
-    {
-      id: "camping",
-      title: "Camping",
-      description:
-        "Experience nature and community in our safe and comfortable camping facilities.",
+        "Experience nature, community, and spiritual renewal in our spacious grounds and comfortable facilities.",
       icon: (
         <Nature sx={{ fontSize: 48, color: tokens.color.base.sage[500] }} />
       ),
