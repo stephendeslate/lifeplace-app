@@ -37,6 +37,16 @@ backend/staticfiles/
 coverage/
 **/coverage/
 *.lcov
+.coverage
+
+# Log files
+*.log
+
+# Test artifacts
+backend/test_message.json
+
+# Build artifacts
+*.tar.gz
 
 # Export scripts and output
 export_files.py
