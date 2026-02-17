@@ -58,17 +58,6 @@ jobs:
         cd backend
         pip install -r requirements.txt
 
-    - name: Run Django tests
-      env:
-        DATABASE_URL: postgres://test_user:test_password@localhost:5432/test_db
-        SECRET_KEY: test-secret-key-for-ci
-        DEBUG: False
-        ENV: test
-      run: |
-        cd backend
-        python manage.py migrate
-        python manage.py test
-
     - name: Run Django system checks
       env:
         DATABASE_URL: postgres://test_user:test_password@localhost:5432/test_db
@@ -77,7 +66,18 @@ jobs:
         ENV: test
       run: |
         cd backend
+        python manage.py migrate
         python manage.py check
+
+    - name: Run tests
+      env:
+        DATABASE_URL: postgres://test_user:test_password@localhost:5432/test_db
+        SECRET_KEY: test-secret-key-for-ci
+        DEBUG: False
+        ENV: test
+      run: |
+        cd backend
+        pytest
 
   # Job 2a: Test Admin CRM
   test-admin-crm:
