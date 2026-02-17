@@ -363,7 +363,7 @@ jobs:
     - name: Deploy to Fly.io
       run: |
         cd backend
-        flyctl deploy --remote-only
+        flyctl deploy --remote-only --release-command-timeout=600
         # Note: Migrations run automatically via release_command in fly.toml
 
     - name: Verify deployment health
