@@ -33,9 +33,11 @@ class WorkflowTemplateViewSet(viewsets.ModelViewSet):
     ViewSet for workflow templates
     """
     permission_classes = [IsAdmin]
-    filter_backends = [filters.SearchFilter]
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
     search_fields = ['name', 'description']
-    
+    ordering_fields = ['name', 'created_at', 'updated_at']
+    ordering = ['-created_at']
+
     def get_queryset(self):
         event_type_id = self.request.query_params.get('event_type', None)
         is_active = self.request.query_params.get('is_active', None)

@@ -49,8 +49,10 @@ class QuestionnaireViewSet(viewsets.ModelViewSet):
     - for_event: Admin and Client (with ownership check for clients)
     - Analytics endpoints: Admin only
     """
-    filter_backends = [filters.SearchFilter]
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
     search_fields = ['name']
+    ordering_fields = ['name', 'order', 'created_at', 'updated_at']
+    ordering = ['-created_at']
 
     def get_permissions(self):
         """

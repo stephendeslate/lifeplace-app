@@ -1,6 +1,6 @@
 // frontend/admin-crm/src/apis/vip.api.ts
 
-import api from '../utils/api';
+import api from "../utils/api";
 import type {
   VIPSettings,
   UpdateVIPSettingsData,
@@ -20,7 +20,17 @@ import type {
   AwardPointsPayload,
   AdjustPointsPayload,
   AwardPointsResponse,
-} from '../types/vip.types';
+} from "../types/vip.types";
+import type {
+  PaginatedResponse,
+  PaginationParams,
+} from "../types/common.types";
+
+export interface VIPTierQueryParams extends PaginationParams {
+  search?: string;
+  ordering?: string;
+  is_active?: boolean;
+}
 
 export const vipApi = {
   // ============================================
@@ -28,12 +38,12 @@ export const vipApi = {
   // ============================================
 
   getSettings: async (): Promise<VIPSettings> => {
-    const response = await api.get<VIPSettings>('/vip/settings/');
+    const response = await api.get<VIPSettings>("/vip/settings/");
     return response.data;
   },
 
   updateSettings: async (data: UpdateVIPSettingsData): Promise<VIPSettings> => {
-    const response = await api.patch<VIPSettings>('/vip/settings/', data);
+    const response = await api.patch<VIPSettings>("/vip/settings/", data);
     return response.data;
   },
 
@@ -41,18 +51,28 @@ export const vipApi = {
   // VIP Tiers
   // ============================================
 
-  getTiers: async (filters?: { is_active?: boolean }): Promise<VIPTier[]> => {
-    const params = new URLSearchParams();
-    if (filters?.is_active !== undefined) {
-      params.append('is_active', filters.is_active.toString());
-    }
-    const response = await api.get<VIPTier[] | { results: VIPTier[] }>(`/vip/tiers/?${params.toString()}`);
-    const data = response.data;
-    return Array.isArray(data) ? data : data.results || [];
+  getTiers: async (
+    params?: VIPTierQueryParams,
+  ): Promise<PaginatedResponse<VIPTier>> => {
+    const searchParams = new URLSearchParams();
+    if (params?.search) searchParams.append("search", params.search);
+    if (params?.is_active !== undefined)
+      searchParams.append("is_active", params.is_active.toString());
+    if (params?.page) searchParams.append("page", params.page.toString());
+    if (params?.page_size)
+      searchParams.append("page_size", params.page_size.toString());
+    if (params?.ordering) searchParams.append("ordering", params.ordering);
+
+    const response = await api.get<PaginatedResponse<VIPTier>>(
+      `/vip/tiers/?${searchParams.toString()}`,
+    );
+    return response.data;
   },
 
   getActiveTiers: async (): Promise<VIPTierListItem[]> => {
-    const response = await api.get<VIPTierListItem[] | { results: VIPTierListItem[] }>('/vip/tiers/active/');
+    const response = await api.get<
+      VIPTierListItem[] | { results: VIPTierListItem[] }
+    >("/vip/tiers/active/");
     const data = response.data;
     return Array.isArray(data) ? data : data.results || [];
   },
@@ -63,7 +83,7 @@ export const vipApi = {
   },
 
   createTier: async (data: CreateVIPTierData): Promise<VIPTier> => {
-    const response = await api.post<VIPTier>('/vip/tiers/', data);
+    const response = await api.post<VIPTier>("/vip/tiers/", data);
     return response.data;
   },
 
@@ -87,11 +107,16 @@ export const vipApi = {
     is_active?: boolean;
   }): Promise<VIPBenefit[]> => {
     const params = new URLSearchParams();
-    if (filters?.tier) params.append('tier', filters.tier.toString());
-    if (filters?.benefit_type) params.append('benefit_type', filters.benefit_type);
-    if (filters?.application_mode) params.append('application_mode', filters.application_mode);
-    if (filters?.is_active !== undefined) params.append('is_active', filters.is_active.toString());
-    const response = await api.get<VIPBenefit[] | { results: VIPBenefit[] }>(`/vip/benefits/?${params.toString()}`);
+    if (filters?.tier) params.append("tier", filters.tier.toString());
+    if (filters?.benefit_type)
+      params.append("benefit_type", filters.benefit_type);
+    if (filters?.application_mode)
+      params.append("application_mode", filters.application_mode);
+    if (filters?.is_active !== undefined)
+      params.append("is_active", filters.is_active.toString());
+    const response = await api.get<VIPBenefit[] | { results: VIPBenefit[] }>(
+      `/vip/benefits/?${params.toString()}`,
+    );
     const data = response.data;
     return Array.isArray(data) ? data : data.results || [];
   },
@@ -102,11 +127,14 @@ export const vipApi = {
   },
 
   createBenefit: async (data: CreateVIPBenefitData): Promise<VIPBenefit> => {
-    const response = await api.post<VIPBenefit>('/vip/benefits/', data);
+    const response = await api.post<VIPBenefit>("/vip/benefits/", data);
     return response.data;
   },
 
-  updateBenefit: async (id: number, data: UpdateVIPBenefitData): Promise<VIPBenefit> => {
+  updateBenefit: async (
+    id: number,
+    data: UpdateVIPBenefitData,
+  ): Promise<VIPBenefit> => {
     const response = await api.patch<VIPBenefit>(`/vip/benefits/${id}/`, data);
     return response.data;
   },
@@ -116,7 +144,9 @@ export const vipApi = {
   },
 
   getBenefitTypes: async (): Promise<BenefitTypeOption[]> => {
-    const response = await api.get<BenefitTypeOption[] | { results: BenefitTypeOption[] }>('/vip/benefits/benefit_types/');
+    const response = await api.get<
+      BenefitTypeOption[] | { results: BenefitTypeOption[] }
+    >("/vip/benefits/benefit_types/");
     const data = response.data;
     return Array.isArray(data) ? data : data.results || [];
   },
@@ -132,56 +162,73 @@ export const vipApi = {
     client?: number;
   }): Promise<ClientVIPStatusListItem[]> => {
     const params = new URLSearchParams();
-    if (filters?.tier) params.append('tier', filters.tier.toString());
-    if (filters?.status) params.append('status', filters.status);
-    if (filters?.search) params.append('search', filters.search);
-    if (filters?.client) params.append('client', filters.client.toString());
-    const response = await api.get<ClientVIPStatusListItem[] | { results: ClientVIPStatusListItem[] }>(`/vip/client-status/?${params.toString()}`);
+    if (filters?.tier) params.append("tier", filters.tier.toString());
+    if (filters?.status) params.append("status", filters.status);
+    if (filters?.search) params.append("search", filters.search);
+    if (filters?.client) params.append("client", filters.client.toString());
+    const response = await api.get<
+      ClientVIPStatusListItem[] | { results: ClientVIPStatusListItem[] }
+    >(`/vip/client-status/?${params.toString()}`);
     const data = response.data;
     return Array.isArray(data) ? data : data.results || [];
   },
 
   getClientStatus: async (id: number): Promise<ClientVIPStatus> => {
-    const response = await api.get<ClientVIPStatus>(`/vip/client-status/${id}/`);
+    const response = await api.get<ClientVIPStatus>(
+      `/vip/client-status/${id}/`,
+    );
     return response.data;
   },
 
-  assignTier: async (clientStatusId: number, data: AssignTierPayload): Promise<ClientVIPStatus> => {
+  assignTier: async (
+    clientStatusId: number,
+    data: AssignTierPayload,
+  ): Promise<ClientVIPStatus> => {
     const response = await api.post<ClientVIPStatus>(
       `/vip/client-status/${clientStatusId}/assign_tier/`,
-      data
+      data,
     );
     return response.data;
   },
 
-  awardPoints: async (clientStatusId: number, data: AwardPointsPayload): Promise<AwardPointsResponse> => {
+  awardPoints: async (
+    clientStatusId: number,
+    data: AwardPointsPayload,
+  ): Promise<AwardPointsResponse> => {
     const response = await api.post<AwardPointsResponse>(
       `/vip/client-status/${clientStatusId}/award_points/`,
-      data
+      data,
     );
     return response.data;
   },
 
-  adjustPoints: async (clientStatusId: number, data: AdjustPointsPayload): Promise<AwardPointsResponse> => {
+  adjustPoints: async (
+    clientStatusId: number,
+    data: AdjustPointsPayload,
+  ): Promise<AwardPointsResponse> => {
     const response = await api.post<AwardPointsResponse>(
       `/vip/client-status/${clientStatusId}/adjust_points/`,
-      data
+      data,
     );
     return response.data;
   },
 
-  getClientTierHistory: async (clientStatusId: number): Promise<VIPTierHistory[]> => {
-    const response = await api.get<VIPTierHistory[] | { results: VIPTierHistory[] }>(
-      `/vip/client-status/${clientStatusId}/tier_history/`
-    );
+  getClientTierHistory: async (
+    clientStatusId: number,
+  ): Promise<VIPTierHistory[]> => {
+    const response = await api.get<
+      VIPTierHistory[] | { results: VIPTierHistory[] }
+    >(`/vip/client-status/${clientStatusId}/tier_history/`);
     const data = response.data;
     return Array.isArray(data) ? data : data.results || [];
   },
 
-  getClientPointTransactions: async (clientStatusId: number): Promise<VIPPointTransaction[]> => {
-    const response = await api.get<VIPPointTransaction[] | { results: VIPPointTransaction[] }>(
-      `/vip/client-status/${clientStatusId}/point_transactions/`
-    );
+  getClientPointTransactions: async (
+    clientStatusId: number,
+  ): Promise<VIPPointTransaction[]> => {
+    const response = await api.get<
+      VIPPointTransaction[] | { results: VIPPointTransaction[] }
+    >(`/vip/client-status/${clientStatusId}/point_transactions/`);
     const data = response.data;
     return Array.isArray(data) ? data : data.results || [];
   },
@@ -195,9 +242,12 @@ export const vipApi = {
     transaction_type?: string;
   }): Promise<VIPPointTransaction[]> => {
     const params = new URLSearchParams();
-    if (filters?.client) params.append('client', filters.client.toString());
-    if (filters?.transaction_type) params.append('transaction_type', filters.transaction_type);
-    const response = await api.get<VIPPointTransaction[] | { results: VIPPointTransaction[] }>(`/vip/point-transactions/?${params.toString()}`);
+    if (filters?.client) params.append("client", filters.client.toString());
+    if (filters?.transaction_type)
+      params.append("transaction_type", filters.transaction_type);
+    const response = await api.get<
+      VIPPointTransaction[] | { results: VIPPointTransaction[] }
+    >(`/vip/point-transactions/?${params.toString()}`);
     const data = response.data;
     return Array.isArray(data) ? data : data.results || [];
   },

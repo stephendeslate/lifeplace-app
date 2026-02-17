@@ -13,6 +13,17 @@ import type {
   VariableSchemas,
   CommunicationFilters,
 } from "../types/communications.types";
+import type {
+  PaginatedResponse,
+  PaginationParams,
+} from "../types/common.types";
+
+export interface CommunicationTemplateQueryParams extends PaginationParams {
+  search?: string;
+  channel?: string;
+  category?: string;
+  ordering?: string;
+}
 
 // Enhanced interface for manual message sending
 export interface ManualSendData {
@@ -34,20 +45,21 @@ export interface ManualPreviewData extends PreviewData {
 export const communicationsApi = {
   // Templates
   getTemplates: async (
-    filters?: CommunicationFilters,
-  ): Promise<CommunicationTemplate[]> => {
-    const params = new URLSearchParams();
-    if (filters?.category) params.append("category", filters.category);
-    if (filters?.channel) params.append("channel", filters.channel);
-    if (filters?.search) params.append("search", filters.search);
+    params?: CommunicationTemplateQueryParams,
+  ): Promise<PaginatedResponse<CommunicationTemplate>> => {
+    const searchParams = new URLSearchParams();
+    if (params?.search) searchParams.append("search", params.search);
+    if (params?.category) searchParams.append("category", params.category);
+    if (params?.channel) searchParams.append("channel", params.channel);
+    if (params?.page) searchParams.append("page", params.page.toString());
+    if (params?.page_size)
+      searchParams.append("page_size", params.page_size.toString());
+    if (params?.ordering) searchParams.append("ordering", params.ordering);
 
-    const response = await api.get(
-      `/communications/templates/?${params.toString()}`,
+    const response = await api.get<PaginatedResponse<CommunicationTemplate>>(
+      `/communications/templates/?${searchParams.toString()}`,
     );
-    const data = response.data as
-      | { results?: CommunicationTemplate[] }
-      | CommunicationTemplate[];
-    return (Array.isArray(data) ? data : data.results) || [];
+    return response.data;
   },
 
   getTemplate: async (id: number): Promise<CommunicationTemplate> => {

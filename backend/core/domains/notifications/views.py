@@ -2,7 +2,7 @@
 from core.utils.permissions import IsAdmin, IsAdminOrClient
 from django.contrib.auth import get_user_model
 from django.utils import timezone
-from rest_framework import status, viewsets
+from rest_framework import filters, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -419,7 +419,11 @@ class NotificationTypeViewSet(viewsets.ModelViewSet):
     queryset = NotificationType.objects.all()
     serializer_class = NotificationTypeSerializer
     permission_classes = [IsAuthenticated, IsAdmin]
-    
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ['name']
+    ordering_fields = ['name', 'category', 'created_at']
+    ordering = ['name']
+
     def get_queryset(self):
         """Filter notification types based on query parameters"""
         queryset = super().get_queryset()

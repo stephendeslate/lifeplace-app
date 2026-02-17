@@ -14,3 +14,13 @@ export interface PaginationParams {
   page?: number;
   page_size?: number;
 }
+
+export interface ServerPaginationConfig {
+  totalCount: number;
+  currentPage: number; // 0-indexed (MUI convention)
+  pageSize: number;
+  pageCount: number;
+  onPageChange: (page: number) => void;
+  onPageSizeChange: (pageSize: number) => void;
+  rowsPerPageOptions?: number[];
+}

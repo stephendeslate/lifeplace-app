@@ -16,12 +16,24 @@ import type {
   DevicePushToken,
   TestPushData,
 } from "../types/notifications.types";
+import type {
+  PaginatedResponse,
+  PaginationParams,
+} from "../types/common.types";
 
-interface PaginatedResponse<T> {
+interface LegacyPaginatedResponse<T> {
   count: number;
   next: string | null;
   previous: string | null;
   results: T[];
+}
+
+export interface NotificationTypeQueryParams extends PaginationParams {
+  search?: string;
+  category?: string;
+  is_active?: boolean;
+  is_system?: boolean;
+  ordering?: string;
 }
 
 export const notificationsApi = {
@@ -40,7 +52,7 @@ export const notificationsApi = {
     if (filters?.user_id) params.append("user_id", filters.user_id.toString());
     if (filters?.limit) params.append("limit", filters.limit.toString());
 
-    const response = await api.get<PaginatedResponse<Notification>>(
+    const response = await api.get<LegacyPaginatedResponse<Notification>>(
       `/notifications/notifications/?${params.toString()}`,
     );
     return response.data.results;
@@ -144,22 +156,25 @@ export const notificationsApi = {
   /**
    * Notification Types
    */
-  getNotificationTypes: async (filters?: {
-    category?: string;
-    is_active?: boolean;
-    is_system?: boolean;
-  }): Promise<NotificationType[]> => {
-    const params = new URLSearchParams();
-    if (filters?.category) params.append("category", filters.category);
-    if (filters?.is_active !== undefined)
-      params.append("is_active", filters.is_active.toString());
-    if (filters?.is_system !== undefined)
-      params.append("is_system", filters.is_system.toString());
+  getNotificationTypes: async (
+    params?: NotificationTypeQueryParams,
+  ): Promise<PaginatedResponse<NotificationType>> => {
+    const searchParams = new URLSearchParams();
+    if (params?.search) searchParams.append("search", params.search);
+    if (params?.category) searchParams.append("category", params.category);
+    if (params?.is_active !== undefined)
+      searchParams.append("is_active", params.is_active.toString());
+    if (params?.is_system !== undefined)
+      searchParams.append("is_system", params.is_system.toString());
+    if (params?.page) searchParams.append("page", params.page.toString());
+    if (params?.page_size)
+      searchParams.append("page_size", params.page_size.toString());
+    if (params?.ordering) searchParams.append("ordering", params.ordering);
 
     const response = await api.get<PaginatedResponse<NotificationType>>(
-      `/notifications/types/?${params.toString()}`,
+      `/notifications/types/?${searchParams.toString()}`,
     );
-    return response.data.results;
+    return response.data;
   },
 
   getNotificationType: async (id: number): Promise<NotificationType> => {
@@ -258,9 +273,9 @@ export const notificationsApi = {
     const params = new URLSearchParams();
     if (userId) params.append("user_id", userId.toString());
 
-    const response = await api.get<PaginatedResponse<NotificationPreference>>(
-      `/notifications/preferences/?${params.toString()}`,
-    );
+    const response = await api.get<
+      LegacyPaginatedResponse<NotificationPreference>
+    >(`/notifications/preferences/?${params.toString()}`);
     return response.data.results;
   },
 

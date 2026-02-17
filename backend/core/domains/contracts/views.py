@@ -47,15 +47,16 @@ class ContractTemplateViewSet(viewsets.ModelViewSet):
     ViewSet for contract templates
     """
     permission_classes = [IsAdmin]
-    filter_backends = [filters.SearchFilter]
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
     search_fields = ['name', 'description']
-    
+    ordering_fields = ['name', 'created_at', 'updated_at']
+    ordering = ['-created_at']
+
     def get_queryset(self):
         event_type_id = self.request.query_params.get('event_type', None)
-        search = self.request.query_params.get('search', None)
-        
+
         return ContractTemplateService.get_all_templates(
-            search_query=search, 
+            search_query=None,
             event_type_id=event_type_id
         )
     

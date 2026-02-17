@@ -1,24 +1,34 @@
 // frontend/admin-crm/src/hooks/useGallery.ts
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { galleryApi, type GalleryPhotoFilters } from "../apis/gallery.api";
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+  keepPreviousData,
+} from "@tanstack/react-query";
+import { galleryApi, type GalleryPhotoQueryParams } from "../apis/gallery.api";
 import { useToastActions } from "../contexts/ToastContext";
 
-export const useGalleryPhotos = (filters?: GalleryPhotoFilters) => {
+export const useGalleryPhotos = (params?: GalleryPhotoQueryParams) => {
   const { showSuccess, showError } = useToastActions();
   const queryClient = useQueryClient();
 
   // Query
   const {
-    data: galleryPhotos = [],
+    data: paginatedData,
     isLoading: isLoadingGalleryPhotos,
     error: galleryPhotosError,
     refetch: refetchGalleryPhotos,
   } = useQuery({
-    queryKey: ["gallery-photos", filters],
-    queryFn: () => galleryApi.getGalleryPhotos(filters),
+    queryKey: ["gallery-photos", params],
+    queryFn: () => galleryApi.getGalleryPhotos(params),
     staleTime: 5 * 60 * 1000,
+    placeholderData: keepPreviousData,
   });
+
+  const galleryPhotos = paginatedData?.results || [];
+  const totalCount = paginatedData?.count || 0;
+  const pageCount = paginatedData?.page_count || 1;
 
   // Create mutation
   const createGalleryPhotoMutation = useMutation({
@@ -116,6 +126,8 @@ export const useGalleryPhotos = (filters?: GalleryPhotoFilters) => {
   return {
     // Data
     galleryPhotos,
+    totalCount,
+    pageCount,
 
     // Loading states
     isLoadingGalleryPhotos,

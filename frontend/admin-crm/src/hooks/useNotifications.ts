@@ -1,7 +1,15 @@
 // frontend/admin-crm/src/hooks/useNotifications.ts
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { notificationsApi } from "../apis/notifications.api";
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+  keepPreviousData,
+} from "@tanstack/react-query";
+import {
+  notificationsApi,
+  type NotificationTypeQueryParams,
+} from "../apis/notifications.api";
 import { useToastActions } from "../contexts/ToastContext";
 import type {
   NotificationFilters,
@@ -215,25 +223,26 @@ export const useNotifications = (filters?: NotificationFilters) => {
   };
 };
 
-export const useNotificationTypes = (filters?: {
-  category?: string;
-  is_active?: boolean;
-  is_system?: boolean;
-}) => {
+export const useNotificationTypes = (params?: NotificationTypeQueryParams) => {
   const queryClient = useQueryClient();
   const { showSuccess, showError } = useToastActions();
 
   // Queries
   const {
-    data: notificationTypes = [],
+    data: paginatedData,
     isLoading: isLoadingTypes,
     error: typesError,
     refetch: refetchTypes,
   } = useQuery({
-    queryKey: ["notification-types", filters],
-    queryFn: () => notificationsApi.getNotificationTypes(filters),
+    queryKey: ["notification-types", params],
+    queryFn: () => notificationsApi.getNotificationTypes(params),
     staleTime: 10 * 60 * 1000, // 10 minutes
+    placeholderData: keepPreviousData,
   });
+
+  const notificationTypes = paginatedData?.results || [];
+  const totalCount = paginatedData?.count || 0;
+  const pageCount = paginatedData?.page_count || 1;
 
   const useNotificationType = (id: number) => {
     return useQuery({
@@ -320,6 +329,8 @@ export const useNotificationTypes = (filters?: {
   return {
     // Data
     notificationTypes,
+    totalCount,
+    pageCount,
 
     // Loading states
     isLoadingTypes,

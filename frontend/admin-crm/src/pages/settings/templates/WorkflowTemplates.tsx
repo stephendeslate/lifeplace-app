@@ -1,93 +1,109 @@
 // Workflow Templates Settings Page - Standardized Version
 // Migrated to use the unified settings system
 
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
-import { AccountTree as WorkflowIcon, FileCopy as DuplicateIcon } from '@mui/icons-material';
-import { PermissionAwareSettingsPage, type SettingsPageConfig, type SettingsTableColumn } from '../../../components/common/settings';
-import { useWorkflowTemplates } from '../../../hooks/useWorkflows';
-import { useEventTypes } from '../../../hooks/useEvents';
-import type { WorkflowTemplate, CreateWorkflowTemplateData, UpdateWorkflowTemplateData } from '../../../types/workflows.types';
-import type { ModernFormSection } from '../../../components/common/ModernForm';
+import React from "react";
+import { useNavigate } from "react-router-dom";
+import {
+  AccountTree as WorkflowIcon,
+  FileCopy as DuplicateIcon,
+} from "@mui/icons-material";
+import {
+  PermissionAwareSettingsPage,
+  type SettingsPageConfig,
+  type SettingsTableColumn,
+} from "../../../components/common/settings";
+import { useWorkflowTemplates } from "../../../hooks/useWorkflows";
+import { useSettingsPagination } from "../../../hooks/useSettingsPagination";
+import { useEventTypes } from "../../../hooks/useEvents";
+import type {
+  WorkflowTemplate,
+  CreateWorkflowTemplateData,
+  UpdateWorkflowTemplateData,
+} from "../../../types/workflows.types";
+import type { ModernFormSection } from "../../../components/common/ModernForm";
 
 // Table columns configuration
 const columns: SettingsTableColumn<WorkflowTemplate>[] = [
   {
-    key: 'name',
-    label: 'Workflow Name',
+    key: "name",
+    label: "Workflow Name",
     sortable: true,
     searchable: true,
   },
   {
-    key: 'event_type_name',
-    label: 'Event Type',
+    key: "event_type_name",
+    label: "Event Type",
     render: (value) => {
-      const eventTypeName = value as WorkflowTemplate['event_type_name'];
-      return eventTypeName || 'Any Event Type';
+      const eventTypeName = value as WorkflowTemplate["event_type_name"];
+      return eventTypeName || "Any Event Type";
     },
   },
   {
-    key: 'stages_count',
-    label: 'Stages',
-    align: 'center',
+    key: "stages_count",
+    label: "Stages",
+    align: "center",
     render: (value) => String(value || 0),
   },
   {
-    key: 'is_active',
-    label: 'Status',
-    align: 'center',
-    render: (value) => value ? 'Active' : 'Inactive',
+    key: "is_active",
+    label: "Status",
+    align: "center",
+    render: (value) => (value ? "Active" : "Inactive"),
   },
   {
-    key: 'updated_at',
-    label: 'Last Modified',
+    key: "updated_at",
+    label: "Last Modified",
     sortable: true,
-    render: (value) => value ? new Date(String(value)).toLocaleDateString() : '-',
+    render: (value) =>
+      value ? new Date(String(value)).toLocaleDateString() : "-",
   },
 ];
 
 // Create form sections dynamically with event types
-const createFormSections = (eventTypes: Array<{ id: number; name: string }>): ModernFormSection[] => [
+const createFormSections = (
+  eventTypes: Array<{ id: number; name: string }>,
+): ModernFormSection[] => [
   {
-    title: 'Basic Information',
+    title: "Basic Information",
     fields: [
       {
-        name: 'name',
-        label: 'Workflow Name',
-        type: 'text',
+        name: "name",
+        label: "Workflow Name",
+        type: "text",
         required: true,
-        placeholder: 'e.g., Wedding Photography Workflow',
-        helperText: 'A descriptive name for this workflow template',
+        placeholder: "e.g., Wedding Photography Workflow",
+        helperText: "A descriptive name for this workflow template",
       },
       {
-        name: 'description',
-        label: 'Description',
-        type: 'textarea',
+        name: "description",
+        label: "Description",
+        type: "textarea",
         multiline: true,
         rows: 3,
-        placeholder: 'Describe the purpose and scope of this workflow...',
-        helperText: 'Optional description for internal reference',
+        placeholder: "Describe the purpose and scope of this workflow...",
+        helperText: "Optional description for internal reference",
       },
       {
-        name: 'event_type',
-        label: 'Event Type',
-        type: 'select',
-        helperText: 'Leave empty to use for any event type',
+        name: "event_type",
+        label: "Event Type",
+        type: "select",
+        helperText: "Leave empty to use for any event type",
         options: [
-          { value: '', label: 'Any Event Type' },
-          ...eventTypes.map(et => ({ value: et.id, label: et.name })),
+          { value: "", label: "Any Event Type" },
+          ...eventTypes.map((et) => ({ value: et.id, label: et.name })),
         ],
       },
     ],
   },
   {
-    title: 'Settings',
+    title: "Settings",
     fields: [
       {
-        name: 'is_active',
-        label: 'Active',
-        type: 'switch',
-        helperText: 'Active workflows are available for selection when creating events',
+        name: "is_active",
+        label: "Active",
+        type: "switch",
+        helperText:
+          "Active workflows are available for selection when creating events",
       },
     ],
   },
@@ -96,25 +112,28 @@ const createFormSections = (eventTypes: Array<{ id: number; name: string }>): Mo
 // Default values for new workflow templates
 const defaultWorkflowTemplate: WorkflowTemplate = {
   id: 0,
-  name: '',
-  description: '',
+  name: "",
+  description: "",
   event_type: null,
-  event_type_name: '',
+  event_type_name: "",
   is_active: true,
   lead_stage_auto_stop: false,
   stages_count: 0,
   events_using_count: 0,
   stages: [],
-  created_at: '',
-  updated_at: '',
+  created_at: "",
+  updated_at: "",
 };
 
 export const WorkflowTemplates = () => {
   const navigate = useNavigate();
-  
+  const paginationState = useSettingsPagination({ defaultPageSize: 25 });
+
   // Get workflows
   const {
     templates = [],
+    totalCount,
+    pageCount,
     isLoadingTemplates,
     templatesError,
     createTemplate,
@@ -126,7 +145,12 @@ export const WorkflowTemplates = () => {
     isUpdatingTemplate,
     isDeletingTemplate,
     isDuplicatingTemplate,
-  } = useWorkflowTemplates();
+  } = useWorkflowTemplates({
+    page: paginationState.page,
+    page_size: paginationState.pageSize,
+    search: paginationState.search || undefined,
+    ordering: paginationState.ordering || undefined,
+  });
 
   // Get event types for the form dropdown
   const { eventTypes = [] } = useEventTypes();
@@ -134,32 +158,34 @@ export const WorkflowTemplates = () => {
   // Settings page configuration
   const config: SettingsPageConfig<WorkflowTemplate> = {
     page: {
-      title: 'Workflow Templates',
-      subtitle: 'Manage workflow templates to standardize your event processes',
+      title: "Workflow Templates",
+      subtitle: "Manage workflow templates to standardize your event processes",
       icon: React.createElement(WorkflowIcon),
       breadcrumbs: [
-        { label: 'Settings', href: '/settings' },
-        { label: 'Templates', href: '/settings/templates' },
-        { label: 'Workflow Templates' },
+        { label: "Settings", href: "/settings" },
+        { label: "Templates", href: "/settings/templates" },
+        { label: "Workflow Templates" },
       ],
     },
 
     table: {
       columns,
-      searchFields: ['name', 'description'],
-      defaultSort: { key: 'name', order: 'asc' },
+      searchFields: ["name", "description"],
+      defaultSort: { key: "name", order: "asc" },
       emptyState: {
         icon: React.createElement(WorkflowIcon),
-        title: 'No Workflow Templates Found',
-        description: 'Create your first workflow template to standardize your event processes.',
+        title: "No Workflow Templates Found",
+        description:
+          "Create your first workflow template to standardize your event processes.",
       },
     },
 
     form: {
-      title: 'Workflow Template',
-      subtitle: 'Configure workflow settings. Stages can be managed after creation.',
+      title: "Workflow Template",
+      subtitle:
+        "Configure workflow settings. Stages can be managed after creation.",
       sections: createFormSections(eventTypes),
-      maxWidth: 'lg',
+      maxWidth: "lg",
     },
 
     features: {
@@ -200,13 +226,16 @@ export const WorkflowTemplates = () => {
     };
 
     return new Promise<void>((resolve, reject) => {
-      updateTemplate({
-        id: Number(id),
-        data: updateData
-      }, {
-        onSuccess: () => resolve(),
-        onError: reject,
-      });
+      updateTemplate(
+        {
+          id: Number(id),
+          data: updateData,
+        },
+        {
+          onSuccess: () => resolve(),
+          onError: reject,
+        },
+      );
     });
   };
 
@@ -220,8 +249,10 @@ export const WorkflowTemplates = () => {
   };
 
   // Fetch fresh workflow template data before editing to ensure we have the latest values
-  const handleFetchItem = async (id: string | number): Promise<WorkflowTemplate> => {
-    const { workflowsApi } = await import('../../../apis/workflows.api');
+  const handleFetchItem = async (
+    id: string | number,
+  ): Promise<WorkflowTemplate> => {
+    const { workflowsApi } = await import("../../../apis/workflows.api");
     return workflowsApi.getWorkflowTemplate(Number(id));
   };
 
@@ -236,7 +267,7 @@ export const WorkflowTemplates = () => {
   // Custom table actions for duplicate
   const customTableActions = [
     {
-      label: 'Duplicate',
+      label: "Duplicate",
       icon: <DuplicateIcon fontSize="small" />,
       onClick: handleDuplicate,
     },
@@ -245,7 +276,7 @@ export const WorkflowTemplates = () => {
   return (
     <PermissionAwareSettingsPage
       config={config}
-      requiredPermissions={['can_manage_workflows']}
+      requiredPermissions={["can_manage_workflows"]}
       data={templates}
       defaultValues={defaultWorkflowTemplate}
       isLoading={isLoadingTemplates || isDuplicatingTemplate}
@@ -260,6 +291,17 @@ export const WorkflowTemplates = () => {
       isCreating={isCreatingTemplate}
       isUpdating={isUpdatingTemplate}
       isDeleting={isDeletingTemplate}
+      pagination={{
+        totalCount,
+        currentPage: paginationState.currentPage,
+        pageSize: paginationState.pageSize,
+        pageCount,
+        onPageChange: paginationState.onPageChange,
+        onPageSizeChange: paginationState.onPageSizeChange,
+      }}
+      onSearchChange={paginationState.setSearch}
+      onFilterChange={paginationState.setFilters}
+      onSortChange={paginationState.setOrdering}
     />
   );
 };

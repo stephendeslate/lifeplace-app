@@ -2,28 +2,33 @@
 
 import api from "../utils/api";
 import type { GalleryPhoto } from "../types/gallery.types";
-import type { PaginatedResponse } from "../types/common.types";
+import type {
+  PaginatedResponse,
+  PaginationParams,
+} from "../types/common.types";
 
-export interface GalleryPhotoFilters {
+export interface GalleryPhotoQueryParams extends PaginationParams {
   search?: string;
   category?: string;
+  ordering?: string;
 }
 
 export const galleryApi = {
   getGalleryPhotos: async (
-    filters?: GalleryPhotoFilters,
-  ): Promise<GalleryPhoto[]> => {
-    const params = new URLSearchParams();
-    if (filters?.search) params.append("search", filters.search);
-    if (filters?.category) params.append("category", filters.category);
+    params?: GalleryPhotoQueryParams,
+  ): Promise<PaginatedResponse<GalleryPhoto>> => {
+    const searchParams = new URLSearchParams();
+    if (params?.search) searchParams.append("search", params.search);
+    if (params?.category) searchParams.append("category", params.category);
+    if (params?.page) searchParams.append("page", params.page.toString());
+    if (params?.page_size)
+      searchParams.append("page_size", params.page_size.toString());
+    if (params?.ordering) searchParams.append("ordering", params.ordering);
 
-    const response = await api.get(
-      `/venues/gallery-photos/?${params.toString()}`,
+    const response = await api.get<PaginatedResponse<GalleryPhoto>>(
+      `/venues/gallery-photos/?${searchParams.toString()}`,
     );
-    const data = response.data as
-      | PaginatedResponse<GalleryPhoto>
-      | GalleryPhoto[];
-    return Array.isArray(data) ? data : data.results || [];
+    return response.data;
   },
 
   getGalleryPhoto: async (id: number): Promise<GalleryPhoto> => {

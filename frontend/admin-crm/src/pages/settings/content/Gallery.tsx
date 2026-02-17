@@ -13,6 +13,7 @@ import {
   type SettingsTableColumn,
 } from "../../../components/common/settings";
 import { useGalleryPhotos } from "../../../hooks/useGallery";
+import { useSettingsPagination } from "../../../hooks/useSettingsPagination";
 import { GalleryPhotoFormDialog } from "../../../components/gallery/GalleryPhotoFormDialog";
 import { BulkUploadDialog } from "../../../components/gallery/BulkUploadDialog";
 import type { GalleryPhoto } from "../../../types/gallery.types";
@@ -175,9 +176,12 @@ const config: SettingsPageConfig<GalleryPhoto> = {
 
 export const Gallery = () => {
   const [bulkUploadOpen, setBulkUploadOpen] = useState(false);
+  const paginationState = useSettingsPagination({ defaultPageSize: 25 });
 
   const {
     galleryPhotos,
+    totalCount,
+    pageCount,
     isLoadingGalleryPhotos,
     galleryPhotosError,
     createGalleryPhoto,
@@ -189,7 +193,13 @@ export const Gallery = () => {
     isUpdatingGalleryPhoto,
     isDeletingGalleryPhoto,
     isBulkCreatingGalleryPhotos,
-  } = useGalleryPhotos();
+  } = useGalleryPhotos({
+    page: paginationState.page,
+    page_size: paginationState.pageSize,
+    search: paginationState.search || undefined,
+    category: (paginationState.filters.category as string) || undefined,
+    ordering: paginationState.ordering || undefined,
+  });
 
   // Action handlers
   const handleRefresh = () => refetchGalleryPhotos();
@@ -238,6 +248,17 @@ export const Gallery = () => {
         isCreating={isCreatingGalleryPhoto}
         isUpdating={isUpdatingGalleryPhoto}
         isDeleting={isDeletingGalleryPhoto}
+        pagination={{
+          totalCount,
+          currentPage: paginationState.currentPage,
+          pageSize: paginationState.pageSize,
+          pageCount,
+          onPageChange: paginationState.onPageChange,
+          onPageSizeChange: paginationState.onPageSizeChange,
+        }}
+        onSearchChange={paginationState.setSearch}
+        onFilterChange={paginationState.setFilters}
+        onSortChange={paginationState.setOrdering}
         customHeaderActions={[
           {
             icon: React.createElement(UploadIcon),

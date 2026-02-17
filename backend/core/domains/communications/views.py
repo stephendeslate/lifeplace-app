@@ -2,7 +2,7 @@
 from core.utils.permissions import IsAdmin, IsAdminOrClient
 from django.contrib.auth import get_user_model
 from django.db import transaction, models
-from rest_framework import viewsets, status, permissions
+from rest_framework import filters, viewsets, status, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
 import logging
@@ -43,6 +43,10 @@ class EmailLayoutViewSet(viewsets.ModelViewSet):
     queryset = EmailLayout.objects.all().order_by('name')
     serializer_class = EmailLayoutSerializer
     permission_classes = [IsAdmin]
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ['name']
+    ordering_fields = ['name', 'created_at']
+    ordering = ['name']
 
     def get_queryset(self):
         queryset = super().get_queryset()
@@ -224,7 +228,11 @@ class CommunicationTemplateViewSet(viewsets.ModelViewSet):
     """ViewSet for communication templates"""
     queryset = CommunicationTemplate.objects.all().order_by('-updated_at')
     serializer_class = CommunicationTemplateSerializer
-    
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ['name']
+    ordering_fields = ['name', 'channel', 'category', 'updated_at']
+    ordering = ['-updated_at']
+
     def get_permissions(self):
         """
         Instantiates and returns the list of permissions that this view requires.
@@ -251,12 +259,7 @@ class CommunicationTemplateViewSet(viewsets.ModelViewSet):
         channel = self.request.query_params.get('channel')
         if channel:
             queryset = queryset.filter(channel=channel)
-        
-        # Search by name
-        search = self.request.query_params.get('search')
-        if search:
-            queryset = queryset.filter(name__icontains=search)
-        
+
         # If user is a client, only show non-system templates or limit what they can see
         if self.request.user.role == 'CLIENT':
             # Clients can see all templates for preview purposes, but this could be restricted

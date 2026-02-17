@@ -1,7 +1,7 @@
 # backend/core/domains/bookingflow/views/booking_step_views.py
 from core.utils.permissions import IsAdmin
 from django.db import models, transaction
-from rest_framework import status, viewsets
+from rest_framework import filters, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
@@ -41,7 +41,11 @@ class BookingFlowStepViewSet(viewsets.ModelViewSet):
     Availability check step has been removed and integrated into date_time step
     """
     permission_classes = [IsAdmin]
-    
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ['step_type']
+    ordering_fields = ['order', 'step_type']
+    ordering = ['order']
+
     def get_queryset(self):
         flow_id = self.request.query_params.get('flow_id')
         if flow_id:

@@ -2,7 +2,7 @@
 import logging
 
 from django.shortcuts import get_object_or_404
-from rest_framework import viewsets, status
+from rest_framework import filters, viewsets, status
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -79,6 +79,10 @@ class VIPTierViewSet(viewsets.ModelViewSet):
     """ViewSet for VIP tiers. Admin-only access."""
     queryset = VIPTier.objects.all().order_by('level')
     permission_classes = [IsAuthenticated, IsAdmin]
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ['name']
+    ordering_fields = ['name', 'level', 'min_points_required']
+    ordering = ['level']
 
     def get_serializer_class(self):
         if self.action == 'list':

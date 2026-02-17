@@ -1,19 +1,24 @@
 // frontend/admin-crm/src/components/common/settings/SettingsPage.tsx
 
-import { useState, useMemo } from 'react';
-import { Box } from '@mui/material';
-import { Add as AddIcon } from '@mui/icons-material';
-import { 
+import { useState, useMemo } from "react";
+import { Box } from "@mui/material";
+import { Add as AddIcon } from "@mui/icons-material";
+import {
   ModernSettingsLayout,
   ModernPageHeader,
   createAddAction,
   createRefreshAction,
-} from '../';
-import { SettingsTable, type SettingsTableColumn, type SettingsTableFilter } from './SettingsTable';
-import { SettingsFormDialog } from './SettingsFormDialog';
-import { createStandardActions } from '../ModernTable';
-import type { ModernFormSection } from '../ModernForm';
-import type { HeaderAction } from '../ModernPageHeader';
+} from "../";
+import {
+  SettingsTable,
+  type SettingsTableColumn,
+  type SettingsTableFilter,
+} from "./SettingsTable";
+import { SettingsFormDialog } from "./SettingsFormDialog";
+import { createStandardActions } from "../ModernTable";
+import type { ModernFormSection } from "../ModernForm";
+import type { HeaderAction } from "../ModernPageHeader";
+import type { ServerPaginationConfig } from "../../../types/common.types";
 
 export interface SettingsPageConfig<T = Record<string, unknown>> {
   // Page metadata
@@ -24,29 +29,29 @@ export interface SettingsPageConfig<T = Record<string, unknown>> {
     icon: React.ReactNode;
     breadcrumbs?: Array<{ label: string; href?: string }>;
   };
-  
+
   // Table configuration
   table: {
     columns: SettingsTableColumn<T>[];
     searchFields?: (keyof T)[];
     filters?: SettingsTableFilter[];
-    defaultSort?: { key: string; order: 'asc' | 'desc' };
+    defaultSort?: { key: string; order: "asc" | "desc" };
     emptyState?: {
       icon?: React.ReactNode;
       title?: string;
       description?: string;
     };
   };
-  
+
   // Form configuration
   form: {
     title: string;
     subtitle?: string;
     sections: ModernFormSection[];
     validation?: (data: T) => Record<string, string>;
-    maxWidth?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
+    maxWidth?: "xs" | "sm" | "md" | "lg" | "xl";
   };
-  
+
   // Feature flags
   features?: {
     create?: boolean;
@@ -91,7 +96,7 @@ export interface SettingsPageProps<T = Record<string, unknown>> {
     label: string;
     icon: React.ReactNode;
     onClick: (row: T) => void;
-    color?: 'default' | 'primary' | 'secondary' | 'error';
+    color?: "default" | "primary" | "secondary" | "error";
     show?: (row: T) => boolean;
   }>;
 
@@ -108,6 +113,12 @@ export interface SettingsPageProps<T = Record<string, unknown>> {
     item: T | null;
     onSave: () => void;
   }) => React.ReactNode;
+
+  // Server-side pagination (when provided, enables server-side mode)
+  pagination?: ServerPaginationConfig;
+  onSearchChange?: (search: string) => void;
+  onFilterChange?: (filters: Record<string, unknown>) => void;
+  onSortChange?: (ordering: string) => void;
 }
 
 export const SettingsPage = <T extends { id: string | number }>({
@@ -128,12 +139,20 @@ export const SettingsPage = <T extends { id: string | number }>({
   customTableActions = [],
   onRowClick,
   customFormRenderer,
+  pagination,
+  onSearchChange,
+  onFilterChange,
+  onSortChange,
 }: SettingsPageProps<T>) => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<T | null>(null);
   const [_isFetchingItem, setIsFetchingItem] = useState(false);
-  const [sortBy, setSortBy] = useState<string>(config.table.defaultSort?.key || '');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>(config.table.defaultSort?.order || 'asc');
+  const [sortBy, setSortBy] = useState<string>(
+    config.table.defaultSort?.key || "",
+  );
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">(
+    config.table.defaultSort?.order || "asc",
+  );
 
   const features = {
     create: true,
@@ -146,23 +165,37 @@ export const SettingsPage = <T extends { id: string | number }>({
   };
 
   // Calculate stats for header
-  const stats = useMemo(() => [
-    {
-      label: 'Total',
-      value: data.length,
-      color: 'primary' as const,
-    },
-    {
-      label: 'Active',
-      value: data.filter((item: T) => {
-        // Check common active field patterns
-        return (item as { is_active?: boolean }).is_active !== false &&
-               (item as { active?: boolean }).active !== false &&
-               (item as { status?: string }).status !== 'inactive';
-      }).length,
-      color: 'success' as const,
-    },
-  ], [data]);
+  const stats = useMemo(() => {
+    if (pagination) {
+      // Server-side mode: use totalCount from API (cannot compute active from one page)
+      return [
+        {
+          label: "Total",
+          value: pagination.totalCount,
+          color: "primary" as const,
+        },
+      ];
+    }
+    // Client-side mode: compute from full data array
+    return [
+      {
+        label: "Total",
+        value: data.length,
+        color: "primary" as const,
+      },
+      {
+        label: "Active",
+        value: data.filter((item: T) => {
+          return (
+            (item as { is_active?: boolean }).is_active !== false &&
+            (item as { active?: boolean }).active !== false &&
+            (item as { status?: string }).status !== "inactive"
+          );
+        }).length,
+        color: "success" as const,
+      },
+    ];
+  }, [data, pagination]);
 
   // Check if form editing is available (either via handlers or custom renderer)
   const hasFormCapability = Boolean(onCreate || onUpdate || customFormRenderer);
@@ -171,13 +204,14 @@ export const SettingsPage = <T extends { id: string | number }>({
   const headerActions: HeaderAction[] = [
     ...customHeaderActions,
     ...(features.refresh && onRefresh ? [createRefreshAction(onRefresh)] : []),
-    ...(features.create && hasFormCapability ? [createAddAction(
-      `Add ${config.form.title}`,
-      () => {
-        setEditingItem(null);
-        setDialogOpen(true);
-      }
-    )] : []),
+    ...(features.create && hasFormCapability
+      ? [
+          createAddAction(`Add ${config.form.title}`, () => {
+            setEditingItem(null);
+            setDialogOpen(true);
+          }),
+        ]
+      : []),
   ];
 
   // Handle edit click - fetch fresh data if onFetchItem is provided
@@ -192,7 +226,7 @@ export const SettingsPage = <T extends { id: string | number }>({
         setEditingItem(freshItem);
         setDialogOpen(true);
       } catch (err) {
-        console.error('Failed to fetch item for editing:', err);
+        console.error("Failed to fetch item for editing:", err);
         // Fallback to using list data if fetch fails
         setEditingItem(item);
         setDialogOpen(true);
@@ -208,20 +242,27 @@ export const SettingsPage = <T extends { id: string | number }>({
 
   // Table actions
   const tableActions = [
-    ...customTableActions.map(action => ({
+    ...customTableActions.map((action) => ({
       ...action,
       onClick: action.onClick,
     })),
-    ...(features.edit && hasFormCapability ? createStandardActions(
-      handleEditClick,
-      (item: T) => onDelete && onDelete((item as unknown as { id: string | number }).id)
-    ) : []),
+    ...(features.edit && hasFormCapability
+      ? createStandardActions(
+          handleEditClick,
+          (item: T) =>
+            onDelete &&
+            onDelete((item as unknown as { id: string | number }).id),
+        )
+      : []),
   ];
 
   // Form dialog handlers
   const handleFormSubmit = async (formData: T) => {
     if (editingItem && onUpdate) {
-      await onUpdate((editingItem as unknown as { id: string | number }).id, formData);
+      await onUpdate(
+        (editingItem as unknown as { id: string | number }).id,
+        formData,
+      );
     } else if (onCreate) {
       await onCreate(formData);
     }
@@ -234,11 +275,17 @@ export const SettingsPage = <T extends { id: string | number }>({
   };
 
   const handleSort = (column: string) => {
+    let newOrder: "asc" | "desc";
     if (sortBy === column) {
-      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+      newOrder = sortOrder === "asc" ? "desc" : "asc";
+      setSortOrder(newOrder);
     } else {
+      newOrder = "asc";
       setSortBy(column);
-      setSortOrder('asc');
+      setSortOrder(newOrder);
+    }
+    if (onSortChange) {
+      onSortChange(newOrder === "desc" ? `-${column}` : column);
     }
   };
 
@@ -249,8 +296,14 @@ export const SettingsPage = <T extends { id: string | number }>({
         subtitle={config.page.subtitle}
         icon={config.page.icon}
         breadcrumbs={config.page.breadcrumbs}
-        primaryAction={headerActions.length > 0 ? headerActions[headerActions.length - 1] : undefined}
-        secondaryActions={headerActions.length > 1 ? headerActions.slice(0, -1) : []}
+        primaryAction={
+          headerActions.length > 0
+            ? headerActions[headerActions.length - 1]
+            : undefined
+        }
+        secondaryActions={
+          headerActions.length > 1 ? headerActions.slice(0, -1) : []
+        }
         stats={stats}
         size="medium"
       />
@@ -267,25 +320,32 @@ export const SettingsPage = <T extends { id: string | number }>({
           error={error}
           emptyState={{
             ...config.table.emptyState,
-            primaryAction: features.create && hasFormCapability ? {
-              label: `Create ${config.form.title}`,
-              onClick: () => {
-                setEditingItem(null);
-                setDialogOpen(true);
-              },
-              icon: <AddIcon />,
-            } : undefined,
+            primaryAction:
+              features.create && hasFormCapability
+                ? {
+                    label: `Create ${config.form.title}`,
+                    onClick: () => {
+                      setEditingItem(null);
+                      setDialogOpen(true);
+                    },
+                    icon: <AddIcon />,
+                  }
+                : undefined,
           }}
           sortBy={sortBy}
           sortOrder={sortOrder}
           onSort={handleSort}
           onRowClick={onRowClick}
+          pagination={pagination}
+          onSearchChange={onSearchChange}
+          onFilterChange={onFilterChange}
+          serverSideMode={!!pagination}
         />
       </Box>
 
       {/* Form Dialog - use custom renderer if provided, otherwise use default */}
-      {(features.create || features.edit) && (
-        customFormRenderer ? (
+      {(features.create || features.edit) &&
+        (customFormRenderer ? (
           customFormRenderer({
             open: dialogOpen,
             onClose: () => setDialogOpen(false),
@@ -305,15 +365,16 @@ export const SettingsPage = <T extends { id: string | number }>({
             item={editingItem}
             defaultValues={defaultValues}
             onSubmit={handleFormSubmit}
-            onDelete={features.delete && editingItem ? handleFormDelete : undefined}
+            onDelete={
+              features.delete && editingItem ? handleFormDelete : undefined
+            }
             validate={config.form.validation}
             maxWidth={config.form.maxWidth}
             showDelete={features.delete && Boolean(editingItem)}
             isSubmitting={editingItem ? isUpdating : isCreating}
             isDeleting={isDeleting}
           />
-        )
-      )}
+        ))}
     </ModernSettingsLayout>
   );
 };

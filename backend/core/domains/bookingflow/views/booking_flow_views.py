@@ -31,21 +31,22 @@ class BookingFlowViewSet(viewsets.ModelViewSet):
     ViewSet for managing booking flows
     """
     permission_classes = [IsAdmin]
-    filter_backends = [filters.SearchFilter]
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
     search_fields = ['name', 'description']
-    
+    ordering_fields = ['name', 'created_at', 'updated_at']
+    ordering = ['-created_at']
+
     def get_queryset(self):
         try:
             event_type_id = self.request.query_params.get('event_type')
             is_active = self.request.query_params.get('is_active')
-            search = self.request.query_params.get('search')
-            
+
             # Convert string to boolean if provided
             if is_active is not None:
                 is_active = is_active.lower() == 'true'
-            
+
             return BookingFlowService.get_all_flows(
-                search_query=search,
+                search_query=None,
                 event_type_id=event_type_id,
                 is_active=is_active
             )

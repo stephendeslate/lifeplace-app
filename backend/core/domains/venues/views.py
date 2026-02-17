@@ -635,17 +635,16 @@ class GalleryPhotoViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAdmin]
     serializer_class = GalleryPhotoAdminSerializer
     queryset = GalleryPhoto.objects.all().select_related('venue', 'event_type')
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ['title', 'description']
+    ordering_fields = ['title', 'sort_order', 'created_at', 'category']
+    ordering = ['sort_order']
 
     def get_queryset(self):
         qs = super().get_queryset()
         category = self.request.query_params.get('category')
         if category:
             qs = qs.filter(category=category.upper())
-        search = self.request.query_params.get('search')
-        if search:
-            qs = qs.filter(
-                models.Q(title__icontains=search) | models.Q(description__icontains=search)
-            )
         return qs
 
     @action(detail=False, methods=['post'], url_path='bulk-create')

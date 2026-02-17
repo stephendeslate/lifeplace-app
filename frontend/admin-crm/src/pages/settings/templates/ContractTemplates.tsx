@@ -1,111 +1,127 @@
 // Contract Templates Settings Page - Standardized Version
 // Migrated to use the unified settings system with custom form for variable insertion
 
-import React, { useState } from 'react';
-import { Description as ContractIcon, Preview as PreviewIcon } from '@mui/icons-material';
-import { PermissionAwareSettingsPage, type SettingsPageConfig, type SettingsTableColumn } from '../../../components/common/settings';
-import { TemplatePreviewDialog, ModernDialog } from '../../../components/common';
-import { ContractTemplateForm } from '../../../components/contracts';
-import { useContractTemplates, useDeleteContractTemplate } from '../../../hooks/useContracts';
-import { contractsApi } from '../../../apis/contracts.api';
-import type { ContractTemplate } from '../../../types/contracts.types';
-import type { ModernFormSection } from '../../../components/common/ModernForm';
+import React, { useState } from "react";
+import {
+  Description as ContractIcon,
+  Preview as PreviewIcon,
+} from "@mui/icons-material";
+import {
+  PermissionAwareSettingsPage,
+  type SettingsPageConfig,
+  type SettingsTableColumn,
+} from "../../../components/common/settings";
+import {
+  TemplatePreviewDialog,
+  ModernDialog,
+} from "../../../components/common";
+import { ContractTemplateForm } from "../../../components/contracts";
+import {
+  useContractTemplates,
+  useDeleteContractTemplate,
+} from "../../../hooks/useContracts";
+import { useSettingsPagination } from "../../../hooks/useSettingsPagination";
+import { contractsApi } from "../../../apis/contracts.api";
+import type { ContractTemplate } from "../../../types/contracts.types";
+import type { ModernFormSection } from "../../../components/common/ModernForm";
 
 // Table columns configuration
 const columns: SettingsTableColumn<ContractTemplate>[] = [
   {
-    key: 'name',
-    label: 'Template Name',
+    key: "name",
+    label: "Template Name",
     sortable: true,
     searchable: true,
   },
   {
-    key: 'event_type_name',
-    label: 'Event Type',
-    render: (value) => value ? String(value) : 'Any Event Type',
+    key: "event_type_name",
+    label: "Event Type",
+    render: (value) => (value ? String(value) : "Any Event Type"),
   },
   {
-    key: 'requires_signature',
-    label: 'Signature Required',
-    align: 'center',
-    render: (value) => value ? 'Yes' : 'No',
+    key: "requires_signature",
+    label: "Signature Required",
+    align: "center",
+    render: (value) => (value ? "Yes" : "No"),
   },
   {
-    key: 'updated_at',
-    label: 'Last Modified',
+    key: "updated_at",
+    label: "Last Modified",
     sortable: true,
-    render: (value) => value ? new Date(String(value)).toLocaleDateString() : '-',
+    render: (value) =>
+      value ? new Date(String(value)).toLocaleDateString() : "-",
   },
 ];
 
 // Form sections configuration
 const formSections: ModernFormSection[] = [
   {
-    title: 'Basic Information',
+    title: "Basic Information",
     fields: [
       {
-        name: 'name',
-        label: 'Template Name',
-        type: 'text',
+        name: "name",
+        label: "Template Name",
+        type: "text",
         required: true,
-        placeholder: 'e.g., Wedding Photography Contract',
+        placeholder: "e.g., Wedding Photography Contract",
       },
       {
-        name: 'description',
-        label: 'Description',
-        type: 'textarea',
+        name: "description",
+        label: "Description",
+        type: "textarea",
         multiline: true,
         rows: 3,
-        placeholder: 'Describe when this contract template should be used...',
+        placeholder: "Describe when this contract template should be used...",
       },
     ],
   },
   {
-    title: 'Contract Content',
+    title: "Contract Content",
     fields: [
       {
-        name: 'content',
-        label: 'Contract Content',
-        type: 'textarea',
+        name: "content",
+        label: "Contract Content",
+        type: "textarea",
         multiline: true,
         rows: 10,
         required: true,
-        placeholder: 'Enter the contract content here. Use {{variable_name}} for dynamic content...',
+        placeholder:
+          "Enter the contract content here. Use {{variable_name}} for dynamic content...",
       },
     ],
   },
   {
-    title: 'Signature Requirements',
+    title: "Signature Requirements",
     fields: [
       {
-        name: 'requires_signature',
-        label: 'Requires Client Signature',
-        type: 'switch',
+        name: "requires_signature",
+        label: "Requires Client Signature",
+        type: "switch",
       },
       {
-        name: 'requires_company_signature',
-        label: 'Requires Company Signature',
-        type: 'switch',
+        name: "requires_company_signature",
+        label: "Requires Company Signature",
+        type: "switch",
       },
       {
-        name: 'requires_witness',
-        label: 'Requires Witness',
-        type: 'switch',
+        name: "requires_witness",
+        label: "Requires Witness",
+        type: "switch",
       },
     ],
   },
   {
-    title: 'Amendment Settings',
+    title: "Amendment Settings",
     fields: [
       {
-        name: 'allows_amendments',
-        label: 'Allow Amendments',
-        type: 'switch',
+        name: "allows_amendments",
+        label: "Allow Amendments",
+        type: "switch",
       },
       {
-        name: 'amendment_requires_signature',
-        label: 'Amendment Requires Signature',
-        type: 'switch',
+        name: "amendment_requires_signature",
+        label: "Amendment Requires Signature",
+        type: "switch",
       },
     ],
   },
@@ -114,10 +130,10 @@ const formSections: ModernFormSection[] = [
 // Default values for new contract templates
 const defaultContractTemplate: ContractTemplate = {
   id: 0,
-  name: '',
-  description: '',
+  name: "",
+  description: "",
   event_type: null,
-  content: '',
+  content: "",
   variables: [],
   requires_signature: true,
   requires_witness: false,
@@ -127,39 +143,40 @@ const defaultContractTemplate: ContractTemplate = {
   sections: [],
   signature_requirements: [],
   is_active: true,
-  created_at: '',
-  updated_at: '',
+  created_at: "",
+  updated_at: "",
 };
 
 // Settings page configuration
 const config: SettingsPageConfig<ContractTemplate> = {
   page: {
-    title: 'Contract Templates',
-    subtitle: 'Manage contract templates for different event types',
+    title: "Contract Templates",
+    subtitle: "Manage contract templates for different event types",
     icon: React.createElement(ContractIcon),
     breadcrumbs: [
-      { label: 'Settings', href: '/settings' },
-      { label: 'Templates', href: '/settings/templates' },
-      { label: 'Contract Templates' },
+      { label: "Settings", href: "/settings" },
+      { label: "Templates", href: "/settings/templates" },
+      { label: "Contract Templates" },
     ],
   },
 
   table: {
     columns,
-    searchFields: ['name', 'description'],
-    defaultSort: { key: 'name', order: 'asc' },
+    searchFields: ["name", "description"],
+    defaultSort: { key: "name", order: "asc" },
     emptyState: {
       icon: React.createElement(ContractIcon),
-      title: 'No Contract Templates Found',
-      description: 'Create your first contract template to start generating contracts for events.',
+      title: "No Contract Templates Found",
+      description:
+        "Create your first contract template to start generating contracts for events.",
     },
   },
 
   form: {
-    title: 'Contract Template',
-    subtitle: 'Configure the contract template settings and content.',
+    title: "Contract Template",
+    subtitle: "Configure the contract template settings and content.",
     sections: formSections,
-    maxWidth: 'lg',
+    maxWidth: "lg",
   },
 
   features: {
@@ -175,10 +192,26 @@ const config: SettingsPageConfig<ContractTemplate> = {
 export const ContractTemplates = () => {
   // Preview dialog state
   const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
-  const [selectedTemplate, setSelectedTemplate] = useState<ContractTemplate | null>(null);
+  const [selectedTemplate, setSelectedTemplate] =
+    useState<ContractTemplate | null>(null);
+
+  // Pagination state
+  const paginationState = useSettingsPagination({ defaultPageSize: 25 });
 
   // Data hooks
-  const { data: contractTemplates = [], isLoading, error, refetch } = useContractTemplates();
+  const {
+    data: contractTemplates = [],
+    isLoading,
+    error,
+    refetch,
+    totalCount,
+    pageCount,
+  } = useContractTemplates({
+    page: paginationState.page,
+    page_size: paginationState.pageSize,
+    search: paginationState.search || undefined,
+    ordering: paginationState.ordering || undefined,
+  });
 
   // Mutation hooks (only need delete - create/update handled by ContractTemplateForm)
   const deleteMutation = useDeleteContractTemplate();
@@ -189,14 +222,22 @@ export const ContractTemplates = () => {
   const handleDelete = async (id: string | number) => {
     return new Promise<void>((resolve, reject) => {
       deleteMutation.mutate(Number(id), {
-        onSuccess: () => { refetch(); resolve(); },
+        onSuccess: () => {
+          refetch();
+          resolve();
+        },
         onError: reject,
       });
     });
   };
 
   // Custom form renderer that uses ContractTemplateForm with variable insertion
-  const renderCustomForm = ({ open, onClose, item, onSave }: {
+  const renderCustomForm = ({
+    open,
+    onClose,
+    item,
+    onSave,
+  }: {
     open: boolean;
     onClose: () => void;
     item: ContractTemplate | null;
@@ -205,7 +246,7 @@ export const ContractTemplates = () => {
     <ModernDialog
       open={open}
       onClose={onClose}
-      title={item ? 'Edit Contract Template' : 'Create Contract Template'}
+      title={item ? "Edit Contract Template" : "Create Contract Template"}
       maxWidth="lg"
       fullWidth
     >
@@ -223,12 +264,17 @@ export const ContractTemplates = () => {
     setPreviewDialogOpen(true);
   };
 
-  const handlePreviewTemplate = async (contextData: Record<string, unknown>) => {
+  const handlePreviewTemplate = async (
+    contextData: Record<string, unknown>,
+  ) => {
     if (!selectedTemplate) {
-      throw new Error('No template selected');
+      throw new Error("No template selected");
     }
 
-    const result = await contractsApi.previewTemplate(selectedTemplate.id, contextData);
+    const result = await contractsApi.previewTemplate(
+      selectedTemplate.id,
+      contextData,
+    );
     return {
       rendered_content: result.rendered_content,
       template_name: result.template_name,
@@ -239,10 +285,10 @@ export const ContractTemplates = () => {
   // Custom table actions
   const customTableActions = [
     {
-      label: 'Preview',
+      label: "Preview",
       icon: React.createElement(PreviewIcon),
       onClick: (template: ContractTemplate) => handlePreview(template),
-      color: 'primary' as const,
+      color: "primary" as const,
     },
   ];
 
@@ -250,7 +296,7 @@ export const ContractTemplates = () => {
     <>
       <PermissionAwareSettingsPage
         config={config}
-        requiredPermissions={['can_manage_templates']}
+        requiredPermissions={["can_manage_templates"]}
         data={contractTemplates}
         defaultValues={defaultContractTemplate}
         isLoading={isLoading}
@@ -260,6 +306,17 @@ export const ContractTemplates = () => {
         isDeleting={deleteMutation.isPending}
         customTableActions={customTableActions}
         customFormRenderer={renderCustomForm}
+        pagination={{
+          totalCount,
+          currentPage: paginationState.currentPage,
+          pageSize: paginationState.pageSize,
+          pageCount,
+          onPageChange: paginationState.onPageChange,
+          onPageSizeChange: paginationState.onPageSizeChange,
+        }}
+        onSearchChange={paginationState.setSearch}
+        onFilterChange={paginationState.setFilters}
+        onSortChange={paginationState.setOrdering}
       />
 
       {/* Preview Dialog */}

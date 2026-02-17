@@ -20,6 +20,7 @@ import {
   useBookingFlowSteps,
   useBookingFlows,
 } from "../../../hooks/useBookingFlows";
+import { useSettingsPagination } from "../../../hooks/useSettingsPagination";
 import type {
   BookingFlowStep,
   CreateBookingFlowStepData,
@@ -373,6 +374,7 @@ export const BookingFlowSteps: React.FC<BookingFlowStepsProps> = ({
 }) => {
   const { id } = useParams<{ id: string }>();
   const flowId = parseInt(id || "0");
+  const paginationState = useSettingsPagination({ defaultPageSize: 25 });
 
   const [selectedStep, setSelectedStep] = useState<BookingFlowStep | null>(
     null,
@@ -387,6 +389,9 @@ export const BookingFlowSteps: React.FC<BookingFlowStepsProps> = ({
   const { data: flow } = useBookingFlow(flowId);
 
   const {
+    steps,
+    totalCount,
+    pageCount,
     useFlowSteps,
     createStep,
     updateStep,
@@ -397,19 +402,31 @@ export const BookingFlowSteps: React.FC<BookingFlowStepsProps> = ({
     isDeletingStep,
     isMigratingAvailability: _isMigratingAvailability,
     isReorderingSteps,
-  } = useBookingFlowSteps();
+    isLoadingSteps,
+    stepsError,
+    refetchSteps,
+  } = useBookingFlowSteps({
+    flow_id: flowId,
+    page: paginationState.page,
+    page_size: paginationState.pageSize,
+    search: paginationState.search || undefined,
+    ordering: paginationState.ordering || undefined,
+  });
 
-  const {
-    data: steps = [],
-    isLoading: isLoadingSteps,
-    refetch: refetchSteps,
-    error: stepsError,
-  } = useFlowSteps(flowId);
+  // Fetch all steps (non-paginated) for the reorder dialog
+  const { data: allSteps = [], refetch: refetchAllSteps } =
+    useFlowSteps(flowId);
 
   // Sort steps by order (memoized to prevent unnecessary recalculation and reference changes)
   const sortedSteps = useMemo(
     () => [...steps].sort((a, b) => (a.order ?? 0) - (b.order ?? 0)),
     [steps],
+  );
+
+  // All steps sorted for reorder dialog
+  const allSortedSteps = useMemo(
+    () => [...allSteps].sort((a, b) => (a.order ?? 0) - (b.order ?? 0)),
+    [allSteps],
   );
 
   // Check for deprecated steps
@@ -419,8 +436,8 @@ export const BookingFlowSteps: React.FC<BookingFlowStepsProps> = ({
 
   // Handle step creation
   const handleCreate = async (data: BookingFlowStep) => {
-    // Calculate next order based on existing steps (max order + 1)
-    const maxOrder = steps.reduce(
+    // Calculate next order based on all existing steps (max order + 1)
+    const maxOrder = allSteps.reduce(
       (max, step) => Math.max(max, step.order ?? 0),
       0,
     );
@@ -524,7 +541,7 @@ export const BookingFlowSteps: React.FC<BookingFlowStepsProps> = ({
       label: "Reorder Steps",
       icon: <DragIcon />,
       onClick: () => setShowReorder(true),
-      disabled: steps.length <= 1 || isReorderingSteps,
+      disabled: totalCount <= 1 || isReorderingSteps,
       variant: "outlined",
     },
   ];
@@ -646,6 +663,17 @@ export const BookingFlowSteps: React.FC<BookingFlowStepsProps> = ({
           isDeleting={isDeletingStep}
           customHeaderActions={customHeaderActions}
           customTableActions={customTableActions}
+          pagination={{
+            totalCount,
+            currentPage: paginationState.currentPage,
+            pageSize: paginationState.pageSize,
+            pageCount,
+            onPageChange: paginationState.onPageChange,
+            onPageSizeChange: paginationState.onPageSizeChange,
+          }}
+          onSearchChange={paginationState.setSearch}
+          onFilterChange={paginationState.setFilters}
+          onSortChange={paginationState.setOrdering}
         />
       )}
 
@@ -717,9 +745,10 @@ export const BookingFlowSteps: React.FC<BookingFlowStepsProps> = ({
               <ImprovedStepReorderList
                 ref={reorderListRef}
                 flowId={flowId}
-                steps={sortedSteps}
+                steps={allSortedSteps}
                 onReorderComplete={() => {
                   refetchSteps();
+                  refetchAllSteps();
                   setShowReorder(false);
                   setHasReorderChanges(false);
                 }}

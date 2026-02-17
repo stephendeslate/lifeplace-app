@@ -22,6 +22,7 @@ import {
 } from "../../../components/common/settings";
 import { ModernDialog } from "../../../components/common";
 import { useNotificationTypes } from "../../../hooks/useNotifications";
+import { useSettingsPagination } from "../../../hooks/useSettingsPagination";
 import type {
   NotificationType,
   NotificationCategory,
@@ -176,6 +177,16 @@ const config: SettingsPageConfig<NotificationType> = {
   table: {
     columns,
     searchFields: ["name", "code"],
+    filters: [
+      {
+        key: "category",
+        label: "Category",
+        options: NOTIFICATION_CATEGORIES.map((c) => ({
+          value: c.value,
+          label: c.label,
+        })),
+      },
+    ],
     defaultSort: { key: "name", order: "asc" },
     emptyState: {
       icon: React.createElement(NotificationTypeIcon),
@@ -429,9 +440,12 @@ export const NotificationTypes: React.FC = () => {
   const [formData, setFormData] = useState<NotificationType>(
     defaultNotificationType,
   );
+  const paginationState = useSettingsPagination({ defaultPageSize: 25 });
 
   const {
     notificationTypes,
+    totalCount,
+    pageCount,
     isLoadingTypes,
     typesError,
     refetchTypes,
@@ -439,7 +453,13 @@ export const NotificationTypes: React.FC = () => {
     updateType,
     deleteType,
     isDeletingType,
-  } = useNotificationTypes();
+  } = useNotificationTypes({
+    page: paginationState.page,
+    page_size: paginationState.pageSize,
+    search: paginationState.search || undefined,
+    category: (paginationState.filters.category as string) || undefined,
+    ordering: paginationState.ordering || undefined,
+  });
 
   const handleRefresh = () => refetchTypes();
 
@@ -618,6 +638,17 @@ export const NotificationTypes: React.FC = () => {
       isDeleting={isDeletingType}
       customTableActions={customTableActions}
       customFormRenderer={renderCustomForm}
+      pagination={{
+        totalCount,
+        currentPage: paginationState.currentPage,
+        pageSize: paginationState.pageSize,
+        pageCount,
+        onPageChange: paginationState.onPageChange,
+        onPageSizeChange: paginationState.onPageSizeChange,
+      }}
+      onSearchChange={paginationState.setSearch}
+      onFilterChange={paginationState.setFilters}
+      onSortChange={paginationState.setOrdering}
     />
   );
 };

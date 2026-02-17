@@ -1,10 +1,16 @@
 // frontend/admin-crm/src/hooks/useCommunications.ts
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+  keepPreviousData,
+} from "@tanstack/react-query";
 import {
   communicationsApi,
   type ManualSendData,
   type ManualPreviewData,
+  type CommunicationTemplateQueryParams,
 } from "../apis/communications.api";
 import { useToastActions } from "../contexts/ToastContext";
 import type {
@@ -20,11 +26,23 @@ export const useCommunications = () => {
   const { showSuccess, showError } = useToastActions();
 
   // Templates
-  const useTemplates = (filters?: CommunicationFilters) => {
-    return useQuery({
-      queryKey: ["communication-templates", filters],
-      queryFn: () => communicationsApi.getTemplates(filters),
+  const useTemplates = (params?: CommunicationTemplateQueryParams) => {
+    const {
+      data: paginatedData,
+      isLoading,
+      error,
+      refetch,
+    } = useQuery({
+      queryKey: ["communication-templates", params],
+      queryFn: () => communicationsApi.getTemplates(params),
+      placeholderData: keepPreviousData,
     });
+
+    const items = paginatedData?.results || [];
+    const totalCount = paginatedData?.count || 0;
+    const pageCount = paginatedData?.page_count || 1;
+
+    return { data: items, totalCount, pageCount, isLoading, error, refetch };
   };
 
   const useTemplate = (id: number) => {
