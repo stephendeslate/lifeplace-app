@@ -673,7 +673,12 @@ class TestQuoteServiceLineItems:
         assert line_item.total == Decimal('2500.00')
 
     def test_add_line_item_with_product(self, draft_quote, user_factory, product_option, default_tax_rate):
-        """Test adding a line item with a product."""
+        """Test adding a line item with a product.
+
+        PricingCalculationService clamps quantity to 1 when allow_multiple is
+        False (the default).  The description is set by the pricing service
+        based on the product name.
+        """
         user = user_factory(admin=True)
 
         line_item_data = {
@@ -684,8 +689,9 @@ class TestQuoteServiceLineItems:
         line_item = QuoteService.add_line_item(draft_quote.id, line_item_data, user)
 
         assert line_item.product == product_option
-        assert line_item.quantity == 2
-        assert line_item.description == product_option.name
+        # allow_multiple defaults to False, so PricingCalculationService clamps to 1
+        assert line_item.quantity == 1
+        assert product_option.name in line_item.description
 
     def test_add_line_item_to_accepted_quote_raises_error(self, accepted_quote, user_factory):
         """Test adding line item to accepted quote raises error."""

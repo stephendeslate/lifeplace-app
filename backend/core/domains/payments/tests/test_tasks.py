@@ -163,7 +163,7 @@ class TestDetectOrphanedPayments:
         # Manually set created time to 2 hours ago
         from core.domains.payments.models import Payment
         Payment.objects.filter(id=old_payment.id).update(
-            created=timezone.now() - timedelta(hours=2)
+            created_at=timezone.now() - timedelta(hours=2)
         )
 
         result = detect_orphaned_payments()
@@ -184,7 +184,7 @@ class TestDetectOrphanedPayments:
         )
         from core.domains.payments.models import Payment
         Payment.objects.filter(id=old_payment.id).update(
-            created=timezone.now() - timedelta(hours=1)
+            created_at=timezone.now() - timedelta(hours=1)
         )
 
         result = detect_orphaned_payments()
@@ -216,7 +216,7 @@ class TestDetectOrphanedPayments:
         )
         from core.domains.payments.models import Payment
         Payment.objects.filter(id=old_payment.id).update(
-            created=timezone.now() - timedelta(hours=2)
+            created_at=timezone.now() - timedelta(hours=2)
         )
 
         detect_orphaned_payments()
@@ -254,8 +254,8 @@ class TestReconcilePaymentsWithStripe:
             gateway=stripe_gateway,
             transaction_id='pi_test123',
             amount=payment.amount,
-            status='COMPLETED',
-            transaction_type='CHARGE'
+            currency=payment.currency,
+            status='COMPLETED'
         )
 
         mock_retrieve.return_value = MagicMock(status='succeeded')
@@ -279,8 +279,8 @@ class TestReconcilePaymentsWithStripe:
             gateway=stripe_gateway,
             transaction_id='pi_test456',
             amount=payment.amount,
-            status='COMPLETED',  # Local says completed
-            transaction_type='CHARGE'
+            currency=payment.currency,
+            status='COMPLETED'  # Local says completed
         )
 
         # Stripe says it's still processing

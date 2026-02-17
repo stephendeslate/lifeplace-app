@@ -95,14 +95,15 @@ class StripeWebhookTestCase(TestCase):
             payment_method=self.payment_method,
             amount=Decimal('15000.00'),
             currency='PHP',
-            status='PENDING'
+            status='PENDING',
+            due_date=date.today() + timedelta(days=7)
         )
         
         # Create pending transaction
         pending_transaction = PaymentTransaction.objects.create(
             payment=payment,
-            gateway_transaction_id='pi_webhook_test_123',
-            transaction_type='CHARGE',
+            transaction_id='pi_webhook_test_123',
+
             status='PENDING',
             amount=Decimal('15000.00'),
             currency='PHP'
@@ -183,13 +184,14 @@ class StripeWebhookTestCase(TestCase):
             payment_method=self.payment_method,
             amount=Decimal('12000.00'),
             currency='PHP',
-            status='PENDING'
+            status='PENDING',
+            due_date=date.today() + timedelta(days=7)
         )
         
         transaction = PaymentTransaction.objects.create(
             payment=payment,
-            gateway_transaction_id='pi_failed_webhook_456',
-            transaction_type='CHARGE',
+            transaction_id='pi_failed_webhook_456',
+
             status='PENDING',
             amount=Decimal('12000.00'),
             currency='PHP'
@@ -264,13 +266,14 @@ class StripeWebhookTestCase(TestCase):
             payment_method=self.payment_method,
             amount=Decimal('20000.00'),
             currency='PHP',
-            status='COMPLETED'
+            status='COMPLETED',
+            due_date=date.today() + timedelta(days=7)
         )
         
         charge_transaction = PaymentTransaction.objects.create(
             payment=payment,
-            gateway_transaction_id='ch_dispute_test_789',
-            transaction_type='CHARGE',
+            transaction_id='ch_dispute_test_789',
+
             status='SUCCESS',
             amount=Decimal('20000.00'),
             currency='PHP'
@@ -327,7 +330,7 @@ class StripeWebhookTestCase(TestCase):
         dispute_transaction = PaymentTransaction.objects.filter(
             payment=payment,
             transaction_type='DISPUTE',
-            gateway_transaction_id='dp_dispute_test_789'
+            transaction_id='dp_dispute_test_789'
         ).first()
         
         self.assertIsNotNone(dispute_transaction)
@@ -343,7 +346,9 @@ class StripeWebhookTestCase(TestCase):
             event=self.event,
             total_amount=Decimal('25000.00'),
             currency='PHP',
-            status='ISSUED'
+            status='ISSUED',
+            issue_date=date.today(),
+            due_date=date.today() + timedelta(days=30)
         )
         
         payment = Payment.objects.create(
@@ -352,7 +357,8 @@ class StripeWebhookTestCase(TestCase):
             payment_method=self.payment_method,
             amount=Decimal('25000.00'),
             currency='PHP',
-            status='PENDING'
+            status='PENDING',
+            due_date=date.today() + timedelta(days=7)
         )
         
         webhook_payload = {
@@ -446,7 +452,8 @@ class StripeWebhookTestCase(TestCase):
             payment_method=self.payment_method,
             amount=Decimal('10000.00'),
             currency='PHP',
-            status='PENDING'
+            status='PENDING',
+            due_date=date.today() + timedelta(days=7)
         )
         
         # Create webhook payload
@@ -506,7 +513,7 @@ class StripeWebhookTestCase(TestCase):
         # Should have only one successful transaction
         success_transactions = PaymentTransaction.objects.filter(
             payment=payment,
-            transaction_type='CHARGE',
+
             status='SUCCESS'
         )
         self.assertEqual(success_transactions.count(), 1)

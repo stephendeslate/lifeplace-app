@@ -335,10 +335,6 @@ class TestProductCategoryViewSetAllEndpoint:
 class TestProductOptionViewSetList:
     """Tests for ProductOptionViewSet list endpoint."""
 
-    @pytest.mark.xfail(
-        reason="Blocked by ProductOption.price_with_tax bug: Decimal*float multiplication",
-        strict=False
-    )
     def test_list_products_public_access(self, api_client, product_option_factory):
         """Test that listing products is publicly accessible."""
         p1 = product_option_factory(name='Test Product L1')
@@ -352,10 +348,6 @@ class TestProductOptionViewSetList:
         assert p1.id in product_ids
         assert p2.id in product_ids
 
-    @pytest.mark.xfail(
-        reason="Blocked by ProductOption.price_with_tax bug: Decimal*float multiplication",
-        strict=False
-    )
     def test_list_products_filter_type(self, api_client, product_option_factory):
         """Test filtering products by type."""
         product = product_option_factory(name='Test Product Type', type='PRODUCT')
@@ -369,10 +361,6 @@ class TestProductOptionViewSetList:
         assert product.id in product_ids
         assert package.id not in product_ids
 
-    @pytest.mark.xfail(
-        reason="Blocked by ProductOption.price_with_tax bug: Decimal*float multiplication",
-        strict=False
-    )
     def test_list_products_filter_active(self, api_client, product_option_factory):
         """Test filtering products by active status."""
         active = product_option_factory(name='Active Product F', is_active=True)
@@ -386,10 +374,6 @@ class TestProductOptionViewSetList:
         assert active.id in product_ids
         assert inactive.id not in product_ids
 
-    @pytest.mark.xfail(
-        reason="Blocked by ProductOption.price_with_tax bug: Decimal*float multiplication",
-        strict=False
-    )
     def test_list_products_search(self, api_client, product_option_factory):
         """Test searching products."""
         p1 = product_option_factory(name='UniqueSearchProduct Wedding')
@@ -410,10 +394,6 @@ class TestProductOptionViewSetList:
 class TestProductOptionViewSetRetrieve:
     """Tests for ProductOptionViewSet retrieve endpoint."""
 
-    @pytest.mark.xfail(
-        reason="Blocked by ProductOption.price_with_tax bug: Decimal*float multiplication",
-        strict=False
-    )
     def test_retrieve_product_public_access(self, api_client, product_option_factory):
         """Test that retrieving a product is publicly accessible."""
         product = product_option_factory(name='Test Product R')
@@ -436,10 +416,6 @@ class TestProductOptionViewSetRetrieve:
 class TestProductOptionViewSetBatchEndpoint:
     """Tests for ProductOptionViewSet batch endpoint."""
 
-    @pytest.mark.xfail(
-        reason="Blocked by ProductOption.price_with_tax bug: Decimal*float multiplication",
-        strict=False
-    )
     def test_batch_endpoint_returns_multiple_products(self, api_client, product_option_factory):
         """Test batch endpoint returns products by IDs."""
         p1 = product_option_factory(name='Batch Product 1')
@@ -487,10 +463,6 @@ class TestProductOptionViewSetBatchEndpoint:
 class TestProductOptionViewSetFeaturedEndpoint:
     """Tests for ProductOptionViewSet featured endpoint."""
 
-    @pytest.mark.xfail(
-        reason="Blocked by ProductOption.price_with_tax bug: Decimal*float multiplication",
-        strict=False
-    )
     def test_featured_endpoint_returns_featured_products(self, api_client, product_option_factory):
         """Test featured endpoint returns only featured products."""
         featured = product_option_factory(name='Featured Product X', featured=True)
@@ -500,7 +472,9 @@ class TestProductOptionViewSetFeaturedEndpoint:
         response = api_client.get(url)
 
         assert response.status_code == status.HTTP_200_OK
-        product_ids = [p['id'] for p in response.data]
+        # Response is paginated, so extract results from the paginated response
+        results = response.data['results']
+        product_ids = [p['id'] for p in results]
         assert featured.id in product_ids
         # Note: not_featured might still be in response if there are other featured products in seed data
 
@@ -509,10 +483,6 @@ class TestProductOptionViewSetFeaturedEndpoint:
 class TestProductOptionViewSetPackagesEndpoint:
     """Tests for ProductOptionViewSet packages endpoint."""
 
-    @pytest.mark.xfail(
-        reason="Blocked by ProductOption.price_with_tax bug: Decimal*float multiplication",
-        strict=False
-    )
     def test_packages_endpoint_returns_only_packages(self, api_client, product_option_factory):
         """Test packages endpoint returns only packages."""
         product = product_option_factory(name='Product Only X', type='PRODUCT')
@@ -534,10 +504,6 @@ class TestProductOptionViewSetPackagesEndpoint:
 class TestProductOptionViewSetProductsEndpoint:
     """Tests for ProductOptionViewSet products endpoint."""
 
-    @pytest.mark.xfail(
-        reason="Blocked by ProductOption.price_with_tax bug: Decimal*float multiplication",
-        strict=False
-    )
     def test_products_endpoint_returns_only_products(self, api_client, product_option_factory):
         """Test products endpoint returns only products (not packages)."""
         product = product_option_factory(name='Product Only Y', type='PRODUCT')
@@ -556,10 +522,6 @@ class TestProductOptionViewSetProductsEndpoint:
 class TestProductOptionViewSetActiveEndpoint:
     """Tests for ProductOptionViewSet active endpoint."""
 
-    @pytest.mark.xfail(
-        reason="Blocked by ProductOption.price_with_tax bug: Decimal*float multiplication",
-        strict=False
-    )
     def test_active_endpoint_returns_only_active(self, api_client, product_option_factory):
         """Test active endpoint returns only active products."""
         active = product_option_factory(name='Active Product Only', is_active=True)
@@ -594,10 +556,6 @@ class TestProductOptionViewSetByCategoryEndpoint:
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert 'Invalid category_id' in response.data['detail']
 
-    @pytest.mark.xfail(
-        reason="Blocked by ProductOption.price_with_tax bug: Decimal*float multiplication",
-        strict=False
-    )
     def test_by_category_endpoint_returns_products(self, api_client, product_option_factory, product_category_factory):
         """Test by_category endpoint returns products in category."""
         category = product_category_factory(name='Test Category BC')

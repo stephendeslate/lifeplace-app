@@ -202,7 +202,7 @@ class TestMessageThreadViewSetCreate:
         response = client.post(url, data, format='json')
 
         assert response.status_code == status.HTTP_201_CREATED
-        thread = MessageThread.objects.get(id=response.data['id'])
+        thread = MessageThread.objects.get(client=client_user, subject='Support thread')
         assert thread.assigned_admin == admin
 
 
@@ -418,7 +418,7 @@ class TestMessageThreadViewSetActions:
         client = authenticated_client(admin)
 
         url = reverse('messagethread-assign', kwargs={'pk': thread.id})
-        response = client.patch(url, {'admin_id': '00000000-0000-0000-0000-000000000000'}, format='json')
+        response = client.patch(url, {'admin_id': '99999'}, format='json')
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
@@ -540,7 +540,7 @@ class TestMessageViewSetCreate:
         response = client.post(url, data, format='json')
 
         assert response.status_code == status.HTTP_201_CREATED
-        message = Message.objects.get(id=response.data['id'])
+        message = Message.objects.get(thread=thread, content='Test message')
         assert MessageReadStatus.objects.filter(message=message, user=admin).exists()
 
     def test_admin_create_internal_note(self, authenticated_client, user_factory, message_thread_factory):
@@ -743,7 +743,7 @@ class TestMessageThreadAdminViewSet:
         url = reverse('admin-messagethread-bulk-assign')
         data = {
             'thread_ids': [str(thread.id)],
-            'admin_id': '00000000-0000-0000-0000-000000000000',
+            'admin_id': '99999',
         }
         response = client.post(url, data, format='json')
 

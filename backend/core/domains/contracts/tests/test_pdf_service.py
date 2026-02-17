@@ -127,6 +127,7 @@ class TestContractPDFService:
         contract = event_contract_factory(
             template=template,
             status='SIGNED',
+            content='Contract with value of 100,000 USD.',
             contract_value=Decimal('100000.00'),
             currency='USD'
         )
@@ -151,6 +152,7 @@ class TestContractPDFService:
         contract = event_contract_factory(
             template=template,
             status='SIGNED',
+            content='Contract valid until specified date.',
             valid_until=date.today() + timedelta(days=30)
         )
 
@@ -173,6 +175,7 @@ class TestContractPDFService:
         contract = event_contract_factory(
             template=template,
             status='SIGNED',
+            content='Fully signed contract content.',
             fully_signed_at=timezone.now()
         )
 
@@ -193,7 +196,7 @@ class TestContractPDFService:
         mock_branding.return_value = mock_context
 
         template = contract_template_factory()
-        contract = event_contract_factory(template=template, status='SIGNED')
+        contract = event_contract_factory(template=template, status='SIGNED', content='Contract with signature summary.')
 
         # Add detailed signatures
         contract_signature_factory(
@@ -226,7 +229,7 @@ class TestContractPDFService:
         mock_branding.return_value = mock_context
 
         template = contract_template_factory()
-        contract = event_contract_factory(template=template, status='SENT')
+        contract = event_contract_factory(template=template, status='SENT', content='Contract without signatures.')
 
         from core.domains.contracts.pdf_service import ContractPDFService
         pdf_buffer = ContractPDFService.generate_signature_summary_pdf(contract)
@@ -419,6 +422,7 @@ class TestPDFGeneration:
         contract = event_contract_factory(
             template=template,
             status='SIGNED',
+            content='Contract with no value specified.',
             contract_value=None
         )
 
@@ -440,7 +444,7 @@ class TestPDFGeneration:
         mock_logger = mocker.patch('core.domains.contracts.pdf_service.logger')
 
         template = contract_template_factory()
-        contract = event_contract_factory(template=template, status='SIGNED')
+        contract = event_contract_factory(template=template, status='SIGNED', content='Contract for logging test.')
 
         from core.domains.contracts.pdf_service import ContractPDFService
         ContractPDFService.generate_contract_pdf(contract)
@@ -466,7 +470,7 @@ class TestPDFErrors:
         mock_build.side_effect = Exception('PDF build failed')
 
         template = contract_template_factory()
-        contract = event_contract_factory(template=template, status='SIGNED')
+        contract = event_contract_factory(template=template, status='SIGNED', content='Contract content for error test.')
 
         from core.domains.contracts.pdf_service import ContractPDFService
 
@@ -490,7 +494,7 @@ class TestPDFErrors:
         mock_logger = mocker.patch('core.domains.contracts.pdf_service.logger')
 
         template = contract_template_factory()
-        contract = event_contract_factory(template=template, status='SIGNED')
+        contract = event_contract_factory(template=template, status='SIGNED', content='Contract content for error logging test.')
 
         from core.domains.contracts.pdf_service import ContractPDFService
 

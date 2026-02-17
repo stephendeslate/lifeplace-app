@@ -241,8 +241,7 @@ class TestSalesAnalyticsReservationPipeline:
 
     def test_reservation_pipeline_counts_by_status(self, event_factory, user_factory):
         """Test that events are counted correctly by status."""
-        end_date = timezone.now()
-        start_date = end_date - timedelta(days=30)
+        start_date = timezone.now() - timedelta(days=30)
 
         client = user_factory()
 
@@ -252,6 +251,7 @@ class TestSalesAnalyticsReservationPipeline:
         event_factory(client=client, confirmed=True)
         event_factory(client=client, cancelled=True)
 
+        end_date = timezone.now() + timedelta(seconds=1)
         result = SalesAnalyticsService.get_reservation_pipeline(start_date, end_date)
 
         # Create dict for easier assertion
@@ -405,8 +405,7 @@ class TestSalesAnalyticsPaymentTracking:
         self, event_factory, payment_factory, user_factory
     ):
         """Test that payments are counted correctly."""
-        end_date = timezone.now()
-        start_date = end_date - timedelta(days=30)
+        start_date = timezone.now() - timedelta(days=30)
 
         client = user_factory()
         event = event_factory(client=client, confirmed=True)
@@ -416,6 +415,7 @@ class TestSalesAnalyticsPaymentTracking:
         payment_factory(event=event, pending=True, amount=Decimal('500.00'))
         payment_factory(event=event, failed=True, amount=Decimal('200.00'))
 
+        end_date = timezone.now() + timedelta(seconds=1)
         result = SalesAnalyticsService.get_payment_tracking(start_date, end_date)
 
         assert result['total_payments'] >= 3
@@ -426,24 +426,25 @@ class TestSalesAnalyticsPaymentTracking:
     def test_payment_tracking_overdue_detection(
         self, event_factory, payment_factory, user_factory
     ):
-        """Test that overdue installments are detected."""
-        from core.domains.payments.models import PaymentInstallment
+        """Test that overdue payments are detected.
 
-        end_date = timezone.now()
-        start_date = end_date - timedelta(days=30)
+        The service uses Payment.due_date directly (not a separate
+        PaymentInstallment model) to track overdue/upcoming payments.
+        """
+        start_date = timezone.now() - timedelta(days=30)
 
         client = user_factory()
         event = event_factory(client=client, confirmed=True)
-        payment = payment_factory(event=event, pending=True)
 
-        # Create overdue installment
-        PaymentInstallment.objects.create(
-            payment=payment,
+        # Create overdue payment (pending with past due_date)
+        payment_factory(
+            event=event,
+            pending=True,
             amount=Decimal('500.00'),
             due_date=date.today() - timedelta(days=7),  # Past due
-            status='PENDING'
         )
 
+        end_date = timezone.now() + timedelta(seconds=1)
         result = SalesAnalyticsService.get_payment_tracking(start_date, end_date)
 
         assert result['overdue_count'] >= 1
@@ -452,55 +453,55 @@ class TestSalesAnalyticsPaymentTracking:
     def test_payment_tracking_upcoming_payments(
         self, event_factory, payment_factory, user_factory
     ):
-        """Test that upcoming installments within 30 days are tracked."""
-        from core.domains.payments.models import PaymentInstallment
+        """Test that upcoming payments within 30 days are tracked.
 
-        end_date = timezone.now()
-        start_date = end_date - timedelta(days=30)
+        The service uses Payment.due_date directly to detect upcoming payments.
+        """
+        start_date = timezone.now() - timedelta(days=30)
 
         client = user_factory()
         event = event_factory(client=client, confirmed=True)
-        payment = payment_factory(event=event, pending=True)
 
-        # Create upcoming installment (due in 15 days)
-        PaymentInstallment.objects.create(
-            payment=payment,
+        # Create upcoming payment (due in 15 days)
+        payment_factory(
+            event=event,
+            pending=True,
             amount=Decimal('750.00'),
             due_date=date.today() + timedelta(days=15),
-            status='PENDING'
         )
 
+        end_date = timezone.now() + timedelta(seconds=1)
         result = SalesAnalyticsService.get_payment_tracking(start_date, end_date)
 
         assert result['upcoming_count'] >= 1
         assert result['upcoming_amount'] >= 750.0
 
-    def test_payment_tracking_excludes_completed_installments_from_overdue(
+    def test_payment_tracking_excludes_completed_from_overdue(
         self, event_factory, payment_factory, user_factory
     ):
-        """Test that completed installments are not counted as overdue."""
-        from core.domains.payments.models import PaymentInstallment
+        """Test that completed payments are not counted as overdue.
 
-        end_date = timezone.now()
-        start_date = end_date - timedelta(days=30)
+        The service only counts PENDING payments past their due_date as overdue.
+        """
+        start_date = timezone.now() - timedelta(days=30)
 
         client = user_factory()
         event = event_factory(client=client, confirmed=True)
-        payment = payment_factory(event=event, pending=True)
 
-        # Create a past-due but COMPLETED installment
-        PaymentInstallment.objects.create(
-            payment=payment,
+        # Create a past-due but COMPLETED payment
+        payment_factory(
+            event=event,
+            completed=True,
             amount=Decimal('500.00'),
             due_date=date.today() - timedelta(days=7),
-            status='COMPLETED'  # Already paid
         )
 
+        end_date = timezone.now() + timedelta(seconds=1)
         result = SalesAnalyticsService.get_payment_tracking(start_date, end_date)
 
         # Should not be counted as overdue since it's completed
-        # Note: We can only assert this if no other overdue exist
-        # This test verifies the logic doesn't count completed as overdue
+        # Overdue only counts PENDING payments past their due date
+        assert result['overdue_count'] == 0
 
     def test_payment_tracking_with_no_payments(self):
         """Test payment tracking with no payments in database."""

@@ -331,7 +331,11 @@ class TestWorkflowEngineProgressWorkflow:
         assert 'Stage 2' in timeline.description
 
     def test_progress_workflow_idempotent(self, event_factory, event_type_factory):
-        """Test that duplicate progression to same stage is prevented."""
+        """Test that duplicate progression to same stage is prevented.
+
+        The post_save signal resets current_stage to the first LEAD stage,
+        so we use .update() to set stage2 after creation.
+        """
         event_type = event_type_factory()
         template = WorkflowTemplate.objects.create(
             name='Test Workflow',
@@ -354,10 +358,12 @@ class TestWorkflowEngineProgressWorkflow:
         event = event_factory(
             event_type=event_type,
             workflow_template=template,
-            current_stage=stage2  # Already at stage 2
         )
+        # Bypass post_save signal by using .update()
+        Event.objects.filter(id=event.id).update(current_stage=stage2)
+        event.refresh_from_db()
 
-        # Try to progress (would go to stage 2 again)
+        # Try to progress - already at stage 2 and no stage 3 exists
         result = WorkflowEngine.progress_workflow(event, trigger_type='STATUS_CHANGE')
 
         # Should be False because already at stage 2 and no stage 3 exists
@@ -402,7 +408,12 @@ class TestWorkflowEngineProgressWorkflow:
     def test_progress_workflow_payment_trigger_to_production(
         self, event_factory, event_type_factory
     ):
-        """Test progression from LEAD to PRODUCTION on payment received."""
+        """Test progression from LEAD to PRODUCTION on payment received.
+
+        The engine requires event.status == 'CONFIRMED' for PAYMENT_RECEIVED
+        to trigger cross-category progression (LEAD -> PRODUCTION). The
+        post_save signal resets current_stage, so we use .update() to set it.
+        """
         event_type = event_type_factory()
         template = WorkflowTemplate.objects.create(
             name='Test Workflow',
@@ -425,8 +436,11 @@ class TestWorkflowEngineProgressWorkflow:
         event = event_factory(
             event_type=event_type,
             workflow_template=template,
-            current_stage=lead_stage
+            status='CONFIRMED',
         )
+        # Bypass post_save signal that resets current_stage to first LEAD stage
+        Event.objects.filter(id=event.id).update(current_stage=lead_stage)
+        event.refresh_from_db()
 
         result = WorkflowEngine.progress_workflow(event, trigger_type='PAYMENT_RECEIVED')
 

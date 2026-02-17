@@ -47,6 +47,14 @@ from core.factories.products import (
     ProductOptionFactory,
     DiscountFactory,
 )
+from core.factories.contracts import (
+    ContractTemplateFactory,
+    EventContractFactory,
+    ContractSignatureFactory,
+    ContractAmendmentFactory,
+    ContractDocumentFactory,
+    ContractNoteFactory,
+)
 
 
 # =============================================================================
@@ -85,6 +93,14 @@ register(QuestionnaireResponseFactory)
 register(ProductCategoryFactory)
 register(ProductOptionFactory)
 register(DiscountFactory)
+
+# Contracts domain
+register(ContractTemplateFactory)
+register(EventContractFactory)
+register(ContractSignatureFactory)
+register(ContractAmendmentFactory)
+register(ContractDocumentFactory)
+register(ContractNoteFactory)
 
 
 # =============================================================================

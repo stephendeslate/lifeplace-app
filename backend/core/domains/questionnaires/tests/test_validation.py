@@ -99,7 +99,7 @@ class TestFieldValidatorPhone:
         is_valid, error = FieldValidator.validate_field('phone', '091234')
 
         assert is_valid is False
-        assert 'Philippine phone' in error
+        assert 'valid phone number' in error
 
     def test_invalid_phone_wrong_format(self):
         """Test phone number with wrong format fails validation."""
@@ -495,15 +495,14 @@ class TestFieldValidatorGetRules:
         assert 'pattern' in rules
         assert 'message' in rules
         assert 'example' in rules
-        assert 'example.com' in rules['example']
+        assert '@' in rules['example']  # e.g. example@email.com
 
     def test_get_validation_rules_for_phone(self):
         """Test getting validation rules for phone field."""
         rules = FieldValidator.get_validation_rules_for_field('phone')
 
-        assert 'pattern' in rules
         assert 'message' in rules
-        assert 'Philippine' in rules['message']
+        assert 'phone number' in rules['message']
 
     def test_get_validation_rules_for_boolean(self):
         """Test getting validation rules for boolean field."""

@@ -65,13 +65,13 @@ class TestDashboardServiceKPISummary:
 
     def test_kpi_summary_counts_lead_bookings(self, event_factory):
         """Test that LEAD status bookings are counted correctly."""
-        end_date = timezone.now()
-        start_date = end_date - timedelta(days=30)
+        start_date = timezone.now() - timedelta(days=30)
 
         # Create lead bookings
         event_factory(status='LEAD')
         event_factory(status='LEAD')
 
+        end_date = timezone.now() + timedelta(seconds=1)
         result = DashboardService.get_kpi_summary(start_date, end_date)
 
         # Both lead events should be counted in total
@@ -79,27 +79,27 @@ class TestDashboardServiceKPISummary:
 
     def test_kpi_summary_counts_confirmed_bookings(self, event_factory):
         """Test that CONFIRMED status bookings are counted correctly."""
-        end_date = timezone.now()
-        start_date = end_date - timedelta(days=30)
+        start_date = timezone.now() - timedelta(days=30)
 
         # Create confirmed bookings
         event_factory(confirmed=True)
         event_factory(confirmed=True)
         event_factory(status='LEAD')
 
+        end_date = timezone.now() + timedelta(seconds=1)
         result = DashboardService.get_kpi_summary(start_date, end_date)
 
         assert result['confirmed_bookings'] >= 2
 
     def test_kpi_summary_counts_cancelled_bookings(self, event_factory):
         """Test that CANCELLED status bookings are counted correctly."""
-        end_date = timezone.now()
-        start_date = end_date - timedelta(days=30)
+        start_date = timezone.now() - timedelta(days=30)
 
         # Create cancelled bookings
         event_factory(cancelled=True)
         event_factory(cancelled=True)
 
+        end_date = timezone.now() + timedelta(seconds=1)
         result = DashboardService.get_kpi_summary(start_date, end_date)
 
         assert result['cancelled_bookings'] >= 2
@@ -178,14 +178,14 @@ class TestDashboardServiceKPISummary:
 
     def test_kpi_summary_new_clients_count(self, user_factory):
         """Test that new clients are counted correctly."""
-        end_date = timezone.now()
-        start_date = end_date - timedelta(days=30)
+        start_date = timezone.now() - timedelta(days=30)
 
         # Create new client users
         user_factory(role='CLIENT')
         user_factory(role='CLIENT')
         user_factory(admin=True)  # Admin should not be counted
 
+        end_date = timezone.now() + timedelta(seconds=1)
         result = DashboardService.get_kpi_summary(start_date, end_date)
 
         # Should count client users only
@@ -304,10 +304,10 @@ class TestDashboardServiceConversionTracking:
 
     def test_kpi_summary_booking_sessions_count(self, event_factory):
         """Test that booking sessions are counted."""
+        import uuid
         from core.domains.bookingflow.models import BookingSession, BookingFlow
 
-        end_date = timezone.now()
-        start_date = end_date - timedelta(days=30)
+        start_date = timezone.now() - timedelta(days=30)
 
         # Create a booking flow first
         flow = BookingFlow.objects.create(
@@ -317,14 +317,19 @@ class TestDashboardServiceConversionTracking:
 
         # Create booking sessions
         BookingSession.objects.create(
-            flow=flow,
+            booking_flow=flow,
+            session_id=uuid.uuid4(),
+            expires_at=timezone.now() + timedelta(hours=1),
             is_completed=False
         )
         BookingSession.objects.create(
-            flow=flow,
+            booking_flow=flow,
+            session_id=uuid.uuid4(),
+            expires_at=timezone.now() + timedelta(hours=1),
             is_completed=True
         )
 
+        end_date = timezone.now() + timedelta(seconds=1)
         result = DashboardService.get_kpi_summary(start_date, end_date)
 
         assert result['booking_sessions'] >= 2
@@ -332,10 +337,10 @@ class TestDashboardServiceConversionTracking:
 
     def test_kpi_summary_conversion_rate_calculation(self, event_factory):
         """Test conversion rate calculation."""
+        import uuid
         from core.domains.bookingflow.models import BookingSession, BookingFlow
 
-        end_date = timezone.now()
-        start_date = end_date - timedelta(days=30)
+        start_date = timezone.now() - timedelta(days=30)
 
         # Create a booking flow
         flow = BookingFlow.objects.create(
@@ -343,12 +348,15 @@ class TestDashboardServiceConversionTracking:
             is_active=True
         )
 
-        # Create 4 sessions, 1 completed (25% conversion)
-        BookingSession.objects.create(flow=flow, is_completed=False)
-        BookingSession.objects.create(flow=flow, is_completed=False)
-        BookingSession.objects.create(flow=flow, is_completed=False)
-        BookingSession.objects.create(flow=flow, is_completed=True)
+        expires = timezone.now() + timedelta(hours=1)
 
+        # Create 4 sessions, 1 completed (25% conversion)
+        BookingSession.objects.create(booking_flow=flow, session_id=uuid.uuid4(), expires_at=expires, is_completed=False)
+        BookingSession.objects.create(booking_flow=flow, session_id=uuid.uuid4(), expires_at=expires, is_completed=False)
+        BookingSession.objects.create(booking_flow=flow, session_id=uuid.uuid4(), expires_at=expires, is_completed=False)
+        BookingSession.objects.create(booking_flow=flow, session_id=uuid.uuid4(), expires_at=expires, is_completed=True)
+
+        end_date = timezone.now() + timedelta(seconds=1)
         result = DashboardService.get_kpi_summary(start_date, end_date)
 
         # Conversion rate should be 25%

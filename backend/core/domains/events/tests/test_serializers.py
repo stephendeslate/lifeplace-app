@@ -421,7 +421,12 @@ class TestEventCreateUpdateSerializer:
         assert event.timeline.filter(action_type='SYSTEM_UPDATE').exists()
 
     def test_update_event_status(self, event_factory, user_factory, request_factory):
-        """Test updating an event status creates timeline entry."""
+        """Test that status is a read-only field and cannot be updated via serializer.
+
+        Note: 'status' is in EventSerializer.Meta.read_only_fields to prevent
+        mass assignment. Status changes should be done through dedicated service
+        methods, not via the serializer.
+        """
         event = event_factory(status='LEAD')
         admin_user = user_factory(admin=True)
 
@@ -434,11 +439,13 @@ class TestEventCreateUpdateSerializer:
             partial=True,
             context={'request': request}
         )
+        # Serializer is valid because read-only fields are silently ignored
         assert serializer.is_valid(), serializer.errors
 
         updated_event = serializer.save()
 
-        assert updated_event.status == 'CONFIRMED'
+        # Status remains unchanged because 'status' is a read_only_field
+        assert updated_event.status == 'LEAD'
 
 
 @pytest.mark.django_db

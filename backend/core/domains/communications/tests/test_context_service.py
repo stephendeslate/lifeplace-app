@@ -346,12 +346,12 @@ class TestCommunicationContextService:
 
         assert context['days_until_event'] == 10
 
-    @patch('core.domains.communications.context_service.PaymentSettings')
+    @patch('core.domains.payments.models.PaymentSettings.get_default_settings')
     def test_generate_context_financial_variables(
-        self, mock_settings, user_factory, event_factory
+        self, mock_get_defaults, user_factory, event_factory
     ):
         """Test financial context variables are generated."""
-        mock_settings.get_default_settings.return_value = Mock(
+        mock_get_defaults.return_value = Mock(
             default_deposit_percentage=Decimal('30')
         )
 
@@ -416,21 +416,20 @@ class TestContextServicePrivateMethods:
         """Test _get_client_context includes profile data."""
         client = user_factory()
 
-        # Mock profile
-        mock_profile = Mock()
-        mock_profile.phone = '+1234567890'
-        mock_profile.company = 'Test Corp'
-        mock_profile.address = '123 Main St'
-        mock_profile.city = 'Test City'
-        mock_profile.state = 'TS'
-        mock_profile.zip_code = '12345'
-        client.profile = mock_profile
+        # Update the auto-created profile with test data
+        # Note: UserProfile has phone and company fields but not address/city/state/zip
+        profile = client.profile
+        profile.phone = '+1234567890'
+        profile.company = 'Test Corp'
+        profile.save()
+        client.refresh_from_db()
 
         context = CommunicationContextService._get_client_context(client)
 
         assert context['client_phone'] == '+1234567890'
         assert context['client_company'] == 'Test Corp'
-        assert '123 Main St' in context['client_address']
+        # client_address is built from profile.address/city/state/zip_code (not present on model)
+        assert context['client_address'] == ''
 
     def test_get_event_context(self, event_factory, user_factory):
         """Test _get_event_context returns event variables."""

@@ -106,7 +106,7 @@ class TestNoteModel:
         )
 
         # Should show first 50 characters of content
-        assert str(note) == 'Note: This is a note without a title and has long c'
+        assert str(note) == 'Note: This is a note without a title and has long conten'
 
     def test_note_ordering(self, user_factory, event_factory):
         """Test notes are ordered by created_at descending."""
@@ -142,7 +142,7 @@ class TestNoteModel:
         assert notes[1] == note2
         assert notes[2] == note1
 
-    def test_note_created_by_null_on_user_delete(self, user_factory, event_factory):
+    def test_note_created_by_null_on_user_delete(self, user_factory, event_factory, ensure_security_events_table):
         """Test that created_by is set to null when user is deleted."""
         admin = user_factory(admin=True)
         event = event_factory()

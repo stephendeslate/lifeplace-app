@@ -62,7 +62,7 @@ class TestUserBasicSerializer:
         serializer = UserBasicSerializer(user)
         data = serializer.data
 
-        assert data['id'] == str(user.id)
+        assert data['id'] == user.id
         assert data['first_name'] == 'John'
         assert data['last_name'] == 'Doe'
         assert data['email'] == 'john@example.com'

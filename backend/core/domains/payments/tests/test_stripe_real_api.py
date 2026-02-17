@@ -91,7 +91,8 @@ class StripeRealAPITestCase(TestCase):
             payment_method=self.payment_method,
             amount=Decimal('2500.00'),  # ₱2,500
             currency='PHP',
-            description='Real API test payment'
+            description='Real API test payment',
+            due_date=date.today() + timedelta(days=7)
         )
         
         try:
@@ -116,8 +117,8 @@ class StripeRealAPITestCase(TestCase):
             # Record transaction
             transaction = PaymentTransaction.objects.create(
                 payment=payment,
-                gateway_transaction_id=intent.id,
-                transaction_type='CHARGE',
+                transaction_id=intent.id,
+
                 status='SUCCESS' if intent.status == 'succeeded' else 'PENDING',
                 amount=Decimal('2500.00'),
                 currency='PHP',
@@ -165,7 +166,8 @@ class StripeRealAPITestCase(TestCase):
             event=self.event,
             payment_method=self.payment_method,
             amount=Decimal('1000.00'),
-            currency='PHP'
+            currency='PHP',
+            due_date=date.today() + timedelta(days=7)
         )
         
         try:
@@ -193,8 +195,8 @@ class StripeRealAPITestCase(TestCase):
             # Expected behavior with declined card
             transaction = PaymentTransaction.objects.create(
                 payment=payment,
-                gateway_transaction_id='declined_card_test',
-                transaction_type='CHARGE',
+                transaction_id='declined_card_test',
+
                 status='FAILED',
                 amount=payment.amount,
                 currency='PHP',

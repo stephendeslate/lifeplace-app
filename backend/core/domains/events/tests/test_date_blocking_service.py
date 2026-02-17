@@ -585,8 +585,8 @@ class TestNotificationMethods:
         mock_create.assert_called_once()
         call_kwargs = mock_create.call_args.kwargs
         assert call_kwargs['recipient'] == client
-        assert call_kwargs['notification_type'] == 'EVENT_CANCELLED'
-        assert 'cancelled' in call_kwargs['title'].lower()
+        assert call_kwargs['notification_type_code'] == 'EVENT_CANCELLED'
+        assert 'Another client' in call_kwargs['context']['reason']
 
     @patch('core.domains.notifications.services.NotificationService.create_notification')
     def test_send_timeout_notification(self, mock_create, event_factory, user_factory):
@@ -599,8 +599,8 @@ class TestNotificationMethods:
         mock_create.assert_called_once()
         call_kwargs = mock_create.call_args.kwargs
         assert call_kwargs['recipient'] == client
-        assert call_kwargs['notification_type'] == 'EVENT_CANCELLED'
-        assert 'deadline' in call_kwargs['title'].lower() or 'expired' in call_kwargs['title'].lower()
+        assert call_kwargs['notification_type_code'] == 'EVENT_CANCELLED'
+        assert 'deadline' in call_kwargs['context']['reason'].lower() or 'passed' in call_kwargs['context']['reason'].lower()
 
 
 @pytest.mark.django_db

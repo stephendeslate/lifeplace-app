@@ -176,7 +176,7 @@ class TestClientViewSetCreate:
             'first_name': 'New',
             'last_name': 'Client',
             'profile': {
-                'phone': '+1234567890',
+                'phone': '+639123456789',
                 'company': 'Test Company'
             }
         }
@@ -184,7 +184,7 @@ class TestClientViewSetCreate:
         response = admin_client.post('/api/clients/', data, format='json')
 
         assert response.status_code == status.HTTP_201_CREATED
-        assert response.data['profile']['phone'] == '+1234567890'
+        assert response.data['profile']['phone'] == '+639123456789'
         assert response.data['profile']['company'] == 'Test Company'
 
     def test_create_client_with_password(self, admin_client):
@@ -283,7 +283,7 @@ class TestClientViewSetUpdate:
 
         data = {
             'profile': {
-                'phone': '+9876543210',
+                'phone': '+639987654321',
                 'company': 'Updated Company'
             }
         }
@@ -291,7 +291,7 @@ class TestClientViewSetUpdate:
         response = admin_client.patch(f'/api/clients/{client.id}/', data, format='json')
 
         assert response.status_code == status.HTTP_200_OK
-        assert response.data['profile']['phone'] == '+9876543210'
+        assert response.data['profile']['phone'] == '+639987654321'
         assert response.data['profile']['company'] == 'Updated Company'
 
     def test_update_nonexistent_client(self, admin_client):

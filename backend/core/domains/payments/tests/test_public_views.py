@@ -110,7 +110,11 @@ class PublicPaymentGatewayViewSetTestCase(TestCase):
             self.assertEqual(actual_fields, expected_fields)
 
     def test_public_config_only_safe_data(self):
-        """Test that public_config only contains safe, non-sensitive data"""
+        """Test that public_config only contains safe, non-sensitive data.
+
+        Note: publishable_key IS intentionally included in public_config
+        for Stripe Elements initialization (it's a public key, not a secret).
+        """
         response = self.client.get(self.list_url)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -123,9 +127,11 @@ class PublicPaymentGatewayViewSetTestCase(TestCase):
                 if gateway['code'] == 'stripe':
                     self.assertIn('test_mode', public_config)
                     self.assertEqual(public_config['test_mode'], True)
-                    # Ensure no sensitive data
+                    # publishable_key is safe for client-side use
+                    self.assertIn('publishable_key', public_config)
+                    # Ensure truly sensitive data is not exposed
                     self.assertNotIn('secret_key', public_config)
-                    self.assertNotIn('publishable_key', public_config)
+                    self.assertNotIn('webhook_secret', public_config)
 
                 elif gateway['code'] == 'paypal':
                     self.assertIn('environment', public_config)

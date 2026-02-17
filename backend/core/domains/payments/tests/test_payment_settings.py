@@ -8,7 +8,7 @@ from unittest.mock import patch, MagicMock
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'core.settings')
 django.setup()
 
-from django.test import TestCase, Client
+from django.test import TestCase, Client, override_settings
 from django.contrib.auth import get_user_model
 from django.urls import reverse
 from django.core.exceptions import ValidationError
@@ -36,8 +36,6 @@ class PaymentSettingsModelTest(TestCase):
         settings1 = PaymentSettings.objects.create(
             balance_due_days=30,
             grace_period_days=7,
-            default_installments=2,
-            default_installment_frequency='MONTHLY',
             late_fee_enabled=True,
             default_late_fee_amount=Decimal('25.00'),
             default_deposit_percentage=Decimal('50.00'),
@@ -63,11 +61,9 @@ class PaymentSettingsModelTest(TestCase):
         settings2 = PaymentSettings.get_default_settings()
         self.assertEqual(settings1.id, settings2.id)
 
-        # Verify default values
+        # Verify default values (no default_installments or default_installment_frequency)
         self.assertEqual(settings1.balance_due_days, 30)
         self.assertEqual(settings1.grace_period_days, 7)
-        self.assertEqual(settings1.default_installments, 2)
-        self.assertEqual(settings1.default_installment_frequency, 'MONTHLY')
         self.assertTrue(settings1.late_fee_enabled)
         self.assertEqual(settings1.default_late_fee_amount, Decimal('25.00'))
         self.assertEqual(settings1.default_deposit_percentage, Decimal('50.00'))
@@ -101,25 +97,19 @@ class PaymentSettingsModelTest(TestCase):
         settings = PaymentSettings.get_default_settings()
         self.assertEqual(str(settings), "Global Payment Settings")
 
-    def test_field_choices_validation(self):
-        """Test field choices are enforced"""
-        settings = PaymentSettings.get_default_settings()
-
-        # Test valid frequency choices
-        valid_frequencies = ['WEEKLY', 'BIWEEKLY', 'MONTHLY']
-        for freq in valid_frequencies:
-            settings.default_installment_frequency = freq
-            try:
-                settings.full_clean()
-            except ValidationError:
-                self.fail(f"Valid frequency {freq} should not raise ValidationError")
-
     def test_meta_class_configuration(self):
         """Test model meta configuration"""
         self.assertEqual(PaymentSettings._meta.verbose_name, "Payment Settings")
         self.assertEqual(PaymentSettings._meta.verbose_name_plural, "Payment Settings")
 
 
+@override_settings(
+    STATICFILES_STORAGE='django.contrib.staticfiles.storage.StaticFilesStorage',
+    STORAGES={
+        'default': {'BACKEND': 'django.core.files.storage.FileSystemStorage'},
+        'staticfiles': {'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage'},
+    }
+)
 class PaymentSettingsAdminTest(TestCase):
     """Test PaymentSettings admin interface functionality"""
 
@@ -171,9 +161,10 @@ class PaymentSettingsAdminTest(TestCase):
                 all_fields.extend(fieldset[1]['fields'])
 
         # Note: default_currency moved to CurrencySettings model
+        # Note: default_installments and default_installment_frequency do not exist
         expected_fields = [
-            'balance_due_days', 'grace_period_days', 'default_installments',
-            'default_installment_frequency', 'late_fee_enabled', 'default_late_fee_amount',
+            'balance_due_days', 'grace_period_days',
+            'late_fee_enabled', 'default_late_fee_amount',
             'default_deposit_percentage', 'auto_payment_retry_attempts',
             'auto_payment_retry_delay_days'
         ]
@@ -249,12 +240,10 @@ class PaymentSettingsAPITest(APITestCase):
         self.assertIsInstance(response.data, list)
         self.assertEqual(len(response.data), 1)
 
-        # Verify default values
+        # Verify default values (no default_installments or default_installment_frequency)
         settings_data = response.data[0]
         self.assertEqual(settings_data['balance_due_days'], 30)
         self.assertEqual(settings_data['grace_period_days'], 7)
-        self.assertEqual(settings_data['default_installments'], 2)
-        self.assertEqual(settings_data['default_installment_frequency'], 'MONTHLY')
         self.assertTrue(settings_data['late_fee_enabled'])
         self.assertEqual(float(settings_data['default_late_fee_amount']), 25.00)
         self.assertEqual(float(settings_data['default_deposit_percentage']), 50.00)
@@ -285,11 +274,10 @@ class PaymentSettingsAPITest(APITestCase):
         url = reverse('payment-settings-detail', kwargs={'pk': settings.id})
 
         # Note: default_currency moved to CurrencySettings model
+        # Note: no default_installments or default_installment_frequency
         update_data = {
             'balance_due_days': 45,
             'grace_period_days': 10,
-            'default_installments': 3,
-            'default_installment_frequency': 'BIWEEKLY',
             'late_fee_enabled': False,
             'default_late_fee_amount': '30.00',
             'default_deposit_percentage': '60.00',
@@ -304,8 +292,6 @@ class PaymentSettingsAPITest(APITestCase):
         settings.refresh_from_db()
         self.assertEqual(settings.balance_due_days, 45)
         self.assertEqual(settings.grace_period_days, 10)
-        self.assertEqual(settings.default_installments, 3)
-        self.assertEqual(settings.default_installment_frequency, 'BIWEEKLY')
         self.assertFalse(settings.late_fee_enabled)
         self.assertEqual(settings.default_late_fee_amount, Decimal('30.00'))
         self.assertEqual(settings.default_deposit_percentage, Decimal('60.00'))
@@ -334,7 +320,6 @@ class PaymentSettingsAPITest(APITestCase):
         self.assertEqual(settings.default_late_fee_amount, Decimal('40.00'))
         # Other fields should remain default
         self.assertEqual(settings.grace_period_days, 7)  # Should be unchanged
-        self.assertEqual(settings.default_installments, 2)  # Should be unchanged
 
     def test_cannot_create_new_settings(self):
         """Test that creating new settings is prevented"""

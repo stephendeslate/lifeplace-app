@@ -74,8 +74,11 @@ class ClientWorkflowProgressAPITestCase(TestCase):
             workflow_template=self.workflow_template,
             name='Test Wedding',
             start_date=date.today() + timedelta(days=30),
-            current_stage=self.lead_stage_2
         )
+        # The post_save signal resets current_stage to the first LEAD stage,
+        # so we use .update() to set it to lead_stage_2 after creation.
+        Event.objects.filter(id=self.event.id).update(current_stage=self.lead_stage_2)
+        self.event.refresh_from_db()
 
         self.api_client = APIClient()
 

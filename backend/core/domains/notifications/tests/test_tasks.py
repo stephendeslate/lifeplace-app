@@ -8,8 +8,8 @@ from django.contrib.auth import get_user_model
 from django.utils import timezone
 from django.core.cache import cache
 
-from ..models import NotificationType, Notification
-from ..tasks import (
+from core.domains.notifications.models import NotificationType, Notification
+from core.domains.notifications.tasks import (
     create_notification_async,
     bulk_create_notifications_async,
     cleanup_old_notifications,
@@ -100,17 +100,17 @@ class NotificationTasksTestCase(TestCase):
         self.assertEqual(result['status'], 'error')
         self.assertIn('not found', result['message'])
     
-    @patch('core.domains.notifications.tasks.rate_limit_check')
+    @patch('core.domains.notifications.security.NotificationRateLimiter.check_creation_limit')
     def test_create_notification_async_rate_limited(self, mock_rate_limit):
         """Test rate limiting for async notification creation"""
-        mock_rate_limit.return_value = False
-        
+        mock_rate_limit.return_value = (False, 'Rate limit exceeded')
+
         result = create_notification_async(
             recipient_id=self.user.id,
             notification_type_code='TEST_NOTIFICATION',
             context={'title': 'Test'}
         )
-        
+
         self.assertEqual(result['status'], 'rate_limited')
         self.assertIsNone(result['notification_id'])
     
@@ -329,23 +329,24 @@ class NotificationTasksIntegrationTestCase(TestCase):
         mock_email_send.assert_called_once()
     
     def test_error_handling_in_async_task(self):
-        """Test error handling in async notification creation"""
-        # Test with template rendering error
+        """Test graceful handling of templates with undefined variables"""
+        # Django templates silently handle undefined nested attributes
+        # (they render to empty string), so the notification is created successfully
         error_type = NotificationType.objects.create(
             code='ERROR_TEST',
             name='Error Test',
             category='SYSTEM',
             priority='NORMAL',
-            default_title_template='{{ invalid.nested.attribute }}',  # This will cause error
+            default_title_template='{{ invalid.nested.attribute }}',
             default_content_template='Content',
             is_active=True,
         )
-        
+
         result = create_notification_async(
             recipient_id=self.user.id,
             notification_type_code='ERROR_TEST',
             context={}
         )
-        
-        self.assertEqual(result['status'], 'error')
-        self.assertIn('message', result)
+
+        self.assertEqual(result['status'], 'success')
+        self.assertIsNotNone(result['notification_id'])

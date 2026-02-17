@@ -481,12 +481,15 @@ class TestQuotePDFServiceEventInfo:
     def test_generate_pdf_without_start_date(
         self, mock_branding, event_factory, user_factory
     ):
-        """Test PDF generation when event has no start date."""
-        event = event_factory()
-        event.start_date = None
-        event.save()
+        """Test PDF generation when event has no start date.
 
+        Event.start_date is NOT NULL at DB level so we cannot persist None.
+        Instead we set it on the in-memory object that the quote references
+        to exercise the ``if event.start_date`` guard in the PDF service.
+        """
+        event = event_factory()
         admin_user = user_factory(admin=True)
+
         quote = EventQuote.objects.create(
             event=event,
             version=1,
@@ -496,6 +499,9 @@ class TestQuotePDFServiceEventInfo:
             valid_until=timezone.now().date() + timedelta(days=30),
             created_by=admin_user
         )
+
+        # Override start_date on the in-memory event accessed through the quote
+        quote.event.__dict__['start_date'] = None
 
         buffer = QuotePDFService.generate_quote_pdf(quote)
 

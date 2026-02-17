@@ -1085,20 +1085,20 @@ class TestVenueViewsPermissions:
         """Test public venue endpoints are read-only."""
         venue = venue_factory(is_active=True, is_bookable=True)
 
-        # Create should fail
+        # Create should fail (405 Method Not Allowed for ReadOnlyModelViewSet)
         response = api_client.post(PUBLIC_VENUES_URL, {
             'name': 'Test',
             'code': 'TEST',
             'maximum_capacity': 50
         }, format='json')
-        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+        assert response.status_code == status.HTTP_405_METHOD_NOT_ALLOWED
 
         # Update should fail
         response = api_client.put(f'{PUBLIC_VENUES_URL}{venue.id}/', {
             'name': 'Updated'
         }, format='json')
-        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+        assert response.status_code == status.HTTP_405_METHOD_NOT_ALLOWED
 
         # Delete should fail
         response = api_client.delete(f'{PUBLIC_VENUES_URL}{venue.id}/')
-        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+        assert response.status_code == status.HTTP_405_METHOD_NOT_ALLOWED

@@ -116,23 +116,52 @@ def mock_security_logging(mocker):
     """
     Mock security logging to avoid database errors when security_events table
     doesn't exist (when using --no-migrations).
+
+    The SecurityEvent model is defined in core/utils/security_logging.py (not in
+    any app's models.py), so its table is not created by --no-migrations / syncdb.
+    We must mock all paths that could access SecurityEvent.objects.
     """
-    # Mock the class method
+    from unittest.mock import MagicMock
+
+    # Mock all SecurityLogger methods that access the database
     mocker.patch(
         'core.utils.security_logging.SecurityLogger.log_event',
         return_value=None
     )
-    # Mock the module-level function
+    mocker.patch(
+        'core.utils.security_logging.SecurityLogger.log_login_success',
+        return_value=None
+    )
+    mocker.patch(
+        'core.utils.security_logging.SecurityLogger.log_login_failure',
+        return_value=None
+    )
+    mocker.patch(
+        'core.utils.security_logging.SecurityLogger.log_admin_action',
+        return_value=None
+    )
+    mocker.patch(
+        'core.utils.security_logging.SecurityLogger.log_permission_denied',
+        return_value=None
+    )
+    mocker.patch(
+        'core.utils.security_logging.SecurityLogger.log_suspicious_activity',
+        return_value=None
+    )
+    # Mock the module-level convenience function
     mocker.patch(
         'core.utils.security_logging.log_security_event',
         return_value=None
     )
-    # Mock the security_logger instance used in views
-    mocker.patch.object(
-        __import__('core.domains.users.views', fromlist=['security_logger']).security_logger,
-        'log_security_event',
-        return_value=None,
-        create=True
+    # Mock SecurityEvent.objects to prevent any direct DB access
+    mock_manager = MagicMock()
+    mock_manager.create.return_value = MagicMock(id=1)
+    mock_manager.filter.return_value = mock_manager
+    mock_manager.count.return_value = 0
+    mock_manager.exists.return_value = False
+    mocker.patch(
+        'core.utils.security_logging.SecurityEvent.objects',
+        mock_manager
     )
 
 
@@ -259,3 +288,43 @@ def request_factory():
     """Return a DRF API request factory."""
     from rest_framework.test import APIRequestFactory
     return APIRequestFactory()
+
+
+# =============================================================================
+# SECURITY EVENTS TABLE (for --no-migrations compatibility)
+# =============================================================================
+
+@pytest.fixture
+def ensure_security_events_table():
+    """
+    Create the security_events table if it doesn't exist.
+
+    The SecurityEvent model is defined in core/utils/security_logging.py (not
+    in any app's models.py), so its table is NOT created by --no-migrations /
+    syncdb. When a User is deleted, Django's FK cascade tries to UPDATE
+    security_events SET user_id = NULL, which fails if the table is missing.
+
+    Use this fixture in any test that calls user.delete().
+    """
+    from django.db import connection
+    with connection.cursor() as cursor:
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS security_events (
+                id SERIAL PRIMARY KEY,
+                timestamp TIMESTAMP NOT NULL DEFAULT NOW(),
+                event_type VARCHAR(50) NOT NULL,
+                severity VARCHAR(20) NOT NULL DEFAULT 'MEDIUM',
+                user_id INTEGER REFERENCES users_user(id) ON DELETE SET NULL,
+                username VARCHAR(150) NOT NULL DEFAULT 'anonymous',
+                user_agent TEXT NOT NULL DEFAULT '',
+                ip_address INET,
+                country VARCHAR(2) NOT NULL DEFAULT '',
+                request_method VARCHAR(10) NOT NULL DEFAULT '',
+                request_path TEXT NOT NULL DEFAULT '',
+                referer TEXT NOT NULL DEFAULT '',
+                description TEXT NOT NULL DEFAULT '',
+                details JSONB NOT NULL DEFAULT '{}',
+                risk_score INTEGER NOT NULL DEFAULT 0,
+                is_blocked BOOLEAN NOT NULL DEFAULT FALSE
+            )
+        """)

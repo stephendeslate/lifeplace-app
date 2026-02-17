@@ -126,11 +126,12 @@ class TestCurrencySettingsView:
             default_currency='EUR',
             enabled_currencies=['EUR']
         )
-        # Create system settings for fallback
-        CurrencySettings.objects.create(
-            default_currency='PHP',
-            enabled_currencies=['PHP']
-        )
+        # Ensure system settings exist for fallback (may already exist from signals)
+        if not CurrencySettings.objects.filter(user__isnull=True).exists():
+            CurrencySettings.objects.create(
+                default_currency='PHP',
+                enabled_currencies=['PHP']
+            )
         client = authenticated_client(user=user)
         url = reverse('settings:currency-settings')
 
@@ -146,12 +147,21 @@ class TestCurrencySettingsView:
 class TestSystemCurrencySettingsView:
     """Tests for SystemCurrencySettingsView API endpoints."""
 
-    def test_get_system_settings_authenticated(self, authenticated_client):
-        """Test authenticated user can get system currency settings."""
-        client = authenticated_client()
+    @pytest.fixture
+    def financial_admin_client(self, authenticated_client, user_factory):
+        """Return an admin client with financial settings permissions."""
+        user = user_factory(
+            role='ADMIN',
+            is_staff=True,
+            admin_permissions={'can_manage_financial_settings': True}
+        )
+        return authenticated_client(user=user)
+
+    def test_get_system_settings_authenticated(self, financial_admin_client):
+        """Test admin with financial permissions can get system currency settings."""
         url = reverse('settings:system-currency-settings')
 
-        response = client.get(url)
+        response = financial_admin_client.get(url)
 
         assert response.status_code == status.HTTP_200_OK
         assert response.data['success'] is True
@@ -165,36 +175,36 @@ class TestSystemCurrencySettingsView:
 
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
-    def test_put_system_settings(self, authenticated_client):
+    def test_put_system_settings(self, financial_admin_client):
         """Test PUT updates system currency settings."""
-        # Create initial system settings
-        CurrencySettings.objects.create(
-            default_currency='PHP',
-            enabled_currencies=['PHP']
-        )
-        client = authenticated_client()
+        # Ensure system settings exist (may already exist from signals)
+        if not CurrencySettings.objects.filter(user__isnull=True).exists():
+            CurrencySettings.objects.create(
+                default_currency='PHP',
+                enabled_currencies=['PHP']
+            )
         url = reverse('settings:system-currency-settings')
         data = {
             'default_currency': 'USD',
             'decimal_places': 2,
         }
 
-        response = client.put(url, data, format='json')
+        response = financial_admin_client.put(url, data, format='json')
 
         assert response.status_code == status.HTTP_200_OK
         assert response.data['success'] is True
         assert response.data['data']['default_currency'] == 'USD'
 
-    def test_put_system_settings_invalid_data(self, authenticated_client):
+    def test_put_system_settings_invalid_data(self, financial_admin_client):
         """Test PUT with invalid currency returns 400."""
-        CurrencySettings.objects.create()
-        client = authenticated_client()
+        if not CurrencySettings.objects.filter(user__isnull=True).exists():
+            CurrencySettings.objects.create()
         url = reverse('settings:system-currency-settings')
         data = {
             'enabled_currencies': ['INVALID'],
         }
 
-        response = client.put(url, data, format='json')
+        response = financial_admin_client.put(url, data, format='json')
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert response.data['success'] is False
@@ -266,12 +276,11 @@ class TestCurrencyFormatSettingsView:
 class TestLegalDocumentViewSet:
     """Tests for LegalDocumentViewSet API endpoints."""
 
-    def test_get_all_legal_documents(self, authenticated_client):
+    def test_get_all_legal_documents(self, admin_client):
         """Test getting list of all legal documents."""
-        client = authenticated_client()
         url = reverse('settings:legal-documents-list')
 
-        response = client.get(url)
+        response = admin_client.get(url)
 
         assert response.status_code == status.HTTP_200_OK
         assert response.data['success'] is True
@@ -287,31 +296,27 @@ class TestLegalDocumentViewSet:
 
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
-    def test_get_specific_document_type(self, authenticated_client):
+    def test_get_specific_document_type(self, admin_client):
         """Test getting a specific legal document by type."""
-        client = authenticated_client()
         url = reverse('settings:legal-document-detail', kwargs={'document_type': 'TERMS_OF_SERVICE'})
 
-        response = client.get(url)
+        response = admin_client.get(url)
 
         assert response.status_code == status.HTTP_200_OK
         assert response.data['success'] is True
         assert response.data['data']['document_type'] == 'TERMS_OF_SERVICE'
 
-    def test_get_invalid_document_type(self, authenticated_client):
+    def test_get_invalid_document_type(self, admin_client):
         """Test getting invalid document type returns 400."""
-        client = authenticated_client()
         url = reverse('settings:legal-document-detail', kwargs={'document_type': 'INVALID_TYPE'})
 
-        response = client.get(url)
+        response = admin_client.get(url)
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert response.data['success'] is False
 
-    def test_put_update_legal_document(self, authenticated_client, user_factory):
+    def test_put_update_legal_document(self, admin_client):
         """Test updating a legal document."""
-        user = user_factory()
-        client = authenticated_client(user=user)
         url = reverse('settings:legal-document-detail', kwargs={'document_type': 'TERMS_OF_SERVICE'})
         data = {
             'title': 'Updated Terms of Service',
@@ -320,44 +325,41 @@ class TestLegalDocumentViewSet:
             'is_published': True,
         }
 
-        response = client.put(url, data, format='json')
+        response = admin_client.put(url, data, format='json')
 
         assert response.status_code == status.HTTP_200_OK
         assert response.data['success'] is True
         assert response.data['data']['title'] == 'Updated Terms of Service'
         assert response.data['data']['version'] == '2.0'
 
-    def test_put_requires_document_type(self, authenticated_client):
+    def test_put_requires_document_type(self, admin_client):
         """Test PUT without document_type returns 400."""
-        client = authenticated_client()
         url = reverse('settings:legal-documents-list')
         data = {'title': 'Test'}
 
-        response = client.put(url, data, format='json')
+        response = admin_client.put(url, data, format='json')
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert 'Document type is required' in response.data['message']
 
-    def test_put_invalid_document_type(self, authenticated_client):
+    def test_put_invalid_document_type(self, admin_client):
         """Test PUT with invalid document_type returns 400."""
-        client = authenticated_client()
         url = reverse('settings:legal-document-detail', kwargs={'document_type': 'INVALID'})
         data = {'title': 'Test'}
 
-        response = client.put(url, data, format='json')
+        response = admin_client.put(url, data, format='json')
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert 'Invalid document type' in response.data['message']
 
-    def test_put_invalid_data(self, authenticated_client):
+    def test_put_invalid_data(self, admin_client):
         """Test PUT with invalid data returns 400."""
-        client = authenticated_client()
         url = reverse('settings:legal-document-detail', kwargs={'document_type': 'TERMS_OF_SERVICE'})
         data = {
             'version': '',  # Invalid - version cannot be empty
         }
 
-        response = client.put(url, data, format='json')
+        response = admin_client.put(url, data, format='json')
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
@@ -412,12 +414,21 @@ class TestPublicLegalDocumentView:
 class TestCompanySettingsView:
     """Tests for CompanySettingsView API endpoints."""
 
-    def test_get_company_settings(self, authenticated_client):
+    @pytest.fixture
+    def company_admin_client(self, authenticated_client, user_factory):
+        """Return an admin client with company settings permissions."""
+        user = user_factory(
+            role='ADMIN',
+            is_staff=True,
+            admin_permissions={'can_manage_company_settings': True}
+        )
+        return authenticated_client(user=user)
+
+    def test_get_company_settings(self, company_admin_client):
         """Test getting company settings."""
-        client = authenticated_client()
         url = reverse('settings:company-settings')
 
-        response = client.get(url)
+        response = company_admin_client.get(url)
 
         assert response.status_code == status.HTTP_200_OK
         assert response.data['success'] is True
@@ -431,11 +442,10 @@ class TestCompanySettingsView:
 
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
-    def test_put_update_company_settings(self, authenticated_client):
+    def test_put_update_company_settings(self, company_admin_client):
         """Test updating company settings."""
         # Ensure settings exist
         CompanySettings.get_settings()
-        client = authenticated_client()
         url = reverse('settings:company-settings')
         data = {
             'company_name': 'Updated Company Name',
@@ -443,36 +453,34 @@ class TestCompanySettingsView:
             'primary_color': '#ff0000',
         }
 
-        response = client.put(url, data, format='json')
+        response = company_admin_client.put(url, data, format='json')
 
         assert response.status_code == status.HTTP_200_OK
         assert response.data['success'] is True
         assert response.data['data']['company_name'] == 'Updated Company Name'
 
-    def test_put_partial_update(self, authenticated_client):
+    def test_put_partial_update(self, company_admin_client):
         """Test partial update of company settings."""
         CompanySettings.get_settings()
-        client = authenticated_client()
         url = reverse('settings:company-settings')
         data = {
             'phone': '+1234567890',
         }
 
-        response = client.put(url, data, format='json')
+        response = company_admin_client.put(url, data, format='json')
 
         assert response.status_code == status.HTTP_200_OK
         assert response.data['data']['phone'] == '+1234567890'
 
-    def test_put_invalid_data(self, authenticated_client):
+    def test_put_invalid_data(self, company_admin_client):
         """Test PUT with invalid data returns 400."""
         CompanySettings.get_settings()
-        client = authenticated_client()
         url = reverse('settings:company-settings')
         data = {
             'email': 'not-an-email',  # Invalid email format
         }
 
-        response = client.put(url, data, format='json')
+        response = company_admin_client.put(url, data, format='json')
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert response.data['success'] is False
@@ -484,10 +492,13 @@ class TestPublicCompanySettingsView:
 
     def test_get_public_company_settings(self, api_client):
         """Test getting public company settings (no auth required)."""
-        CompanySettings.objects.create(
-            company_name='Test Company',
-            email='public@example.com'
-        )
+        # Use get_or_create with pk=1 to match the singleton pattern used by the view.
+        # CompanySettings.get_settings() always fetches pk=1, so we must ensure
+        # pk=1 has our test data (not a default-values record).
+        settings = CompanySettings.get_settings()
+        settings.company_name = 'Test Company'
+        settings.email = 'public@example.com'
+        settings.save()
         url = reverse('settings:public-company-settings')
 
         response = api_client.get(url)
@@ -500,11 +511,11 @@ class TestPublicCompanySettingsView:
 
     def test_public_settings_excludes_sensitive_fields(self, api_client):
         """Test public settings don't include sensitive fields."""
-        CompanySettings.objects.create(
-            company_name='Test Company',
-            bank_name='Secret Bank',
-            bank_account_number='1234567890'
-        )
+        settings = CompanySettings.get_settings()
+        settings.company_name = 'Test Company'
+        settings.bank_name = 'Secret Bank'
+        settings.bank_account_number = '1234567890'
+        settings.save()
         url = reverse('settings:public-company-settings')
 
         response = api_client.get(url)
@@ -746,13 +757,18 @@ class TestViewErrorHandling:
         assert response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
         assert response.data['success'] is False
 
-    def test_system_currency_settings_get_handles_exception(self, authenticated_client, mocker):
+    def test_system_currency_settings_get_handles_exception(self, authenticated_client, user_factory, mocker):
         """Test SystemCurrencySettingsView GET handles exceptions gracefully."""
         mocker.patch(
             'core.domains.settings.services.CurrencySettingsService.get_system_settings',
             side_effect=Exception('Database error')
         )
-        client = authenticated_client()
+        user = user_factory(
+            role='ADMIN',
+            is_staff=True,
+            admin_permissions={'can_manage_financial_settings': True}
+        )
+        client = authenticated_client(user=user)
         url = reverse('settings:system-currency-settings')
 
         response = client.get(url)
@@ -788,29 +804,33 @@ class TestViewErrorHandling:
         assert response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
         assert response.data['success'] is False
 
-    def test_legal_document_get_handles_exception(self, authenticated_client, mocker):
+    def test_legal_document_get_handles_exception(self, admin_client, mocker):
         """Test LegalDocumentViewSet GET handles exceptions gracefully."""
         mocker.patch.object(
             LegalDocument,
             'get_terms_of_service',
             side_effect=Exception('Database error')
         )
-        client = authenticated_client()
         url = reverse('settings:legal-documents-list')
 
-        response = client.get(url)
+        response = admin_client.get(url)
 
         assert response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
         assert response.data['success'] is False
 
-    def test_company_settings_get_handles_exception(self, authenticated_client, mocker):
+    def test_company_settings_get_handles_exception(self, authenticated_client, user_factory, mocker):
         """Test CompanySettingsView GET handles exceptions gracefully."""
         mocker.patch.object(
             CompanySettings,
             'get_settings',
             side_effect=Exception('Database error')
         )
-        client = authenticated_client()
+        user = user_factory(
+            role='ADMIN',
+            is_staff=True,
+            admin_permissions={'can_manage_company_settings': True}
+        )
+        client = authenticated_client(user=user)
         url = reverse('settings:company-settings')
 
         response = client.get(url)

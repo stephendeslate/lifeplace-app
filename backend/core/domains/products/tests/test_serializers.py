@@ -428,6 +428,7 @@ class TestDiscountSerializer:
 
     def test_validate_percentage_range(self, discount_factory):
         """Test validation fails for percentage > 100."""
+        from core.domains.products.exceptions import InvalidDiscountValue
         data = {
             'name': 'Invalid Discount',
             'description': 'Test',
@@ -438,10 +439,12 @@ class TestDiscountSerializer:
         }
         serializer = DiscountSerializer(data=data)
 
-        assert not serializer.is_valid()
+        with pytest.raises(InvalidDiscountValue):
+            serializer.is_valid(raise_exception=True)
 
     def test_validate_percentage_positive(self, discount_factory):
         """Test validation fails for percentage <= 0."""
+        from core.domains.products.exceptions import InvalidDiscountValue
         data = {
             'name': 'Invalid Discount',
             'description': 'Test',
@@ -452,10 +455,12 @@ class TestDiscountSerializer:
         }
         serializer = DiscountSerializer(data=data)
 
-        assert not serializer.is_valid()
+        with pytest.raises(InvalidDiscountValue):
+            serializer.is_valid(raise_exception=True)
 
     def test_validate_fixed_positive(self, discount_factory):
         """Test validation fails for fixed amount <= 0."""
+        from core.domains.products.exceptions import InvalidDiscountValue
         data = {
             'name': 'Invalid Discount',
             'description': 'Test',
@@ -466,10 +471,12 @@ class TestDiscountSerializer:
         }
         serializer = DiscountSerializer(data=data)
 
-        assert not serializer.is_valid()
+        with pytest.raises(InvalidDiscountValue):
+            serializer.is_valid(raise_exception=True)
 
     def test_validate_date_range(self, discount_factory):
         """Test validation fails when valid_until < valid_from."""
+        from core.domains.products.exceptions import InvalidDateRange
         data = {
             'name': 'Invalid Discount',
             'description': 'Test',
@@ -481,7 +488,8 @@ class TestDiscountSerializer:
         }
         serializer = DiscountSerializer(data=data)
 
-        assert not serializer.is_valid()
+        with pytest.raises(InvalidDateRange):
+            serializer.is_valid(raise_exception=True)
 
     def test_validate_code_required_needs_code(self, discount_factory):
         """Test validation fails when CODE_REQUIRED but no code provided."""

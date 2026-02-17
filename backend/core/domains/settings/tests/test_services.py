@@ -280,6 +280,8 @@ class TestCurrencySettingsService:
     def test_get_user_settings_falls_back_to_system(self, user_factory):
         """Test get_user_settings falls back to system settings."""
         user = user_factory()
+        # Clear any auto-created system settings (from signals) before creating test-specific one
+        CurrencySettings.objects.filter(user__isnull=True).delete()
         CurrencySettings.objects.create(
             default_currency='SGD',
             enabled_currencies=['SGD']
@@ -499,7 +501,8 @@ class TestCurrencySettingsService:
             user=user,
             default_currency='EUR'
         )
-        # Also create system settings for fallback
+        # Clear any auto-created system settings (from signals) and create explicit one
+        CurrencySettings.objects.filter(user__isnull=True).delete()
         CurrencySettings.objects.create(
             default_currency='PHP',
             enabled_currencies=['PHP']

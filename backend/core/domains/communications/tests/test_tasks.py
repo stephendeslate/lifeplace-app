@@ -34,7 +34,7 @@ from core.domains.communications.tasks import (
 class TestSendCommunicationAsync:
     """Tests for send_communication_async task."""
 
-    @patch('core.domains.communications.tasks.CommunicationService')
+    @patch('core.domains.communications.services.CommunicationService')
     def test_send_communication_success(self, mock_service_class, user_factory):
         """Test successful async communication sending."""
         client = user_factory()
@@ -66,7 +66,7 @@ class TestSendCommunicationAsync:
         assert result['record_id'] == str(mock_record.id)
         assert result['delivery_status'] == 'SENT'
 
-    @patch('core.domains.communications.tasks.CommunicationService')
+    @patch('core.domains.communications.services.CommunicationService')
     def test_send_communication_no_record_returned(self, mock_service_class):
         """Test async task when no record is returned (preference blocked)."""
         mock_service = Mock()
@@ -89,7 +89,7 @@ class TestSendCommunicationAsync:
         assert result['record_id'] is None
         assert 'skipped' in result['message'].lower() or 'no record' in result['message'].lower()
 
-    @patch('core.domains.communications.tasks.CommunicationService')
+    @patch('core.domains.communications.services.CommunicationService')
     def test_send_communication_with_event(self, mock_service_class, event_factory):
         """Test async task with event parameter."""
         event = event_factory()
@@ -121,7 +121,7 @@ class TestSendCommunicationAsync:
         call_args = mock_service.send_communication.call_args
         assert call_args[1]['event'] == event
 
-    @patch('core.domains.communications.tasks.CommunicationService')
+    @patch('core.domains.communications.services.CommunicationService')
     def test_send_communication_handles_missing_client(self, mock_service_class):
         """Test async task handles missing client gracefully."""
         mock_record = Mock()
@@ -148,9 +148,11 @@ class TestSendCommunicationAsync:
 
         assert result['success'] is True
 
-    @patch('core.domains.communications.tasks.CommunicationService')
+    @patch('core.domains.communications.services.CommunicationService')
     def test_send_communication_failure_triggers_retry(self, mock_service_class):
         """Test task failure triggers retry mechanism."""
+        from celery.exceptions import Retry
+
         mock_service = Mock()
         mock_service.send_communication.side_effect = Exception('Provider error')
         mock_service_class.return_value = mock_service
@@ -162,19 +164,13 @@ class TestSendCommunicationAsync:
             body_template='Body',
         )
 
-        # Use bind=True task with mock request
-        task = send_communication_async
-        task.request = Mock()
-        task.request.retries = 3  # Already at max retries
-
-        result = send_communication_async(
-            template_name='Failing Template',
-            recipient='test@example.com',
-        )
-
-        assert result['success'] is False
-        assert 'error' in result
-        assert result['retries_exhausted'] is True
+        # In eager mode, the task's self.request.retries starts at 0 which is < 3,
+        # so the task will call self.retry() which raises a Retry exception.
+        with pytest.raises(Retry):
+            send_communication_async(
+                template_name='Failing Template',
+                recipient='test@example.com',
+            )
 
 
 @pytest.mark.django_db
@@ -311,7 +307,7 @@ class TestSendBulkCommunicationsAsync:
 class TestProcessRetryQueueAsync:
     """Tests for process_retry_queue_async task."""
 
-    @patch('core.domains.communications.tasks.CommunicationService')
+    @patch('core.domains.communications.services.CommunicationService')
     def test_process_retry_queue_success(self, mock_service_class):
         """Test successful retry queue processing."""
         mock_service = Mock()
@@ -329,7 +325,7 @@ class TestProcessRetryQueueAsync:
         assert result['results']['processed'] == 5
         assert 'timestamp' in result
 
-    @patch('core.domains.communications.tasks.CommunicationService')
+    @patch('core.domains.communications.services.CommunicationService')
     def test_process_retry_queue_failure(self, mock_service_class):
         """Test retry queue processing failure."""
         mock_service = Mock()
@@ -408,7 +404,7 @@ class TestCleanupOldRecordsAsync:
         # Unread record should still exist
         assert CommunicationRecord.objects.filter(id=unread_record.id).exists()
 
-    @patch('core.domains.communications.tasks.CommunicationConfig')
+    @patch('core.domains.communications.config.CommunicationConfig')
     def test_cleanup_uses_config_retention(self, mock_config):
         """Test cleanup uses configured retention period."""
         mock_config.get_retention_days.return_value = 60
@@ -423,7 +419,7 @@ class TestCleanupOldRecordsAsync:
 class TestWarmCacheAsync:
     """Tests for warm_cache_async task."""
 
-    @patch('core.domains.communications.tasks.communications_cache_service')
+    @patch('core.domains.communications.cache_service.communications_cache_service')
     def test_warm_cache_success(self, mock_cache_service):
         """Test successful cache warming."""
         result = warm_cache_async()
@@ -431,7 +427,7 @@ class TestWarmCacheAsync:
         assert result['success'] is True
         mock_cache_service.warm_cache_for_templates.assert_called_once_with(None)
 
-    @patch('core.domains.communications.tasks.communications_cache_service')
+    @patch('core.domains.communications.cache_service.communications_cache_service')
     def test_warm_cache_specific_templates(self, mock_cache_service):
         """Test cache warming for specific templates."""
         template_ids = [1, 2, 3]
@@ -442,7 +438,7 @@ class TestWarmCacheAsync:
         assert result['template_ids'] == template_ids
         mock_cache_service.warm_cache_for_templates.assert_called_once_with(template_ids)
 
-    @patch('core.domains.communications.tasks.communications_cache_service')
+    @patch('core.domains.communications.cache_service.communications_cache_service')
     def test_warm_cache_failure(self, mock_cache_service):
         """Test cache warming failure handling."""
         mock_cache_service.warm_cache_for_templates.side_effect = Exception('Cache error')
@@ -457,7 +453,7 @@ class TestWarmCacheAsync:
 class TestHealthCheckProvidersAsync:
     """Tests for health_check_providers_async task."""
 
-    @patch('core.domains.communications.tasks.CommunicationService')
+    @patch('core.domains.communications.services.CommunicationService')
     def test_health_check_all_healthy(self, mock_service_class):
         """Test health check when all providers are healthy."""
         mock_service = Mock()
@@ -473,7 +469,7 @@ class TestHealthCheckProvidersAsync:
         assert 'health_status' in result
         assert len(result['unhealthy_providers']) == 0
 
-    @patch('core.domains.communications.tasks.CommunicationService')
+    @patch('core.domains.communications.services.CommunicationService')
     def test_health_check_unhealthy_provider(self, mock_service_class):
         """Test health check with unhealthy provider."""
         mock_service = Mock()
@@ -488,7 +484,7 @@ class TestHealthCheckProvidersAsync:
         assert result['success'] is True
         assert 'MOCK' in result['unhealthy_providers']
 
-    @patch('core.domains.communications.tasks.CommunicationService')
+    @patch('core.domains.communications.services.CommunicationService')
     def test_health_check_auto_reset(self, mock_service_class):
         """Test health check auto-resets providers with excessive failures."""
         mock_service = Mock()
@@ -505,7 +501,7 @@ class TestHealthCheckProvidersAsync:
         # Provider should be in auto_reset list, not unhealthy
         assert 'FAILING' in result['auto_reset_providers']
 
-    @patch('core.domains.communications.tasks.CommunicationService')
+    @patch('core.domains.communications.services.CommunicationService')
     def test_health_check_failure(self, mock_service_class):
         """Test health check task failure."""
         mock_service = Mock()
@@ -522,9 +518,11 @@ class TestHealthCheckProvidersAsync:
 class TestTaskRetryBehavior:
     """Tests for task retry behavior."""
 
-    @patch('core.domains.communications.tasks.CommunicationService')
+    @patch('core.domains.communications.services.CommunicationService')
     def test_send_communication_retries_on_failure(self, mock_service_class):
         """Test send_communication_async retries on failure."""
+        from celery.exceptions import Retry
+
         mock_service = Mock()
         mock_service.send_communication.side_effect = Exception('Temporary error')
         mock_service_class.return_value = mock_service
@@ -536,20 +534,13 @@ class TestTaskRetryBehavior:
             body_template='Body',
         )
 
-        # Simulate first retry attempt
-        task = send_communication_async
-        task.request = Mock()
-        task.request.retries = 0  # First attempt
-
-        # Task should request retry (raises Retry exception in real Celery)
-        # In eager mode, it will just fail and return error
-        result = send_communication_async(
-            template_name='Retry Template',
-            recipient='test@example.com',
-        )
-
-        # With retries exhausted (mocked), should fail
-        # In real scenario, Celery would handle retry
+        # In eager mode, self.request.retries starts at 0 which is < 3,
+        # so the task will call self.retry() which raises a Retry exception.
+        with pytest.raises(Retry):
+            send_communication_async(
+                template_name='Retry Template',
+                recipient='test@example.com',
+            )
 
     @patch('core.domains.communications.tasks.send_communication_async.delay')
     def test_bulk_send_continues_on_individual_failure(self, mock_delay):

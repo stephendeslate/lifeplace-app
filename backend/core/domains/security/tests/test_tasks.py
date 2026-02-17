@@ -394,8 +394,8 @@ class TestSendDeadlineAlertTask:
         settings.DPO_EMAIL = 'dpo@company.com'
         settings.DEFAULT_FROM_EMAIL = 'noreply@company.com'
 
-        # Use a fake UUID that doesn't exist
-        send_deadline_alert('00000000-0000-0000-0000-000000000000', 'Test', urgent=False)
+        # Use a non-existent integer ID (SecurityBreach uses BigAutoField PK)
+        send_deadline_alert(999999, 'Test', urgent=False)
 
         # No email should be sent
         assert len(mail.outbox) == 0
@@ -532,7 +532,7 @@ class TestSendDailyBreachSummaryTask:
         assert 'security@company.com' in mail.outbox[0].to
         assert 'dpo@company.com' in mail.outbox[0].to
 
-    def test_summary_no_recipients_configured(self, settings, caplog):
+    def test_summary_no_recipients_configured(self, settings, mocker):
         """Test no email when no recipients configured."""
         settings.DPO_EMAIL = None
         settings.SECURITY_TEAM_EMAIL = None
@@ -548,13 +548,14 @@ class TestSendDailyBreachSummaryTask:
             status='INVESTIGATING',
         )
 
-        import logging
-        caplog.set_level(logging.WARNING, logger='security')
+        mock_logger = mocker.patch('core.domains.security.tasks.logger')
 
         send_daily_breach_summary()
 
         assert len(mail.outbox) == 0
-        assert any('No recipients configured' in record.message for record in caplog.records)
+        mock_logger.warning.assert_called_once_with(
+            "No recipients configured for daily breach summary"
+        )
 
     def test_summary_subject_contains_count(self, settings):
         """Test summary subject contains breach count."""

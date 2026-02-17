@@ -245,7 +245,7 @@ class TestCommunicationTemplateViewSet:
 
         response = admin_client.post(
             f'/api/communications/templates/{template.id}/preview/',
-            {'context_data': {'name': 'John'}},
+            {'template_id': template.id, 'context_data': {'name': 'John'}},
             format='json'
         )
 
@@ -268,7 +268,7 @@ class TestCommunicationTemplateViewSet:
 
         response = admin_client.post(
             f'/api/communications/templates/{template.id}/preview/',
-            {'context_data': {}},
+            {'template_id': template.id, 'context_data': {}},
             format='json'
         )
 
@@ -310,7 +310,8 @@ class TestCommunicationTemplateViewSet:
 
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
-    def test_rollback_as_admin(self, admin_client, user_factory):
+    @patch('core.domains.communications.views.communications_cache_service')
+    def test_rollback_as_admin(self, mock_cache, admin_client, user_factory):
         """Test admin can rollback template to previous version."""
         admin = user_factory(admin=True)
         template = CommunicationTemplate.objects.create(
@@ -566,8 +567,9 @@ class TestCommunicationRecordViewSet:
         assert response.status_code == status.HTTP_200_OK
         assert response.data['template_name'] == 'Retrieve Record'
 
+    @patch('core.domains.communications.views.CommunicationRecordSerializer')
     @patch('core.domains.communications.views.CommunicationService')
-    def test_send_manual_as_admin(self, mock_service_class, admin_client):
+    def test_send_manual_as_admin(self, mock_service_class, mock_serializer_class, admin_client):
         """Test admin can send manual communication."""
         mock_service = Mock()
         mock_record = Mock()
@@ -577,9 +579,17 @@ class TestCommunicationRecordViewSet:
         mock_service.send_communication_by_template.return_value = mock_record
         mock_service_class.return_value = mock_service
 
+        # Mock serializer to avoid serializing a Mock object
+        mock_serializer_class.return_value.data = {
+            'id': str(mock_record.id),
+            'template_name': 'Manual Template',
+            'delivery_status': 'SENT',
+        }
+
         template = CommunicationTemplate.objects.create(
             name='Manual Send Template',
             channel='EMAIL',
+            category='SYSTEM',  # Use SYSTEM to avoid MANUAL validation requiring custom_subject/body
             subject_template='Subject',
             body_template='Body',
         )

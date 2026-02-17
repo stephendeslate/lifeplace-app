@@ -83,6 +83,7 @@ class AppSettings(BaseModel):
             user=user,
             defaults={
                 'description': description,
+                'value': {},
             }
         )
         setting.set_value(value, encrypt)

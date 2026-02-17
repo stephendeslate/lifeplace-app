@@ -1,7 +1,7 @@
 # backend/core/domains/payments/tests/test_invoice_payments.py
 
 import json
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 from decimal import Decimal
 from django.test import TestCase
 from django.urls import reverse
@@ -230,7 +230,8 @@ class InvoicePaymentTestCase(TestCase):
                 amount=self.invoice.total_amount,
                 currency='PHP',
                 status='COMPLETED',
-                description='Test payment'
+                description='Test payment',
+                due_date=date.today() + timedelta(days=7)
             )
         }
 
@@ -316,7 +317,8 @@ class InvoicePaymentTestCase(TestCase):
             amount=Decimal('5000.00'),
             currency='PHP',
             status='COMPLETED',
-            description='Test payment'
+            description='Test payment',
+            due_date=date.today() + timedelta(days=7)
         )
 
         self.client.force_authenticate(user=self.client_user)
@@ -328,16 +330,24 @@ class InvoicePaymentTestCase(TestCase):
         self.assertEqual(response.data['count'], 1)
 
     def test_payment_summary(self):
-        """Test payment summary endpoint"""
-        # Create payments with different statuses
+        """Test payment summary endpoint.
+
+        Note: total_pending and total_overdue are calculated from invoice remaining
+        balance (invoice total - completed payments), NOT from Payment record status.
+        pending_count is the count of unpaid invoices, not PENDING payments.
+        """
+        # Create a completed payment linked to the invoice
         Payment.objects.create(
             event=self.event,
+            invoice=self.invoice,
             amount=Decimal('5000.00'),
             currency='PHP',
             status='COMPLETED',
-            description='Completed payment'
+            description='Completed payment',
+            due_date=date.today() + timedelta(days=7)
         )
 
+        # Create a pending payment (not linked to invoice - just a payment record)
         Payment.objects.create(
             event=self.event,
             amount=Decimal('3000.00'),
@@ -355,10 +365,13 @@ class InvoicePaymentTestCase(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['payment_count'], 2)
         self.assertEqual(response.data['completed_count'], 1)
+        # pending_count is the count of unpaid invoices (ISSUED/PARTIALLY_PAID)
         self.assertEqual(response.data['pending_count'], 1)
         self.assertEqual(float(response.data['total_paid']), 5000.00)
-        self.assertEqual(float(response.data['total_pending']), 3000.00)
-        self.assertEqual(float(response.data['total_overdue']), 3000.00)
+        # total_pending = invoice remaining balance = 11200 - 5000 = 6200
+        self.assertEqual(float(response.data['total_pending']), 6200.00)
+        # total_overdue = remaining balance on overdue invoices (due_date 2025-11-01 is past)
+        self.assertEqual(float(response.data['total_overdue']), 6200.00)
 
     def test_unauthenticated_access_denied(self):
         """Test that unauthenticated users cannot access client endpoints"""
@@ -406,7 +419,8 @@ class InvoicePaymentTestCase(TestCase):
             amount=Decimal('5000.00'),
             currency='PHP',
             status='COMPLETED',
-            description='Completed payment'
+            description='Completed payment',
+            due_date=date.today() + timedelta(days=7)
         )
 
         Payment.objects.create(
@@ -414,7 +428,8 @@ class InvoicePaymentTestCase(TestCase):
             amount=Decimal('3000.00'),
             currency='PHP',
             status='PENDING',
-            description='Pending payment'
+            description='Pending payment',
+            due_date=date.today() + timedelta(days=7)
         )
 
         self.client.force_authenticate(user=self.client_user)
@@ -439,7 +454,8 @@ class InvoicePaymentTestCase(TestCase):
             amount=Decimal('5000.00'),
             currency='PHP',
             status='COMPLETED',
-            description='Test payment'
+            description='Test payment',
+            due_date=date.today() + timedelta(days=7)
         )
 
         self.client.force_authenticate(user=self.client_user)
@@ -464,7 +480,8 @@ class InvoicePaymentTestCase(TestCase):
             amount=Decimal('5000.00'),
             currency='PHP',
             status='PENDING',
-            description='Test payment'
+            description='Test payment',
+            due_date=date.today() + timedelta(days=7)
         )
 
         self.client.force_authenticate(user=self.client_user)

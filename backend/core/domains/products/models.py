@@ -238,8 +238,8 @@ class ProductOption(BaseModel):
 
         # Get global default tax rate
         default_tax = TaxRate.objects.filter(is_default=True).first()
-        tax_rate = default_tax.rate if default_tax else 0
-        tax_multiplier = 1 + (tax_rate / 100)
+        tax_rate = default_tax.rate if default_tax else Decimal('0')
+        tax_multiplier = Decimal('1') + (tax_rate / Decimal('100'))
         return self.base_price * tax_multiplier
 
 

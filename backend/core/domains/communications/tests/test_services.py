@@ -429,23 +429,25 @@ class TestCommunicationService:
             recipient='client@example.com',
             client=client,
             sent_by=sender,
+            skip_preference_check=True,  # Skip preference check to avoid blocking
         )
 
         assert record.client == client
         assert record.sent_by == sender
 
     @patch('core.domains.communications.services.provider_manager')
-    @patch('core.domains.notifications.models.NotificationPreference')
     def test_send_communication_respects_user_preferences(
-        self, mock_pref_model, mock_provider_manager, user_factory, mocker
+        self, mock_provider_manager, user_factory, mocker
     ):
         """Test send_communication respects user notification preferences."""
+        from core.domains.communications.exceptions import SendingFailed
+
         # Mock the NotificationPreference to block the communication
         mock_preferences = Mock()
         mock_preferences.email_enabled = False  # User disabled email
 
         mocker.patch(
-            'core.domains.communications.services.NotificationPreference.objects.get',
+            'core.domains.notifications.models.NotificationPreference.objects.get',
             return_value=mock_preferences
         )
 
@@ -459,14 +461,14 @@ class TestCommunicationService:
         )
 
         service = CommunicationService()
-        result = service.send_communication_by_template(
-            template=template,
-            recipient='test@example.com',
-            client=client,
-        )
+        # Implementation now raises SendingFailed instead of returning None
+        with pytest.raises(SendingFailed):
+            service.send_communication_by_template(
+                template=template,
+                recipient='test@example.com',
+                client=client,
+            )
 
-        # Should return None when blocked by preference
-        assert result is None
         mock_provider_manager.send_with_fallback.assert_not_called()
 
     @patch('core.domains.communications.services.provider_manager')
@@ -478,7 +480,7 @@ class TestCommunicationService:
         mock_preferences = Mock()
         mock_preferences.email_enabled = False
         mocker.patch(
-            'core.domains.communications.services.NotificationPreference.objects.get',
+            'core.domains.notifications.models.NotificationPreference.objects.get',
             return_value=mock_preferences
         )
 

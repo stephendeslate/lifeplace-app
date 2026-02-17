@@ -22,7 +22,7 @@ from rest_framework import status
 from rest_framework.test import APIClient
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from ..models import (
+from core.domains.notifications.models import (
     NotificationType,
     NotificationPreference,
     Notification,
@@ -113,7 +113,7 @@ class TestNotificationViewSet:
         """Test listing notifications for authenticated user"""
         api_client.credentials(HTTP_AUTHORIZATION=get_auth_header(client_user))
 
-        response = api_client.get('/api/notifications/')
+        response = api_client.get('/api/notifications/notifications/')
 
         assert response.status_code == status.HTTP_200_OK
         # Should return paginated results or list
@@ -126,14 +126,14 @@ class TestNotificationViewSet:
 
     def test_list_notifications_unauthenticated(self, api_client):
         """Test listing notifications requires authentication"""
-        response = api_client.get('/api/notifications/')
+        response = api_client.get('/api/notifications/notifications/')
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
     def test_list_notifications_filtered_by_read_status(self, api_client, client_user, notifications):
         """Test filtering notifications by read status"""
         api_client.credentials(HTTP_AUTHORIZATION=get_auth_header(client_user))
 
-        response = api_client.get('/api/notifications/?is_read=true')
+        response = api_client.get('/api/notifications/notifications/?is_read=true')
 
         assert response.status_code == status.HTTP_200_OK
         data = response.data
@@ -170,7 +170,7 @@ class TestNotificationViewSet:
             content='Content',
         )
 
-        response = api_client.get('/api/notifications/?category=EVENT')
+        response = api_client.get('/api/notifications/notifications/?category=EVENT')
 
         assert response.status_code == status.HTTP_200_OK
         data = response.data
@@ -185,7 +185,7 @@ class TestNotificationViewSet:
         """Test users can only see their own notifications"""
         api_client.credentials(HTTP_AUTHORIZATION=get_auth_header(admin_user))
 
-        response = api_client.get('/api/notifications/')
+        response = api_client.get('/api/notifications/notifications/')
 
         assert response.status_code == status.HTTP_200_OK
         data = response.data
@@ -205,7 +205,7 @@ class TestNotificationViewSet:
         api_client.credentials(HTTP_AUTHORIZATION=get_auth_header(client_user))
         notification = notifications[0]
 
-        response = api_client.get(f'/api/notifications/{notification.id}/')
+        response = api_client.get(f'/api/notifications/notifications/{notification.id}/')
 
         assert response.status_code == status.HTTP_200_OK
         assert response.data['id'] == notification.id
@@ -222,7 +222,7 @@ class TestNotificationViewSet:
         )
         api_client.credentials(HTTP_AUTHORIZATION=get_auth_header(client_user))
 
-        response = api_client.get(f'/api/notifications/{notification.id}/')
+        response = api_client.get(f'/api/notifications/notifications/{notification.id}/')
 
         assert response.status_code == status.HTTP_200_OK
         notification.refresh_from_db()
@@ -233,7 +233,7 @@ class TestNotificationViewSet:
         api_client.credentials(HTTP_AUTHORIZATION=get_auth_header(admin_user))
         notification = notifications[0]  # Belongs to client_user
 
-        response = api_client.get(f'/api/notifications/{notification.id}/')
+        response = api_client.get(f'/api/notifications/notifications/{notification.id}/')
 
         # Admin can see notifications but they should be filtered to their own
         assert response.status_code in [status.HTTP_403_FORBIDDEN, status.HTTP_404_NOT_FOUND]
@@ -253,7 +253,7 @@ class TestNotificationViewSet:
         )
         api_client.credentials(HTTP_AUTHORIZATION=get_auth_header(client_user))
 
-        response = api_client.post(f'/api/notifications/{notification.id}/mark_read/')
+        response = api_client.post(f'/api/notifications/notifications/{notification.id}/mark_read/')
 
         assert response.status_code == status.HTTP_200_OK
         notification.refresh_from_db()
@@ -271,7 +271,7 @@ class TestNotificationViewSet:
         )
         api_client.credentials(HTTP_AUTHORIZATION=get_auth_header(client_user))
 
-        response = api_client.post(f'/api/notifications/{notification.id}/mark_unread/')
+        response = api_client.post(f'/api/notifications/notifications/{notification.id}/mark_unread/')
 
         assert response.status_code == status.HTTP_200_OK
         notification.refresh_from_db()
@@ -281,7 +281,7 @@ class TestNotificationViewSet:
         """Test mark_all_read action endpoint"""
         api_client.credentials(HTTP_AUTHORIZATION=get_auth_header(client_user))
 
-        response = api_client.post('/api/notifications/mark_all_read/')
+        response = api_client.post('/api/notifications/notifications/mark_all_read/')
 
         assert response.status_code == status.HTTP_200_OK
         assert 'marked_read' in response.data
@@ -301,7 +301,7 @@ class TestNotificationViewSet:
         api_client.credentials(HTTP_AUTHORIZATION=get_auth_header(client_user))
         unread_ids = [n.id for n in notifications if not n.is_read]
 
-        response = api_client.post('/api/notifications/bulk_action/', {
+        response = api_client.post('/api/notifications/notifications/bulk_action/', {
             'notification_ids': unread_ids,
             'action': 'mark_read',
         }, format='json')
@@ -314,7 +314,7 @@ class TestNotificationViewSet:
         api_client.credentials(HTTP_AUTHORIZATION=get_auth_header(client_user))
         ids_to_delete = [n.id for n in notifications[:2]]
 
-        response = api_client.post('/api/notifications/bulk_action/', {
+        response = api_client.post('/api/notifications/notifications/bulk_action/', {
             'notification_ids': ids_to_delete,
             'action': 'delete',
         }, format='json')
@@ -330,7 +330,7 @@ class TestNotificationViewSet:
         """Test bulk action with invalid IDs returns error"""
         api_client.credentials(HTTP_AUTHORIZATION=get_auth_header(client_user))
 
-        response = api_client.post('/api/notifications/bulk_action/', {
+        response = api_client.post('/api/notifications/notifications/bulk_action/', {
             'notification_ids': [99999],
             'action': 'mark_read',
         }, format='json')
@@ -345,7 +345,7 @@ class TestNotificationViewSet:
         """Test notification counts endpoint"""
         api_client.credentials(HTTP_AUTHORIZATION=get_auth_header(client_user))
 
-        response = api_client.get('/api/notifications/counts/')
+        response = api_client.get('/api/notifications/notifications/counts/')
 
         assert response.status_code == status.HTTP_200_OK
         assert 'total' in response.data
@@ -356,7 +356,7 @@ class TestNotificationViewSet:
         """Test unread notifications endpoint"""
         api_client.credentials(HTTP_AUTHORIZATION=get_auth_header(client_user))
 
-        response = api_client.get('/api/notifications/unread/')
+        response = api_client.get('/api/notifications/notifications/unread/')
 
         assert response.status_code == status.HTTP_200_OK
         # All returned should be unread
@@ -367,7 +367,7 @@ class TestNotificationViewSet:
         """Test recent notifications endpoint"""
         api_client.credentials(HTTP_AUTHORIZATION=get_auth_header(client_user))
 
-        response = api_client.get('/api/notifications/recent/?limit=3')
+        response = api_client.get('/api/notifications/notifications/recent/?limit=3')
 
         assert response.status_code == status.HTTP_200_OK
         assert len(response.data) <= 3
@@ -376,7 +376,7 @@ class TestNotificationViewSet:
         """Test notification stats endpoint"""
         api_client.credentials(HTTP_AUTHORIZATION=get_auth_header(client_user))
 
-        response = api_client.get('/api/notifications/stats/')
+        response = api_client.get('/api/notifications/notifications/stats/')
 
         assert response.status_code == status.HTTP_200_OK
         assert 'total_sent' in response.data
@@ -400,7 +400,7 @@ class TestNotificationViewSet:
 
         api_client.credentials(HTTP_AUTHORIZATION=get_auth_header(admin_user))
 
-        response = api_client.post('/api/notifications/create_notification/', {
+        response = api_client.post('/api/notifications/notifications/create_notification/', {
             'recipient_ids': [client_user.id],
             'notification_type_code': 'VIEW_TEST',
             'context_data': {'title': 'Hello', 'content': 'World'},
@@ -413,7 +413,7 @@ class TestNotificationViewSet:
         """Test client cannot create notifications"""
         api_client.credentials(HTTP_AUTHORIZATION=get_auth_header(client_user))
 
-        response = api_client.post('/api/notifications/create_notification/', {
+        response = api_client.post('/api/notifications/notifications/create_notification/', {
             'recipient_ids': [client_user.id],
             'notification_type_code': 'VIEW_TEST',
         }, format='json')
@@ -429,7 +429,7 @@ class TestNotificationViewSet:
         api_client.credentials(HTTP_AUTHORIZATION=get_auth_header(client_user))
         notification = notifications[0]
 
-        response = api_client.delete(f'/api/notifications/{notification.id}/')
+        response = api_client.delete(f'/api/notifications/notifications/{notification.id}/')
 
         assert response.status_code == status.HTTP_204_NO_CONTENT
 
@@ -444,7 +444,7 @@ class TestNotificationViewSet:
         )
         api_client.credentials(HTTP_AUTHORIZATION=get_auth_header(client_user))
 
-        response = api_client.delete(f'/api/notifications/{notification.id}/')
+        response = api_client.delete(f'/api/notifications/notifications/{notification.id}/')
 
         assert response.status_code in [status.HTTP_403_FORBIDDEN, status.HTTP_404_NOT_FOUND]
 
@@ -456,19 +456,19 @@ class TestNotificationViewSet:
         """Test system_metrics is admin only"""
         # Client should be forbidden
         api_client.credentials(HTTP_AUTHORIZATION=get_auth_header(client_user))
-        response = api_client.get('/api/notifications/system_metrics/')
+        response = api_client.get('/api/notifications/notifications/system_metrics/')
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
         # Admin should be allowed
         api_client.credentials(HTTP_AUTHORIZATION=get_auth_header(admin_user))
-        response = api_client.get('/api/notifications/system_metrics/')
+        response = api_client.get('/api/notifications/notifications/system_metrics/')
         # Might fail if monitoring module not available, but shouldn't be 403
         assert response.status_code != status.HTTP_403_FORBIDDEN
 
     def test_system_alerts_admin_only(self, api_client, admin_user, client_user):
         """Test system_alerts is admin only"""
         api_client.credentials(HTTP_AUTHORIZATION=get_auth_header(client_user))
-        response = api_client.get('/api/notifications/system_alerts/')
+        response = api_client.get('/api/notifications/notifications/system_alerts/')
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
@@ -520,7 +520,7 @@ class TestNotificationTypeViewSet:
         """Test admin can list notification types"""
         api_client.credentials(HTTP_AUTHORIZATION=get_auth_header(admin_user))
 
-        response = api_client.get('/api/notification-types/')
+        response = api_client.get('/api/notifications/types/')
 
         assert response.status_code == status.HTTP_200_OK
 
@@ -528,7 +528,7 @@ class TestNotificationTypeViewSet:
         """Test client cannot list notification types"""
         api_client.credentials(HTTP_AUTHORIZATION=get_auth_header(client_user))
 
-        response = api_client.get('/api/notification-types/')
+        response = api_client.get('/api/notifications/types/')
 
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
@@ -536,7 +536,7 @@ class TestNotificationTypeViewSet:
         """Test filtering types by category"""
         api_client.credentials(HTTP_AUTHORIZATION=get_auth_header(admin_user))
 
-        response = api_client.get('/api/notification-types/?category=EVENT')
+        response = api_client.get('/api/notifications/types/?category=EVENT')
 
         assert response.status_code == status.HTTP_200_OK
         data = response.data
@@ -551,7 +551,7 @@ class TestNotificationTypeViewSet:
         """Test filtering types by active status"""
         api_client.credentials(HTTP_AUTHORIZATION=get_auth_header(admin_user))
 
-        response = api_client.get('/api/notification-types/?is_active=true')
+        response = api_client.get('/api/notifications/types/?is_active=true')
 
         assert response.status_code == status.HTTP_200_OK
         data = response.data
@@ -566,7 +566,7 @@ class TestNotificationTypeViewSet:
         """Test admin can create notification type"""
         api_client.credentials(HTTP_AUTHORIZATION=get_auth_header(admin_user))
 
-        response = api_client.post('/api/notification-types/', {
+        response = api_client.post('/api/notifications/types/', {
             'code': 'NEW_TYPE',
             'name': 'New Type',
             'category': 'PAYMENT',
@@ -582,7 +582,7 @@ class TestNotificationTypeViewSet:
         """Test categories endpoint returns valid choices"""
         api_client.credentials(HTTP_AUTHORIZATION=get_auth_header(admin_user))
 
-        response = api_client.get('/api/notification-types/categories/')
+        response = api_client.get('/api/notifications/types/categories/')
 
         assert response.status_code == status.HTTP_200_OK
         assert isinstance(response.data, list)
@@ -595,7 +595,7 @@ class TestNotificationTypeViewSet:
         """Test priorities endpoint returns valid choices"""
         api_client.credentials(HTTP_AUTHORIZATION=get_auth_header(admin_user))
 
-        response = api_client.get('/api/notification-types/priorities/')
+        response = api_client.get('/api/notifications/types/priorities/')
 
         assert response.status_code == status.HTTP_200_OK
         assert isinstance(response.data, list)
@@ -631,8 +631,9 @@ class TestNotificationPreferenceViewSet:
 
     @pytest.fixture
     def preferences(self, client_user):
-        """Create notification preferences"""
-        return NotificationPreference.objects.create(user=client_user)
+        """Get notification preferences (auto-created by signal)"""
+        prefs, _ = NotificationPreference.objects.get_or_create(user=client_user)
+        return prefs
 
     @pytest.fixture
     def api_client(self):
@@ -643,7 +644,7 @@ class TestNotificationPreferenceViewSet:
         """Test my_preferences returns current user's preferences"""
         api_client.credentials(HTTP_AUTHORIZATION=get_auth_header(client_user))
 
-        response = api_client.get('/api/notification-preferences/my_preferences/')
+        response = api_client.get('/api/notifications/preferences/my_preferences/')
 
         assert response.status_code == status.HTTP_200_OK
         assert response.data['email_enabled'] is True
@@ -655,7 +656,7 @@ class TestNotificationPreferenceViewSet:
 
         api_client.credentials(HTTP_AUTHORIZATION=get_auth_header(client_user))
 
-        response = api_client.get('/api/notification-preferences/my_preferences/')
+        response = api_client.get('/api/notifications/preferences/my_preferences/')
 
         assert response.status_code == status.HTTP_200_OK
         # Should have created preferences
@@ -665,7 +666,7 @@ class TestNotificationPreferenceViewSet:
         """Test update_preferences endpoint"""
         api_client.credentials(HTTP_AUTHORIZATION=get_auth_header(client_user))
 
-        response = api_client.patch('/api/notification-preferences/update_preferences/', {
+        response = api_client.patch('/api/notifications/preferences/update_preferences/', {
             'email_enabled': False,
             'marketing_email': True,
         }, format='json')
@@ -684,7 +685,7 @@ class TestNotificationPreferenceViewSet:
 
         api_client.credentials(HTTP_AUTHORIZATION=get_auth_header(client_user))
 
-        response = api_client.post('/api/notification-preferences/reset_to_defaults/')
+        response = api_client.post('/api/notifications/preferences/reset_to_defaults/')
 
         assert response.status_code == status.HTTP_200_OK
         preferences.refresh_from_db()
@@ -695,7 +696,7 @@ class TestNotificationPreferenceViewSet:
         """Test manual creation is not allowed"""
         api_client.credentials(HTTP_AUTHORIZATION=get_auth_header(client_user))
 
-        response = api_client.post('/api/notification-preferences/', {
+        response = api_client.post('/api/notifications/preferences/', {
             'email_enabled': True,
         }, format='json')
 
@@ -705,7 +706,7 @@ class TestNotificationPreferenceViewSet:
         """Test deletion is not allowed"""
         api_client.credentials(HTTP_AUTHORIZATION=get_auth_header(client_user))
 
-        response = api_client.delete(f'/api/notification-preferences/{preferences.id}/')
+        response = api_client.delete(f'/api/notifications/preferences/{preferences.id}/')
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
@@ -713,7 +714,7 @@ class TestNotificationPreferenceViewSet:
         """Test digest_frequencies endpoint returns valid choices"""
         api_client.credentials(HTTP_AUTHORIZATION=get_auth_header(client_user))
 
-        response = api_client.get('/api/notification-preferences/digest_frequencies/')
+        response = api_client.get('/api/notifications/preferences/digest_frequencies/')
 
         assert response.status_code == status.HTTP_200_OK
         assert isinstance(response.data, list)
@@ -758,7 +759,7 @@ class TestDevicePushTokenViewSet:
         """Test listing own push tokens"""
         api_client.credentials(HTTP_AUTHORIZATION=get_auth_header(client_user))
 
-        response = api_client.get('/api/push-tokens/')
+        response = api_client.get('/api/notifications/push-tokens/')
 
         assert response.status_code == status.HTTP_200_OK
         data = response.data
@@ -770,14 +771,14 @@ class TestDevicePushTokenViewSet:
 
     def test_list_tokens_unauthenticated(self, api_client):
         """Test listing tokens requires authentication"""
-        response = api_client.get('/api/push-tokens/')
+        response = api_client.get('/api/notifications/push-tokens/')
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
     def test_register_push_token(self, api_client, client_user):
         """Test registering a new push token"""
         api_client.credentials(HTTP_AUTHORIZATION=get_auth_header(client_user))
 
-        response = api_client.post('/api/push-tokens/', {
+        response = api_client.post('/api/notifications/push-tokens/', {
             'token': 'ExponentPushToken[newtoken123]',
             'device_type': 'ios',
             'device_id': 'new-device',
@@ -793,7 +794,7 @@ class TestDevicePushTokenViewSet:
         """Test registering invalid token format fails"""
         api_client.credentials(HTTP_AUTHORIZATION=get_auth_header(client_user))
 
-        response = api_client.post('/api/push-tokens/', {
+        response = api_client.post('/api/notifications/push-tokens/', {
             'token': 'invalid_token',
             'device_type': 'ios',
         }, format='json')
@@ -805,7 +806,7 @@ class TestDevicePushTokenViewSet:
         api_client.credentials(HTTP_AUTHORIZATION=get_auth_header(client_user))
         token = push_tokens[0]
 
-        response = api_client.delete(f'/api/push-tokens/{token.id}/')
+        response = api_client.delete(f'/api/notifications/push-tokens/{token.id}/')
 
         assert response.status_code == status.HTTP_200_OK
         token.refresh_from_db()
@@ -816,7 +817,7 @@ class TestDevicePushTokenViewSet:
         api_client.credentials(HTTP_AUTHORIZATION=get_auth_header(client_user))
         token = push_tokens[0]
 
-        response = api_client.post('/api/push-tokens/unregister/', {
+        response = api_client.post('/api/notifications/push-tokens/unregister/', {
             'token': token.token,
         }, format='json')
 
@@ -827,7 +828,7 @@ class TestDevicePushTokenViewSet:
         """Test unregister by device_id"""
         api_client.credentials(HTTP_AUTHORIZATION=get_auth_header(client_user))
 
-        response = api_client.post('/api/push-tokens/unregister/', {
+        response = api_client.post('/api/notifications/push-tokens/unregister/', {
             'device_id': 'device-0',
         }, format='json')
 
@@ -841,7 +842,7 @@ class TestDevicePushTokenViewSet:
 
         api_client.credentials(HTTP_AUTHORIZATION=get_auth_header(client_user))
 
-        response = api_client.get('/api/push-tokens/my_devices/')
+        response = api_client.get('/api/notifications/push-tokens/my_devices/')
 
         assert response.status_code == status.HTTP_200_OK
         assert response.data['count'] == 2  # Only active ones
@@ -859,7 +860,7 @@ class TestDevicePushTokenViewSet:
 
         api_client.credentials(HTTP_AUTHORIZATION=get_auth_header(client_user))
 
-        response = api_client.post('/api/push-tokens/test_push/', {
+        response = api_client.post('/api/notifications/push-tokens/test_push/', {
             'title': 'Test Notification',
             'body': 'This is a test.',
         }, format='json')
@@ -878,7 +879,7 @@ class TestDevicePushTokenViewSet:
 
         api_client.credentials(HTTP_AUTHORIZATION=get_auth_header(client_user))
 
-        response = api_client.post('/api/push-tokens/test_push/', {
+        response = api_client.post('/api/notifications/push-tokens/test_push/', {
             'title': 'Test',
             'body': 'Test body',
             'device_id': 'device-0',
@@ -892,7 +893,7 @@ class TestDevicePushTokenViewSet:
         """Test test_push with non-existent device returns 404"""
         api_client.credentials(HTTP_AUTHORIZATION=get_auth_header(client_user))
 
-        response = api_client.post('/api/push-tokens/test_push/', {
+        response = api_client.post('/api/notifications/push-tokens/test_push/', {
             'title': 'Test',
             'body': 'Test body',
             'device_id': 'nonexistent-device',
@@ -933,7 +934,7 @@ class TestNotificationViewSetPermissions:
         """Test client users cannot create notifications via standard create"""
         api_client.credentials(HTTP_AUTHORIZATION=get_auth_header(client_user))
 
-        response = api_client.post('/api/notifications/', {
+        response = api_client.post('/api/notifications/notifications/', {
             'title': 'Test',
             'content': 'Content',
         }, format='json')
@@ -959,7 +960,7 @@ class TestNotificationViewSetPermissions:
 
         api_client.credentials(HTTP_AUTHORIZATION=get_auth_header(client_user))
 
-        response = api_client.patch(f'/api/notifications/{notification.id}/', {
+        response = api_client.patch(f'/api/notifications/notifications/{notification.id}/', {
             'title': 'Updated',
         }, format='json')
 
@@ -984,7 +985,7 @@ class TestNotificationViewSetPermissions:
 
         api_client.credentials(HTTP_AUTHORIZATION=get_auth_header(admin_user))
 
-        response = api_client.get(f'/api/notifications/?user_id={client_user.id}')
+        response = api_client.get(f'/api/notifications/notifications/?user_id={client_user.id}')
 
         assert response.status_code == status.HTTP_200_OK
         data = response.data

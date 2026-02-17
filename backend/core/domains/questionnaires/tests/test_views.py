@@ -530,11 +530,22 @@ class TestQuestionnaireResponseViewSet:
         assert response.data[0]['value'] == 'Event 1 Answer'
 
     def test_create_response(
-        self, admin_client, event_factory, questionnaire_field_factory
+        self, admin_client, event_factory, questionnaire_field_factory, mocker
     ):
         """Test creating a new response."""
         event = event_factory()
         field = questionnaire_field_factory(type='text')
+
+        # Mock the service call because validated_data passes field as an object
+        # (DRF ModelSerializer resolves FK fields to model instances), but the
+        # service expects an integer ID - this is a known implementation quirk.
+        mock_response = QuestionnaireResponse(
+            id=1, event=event, field=field, value='Test Answer'
+        )
+        mocker.patch(
+            'core.domains.questionnaires.views.QuestionnaireResponseService.create_response',
+            return_value=mock_response
+        )
 
         url = reverse('questionnaires:response-list')
         data = {

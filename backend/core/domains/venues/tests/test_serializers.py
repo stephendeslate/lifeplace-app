@@ -619,7 +619,7 @@ class TestRentableVenueWithEventTypeSerializer:
 
         assert data['is_all_day_access'] is True
         assert data['effective_included_hours'] == '24.0'
-        assert data['effective_excess_hour_price'] == '0.00'
+        assert data['effective_excess_hour_price'] == '0'
 
 
 @pytest.mark.django_db

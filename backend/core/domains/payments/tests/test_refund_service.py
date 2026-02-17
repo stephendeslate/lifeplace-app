@@ -227,8 +227,8 @@ class TestStripeRefundIntegration:
             gateway=stripe_gateway,
             transaction_id='pi_test123456',
             amount=completed_payment.amount,
-            status='COMPLETED',
-            transaction_type='CHARGE'
+            currency=completed_payment.currency,
+            status='COMPLETED'
         )
 
         return completed_payment
@@ -251,7 +251,15 @@ class TestStripeRefundIntegration:
         self, mock_stripe_create, pending_stripe_refund, stripe_gateway
     ):
         """Test successful Stripe refund."""
-        mock_stripe_create.return_value = MagicMock(
+        # Use a dict subclass with attribute access so it can be stored in JSONField
+        class MockStripeRefund(dict):
+            def __getattr__(self, name):
+                try:
+                    return self[name]
+                except KeyError:
+                    raise AttributeError(name)
+
+        mock_stripe_create.return_value = MockStripeRefund(
             id='re_test123',
             status='succeeded'
         )

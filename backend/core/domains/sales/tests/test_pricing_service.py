@@ -125,8 +125,9 @@ def venue_with_hours(db):
     from core.domains.venues.models import Venue
     return Venue.objects.create(
         name='Main Hall',
+        code='MAIN_HALL',
         description='Main event hall',
-        capacity=200,
+        maximum_capacity=200,
         standalone_included_hours=4,
         standalone_excess_hour_price=Decimal('500.00'),
         is_active=True
@@ -387,7 +388,8 @@ class TestPricingCalculationServiceBasic:
         breakdown = PricingCalculationService.calculate_from_booking_data(booking_data)
 
         assert len(breakdown.line_items) == 2
-        assert breakdown.subtotal == Decimal('7000.00')  # 5000 + 2*1000
+        # Addon quantity is clamped to 1 because allow_multiple=False by default
+        assert breakdown.subtotal == Decimal('6000.00')  # 5000 + 1*1000
 
     def test_calculate_from_booking_data_empty(self):
         """Test calculating pricing for empty booking data."""
@@ -478,7 +480,7 @@ class TestPricingCalculationServiceVenueHours:
             'product_id': addon_product.id,
             'name': addon_product.name,
             'price': float(addon_product.base_price),
-            'quantity': 2
+            'quantity': 1  # allow_multiple=False by default, so quantity must be 1
         }
 
         item = PricingCalculationService._create_addon_line_item(addon_data)
@@ -486,7 +488,7 @@ class TestPricingCalculationServiceVenueHours:
         assert item is not None
         assert item.name == addon_product.name
         assert item.base_unit_price == Decimal('1000.00')
-        assert item.quantity == 2
+        assert item.quantity == 1
         assert item.item_type == 'ADDON'
 
 
@@ -862,7 +864,7 @@ class TestPricingCalculationServiceServiceCharge:
 class TestPricingCalculationServiceVIP:
     """Tests for VIP benefits application."""
 
-    @patch('core.domains.sales.pricing_service.VIPPricingIntegrationService')
+    @patch('core.domains.vip.services.VIPPricingIntegrationService')
     def test_apply_vip_benefits(self, mock_vip_service, user_factory):
         """Test applying VIP benefits."""
         mock_vip_service.calculate_vip_discount.return_value = (
@@ -888,7 +890,7 @@ class TestPricingCalculationServiceVIP:
         assert breakdown.vip_discount_amount == Decimal('1000.00')
         assert '10% VIP Discount' in breakdown.applied_vip_benefits
 
-    @patch('core.domains.sales.pricing_service.VIPPricingIntegrationService')
+    @patch('core.domains.vip.services.VIPPricingIntegrationService')
     def test_apply_vip_service_charge_waiver(self, mock_vip_service, user_factory, payment_settings):
         """Test VIP service charge waiver."""
         mock_vip_service.calculate_vip_discount.return_value = (Decimal('0'), [])
@@ -963,14 +965,14 @@ class TestPricingCalculationServiceIntegration:
 
         breakdown = PricingCalculationService.calculate_from_booking_data(booking_data)
 
-        # Subtotal: 5000 + 2*1000 = 7000
-        assert breakdown.subtotal == Decimal('7000.00')
+        # Subtotal: 5000 + 1*1000 = 6000 (addon quantity clamped to 1 since allow_multiple=False)
+        assert breakdown.subtotal == Decimal('6000.00')
 
-        # Discount: 10% of 7000 = 700
-        assert breakdown.discount_amount == Decimal('700.00')
+        # Discount: 10% of 6000 = 600
+        assert breakdown.discount_amount == Decimal('600.00')
 
-        # Service charge: 5% of (7000 - 700) = 315
-        assert breakdown.service_charge_amount == Decimal('315.00')
+        # Service charge: 5% of (6000 - 600) = 270
+        assert breakdown.service_charge_amount == Decimal('270.00')
 
         # Tax is calculated per-item
         assert breakdown.tax_amount > Decimal('0')
@@ -1039,8 +1041,9 @@ class TestPricingCalculationServiceEdgeCases:
     def test_create_line_item_invalid_data(self):
         """Test creating line item with invalid data returns None."""
         package_data = {
+            'product_id': None,
             'name': 'Test',
-            'price': 'invalid'  # Invalid price
+            'quantity': 'invalid'  # Invalid quantity triggers ValueError in int()
         }
 
         item = PricingCalculationService._create_package_line_item(package_data, None)

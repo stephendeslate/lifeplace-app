@@ -54,8 +54,14 @@ class TestVenueModel:
         """Test that venue codes must be unique."""
         venue_factory(code='UNIQUE_CODE')
 
+        # Use Venue.objects.create directly to bypass factory's
+        # django_get_or_create which would return the existing instance
         with pytest.raises(IntegrityError):
-            venue_factory(code='UNIQUE_CODE')
+            Venue.objects.create(
+                name='Duplicate Code Venue',
+                code='UNIQUE_CODE',
+                maximum_capacity=50,
+            )
 
     def test_venue_overnight_flag(self, venue_factory):
         """Test overnight venue flag."""

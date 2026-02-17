@@ -199,17 +199,20 @@ class TestAppSettingsModel:
 
     def test_unique_together_constraint(self, user_factory):
         """Test unique_together constraint on category, key, user."""
+        user = user_factory()
         AppSettings.objects.create(
             category='SYSTEM',
             key='unique_test',
-            value={'test': 1}
+            value={'test': 1},
+            user=user
         )
 
         with pytest.raises(IntegrityError):
             AppSettings.objects.create(
                 category='SYSTEM',
                 key='unique_test',
-                value={'test': 2}
+                value={'test': 2},
+                user=user
             )
 
 
@@ -303,6 +306,9 @@ class TestCurrencySettingsModel:
     def test_get_user_settings_falls_back_to_system(self, user_factory):
         """Test get_user_settings falls back to system settings."""
         user = user_factory()
+        # Clear any system-level currency settings created by signals
+        CurrencySettings.objects.filter(user__isnull=True).delete()
+
         CurrencySettings.objects.create(
             default_currency='SGD',
             enabled_currencies=['SGD']
@@ -718,8 +724,15 @@ class TestCompanySettingsModel:
         assert settings.company_name == 'LifePlace Retreat & Events Center'
 
     def test_get_settings_returns_existing(self):
-        """Test get_settings returns existing settings."""
+        """Test get_settings returns existing settings.
+
+        get_settings() uses get_or_create(pk=1), so it always returns pk=1.
+        We need to ensure pk=1 has our test data.
+        """
+        # Clear any existing CompanySettings and create one with pk=1
+        CompanySettings.objects.all().delete()
         created = CompanySettings.objects.create(
+            pk=1,
             company_name='Existing Company'
         )
 

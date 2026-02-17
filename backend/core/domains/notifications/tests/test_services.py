@@ -20,21 +20,21 @@ from django.utils import timezone
 from django.core.cache import cache
 from django.test import override_settings
 
-from ..models import (
+from core.domains.notifications.models import (
     NotificationType,
     NotificationPreference,
     Notification,
     NotificationDigest,
     DevicePushToken,
 )
-from ..services import (
+from core.domains.notifications.services import (
     NotificationService,
     NotificationTypeService,
     NotificationStatsService,
     NotificationDigestService,
     PushNotificationService,
 )
-from ..exceptions import (
+from core.domains.notifications.exceptions import (
     NotificationNotFoundException,
     NotificationTypeNotFoundException,
     NotificationPreferenceNotFoundException,
@@ -360,8 +360,8 @@ class TestNotificationService:
         """Test notification skipped when no delivery methods enabled"""
         mock_check.return_value = (True, None)
 
-        # Create preferences with all methods disabled
-        prefs = NotificationPreference.objects.create(user=user)
+        # Get or create preferences with all methods disabled
+        prefs, _ = NotificationPreference.objects.get_or_create(user=user)
         prefs.email_enabled = False
         prefs.sms_enabled = False
         prefs.in_app_enabled = False
@@ -499,11 +499,10 @@ class TestNotificationService:
 
     def test_get_or_create_user_preferences_get(self, user):
         """Test existing preferences are returned"""
-        # Create preferences
-        existing = NotificationPreference.objects.create(
-            user=user,
-            email_enabled=False,
-        )
+        # Get the auto-created preferences and modify them
+        existing, _ = NotificationPreference.objects.get_or_create(user=user)
+        existing.email_enabled = False
+        existing.save()
 
         prefs = NotificationService.get_or_create_user_preferences(user.id)
 
@@ -517,7 +516,7 @@ class TestNotificationService:
 
     def test_update_user_preferences(self, user):
         """Test updating user preferences"""
-        NotificationPreference.objects.create(user=user)
+        NotificationPreference.objects.get_or_create(user=user)
 
         update_data = {
             'email_enabled': False,
@@ -625,8 +624,9 @@ class TestNotificationTypeService:
     def test_get_notification_types_by_category(self, notification_types):
         """Test filtering notification types by category"""
         types = NotificationTypeService.get_all_notification_types(category='EVENT')
-        assert types.count() == 1
-        assert types.first().category == 'EVENT'
+        # At least the one we created, plus any defaults from the system
+        assert types.count() >= 1
+        assert all(t.category == 'EVENT' for t in types)
 
     def test_get_notification_types_by_active_status(self, notification_types):
         """Test filtering by active status"""
@@ -777,7 +777,8 @@ class TestNotificationDigestService:
             last_name='User',
             role='CLIENT'
         )
-        NotificationPreference.objects.create(user=user)
+        # Signal auto-creates NotificationPreference, so just ensure it exists
+        NotificationPreference.objects.get_or_create(user=user)
         return user
 
     @pytest.fixture
@@ -1042,36 +1043,45 @@ class TestPushNotificationService:
     # Push sending tests
     # =========================================================================
 
-    @patch('core.domains.notifications.services.PushNotificationService.get_push_client')
-    def test_send_push_notification_success(self, mock_get_client):
-        """Test successful push notification"""
-        mock_client = MagicMock()
+    def test_send_push_notification_success(self):
+        """Test successful push notification (or graceful handling when SDK not installed)"""
+        import sys
+        mock_sdk = MagicMock()
+        mock_sdk.DeviceNotRegisteredError = type('DeviceNotRegisteredError', (Exception,), {})
+        mock_sdk.PushServerError = type('PushServerError', (Exception,), {})
         mock_response = MagicMock()
         mock_response.push_message = MagicMock()
         mock_response.validate_response = MagicMock()
-        mock_client.publish.return_value = mock_response
-        mock_get_client.return_value = mock_client
+        mock_sdk.PushClient.return_value.publish.return_value = mock_response
 
-        result = PushNotificationService.send_push_notification(
-            push_token='ExponentPushToken[test123]',
-            title='Test Title',
-            body='Test Body',
-        )
+        with patch.dict(sys.modules, {'exponent_server_sdk': mock_sdk}):
+            with patch.object(PushNotificationService, 'get_push_client', return_value=mock_sdk.PushClient()):
+                result = PushNotificationService.send_push_notification(
+                    push_token='ExponentPushToken[test123]',
+                    title='Test Title',
+                    body='Test Body',
+                )
 
-        assert result['success'] is True
-        assert result['error'] is None
+                assert result['success'] is True
+                assert result['error'] is None
 
     def test_send_push_notification_invalid_token(self):
         """Test push with invalid token returns failure"""
-        result = PushNotificationService.send_push_notification(
-            push_token='invalid_token',
-            title='Test',
-            body='Test',
-        )
+        import sys
+        mock_sdk = MagicMock()
+        mock_sdk.DeviceNotRegisteredError = type('DeviceNotRegisteredError', (Exception,), {})
+        mock_sdk.PushServerError = type('PushServerError', (Exception,), {})
 
-        assert result['success'] is False
-        assert result['permanent_failure'] is True
-        assert 'Invalid token' in result['error']
+        with patch.dict(sys.modules, {'exponent_server_sdk': mock_sdk}):
+            result = PushNotificationService.send_push_notification(
+                push_token='invalid_token',
+                title='Test',
+                body='Test',
+            )
+
+            assert result['success'] is False
+            assert result['permanent_failure'] is True
+            assert 'Invalid token' in result['error']
 
     @patch('core.domains.notifications.services.PushNotificationService.send_push_notification')
     def test_send_push_to_user(self, mock_send, user):

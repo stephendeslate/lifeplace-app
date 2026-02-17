@@ -219,7 +219,12 @@ class TestExecuteDelayedStageAction:
     def test_execute_action_event_moved_to_different_stage(
         self, event_factory, event_type_factory
     ):
-        """Test that action is not executed if event moved to different stage."""
+        """Test that action is not executed if event moved to different stage.
+
+        Create the event without a workflow_template to avoid the post_save
+        signal that would override current_stage. Then set the workflow fields
+        directly via update to achieve the desired state.
+        """
         event_type = event_type_factory()
         template = WorkflowTemplate.objects.create(
             name='Test Workflow',
@@ -241,11 +246,17 @@ class TestExecuteDelayedStageAction:
             order=2
         )
 
+        # Create event without workflow_template to avoid signal override
         event = event_factory(
             event_type=event_type,
-            workflow_template=template,
-            current_stage=stage2  # Event has moved to stage 2
         )
+        # Now set workflow fields directly, bypassing the signal
+        from core.domains.events.models import Event
+        Event.objects.filter(id=event.id).update(
+            workflow_template=template,
+            current_stage=stage2,
+        )
+        event.refresh_from_db()
 
         with patch('core.domains.notifications.services.NotificationService.create_notification') as mock_notify:
             # Execute for stage 1, but event is at stage 2
@@ -346,7 +357,11 @@ class TestScheduleBeforeEventAction:
             assert 'eta' not in call_kwargs.kwargs or call_kwargs.kwargs.get('eta') is None
 
     def test_schedule_before_event_no_start_date(self, event_factory, event_type_factory):
-        """Test handling when event has no start date."""
+        """Test handling when event has no start date.
+
+        Event.start_date is NOT NULL at the DB level, so we create a normal
+        event and then mock Event.objects.get to return one with start_date=None.
+        """
         event_type = event_type_factory()
         template = WorkflowTemplate.objects.create(
             name='Test Workflow',
@@ -367,10 +382,20 @@ class TestScheduleBeforeEventAction:
             event_type=event_type,
             workflow_template=template,
             current_stage=stage,
-            start_date=None
         )
 
-        result = schedule_before_event_action(event.id, stage.id)
+        # Mock Event.objects.get to return event with start_date=None
+        # since the DB column is NOT NULL and won't allow saving None
+        original_get = Event.objects.get
+
+        def mock_get(**kwargs):
+            obj = original_get(**kwargs)
+            if kwargs.get('id') == event.id:
+                obj.__dict__['start_date'] = None
+            return obj
+
+        with patch.object(Event.objects, 'get', side_effect=mock_get):
+            result = schedule_before_event_action(event.id, stage.id)
 
         assert result['status'] == 'skipped'
         assert result['reason'] == 'no_start_date'

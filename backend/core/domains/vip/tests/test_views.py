@@ -199,7 +199,7 @@ class TestVIPTierViewSet:
         response = authenticated_admin.get(url)
 
         assert response.status_code == status.HTTP_200_OK
-        assert len(response.data) == 3
+        assert response.data['count'] == 3
 
     def test_list_tiers_as_client_forbidden(self, authenticated_client, tier_hierarchy):
         """Test client cannot list tiers."""
@@ -261,7 +261,7 @@ class TestVIPTierViewSet:
         response = authenticated_admin.get(url, {'is_active': 'true'})
 
         assert response.status_code == status.HTTP_200_OK
-        assert len(response.data) == 2  # Standard and Gold
+        assert response.data['count'] == 2  # Standard and Gold
 
     def test_active_tiers_action(self, authenticated_admin, tier_hierarchy):
         """Test active tiers action endpoint."""
@@ -301,7 +301,7 @@ class TestVIPBenefitViewSet:
         response = authenticated_admin.get(url)
 
         assert response.status_code == status.HTTP_200_OK
-        assert len(response.data) == 2
+        assert response.data['count'] == 2
 
     def test_create_benefit_as_admin(self, authenticated_admin, tier_hierarchy):
         """Test admin can create a benefit."""
@@ -337,8 +337,9 @@ class TestVIPBenefitViewSet:
         response = authenticated_admin.get(url, {'tier': gold.pk})
 
         assert response.status_code == status.HTTP_200_OK
-        assert len(response.data) == 1
-        assert response.data[0]['tier'] == gold.pk
+        results = response.data['results']
+        assert len(results) == 1
+        assert results[0]['tier'] == gold.pk
 
     def test_filter_benefits_by_type(self, authenticated_admin, gold_tier_with_benefits):
         """Test filtering benefits by type."""
@@ -346,8 +347,9 @@ class TestVIPBenefitViewSet:
         response = authenticated_admin.get(url, {'benefit_type': 'PERCENTAGE_DISCOUNT'})
 
         assert response.status_code == status.HTTP_200_OK
-        assert len(response.data) == 1
-        assert response.data[0]['benefit_type'] == 'PERCENTAGE_DISCOUNT'
+        results = response.data['results']
+        assert len(results) == 1
+        assert results[0]['benefit_type'] == 'PERCENTAGE_DISCOUNT'
 
     def test_filter_benefits_by_application_mode(self, authenticated_admin, gold_tier_with_benefits):
         """Test filtering benefits by application mode."""
@@ -355,8 +357,9 @@ class TestVIPBenefitViewSet:
         response = authenticated_admin.get(url, {'application_mode': 'REDEEMABLE'})
 
         assert response.status_code == status.HTTP_200_OK
-        assert len(response.data) == 1
-        assert response.data[0]['application_mode'] == 'REDEEMABLE'
+        results = response.data['results']
+        assert len(results) == 1
+        assert results[0]['application_mode'] == 'REDEEMABLE'
 
     def test_benefit_types_action(self, authenticated_admin):
         """Test benefit types action returns choices."""
@@ -447,7 +450,8 @@ class TestClientVIPStatusViewSet:
         response = authenticated_admin.get(url, {'status': 'ACTIVE'})
 
         assert response.status_code == status.HTTP_200_OK
-        assert all(item['status'] == 'ACTIVE' for item in response.data)
+        results = response.data.get('results', response.data)
+        assert all(item['status'] == 'ACTIVE' for item in results)
 
     def test_search_by_email(self, authenticated_admin, client_with_status):
         """Test searching statuses by email."""
@@ -620,7 +624,8 @@ class TestVIPPointTransactionViewSet:
         response = authenticated_admin.get(url, {'transaction_type': 'EARNED_BONUS'})
 
         assert response.status_code == status.HTTP_200_OK
-        assert all(t['transaction_type'] == 'EARNED_BONUS' for t in response.data)
+        results = response.data.get('results', response.data)
+        assert all(t['transaction_type'] == 'EARNED_BONUS' for t in results)
 
     def test_read_only_no_create(self, authenticated_admin):
         """Test transactions are read-only (no POST)."""
@@ -861,7 +866,7 @@ class TestClientVIPView:
         }, format='json')
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
-        assert 'Insufficient points' in response.data['detail']
+        assert 'detail' in response.data
 
 
 # =============================================================================

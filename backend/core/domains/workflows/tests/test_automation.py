@@ -5,6 +5,7 @@ from unittest.mock import Mock, patch, MagicMock
 
 from django.test import TestCase
 from django.contrib.auth import get_user_model
+from django.utils import timezone
 
 from core.domains.workflows.models import WorkflowTemplate, WorkflowStage, WorkflowTrigger
 from core.domains.workflows.engine import WorkflowEngine
@@ -39,7 +40,7 @@ class WorkflowAutomationTestCase(TestCase):
             event_type=self.event_type,
             workflow_template=self.workflow_template,
             name='Test Wedding',
-            start_date=date.today() + timedelta(days=30),
+            start_date=timezone.now() + timedelta(days=30),
             status='PENDING'
         )
 
@@ -49,10 +50,10 @@ class WorkflowAutomationTestCase(TestCase):
 
         email_template = CommunicationTemplate.objects.create(
             name='Test Email',
-            subject='Test Subject',
-            body_html='<p>Hello {{client_name}}</p>',
-            template_type='EVENT_NOTIFICATION',
-            is_active=True
+            subject_template='Test Subject',
+            body_template='<p>Hello {{client_name}}</p>',
+            channel='EMAIL',
+            category='SYSTEM',
         )
 
         stage = WorkflowStage.objects.create(
@@ -155,12 +156,15 @@ class WorkflowAutomationTestCase(TestCase):
 
     def test_quote_automation_skips_duplicate(self):
         """Test QUOTE automation skips if quote already exists"""
+        from decimal import Decimal
         from core.domains.sales.models import EventQuote
 
-        # Create existing quote
+        # Create existing quote (total_amount and valid_until are required)
         EventQuote.objects.create(
             event=self.event,
-            status='DRAFT'
+            status='DRAFT',
+            total_amount=Decimal('0'),
+            valid_until=date.today() + timedelta(days=30),
         )
 
         stage = WorkflowStage.objects.create(
@@ -190,10 +194,10 @@ class WorkflowAutomationTestCase(TestCase):
 
         email_template = CommunicationTemplate.objects.create(
             name='Contract Email',
-            subject='Your Contract',
-            body_html='<p>Please sign</p>',
-            template_type='CONTRACT',
-            is_active=True
+            subject_template='Your Contract',
+            body_template='<p>Please sign</p>',
+            channel='EMAIL',
+            category='SYSTEM',
         )
 
         stage = WorkflowStage.objects.create(
@@ -207,15 +211,14 @@ class WorkflowAutomationTestCase(TestCase):
             metadata={'contract_template_id': contract_template.id}
         )
 
-        with patch('core.domains.contracts.models.ContractTemplate.objects.get', return_value=contract_template):
-            with patch.object(contract_template, 'generate_contract') as mock_gen:
-                mock_contract = Mock()
-                mock_contract.id = 1
-                mock_gen.return_value = mock_contract
+        with patch('core.domains.contracts.services.EventContractService.create_contract_from_template') as mock_create:
+            mock_contract = Mock()
+            mock_contract.id = 1
+            mock_create.return_value = mock_contract
 
-                with patch('core.domains.communications.services.CommunicationService.send_communication_by_template'):
-                    stage._execute_automation(self.event)
-                    mock_gen.assert_called_once()
+            with patch('core.domains.communications.services.CommunicationService.send_communication_by_template'):
+                stage._execute_automation(self.event)
+                mock_create.assert_called_once()
 
 
 class WorkflowEngineTestCase(TestCase):
@@ -375,26 +378,37 @@ class WorkflowEngineTestCase(TestCase):
         self.assertFalse(result)
 
     def test_idempotent_progression(self):
-        """Test that duplicate progression is prevented"""
-        event = Event.objects.create(
-            client=self.user,
-            event_type=self.event_type,
-            workflow_template=self.workflow_template,
-            name='Test Wedding',
-            start_date=date.today() + timedelta(days=30),
-            current_stage=self.lead_stage_2
-        )
+        """Test that progression returns False when no eligible next stage.
 
-        # First progression
+        The post_save signal assigns the event to lead_stage_1 on create.
+        First progress moves to lead_stage_2. When reset to lead_stage_2,
+        there is no next LEAD stage and the event isn't CONFIRMED, so
+        cross-category progression to PRODUCTION is not eligible.
+        """
+        with patch('core.domains.notifications.services.NotificationService.create_notification'):
+            event = Event.objects.create(
+                client=self.user,
+                event_type=self.event_type,
+                workflow_template=self.workflow_template,
+                name='Test Wedding',
+                start_date=timezone.now() + timedelta(days=30),
+                current_stage=self.lead_stage_2
+            )
+
+        # Signal has set current_stage to lead_stage_1
+        event.refresh_from_db()
+
+        # First progression: lead_stage_1 -> lead_stage_2
         result1 = WorkflowEngine.progress_workflow(event, trigger_type='STATUS_CHANGE')
 
-        # Same progression again (should be blocked)
-        event.current_stage = self.lead_stage_2  # Reset for test
+        # Reset to lead_stage_2 and try again
+        event.current_stage = self.lead_stage_2
         event.save()
         result2 = WorkflowEngine.progress_workflow(event, trigger_type='STATUS_CHANGE')
 
         self.assertTrue(result1)
-        self.assertTrue(result2)
+        # No eligible next stage (not CONFIRMED for cross-category, no more LEAD stages)
+        self.assertFalse(result2)
 
 
 class WorkflowTriggerAPITestCase(TestCase):

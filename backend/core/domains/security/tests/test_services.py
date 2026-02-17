@@ -140,14 +140,14 @@ class TestBreachNotificationServiceCreateBreach:
 
         mock_alert.assert_called_once_with(breach)
 
-    def test_create_breach_logs_critical(self, mocker, caplog):
+    def test_create_breach_logs_critical(self, mocker):
         """Test create_breach logs at critical level."""
         mocker.patch.object(
             BreachNotificationService, '_send_internal_alert'
         )
 
-        import logging
-        caplog.set_level(logging.CRITICAL, logger='security')
+        # The 'security' logger has propagate=False, so use mocker instead of caplog
+        mock_logger = mocker.patch('core.domains.security.services.logger')
 
         BreachNotificationService.create_breach(
             title='Log Test',
@@ -157,7 +157,8 @@ class TestBreachNotificationServiceCreateBreach:
         )
 
         # Check that critical logging occurred
-        assert any('Security breach detected' in record.message for record in caplog.records)
+        mock_logger.critical.assert_called_once()
+        assert 'Security breach detected' in mock_logger.critical.call_args[0][0]
 
 
 @pytest.mark.django_db

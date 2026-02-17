@@ -364,6 +364,7 @@ class TestSecurityBreachCreateSerializer:
             'description': 'Description',
             'breach_type': 'DATA_LEAK',
             'severity': 'HIGH',
+            'detected_at': timezone.now().isoformat(),
         }
 
         serializer = SecurityBreachCreateSerializer(data=data)
@@ -399,6 +400,7 @@ class TestSecurityBreachCreateSerializer:
             'description': 'Description',
             'breach_type': 'RANSOMWARE',
             'severity': 'CRITICAL',
+            'detected_at': timezone.now().isoformat(),
             'incident_lead': lead.id,
         }
 

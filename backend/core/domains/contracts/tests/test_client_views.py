@@ -89,8 +89,8 @@ class TestClientContractViewSet:
         client_user = user_factory(role='CLIENT')
         event = event_factory(client=client_user)
 
-        event_contract_factory(event=event, status='SENT')
-        event_contract_factory(event=event, status='SIGNED')
+        event_contract_factory(event=event, status='SENT', amendment_number=0)
+        event_contract_factory(event=event, status='SIGNED', amendment_number=1)
 
         client = authenticated_client(user=client_user)
         response = client.get('/api/contracts/client/contracts/?status=SENT')
@@ -124,8 +124,8 @@ class TestClientContractViewSet:
         client_user = user_factory(role='CLIENT')
         event = event_factory(client=client_user)
 
-        event_contract_factory(event=event, status='DRAFT')
-        event_contract_factory(event=event, status='SENT')
+        event_contract_factory(event=event, status='DRAFT', amendment_number=0)
+        event_contract_factory(event=event, status='SENT', amendment_number=1)
 
         client = authenticated_client(user=client_user)
         response = client.get('/api/contracts/client/contracts/')
@@ -350,13 +350,15 @@ class TestClientContractViewSet:
             event=event,
             template=template,
             status='SENT',
-            valid_until=date.today() + timedelta(days=7)
+            valid_until=date.today() + timedelta(days=7),
+            amendment_number=0
         )
         # Already signed contract
         signed_contract = event_contract_factory(
             event=event,
             template=template,
-            status='SIGNED'
+            status='SIGNED',
+            amendment_number=1
         )
 
         client = authenticated_client(user=client_user)
@@ -558,15 +560,24 @@ class TestClientCanSignLogic:
             assert response.data['can_client_sign'] is False
             assert 'amended' in response.data['sign_disabled_reason']
 
-    def test_cannot_sign_when_client_role_not_required(
+    def test_client_role_always_required(
         self, authenticated_client, event_factory, event_contract_factory,
         contract_template_factory, user_factory
     ):
-        """Test client cannot sign if CLIENT role not required."""
+        """Test that CLIENT role is always required in signature requirements.
+
+        The ContractTemplate model's save() method syncs signature_requirements
+        from boolean fields and always includes 'CLIENT'. Even if you pass
+        signature_requirements=['COMPANY_REP'], the model's _sync_signature_requirements
+        will rebuild it to include CLIENT.
+        """
         client_user = user_factory(role='CLIENT')
         event = event_factory(client=client_user)
-        # Template only requires COMPANY_REP
-        template = contract_template_factory(signature_requirements=['COMPANY_REP'])
+        # Even though we only pass COMPANY_REP, the model always adds CLIENT
+        template = contract_template_factory(
+            signature_requirements=['COMPANY_REP'],
+            requires_company_signature=True,
+        )
         contract = event_contract_factory(
             event=event,
             template=template,
@@ -578,8 +589,9 @@ class TestClientCanSignLogic:
         response = client.get(f'/api/contracts/client/contracts/{contract.id}/status/')
 
         assert response.status_code == status.HTTP_200_OK
-        assert response.data['can_client_sign'] is False
-        assert 'not required' in response.data['sign_disabled_reason']
+        # CLIENT is always included by the model's _sync_signature_requirements
+        assert response.data['can_client_sign'] is True
+        assert response.data['sign_disabled_reason'] is None
 
 
 @pytest.mark.django_db

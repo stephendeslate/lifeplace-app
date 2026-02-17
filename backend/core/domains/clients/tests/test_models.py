@@ -138,7 +138,7 @@ class TestClientInvitationModel:
         invitation.refresh_from_db()
         assert invitation.is_accepted is True
 
-    def test_invitation_cascade_delete_on_client_delete(self, user_factory):
+    def test_invitation_cascade_delete_on_client_delete(self, user_factory, ensure_security_events_table):
         """Test invitation is deleted when client is deleted."""
         client = user_factory(role='CLIENT')
         admin = user_factory(admin=True)
@@ -154,7 +154,7 @@ class TestClientInvitationModel:
 
         assert not ClientInvitation.objects.filter(id=invitation_id).exists()
 
-    def test_invitation_set_null_on_admin_delete(self, user_factory):
+    def test_invitation_set_null_on_admin_delete(self, user_factory, ensure_security_events_table):
         """Test invited_by is set to NULL when admin is deleted."""
         client = user_factory(role='CLIENT')
         admin = user_factory(admin=True)

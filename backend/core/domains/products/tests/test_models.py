@@ -50,12 +50,32 @@ class TestProductCategoryModel:
         assert category.slug == 'corporate-events'
 
     def test_category_slug_uniqueness(self, product_category_factory):
-        """Test that duplicate slugs are handled with counter."""
-        category1 = product_category_factory(name='Events')
-        category2 = product_category_factory(name='Events')
+        """Test that duplicate slugs are handled with counter.
+
+        Uses different names that produce the same base slug via slugify().
+        e.g. 'Slug Test' and 'Slug--Test' both slugify to 'slug-test'.
+        The save() dedup logic should append a counter to avoid conflict.
+        """
+        from core.domains.products.models import ProductCategory
+
+        # First category: name 'Slug Test' -> slug 'slug-test'
+        category1 = ProductCategory.objects.create(
+            name='Slug Test',
+            description='Test',
+            is_active=True,
+        )
+        assert category1.slug == 'slug-test'
+
+        # Second category: name 'Slug--Test' -> slugify also produces 'slug-test'
+        # The save() dedup logic should generate 'slug-test-1'
+        category2 = ProductCategory.objects.create(
+            name='Slug--Test',
+            description='Test',
+            is_active=True,
+        )
 
         assert category1.slug != category2.slug
-        assert category2.slug.startswith('events')
+        assert category2.slug.startswith('slug-test')
 
     def test_category_full_path_property(self, product_category_factory):
         """Test full_path returns complete category hierarchy."""

@@ -298,8 +298,8 @@ class TestExpireSentQuotesTask:
 class TestSendQuoteExpiryRemindersTask:
     """Tests for the send_quote_expiry_reminders Celery task."""
 
-    @patch('core.domains.sales.tasks.CommunicationService')
-    @patch('core.domains.sales.tasks.CommunicationContextService')
+    @patch('core.domains.communications.services.CommunicationService')
+    @patch('core.domains.communications.context_service.CommunicationContextService')
     def test_sends_reminder_for_expiring_quote(
         self, mock_context, mock_comm, expiring_soon_quote
     ):
@@ -312,8 +312,8 @@ class TestSendQuoteExpiryRemindersTask:
 
         assert count >= 1
 
-    @patch('core.domains.sales.tasks.CommunicationService')
-    @patch('core.domains.sales.tasks.CommunicationContextService')
+    @patch('core.domains.communications.services.CommunicationService')
+    @patch('core.domains.communications.context_service.CommunicationContextService')
     def test_creates_reminder_record(
         self, mock_context, mock_comm, expiring_soon_quote
     ):
@@ -330,8 +330,8 @@ class TestSendQuoteExpiryRemindersTask:
         )
         assert reminders.exists()
 
-    @patch('core.domains.sales.tasks.CommunicationService')
-    @patch('core.domains.sales.tasks.CommunicationContextService')
+    @patch('core.domains.communications.services.CommunicationService')
+    @patch('core.domains.communications.context_service.CommunicationContextService')
     def test_reminder_marked_as_sent(
         self, mock_context, mock_comm, expiring_soon_quote
     ):
@@ -349,8 +349,8 @@ class TestSendQuoteExpiryRemindersTask:
         assert reminder.is_sent is True
         assert reminder.sent_at is not None
 
-    @patch('core.domains.sales.tasks.CommunicationService')
-    @patch('core.domains.sales.tasks.CommunicationContextService')
+    @patch('core.domains.communications.services.CommunicationService')
+    @patch('core.domains.communications.context_service.CommunicationContextService')
     def test_does_not_send_for_valid_quote(
         self, mock_context, mock_comm, valid_sent_quote
     ):
@@ -364,8 +364,8 @@ class TestSendQuoteExpiryRemindersTask:
         # No reminder should be sent for quote expiring in 30 days
         assert count == 0
 
-    @patch('core.domains.sales.tasks.CommunicationService')
-    @patch('core.domains.sales.tasks.CommunicationContextService')
+    @patch('core.domains.communications.services.CommunicationService')
+    @patch('core.domains.communications.context_service.CommunicationContextService')
     def test_does_not_send_duplicate_reminder(
         self, mock_context, mock_comm, expiring_soon_quote
     ):
@@ -388,23 +388,29 @@ class TestSendQuoteExpiryRemindersTask:
         # Should not send another reminder
         assert count == 0
 
-    @patch('core.domains.sales.tasks.CommunicationService')
-    @patch('core.domains.sales.tasks.CommunicationContextService')
-    def test_sends_reminder_after_2_days(
-        self, mock_context, mock_comm, expiring_soon_quote
-    ):
+    def test_sends_reminder_after_2_days(self, expiring_soon_quote, mocker):
         """Test that reminder is sent if previous was more than 2 days ago."""
         mock_comm_instance = MagicMock()
-        mock_comm.return_value = mock_comm_instance
-        mock_context.generate_context.return_value = {}
+        mocker.patch(
+            'core.domains.communications.services.CommunicationService',
+            return_value=mock_comm_instance
+        )
+        mocker.patch(
+            'core.domains.communications.context_service.CommunicationContextService.generate_context',
+            return_value={}
+        )
 
-        # Create an old reminder
-        QuoteReminder.objects.create(
+        # Create an old reminder and backdate created_at (auto_now_add prevents direct set)
+        old_reminder = QuoteReminder.objects.create(
             quote=expiring_soon_quote,
             scheduled_date=timezone.now() - timedelta(days=3),
             is_sent=True,
             sent_at=timezone.now() - timedelta(days=3),  # Sent 3 days ago
             message='Old reminder'
+        )
+        # Backdate created_at so it's not considered "recent" by the task
+        QuoteReminder.objects.filter(pk=old_reminder.pk).update(
+            created_at=timezone.now() - timedelta(days=3)
         )
 
         count = send_quote_expiry_reminders()
@@ -412,41 +418,55 @@ class TestSendQuoteExpiryRemindersTask:
         # Should send a new reminder
         assert count >= 1
 
-    @patch('core.domains.sales.tasks.CommunicationService')
-    @patch('core.domains.sales.tasks.CommunicationContextService')
-    def test_uses_correct_template(
-        self, mock_context, mock_comm, expiring_soon_quote
-    ):
+    def test_uses_correct_template(self, expiring_soon_quote, mocker):
         """Test that the correct email template is used."""
         mock_comm_instance = MagicMock()
-        mock_comm.return_value = mock_comm_instance
-        mock_context.generate_context.return_value = {}
+        mocker.patch(
+            'core.domains.communications.services.CommunicationService',
+            return_value=mock_comm_instance
+        )
+        mocker.patch(
+            'core.domains.communications.context_service.CommunicationContextService.generate_context',
+            return_value={}
+        )
 
         send_quote_expiry_reminders()
 
         # Verify send_communication was called with correct template
+        # The task calls send_communication multiple times (client + admin notifications)
+        # so check that at least one call used the client reminder template
         mock_comm_instance.send_communication.assert_called()
-        call_kwargs = mock_comm_instance.send_communication.call_args
-        assert call_kwargs[1]['template_name'] == 'Quote Expiry Reminder'
+        template_names = [
+            call[1]['template_name']
+            for call in mock_comm_instance.send_communication.call_args_list
+        ]
+        assert 'Quote Expiry Reminder' in template_names
 
-    @patch('core.domains.sales.tasks.CommunicationService')
-    @patch('core.domains.sales.tasks.CommunicationContextService')
-    def test_sends_to_client_email(
-        self, mock_context, mock_comm, expiring_soon_quote
-    ):
+    def test_sends_to_client_email(self, expiring_soon_quote, mocker):
         """Test that reminder is sent to client email."""
         mock_comm_instance = MagicMock()
-        mock_comm.return_value = mock_comm_instance
-        mock_context.generate_context.return_value = {}
+        mocker.patch(
+            'core.domains.communications.services.CommunicationService',
+            return_value=mock_comm_instance
+        )
+        mocker.patch(
+            'core.domains.communications.context_service.CommunicationContextService.generate_context',
+            return_value={}
+        )
 
         send_quote_expiry_reminders()
 
-        call_kwargs = mock_comm_instance.send_communication.call_args
+        # The task calls send_communication multiple times (client + admin notifications)
+        # Find the call that sent the client reminder (with 'Quote Expiry Reminder' template)
         client_email = expiring_soon_quote.event.client.email
-        assert call_kwargs[1]['recipient'] == client_email
+        recipients = [
+            call[1]['recipient']
+            for call in mock_comm_instance.send_communication.call_args_list
+        ]
+        assert client_email in recipients
 
-    @patch('core.domains.sales.tasks.CommunicationService')
-    @patch('core.domains.sales.tasks.CommunicationContextService')
+    @patch('core.domains.communications.services.CommunicationService')
+    @patch('core.domains.communications.context_service.CommunicationContextService')
     def test_does_not_send_for_expired_quote(
         self, mock_context, mock_comm, expired_by_date_quote
     ):
@@ -460,8 +480,8 @@ class TestSendQuoteExpiryRemindersTask:
         # Already expired, no reminder needed
         assert count == 0
 
-    @patch('core.domains.sales.tasks.CommunicationService')
-    @patch('core.domains.sales.tasks.CommunicationContextService')
+    @patch('core.domains.communications.services.CommunicationService')
+    @patch('core.domains.communications.context_service.CommunicationContextService')
     def test_does_not_send_for_accepted_quote(
         self, mock_context, mock_comm, accepted_quote
     ):
@@ -474,8 +494,8 @@ class TestSendQuoteExpiryRemindersTask:
 
         assert count == 0
 
-    @patch('core.domains.sales.tasks.CommunicationService')
-    @patch('core.domains.sales.tasks.CommunicationContextService')
+    @patch('core.domains.communications.services.CommunicationService')
+    @patch('core.domains.communications.context_service.CommunicationContextService')
     def test_handles_client_without_email(
         self, mock_context, mock_comm, expiring_soon_quote
     ):
@@ -495,8 +515,8 @@ class TestSendQuoteExpiryRemindersTask:
         # Should not send (no email)
         mock_comm_instance.send_communication.assert_not_called()
 
-    @patch('core.domains.sales.tasks.CommunicationService')
-    @patch('core.domains.sales.tasks.CommunicationContextService')
+    @patch('core.domains.communications.services.CommunicationService')
+    @patch('core.domains.communications.context_service.CommunicationContextService')
     def test_handles_send_error_gracefully(
         self, mock_context, mock_comm, expiring_soon_quote
     ):
@@ -512,8 +532,8 @@ class TestSendQuoteExpiryRemindersTask:
         # Count should be 0 since send failed
         assert count == 0
 
-    @patch('core.domains.sales.tasks.CommunicationService')
-    @patch('core.domains.sales.tasks.CommunicationContextService')
+    @patch('core.domains.communications.services.CommunicationService')
+    @patch('core.domains.communications.context_service.CommunicationContextService')
     def test_uses_async_send(
         self, mock_context, mock_comm, expiring_soon_quote
     ):
@@ -528,8 +548,8 @@ class TestSendQuoteExpiryRemindersTask:
         assert call_kwargs[1]['use_async'] is True
 
     @freeze_time('2024-01-15 10:00:00')
-    @patch('core.domains.sales.tasks.CommunicationService')
-    @patch('core.domains.sales.tasks.CommunicationContextService')
+    @patch('core.domains.communications.services.CommunicationService')
+    @patch('core.domains.communications.context_service.CommunicationContextService')
     def test_expiry_threshold_calculation(
         self, mock_context, mock_comm, db, event_factory, admin_user
     ):
@@ -557,8 +577,8 @@ class TestSendQuoteExpiryRemindersTask:
         # Should be included in expiring quotes (within 3 days)
         assert count >= 1
 
-    @patch('core.domains.sales.tasks.CommunicationService')
-    @patch('core.domains.sales.tasks.CommunicationContextService')
+    @patch('core.domains.communications.services.CommunicationService')
+    @patch('core.domains.communications.context_service.CommunicationContextService')
     def test_multiple_expiring_quotes(
         self, mock_context, mock_comm, db, event_factory, admin_user
     ):
@@ -586,15 +606,17 @@ class TestSendQuoteExpiryRemindersTask:
 
         assert count == 3
 
-    @patch('core.domains.sales.tasks.CommunicationService')
-    @patch('core.domains.sales.tasks.CommunicationContextService')
-    def test_returns_correct_count(
-        self, mock_context, mock_comm, expiring_soon_quote
-    ):
+    def test_returns_correct_count(self, expiring_soon_quote, mocker):
         """Test that the task returns correct count of reminders sent."""
         mock_comm_instance = MagicMock()
-        mock_comm.return_value = mock_comm_instance
-        mock_context.generate_context.return_value = {}
+        mocker.patch(
+            'core.domains.communications.services.CommunicationService',
+            return_value=mock_comm_instance
+        )
+        mocker.patch(
+            'core.domains.communications.context_service.CommunicationContextService.generate_context',
+            return_value={}
+        )
 
         count = send_quote_expiry_reminders()
 
@@ -606,8 +628,8 @@ class TestSendQuoteExpiryRemindersTask:
 class TestTaskIntegration:
     """Integration tests for tasks working together."""
 
-    @patch('core.domains.sales.tasks.CommunicationService')
-    @patch('core.domains.sales.tasks.CommunicationContextService')
+    @patch('core.domains.communications.services.CommunicationService')
+    @patch('core.domains.communications.context_service.CommunicationContextService')
     def test_expire_before_reminder(
         self, mock_context, mock_comm, db, event_factory, admin_user
     ):

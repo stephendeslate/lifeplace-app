@@ -24,14 +24,14 @@ from django.contrib.auth import get_user_model
 from django.utils import timezone
 from rest_framework.test import APIRequestFactory
 
-from ..models import (
+from core.domains.notifications.models import (
     NotificationType,
     NotificationPreference,
     Notification,
     NotificationDigest,
     DevicePushToken,
 )
-from ..serializers import (
+from core.domains.notifications.serializers import (
     NotificationTypeSerializer,
     NotificationPreferenceSerializer,
     NotificationSerializer,
@@ -142,8 +142,9 @@ class TestNotificationPreferenceSerializer:
 
     @pytest.fixture
     def preferences(self, user):
-        """Create notification preferences"""
-        return NotificationPreference.objects.create(user=user)
+        """Get notification preferences (auto-created by signal)"""
+        prefs, _ = NotificationPreference.objects.get_or_create(user=user)
+        return prefs
 
     @pytest.fixture
     def notification_type(self):

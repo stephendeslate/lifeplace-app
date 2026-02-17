@@ -573,7 +573,7 @@ class TestAffectedUserModel:
 
         assert not AffectedUser.objects.filter(breach_id=breach_id).exists()
 
-    def test_user_cascade_deletes_affected_user_records(self, user_factory):
+    def test_user_cascade_deletes_affected_user_records(self, user_factory, ensure_security_events_table):
         """Test that deleting a user deletes their affected user records."""
         user = user_factory()
         breach = SecurityBreach.objects.create(

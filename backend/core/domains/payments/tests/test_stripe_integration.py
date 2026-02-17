@@ -84,7 +84,8 @@ class StripePaymentIntegrationTestCase(TestCase):
             payment_method=self.payment_method,
             amount=Decimal('2500.00'),  # ₱2,500
             currency='PHP',
-            description='Wedding package payment'
+            description='Wedding package payment',
+            due_date=date.today() + timedelta(days=7)
         )
         
         try:
@@ -105,8 +106,7 @@ class StripePaymentIntegrationTestCase(TestCase):
             # Record successful transaction
             transaction = PaymentTransaction.objects.create(
                 payment=payment,
-                gateway_transaction_id=intent.id,
-                transaction_type='CHARGE',
+                transaction_id=intent.id,
                 status='SUCCESS' if intent.status == 'succeeded' else 'PENDING',
                 amount=Decimal('2500.00'),
                 currency='PHP',
@@ -127,7 +127,7 @@ class StripePaymentIntegrationTestCase(TestCase):
             self.assertTrue(intent.id.startswith('pi_'))
             self.assertEqual(intent.amount, 250000)
             self.assertEqual(intent.currency, 'php')
-            self.assertEqual(transaction.gateway_transaction_id, intent.id)
+            self.assertEqual(transaction.transaction_id, intent.id)
             
             # Status might be 'requires_action' for 3D Secure or 'succeeded'
             self.assertIn(intent.status, ['succeeded', 'requires_action', 'requires_source_action'])
@@ -143,9 +143,10 @@ class StripePaymentIntegrationTestCase(TestCase):
             event=self.event,
             payment_method=self.payment_method,
             amount=Decimal('1000.00'),
-            currency='PHP'
+            currency='PHP',
+            due_date=date.today() + timedelta(days=7)
         )
-        
+
         try:
             # Use Stripe test card that will be declined
             with self.assertRaises(stripe.error.CardError):
@@ -186,8 +187,7 @@ class StripePaymentIntegrationTestCase(TestCase):
                         # Record failed transaction
                         transaction = PaymentTransaction.objects.create(
                             payment=payment,
-                            gateway_transaction_id=intent.id,
-                            transaction_type='CHARGE',
+                            transaction_id=intent.id,
                             status='FAILED',
                             amount=Decimal('1000.00'),
                             currency='PHP',
@@ -218,7 +218,8 @@ class StripePaymentIntegrationTestCase(TestCase):
             payment_method=self.payment_method,
             amount=Decimal('3000.00'),
             currency='PHP',
-            status='COMPLETED'
+            status='COMPLETED',
+            due_date=date.today() + timedelta(days=7)
         )
         
         try:
@@ -234,8 +235,7 @@ class StripePaymentIntegrationTestCase(TestCase):
             # Record the charge transaction
             charge_transaction = PaymentTransaction.objects.create(
                 payment=payment,
-                gateway_transaction_id=intent.id,
-                transaction_type='CHARGE',
+                transaction_id=intent.id,
                 status='SUCCESS',
                 amount=Decimal('3000.00'),
                 currency='PHP',
@@ -260,12 +260,10 @@ class StripePaymentIntegrationTestCase(TestCase):
                 # Record refund transaction
                 refund_transaction = PaymentTransaction.objects.create(
                     payment=payment,
-                    gateway_transaction_id=refund.id,
-                    transaction_type='REFUND',
-                    status='SUCCESS',
+                    transaction_id=refund.id,
+                    status='COMPLETED',
                     amount=refund_amount,
                     currency='PHP',
-                    parent_transaction=charge_transaction,
                     gateway_response=refund.to_dict()
                 )
                 
@@ -299,7 +297,8 @@ class StripePaymentIntegrationTestCase(TestCase):
             payment_method=self.payment_method,
             amount=Decimal('2000.00'),
             currency='PHP',
-            status='PENDING'
+            status='PENDING',
+            due_date=date.today() + timedelta(days=7)
         )
         
         # Simulate webhook payload for payment_intent.succeeded
@@ -367,7 +366,8 @@ class StripePaymentIntegrationTestCase(TestCase):
             event=self.event,
             payment_method=self.payment_method,
             amount=Decimal('5000.00'),  # Higher amount to trigger 3DS
-            currency='PHP'
+            currency='PHP',
+            due_date=date.today() + timedelta(days=7)
         )
         
         try:
@@ -387,8 +387,7 @@ class StripePaymentIntegrationTestCase(TestCase):
             # Record transaction
             transaction = PaymentTransaction.objects.create(
                 payment=payment,
-                gateway_transaction_id=intent.id,
-                transaction_type='CHARGE',
+                transaction_id=intent.id,
                 status='PENDING',  # Will be pending until 3DS completion
                 amount=Decimal('5000.00'),
                 currency='PHP',
@@ -414,7 +413,7 @@ class StripePaymentIntegrationTestCase(TestCase):
                 
             payment.save()
             
-            self.assertEqual(transaction.gateway_transaction_id, intent.id)
+            self.assertEqual(transaction.transaction_id, intent.id)
             
         except stripe.error.StripeError as e:
             if "No such payment_method" in str(e):
@@ -437,7 +436,8 @@ class StripePaymentIntegrationTestCase(TestCase):
                     event=self.event,
                     payment_method=self.payment_method,
                     amount=Decimal('25.00') if currency != 'PHP' else Decimal('2500.00'),
-                    currency=currency
+                    currency=currency,
+                    due_date=date.today() + timedelta(days=7)
                 )
                 
                 try:
@@ -456,15 +456,18 @@ class StripePaymentIntegrationTestCase(TestCase):
                 except stripe.error.StripeError as e:
                     if "does not support" in str(e).lower():
                         self.skipTest(f"Currency {currency} not supported in test environment")
+                    elif isinstance(e, stripe.error.AuthenticationError):
+                        self.skipTest(f"Stripe API authentication error (test keys not configured): {e}")
                     else:
                         raise e
     
     def test_stripe_api_key_validation(self):
         """Test Stripe API key validation and error handling"""
         # Test with invalid API key
+        # Note: PaymentGateway.code is unique, so we use a different code
         invalid_gateway = PaymentGateway.objects.create(
             name='Invalid Stripe',
-            code='stripe',
+            code='stripe_invalid',
             is_active=True,
             config={
                 'secret_key': 'sk_test_invalid_key_123',
@@ -480,7 +483,8 @@ class StripePaymentIntegrationTestCase(TestCase):
                 token_reference='pm_test_invalid'
             ),
             amount=Decimal('1000.00'),
-            currency='PHP'
+            currency='PHP',
+            due_date=date.today() + timedelta(days=7)
         )
         
         # Set invalid key temporarily

@@ -42,7 +42,16 @@ class TestSendQuestionnaireReminder:
 
     def test_reminder_no_client(self, mocker, event_factory):
         """Test reminder skips when event has no client."""
-        event = event_factory(client=None)
+        event = event_factory()
+        # Simulate missing client by patching the query result
+        mock_event = mocker.MagicMock()
+        mock_event.id = event.id
+        mock_event.client = None
+        mock_event.status = event.status
+        mock_qs = mocker.patch(
+            'core.domains.events.models.Event.objects.select_related',
+        )
+        mock_qs.return_value.get.return_value = mock_event
 
         result = send_questionnaire_reminder(event.id)
 
@@ -108,7 +117,7 @@ class TestSendQuestionnaireReminder:
     ):
         """Test reminder is sent successfully."""
         mock_notification = mocker.patch(
-            'core.domains.questionnaires.tasks.NotificationService.create_notification'
+            'core.domains.notifications.services.NotificationService.create_notification'
         )
 
         client = user_factory(role='CLIENT')
@@ -168,7 +177,16 @@ class TestNotifyQuestionnaireCompleted:
 
     def test_completion_notification_no_client(self, mocker, event_factory):
         """Test completion notification skips when no client."""
-        event = event_factory(client=None)
+        event = event_factory()
+        # Simulate missing client by patching the query result
+        mock_event = mocker.MagicMock()
+        mock_event.id = event.id
+        mock_event.client = None
+        mock_event.status = event.status
+        mock_qs = mocker.patch(
+            'core.domains.events.models.Event.objects.select_related',
+        )
+        mock_qs.return_value.get.return_value = mock_event
 
         result = notify_questionnaire_completed(event.id)
 
@@ -178,7 +196,7 @@ class TestNotifyQuestionnaireCompleted:
     def test_completion_notification_sent(self, mocker, event_factory, user_factory):
         """Test completion notification is sent successfully."""
         mock_notification = mocker.patch(
-            'core.domains.questionnaires.tasks.NotificationService.create_notification'
+            'core.domains.notifications.services.NotificationService.create_notification'
         )
 
         client = user_factory(role='CLIENT')
@@ -222,7 +240,7 @@ class TestNotifyAdminQuestionnaireSubmission:
     ):
         """Test admin notification is sent successfully."""
         mock_notification = mocker.patch(
-            'core.domains.questionnaires.tasks.NotificationService.create_notification'
+            'core.domains.notifications.services.NotificationService.create_notification'
         )
 
         client = user_factory(role='CLIENT')
@@ -233,6 +251,9 @@ class TestNotifyAdminQuestionnaireSubmission:
             event_type=event_type,
             start_date=timezone.now() + timedelta(days=14)
         )
+
+        # Reset mock after event creation (which triggers EVENT_CREATED notification)
+        mock_notification.reset_mock()
 
         result = notify_admin_questionnaire_submission(event.id)
 
@@ -246,13 +267,16 @@ class TestNotifyAdminQuestionnaireSubmission:
     ):
         """Test admin notification is sent to multiple admins."""
         mock_notification = mocker.patch(
-            'core.domains.questionnaires.tasks.NotificationService.create_notification'
+            'core.domains.notifications.services.NotificationService.create_notification'
         )
 
         client = user_factory(role='CLIENT')
         user_factory(role='ADMIN', is_active=True)
         user_factory(role='ADMIN', is_active=True)
         event = event_factory(client=client)
+
+        # Reset mock after event creation (which triggers EVENT_CREATED notification)
+        mock_notification.reset_mock()
 
         result = notify_admin_questionnaire_submission(event.id)
 
@@ -511,7 +535,7 @@ class TestTaskRetryBehavior:
     ):
         """Test reminder task raises exception for Celery retry."""
         mocker.patch(
-            'core.domains.questionnaires.tasks.NotificationService.create_notification',
+            'core.domains.notifications.services.NotificationService.create_notification',
             side_effect=Exception('Notification service error')
         )
 
@@ -535,7 +559,7 @@ class TestTaskRetryBehavior:
     ):
         """Test completion notification raises exception for Celery retry."""
         mocker.patch(
-            'core.domains.questionnaires.tasks.NotificationService.create_notification',
+            'core.domains.notifications.services.NotificationService.create_notification',
             side_effect=Exception('Notification service error')
         )
 

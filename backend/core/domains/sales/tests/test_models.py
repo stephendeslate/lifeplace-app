@@ -273,8 +273,9 @@ class TestEventQuoteRejectMethod:
 class TestEventQuoteSendMethod:
     """Tests for the EventQuote.send_to_client() method."""
 
-    @patch('core.domains.sales.models.CommunicationService')
-    def test_send_quote_updates_status(self, mock_comm, quote, user_factory):
+    @patch('core.domains.communications.services.CommunicationService')
+    @patch('core.domains.communications.context_service.CommunicationContextService')
+    def test_send_quote_updates_status(self, mock_context, mock_comm, quote, user_factory):
         """Test sending a quote updates status to SENT."""
         admin_user = user_factory(admin=True)
 
@@ -284,8 +285,9 @@ class TestEventQuoteSendMethod:
         assert quote.status == 'SENT'
         assert quote.sent_at is not None
 
-    @patch('core.domains.sales.models.CommunicationService')
-    def test_send_quote_creates_activity_record(self, mock_comm, quote, user_factory):
+    @patch('core.domains.communications.services.CommunicationService')
+    @patch('core.domains.communications.context_service.CommunicationContextService')
+    def test_send_quote_creates_activity_record(self, mock_context, mock_comm, quote, user_factory):
         """Test sending a quote creates an activity record."""
         admin_user = user_factory(admin=True)
 
@@ -295,8 +297,9 @@ class TestEventQuoteSendMethod:
         assert activities.exists()
         assert activities.first().action_by == admin_user
 
-    @patch('core.domains.sales.models.CommunicationService')
-    def test_send_quote_creates_reminder(self, mock_comm, quote, user_factory):
+    @patch('core.domains.communications.services.CommunicationService')
+    @patch('core.domains.communications.context_service.CommunicationContextService')
+    def test_send_quote_creates_reminder(self, mock_context, mock_comm, quote, user_factory):
         """Test sending a quote creates a follow-up reminder."""
         admin_user = user_factory(admin=True)
 

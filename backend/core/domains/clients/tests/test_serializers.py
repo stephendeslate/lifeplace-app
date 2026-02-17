@@ -37,25 +37,25 @@ class TestClientProfileSerializer:
     def test_serialize_profile_data(self, user_factory):
         """Test serializing profile data."""
         user = user_factory(role='CLIENT')
-        user.profile.phone = '+1234567890'
+        user.profile.phone = '+639123456789'
         user.profile.company = 'Test Company'
         user.profile.save()
 
         serializer = ClientProfileSerializer(user.profile)
 
-        assert serializer.data['phone'] == '+1234567890'
+        assert serializer.data['phone'] == '+639123456789'
         assert serializer.data['company'] == 'Test Company'
 
     def test_deserialize_profile_data(self):
         """Test deserializing profile data."""
         data = {
-            'phone': '+1234567890',
+            'phone': '+639123456789',
             'company': 'Test Company'
         }
         serializer = ClientProfileSerializer(data=data)
 
-        assert serializer.is_valid()
-        assert serializer.validated_data['phone'] == '+1234567890'
+        assert serializer.is_valid(), serializer.errors
+        assert serializer.validated_data['phone'] == '+639123456789'
         assert serializer.validated_data['company'] == 'Test Company'
 
     def test_allow_blank_phone(self):
@@ -67,10 +67,10 @@ class TestClientProfileSerializer:
 
     def test_allow_blank_company(self):
         """Test that company can be blank."""
-        data = {'phone': '+1234567890', 'company': ''}
+        data = {'phone': '+639123456789', 'company': ''}
         serializer = ClientProfileSerializer(data=data)
 
-        assert serializer.is_valid()
+        assert serializer.is_valid(), serializer.errors
 
     def test_allow_empty_data(self):
         """Test that empty data is valid."""
@@ -92,7 +92,7 @@ class TestClientListSerializer:
             last_name='Doe',
             role='CLIENT'
         )
-        user.profile.phone = '+1234567890'
+        user.profile.phone = '+639123456789'
         user.profile.company = 'Test Company'
         user.profile.save()
 
@@ -237,7 +237,7 @@ class TestClientCreateUpdateSerializer:
             'first_name': 'New',
             'last_name': 'Client',
             'profile': {
-                'phone': '+1234567890',
+                'phone': '+639123456789',
                 'company': 'Test Company'
             }
         }
@@ -246,7 +246,7 @@ class TestClientCreateUpdateSerializer:
         assert serializer.is_valid(), serializer.errors
         client = serializer.save()
 
-        assert client.profile.phone == '+1234567890'
+        assert client.profile.phone == '+639123456789'
         assert client.profile.company == 'Test Company'
 
     def test_update_client(self, user_factory):
@@ -289,7 +289,7 @@ class TestClientCreateUpdateSerializer:
 
         data = {
             'profile': {
-                'phone': '+1234567890',
+                'phone': '+639123456789',
                 'company': 'New Company'
             }
         }
@@ -299,7 +299,7 @@ class TestClientCreateUpdateSerializer:
         client = serializer.save()
         client.profile.refresh_from_db()
 
-        assert client.profile.phone == '+1234567890'
+        assert client.profile.phone == '+639123456789'
         assert client.profile.company == 'New Company'
 
     def test_email_is_required(self):

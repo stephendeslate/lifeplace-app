@@ -792,12 +792,16 @@ class TestVIPPointsServiceAwardPointsForPayment:
         assert result is None
 
     def test_returns_none_for_payment_without_event(self, setup_vip):
-        """Test returns None when payment has no event."""
-        client, event, payment, tier = setup_vip
-        payment.event = None
-        payment.save()
+        """Test returns None when payment has no event.
 
-        result = VIPPointsService.award_points_for_payment(payment)
+        Note: Payment.event is a non-nullable FK, so we use a Mock to simulate
+        a payment with event=None rather than trying to save it to the database.
+        """
+        client, event, payment, tier = setup_vip
+        mock_payment = Mock(spec=payment)
+        mock_payment.event = None
+
+        result = VIPPointsService.award_points_for_payment(mock_payment)
 
         assert result is None
 

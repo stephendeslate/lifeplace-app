@@ -35,7 +35,7 @@ from core.domains.payments import signals
 class TestPaymentCacheInvalidationSignals:
     """Tests for payment cache invalidation signals."""
 
-    @patch('core.domains.payments.signals.payments_cache_service')
+    @patch('core.domains.payments.cache_service.payments_cache_service')
     def test_payment_save_invalidates_cache(
         self, mock_cache_service, payment_factory, confirmed_event
     ):
@@ -46,7 +46,7 @@ class TestPaymentCacheInvalidationSignals:
         # Verify cache invalidation was called
         mock_cache_service.invalidate_payment_caches.assert_called()
 
-    @patch('core.domains.payments.signals.payments_cache_service')
+    @patch('core.domains.payments.cache_service.payments_cache_service')
     @patch('core.domains.payments.signals.update_event_financial_totals')
     def test_payment_delete_invalidates_cache(
         self, mock_update_totals, mock_cache_service, payment_factory, confirmed_event
@@ -66,7 +66,7 @@ class TestPaymentCacheInvalidationSignals:
 class TestInvoiceCacheInvalidationSignals:
     """Tests for invoice cache invalidation signals."""
 
-    @patch('core.domains.payments.signals.payments_cache_service')
+    @patch('core.domains.payments.cache_service.payments_cache_service')
     def test_invoice_save_invalidates_cache(
         self, mock_cache_service, invoice_factory, confirmed_event
     ):
@@ -75,29 +75,32 @@ class TestInvoiceCacheInvalidationSignals:
 
         mock_cache_service.invalidate_invoice_caches.assert_called()
 
-    @patch('core.domains.payments.signals.payments_cache_service')
+    @patch('core.domains.payments.cache_service.payments_cache_service')
     def test_invoice_line_item_save_invalidates_cache(
         self, mock_cache_service, invoice_factory, confirmed_event
     ):
         """Test that saving invoice line item invalidates caches."""
         invoice = invoice_factory(event=confirmed_event)
 
-        # Create line item
+        # Create line item (tax_rate is a required DecimalField)
         InvoiceLineItem.objects.create(
             invoice=invoice,
             description='Test item',
             quantity=1,
-            unit_price=Decimal('100.00')
+            unit_price=Decimal('100.00'),
+            total=Decimal('100.00'),
+            tax_rate=Decimal('12.00')
         )
 
-        mock_cache_service.invalidate_invoice_line_item_caches.assert_called()
+        # The signal invalidates parent invoice caches (not a separate line item cache)
+        mock_cache_service.invalidate_invoice_caches.assert_called()
 
 
 @pytest.mark.django_db
 class TestPaymentMethodCacheInvalidationSignals:
     """Tests for payment method cache invalidation signals."""
 
-    @patch('core.domains.payments.signals.payments_cache_service')
+    @patch('core.domains.payments.cache_service.payments_cache_service')
     def test_payment_method_save_invalidates_cache(
         self, mock_cache_service, payment_method_factory
     ):
@@ -111,7 +114,7 @@ class TestPaymentMethodCacheInvalidationSignals:
 class TestPaymentGatewayCacheInvalidationSignals:
     """Tests for payment gateway cache invalidation signals."""
 
-    @patch('core.domains.payments.signals.payments_cache_service')
+    @patch('core.domains.payments.cache_service.payments_cache_service')
     def test_gateway_save_invalidates_cache(
         self, mock_cache_service, payment_gateway_factory
     ):
@@ -159,7 +162,7 @@ class TestEventFinancialTotalsUpdate:
 class TestRefundSignals:
     """Tests for refund-related signals."""
 
-    @patch('core.domains.payments.signals.payments_cache_service')
+    @patch('core.domains.payments.cache_service.payments_cache_service')
     def test_refund_save_invalidates_cache(
         self, mock_cache_service, completed_payment, admin_user
     ):
@@ -182,17 +185,21 @@ class TestRefundSignals:
 class TestTaxRateSignals:
     """Tests for tax rate-related signals."""
 
-    @patch('core.domains.payments.signals.payments_cache_service')
+    @patch('core.domains.payments.cache_service.payments_cache_service')
     def test_tax_rate_save_invalidates_cache(self, mock_cache_service):
-        """Test that saving a tax rate invalidates caches."""
+        """Test that saving a tax rate invalidates caches.
+
+        Note: TaxRate model has name, rate, region, is_default fields
+        but no is_active field.
+        """
         tax_rate = TaxRate.objects.create(
             name='Test Tax',
             rate=Decimal('12.00'),
-            is_default=False,
-            is_active=True
+            is_default=False
         )
 
-        mock_cache_service.invalidate_tax_rate_caches.assert_called()
+        # The signal calls invalidate_all_financial_analytics_caches for tax rate changes
+        mock_cache_service.invalidate_all_financial_analytics_caches.assert_called()
 
 
 # =============================================================================
@@ -203,7 +210,7 @@ class TestTaxRateSignals:
 class TestTransactionSignals:
     """Tests for transaction-related signals."""
 
-    @patch('core.domains.payments.signals.payments_cache_service')
+    @patch('core.domains.payments.cache_service.payments_cache_service')
     def test_transaction_save_invalidates_cache(
         self, mock_cache_service, completed_payment, stripe_gateway
     ):
@@ -214,7 +221,7 @@ class TestTransactionSignals:
             transaction_id='txn_test123',
             amount=completed_payment.amount,
             status='COMPLETED',
-            transaction_type='CHARGE'
+            currency=completed_payment.currency
         )
 
         mock_cache_service.invalidate_transaction_caches.assert_called()

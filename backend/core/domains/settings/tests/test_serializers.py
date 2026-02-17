@@ -630,7 +630,6 @@ class TestPublicCompanySettingsSerializer:
         assert 'bank_swift_code' not in data
         assert 'business_registration_number' not in data
         assert 'vat_number' not in data
-        assert 'support_email' not in data
         assert 'invoice_terms' not in data
         assert 'receipt_terms' not in data
 

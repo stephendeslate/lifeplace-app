@@ -19,7 +19,7 @@ from django.contrib.auth import get_user_model
 from django.utils import timezone
 from django.db import IntegrityError
 
-from ..models import (
+from core.domains.notifications.models import (
     NotificationType,
     NotificationPreference,
     Notification,
@@ -209,8 +209,9 @@ class TestNotificationPreference:
 
     @pytest.fixture
     def preferences(self, user):
-        """Create notification preferences for user"""
-        return NotificationPreference.objects.create(user=user)
+        """Get notification preferences for user (auto-created by signal)"""
+        prefs, _ = NotificationPreference.objects.get_or_create(user=user)
+        return prefs
 
     def test_preference_creation(self, preferences, user):
         """Test preference creation with defaults"""
@@ -225,8 +226,11 @@ class TestNotificationPreference:
         """Test string representation"""
         assert str(preferences) == f'Preferences for {user.email}'
 
-    def test_preference_one_to_one_constraint(self, preferences, user):
+    def test_preference_one_to_one_constraint(self, user):
         """Test that user can only have one preference record"""
+        # Ensure one preference already exists (from signal)
+        assert NotificationPreference.objects.filter(user=user).exists()
+        # Attempting to create another should raise IntegrityError
         with pytest.raises(IntegrityError):
             NotificationPreference.objects.create(user=user)
 

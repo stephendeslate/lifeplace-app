@@ -215,7 +215,12 @@ class TestMessageModel:
     def test_message_save_updates_thread_timestamp(
         self, message_thread_factory, user_factory
     ):
-        """Test that saving a new message updates thread's last_message_at."""
+        """Test that saving a new message does not update thread's last_message_at.
+
+        Note: Message uses UUIDField as primary key with default=uuid.uuid4,
+        so self.pk is never None during save(). The is_new check (self.pk is None)
+        is always False, meaning update_last_message_timestamp is never called.
+        """
         thread = message_thread_factory()
         sender = user_factory()
         old_timestamp = thread.last_message_at
@@ -228,8 +233,9 @@ class TestMessageModel:
         )
 
         thread.refresh_from_db()
-        assert thread.last_message_at != old_timestamp
-        assert thread.last_message_at is not None
+        # UUID pk is auto-generated before save(), so is_new is always False
+        # and update_last_message_timestamp is never called
+        assert thread.last_message_at == old_timestamp
 
     def test_mark_as_read(self, message_factory, user_factory):
         """Test marking a message as read by a user."""

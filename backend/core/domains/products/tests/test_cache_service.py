@@ -3,7 +3,7 @@ Unit tests for products domain cache service.
 
 Tests:
 - ProductCacheService (category, product, discount, and pricing caching)
-- Cache invalidation
+- Cache invalidation (version-based)
 - Utility methods (hash generation, cache-aside pattern)
 """
 
@@ -30,11 +30,26 @@ def mock_cache():
     with patch.object(ProductCacheService, '__init__', lambda self: None):
         service = ProductCacheService()
         service.cache = MagicMock()
+        service.sessions = MagicMock()
         service.analytics = MagicMock()
+        service.domain = 'products'
+        service.version_groups = ProductCacheService.version_groups
         # Bind utility methods from the real class
         service._generate_query_hash = lambda params: ProductCacheService._generate_query_hash(service, params)
         service._generate_ids_hash = lambda ids: ProductCacheService._generate_ids_hash(service, ids)
-        service._invalidate_cache_patterns = lambda patterns: ProductCacheService._invalidate_cache_patterns(service, patterns)
+        # Bind versioned cache methods from the real class
+        service._get_version_key = lambda group: ProductCacheService._get_version_key(service, group)
+        service._get_version = lambda group: ProductCacheService._get_version(service, group)
+        service._versioned_key = lambda group, key_suffix: ProductCacheService._versioned_key(service, group, key_suffix)
+        service._invalidate_version_group = lambda group: ProductCacheService._invalidate_version_group(service, group)
+        service._invalidate_all_groups = lambda: ProductCacheService._invalidate_all_groups(service)
+        service._delete_specific_key = lambda key, cache_backend='default': ProductCacheService._delete_specific_key(service, key, cache_backend)
+        service._delete_specific_keys = lambda keys, cache_backend='default': ProductCacheService._delete_specific_keys(service, keys, cache_backend)
+        service.get_version_info = lambda: ProductCacheService.get_version_info(service)
+
+        # Mock _get_version to return a stable version number for predictable keys
+        service._get_version = MagicMock(return_value=1)
+
         return service
 
 
@@ -55,12 +70,9 @@ class TestCategoryCaching:
 
         key = mock_cache.cache_categories_tree(categories_data)
 
-        mock_cache.cache.set.assert_called_once_with(
-            ProductCacheService.CATEGORY_TREE_KEY,
-            categories_data,
-            ProductCacheService.TIMEOUT_LONG
-        )
-        assert key == ProductCacheService.CATEGORY_TREE_KEY
+        mock_cache.cache.set.assert_called_once()
+        assert 'categories:tree' in key
+        assert key == 'products:v1:categories:tree'
 
     def test_get_cached_categories_tree_hit(self, mock_cache):
         """Test getting cached categories tree (cache hit)."""
@@ -69,7 +81,7 @@ class TestCategoryCaching:
 
         result = mock_cache.get_cached_categories_tree()
 
-        mock_cache.cache.get.assert_called_once_with(ProductCacheService.CATEGORY_TREE_KEY)
+        mock_cache.cache.get.assert_called_once_with('products:v1:categories:tree')
         assert result == cached_data
 
     def test_get_cached_categories_tree_miss(self, mock_cache):
@@ -88,7 +100,7 @@ class TestCategoryCaching:
         key = mock_cache.cache_category_list(categories_data, query_params)
 
         mock_cache.cache.set.assert_called_once()
-        assert 'products:categories:list:' in key
+        assert 'products:v1:categories:list:' in key
 
     def test_get_cached_category_list_with_query_params(self, mock_cache):
         """Test getting cached category list with query parameters."""
@@ -144,7 +156,7 @@ class TestProductCaching:
         key = mock_cache.cache_product_list(products_data)
 
         mock_cache.cache.set.assert_called_once()
-        assert 'products:list:' in key
+        assert 'products:v1:list:' in key
 
     def test_cache_product_detail(self, mock_cache):
         """Test caching individual product detail."""
@@ -183,7 +195,7 @@ class TestProductCaching:
         key = mock_cache.cache_product_batch(product_ids, products_data)
 
         mock_cache.cache.set.assert_called_once()
-        assert 'products:batch:' in key
+        assert 'products:v1:batch:' in key
 
     def test_get_cached_product_batch(self, mock_cache):
         """Test getting cached batch product data."""
@@ -201,12 +213,13 @@ class TestProductCaching:
 
         key = mock_cache.cache_featured_products(products_data)
 
+        expected_key = 'products:v1:featured'
         mock_cache.cache.set.assert_called_once_with(
-            ProductCacheService.PRODUCT_FEATURED_KEY,
+            expected_key,
             products_data,
             ProductCacheService.TIMEOUT_MEDIUM
         )
-        assert key == ProductCacheService.PRODUCT_FEATURED_KEY
+        assert key == expected_key
 
     def test_get_cached_featured_products(self, mock_cache):
         """Test getting cached featured products."""
@@ -215,7 +228,8 @@ class TestProductCaching:
 
         result = mock_cache.get_cached_featured_products()
 
-        mock_cache.cache.get.assert_called_once_with(ProductCacheService.PRODUCT_FEATURED_KEY)
+        expected_key = 'products:v1:featured'
+        mock_cache.cache.get.assert_called_once_with(expected_key)
         assert result == cached_data
 
     def test_cache_active_products(self, mock_cache):
@@ -224,12 +238,13 @@ class TestProductCaching:
 
         key = mock_cache.cache_active_products(products_data)
 
+        expected_key = 'products:v1:active'
         mock_cache.cache.set.assert_called_once_with(
-            ProductCacheService.PRODUCT_ACTIVE_KEY,
+            expected_key,
             products_data,
             ProductCacheService.TIMEOUT_MEDIUM
         )
-        assert key == ProductCacheService.PRODUCT_ACTIVE_KEY
+        assert key == expected_key
 
     def test_get_cached_active_products(self, mock_cache):
         """Test getting cached active products."""
@@ -246,7 +261,7 @@ class TestProductCaching:
 
         key = mock_cache.cache_products_by_category(1, products_data)
 
-        expected_key = ProductCacheService.PRODUCT_BY_CATEGORY_KEY.format(category_id=1)
+        expected_key = 'products:v1:by_category:1'
         mock_cache.cache.set.assert_called_once_with(
             expected_key,
             products_data,
@@ -261,7 +276,7 @@ class TestProductCaching:
 
         result = mock_cache.get_cached_products_by_category(1)
 
-        expected_key = ProductCacheService.PRODUCT_BY_CATEGORY_KEY.format(category_id=1)
+        expected_key = 'products:v1:by_category:1'
         mock_cache.cache.get.assert_called_once_with(expected_key)
         assert result == cached_data
 
@@ -281,7 +296,7 @@ class TestDiscountCaching:
         key = mock_cache.cache_discount_list(discounts_data)
 
         mock_cache.cache.set.assert_called_once()
-        assert 'products:discounts:list:' in key
+        assert 'products:v1:discounts:list:' in key
 
     def test_cache_discount_list_uses_short_timeout(self, mock_cache):
         """Test discount list uses shorter timeout due to frequent changes."""
@@ -324,12 +339,13 @@ class TestDiscountCaching:
 
         key = mock_cache.cache_valid_discounts(discounts_data)
 
+        expected_key = 'products:v1:discounts:valid'
         mock_cache.cache.set.assert_called_once_with(
-            ProductCacheService.DISCOUNT_VALID_KEY,
+            expected_key,
             discounts_data,
             ProductCacheService.TIMEOUT_SHORT
         )
-        assert key == ProductCacheService.DISCOUNT_VALID_KEY
+        assert key == expected_key
 
     def test_get_cached_valid_discounts(self, mock_cache):
         """Test getting cached valid discounts."""
@@ -338,7 +354,8 @@ class TestDiscountCaching:
 
         result = mock_cache.get_cached_valid_discounts()
 
-        mock_cache.cache.get.assert_called_once_with(ProductCacheService.DISCOUNT_VALID_KEY)
+        expected_key = 'products:v1:discounts:valid'
+        mock_cache.cache.get.assert_called_once_with(expected_key)
         assert result == cached_data
 
     def test_cache_discounts_by_type(self, mock_cache):
@@ -347,7 +364,7 @@ class TestDiscountCaching:
 
         key = mock_cache.cache_discounts_by_type('PERCENTAGE', discounts_data)
 
-        expected_key = ProductCacheService.DISCOUNT_BY_TYPE_KEY.format(discount_type='PERCENTAGE')
+        expected_key = 'products:v1:discounts:by_type:PERCENTAGE'
         mock_cache.cache.set.assert_called_once_with(
             expected_key,
             discounts_data,
@@ -362,7 +379,7 @@ class TestDiscountCaching:
 
         result = mock_cache.get_cached_discounts_by_type('PERCENTAGE')
 
-        expected_key = ProductCacheService.DISCOUNT_BY_TYPE_KEY.format(discount_type='PERCENTAGE')
+        expected_key = 'products:v1:discounts:by_type:PERCENTAGE'
         mock_cache.cache.get.assert_called_once_with(expected_key)
         assert result == cached_data
 
@@ -384,7 +401,7 @@ class TestPricingCaching:
         key = mock_cache.cache_pricing_calculation(product_ids, calc_params, pricing_result)
 
         mock_cache.cache.set.assert_called_once()
-        assert 'products:pricing:' in key
+        assert 'products:v1:pricing:' in key
 
     def test_get_cached_pricing_calculation(self, mock_cache):
         """Test getting cached pricing calculation."""
@@ -399,90 +416,89 @@ class TestPricingCaching:
 
 
 # =============================================================================
-# CACHE INVALIDATION TESTS
+# CACHE INVALIDATION TESTS (Version-based)
 # =============================================================================
 
 @pytest.mark.django_db
 class TestCacheInvalidation:
-    """Tests for cache invalidation methods."""
+    """Tests for cache invalidation methods (version-based)."""
 
-    def test_invalidate_category_caches_clears_tree(self, mock_cache):
-        """Test category invalidation clears tree cache."""
-        mock_cache.cache.keys.return_value = []
-        mock_cache._invalidate_cache_patterns = MagicMock()
+    def test_invalidate_category_caches_increments_versions(self, mock_cache):
+        """Test category invalidation increments category and product version groups."""
+        mock_cache._invalidate_version_group = MagicMock(return_value=2)
+        mock_cache._delete_specific_key = MagicMock(return_value=True)
 
         mock_cache.invalidate_category_caches()
 
-        mock_cache._invalidate_cache_patterns.assert_called_once()
-        call_args = mock_cache._invalidate_cache_patterns.call_args[0][0]
-        assert ProductCacheService.CATEGORY_TREE_KEY in call_args
+        # Should invalidate both 'categories' and 'products' version groups
+        calls = mock_cache._invalidate_version_group.call_args_list
+        group_names = [c[0][0] for c in calls]
+        assert 'categories' in group_names
+        assert 'products' in group_names
 
     def test_invalidate_category_caches_with_specific_id(self, mock_cache):
-        """Test category invalidation with specific category ID."""
-        mock_cache.cache.keys.return_value = []
-        mock_cache._invalidate_cache_patterns = MagicMock()
+        """Test category invalidation with specific category ID deletes detail key."""
+        mock_cache._invalidate_version_group = MagicMock(return_value=2)
+        mock_cache._delete_specific_key = MagicMock(return_value=True)
 
         mock_cache.invalidate_category_caches(category_id=1)
 
-        call_args = mock_cache._invalidate_cache_patterns.call_args[0][0]
         expected_key = ProductCacheService.CATEGORY_DETAIL_KEY.format(category_id=1)
-        assert expected_key in call_args
+        mock_cache._delete_specific_key.assert_called_once_with(expected_key)
 
-    def test_invalidate_product_caches(self, mock_cache):
-        """Test product cache invalidation."""
-        mock_cache.cache.keys.return_value = []
-        mock_cache._invalidate_cache_patterns = MagicMock()
+    def test_invalidate_product_caches_increments_versions(self, mock_cache):
+        """Test product cache invalidation increments product and pricing groups."""
+        mock_cache._invalidate_version_group = MagicMock(return_value=2)
+        mock_cache._delete_specific_key = MagicMock(return_value=True)
 
         mock_cache.invalidate_product_caches()
 
-        mock_cache._invalidate_cache_patterns.assert_called_once()
-        call_args = mock_cache._invalidate_cache_patterns.call_args[0][0]
-        assert ProductCacheService.PRODUCT_FEATURED_KEY in call_args
-        assert ProductCacheService.PRODUCT_ACTIVE_KEY in call_args
+        calls = mock_cache._invalidate_version_group.call_args_list
+        group_names = [c[0][0] for c in calls]
+        assert 'products' in group_names
+        assert 'pricing' in group_names
 
     def test_invalidate_product_caches_with_specific_id(self, mock_cache):
-        """Test product invalidation with specific product ID."""
-        mock_cache.cache.keys.return_value = []
-        mock_cache._invalidate_cache_patterns = MagicMock()
+        """Test product invalidation with specific product ID deletes detail key."""
+        mock_cache._invalidate_version_group = MagicMock(return_value=2)
+        mock_cache._delete_specific_key = MagicMock(return_value=True)
 
         mock_cache.invalidate_product_caches(product_id=1)
 
-        call_args = mock_cache._invalidate_cache_patterns.call_args[0][0]
         expected_key = ProductCacheService.PRODUCT_DETAIL_KEY.format(product_id=1)
-        assert expected_key in call_args
+        mock_cache._delete_specific_key.assert_called_once_with(expected_key)
 
-    def test_invalidate_discount_caches(self, mock_cache):
-        """Test discount cache invalidation."""
-        mock_cache.cache.keys.return_value = []
-        mock_cache._invalidate_cache_patterns = MagicMock()
+    def test_invalidate_discount_caches_increments_versions(self, mock_cache):
+        """Test discount cache invalidation increments discount and pricing groups."""
+        mock_cache._invalidate_version_group = MagicMock(return_value=2)
+        mock_cache._delete_specific_key = MagicMock(return_value=True)
 
         mock_cache.invalidate_discount_caches()
 
-        mock_cache._invalidate_cache_patterns.assert_called_once()
-        call_args = mock_cache._invalidate_cache_patterns.call_args[0][0]
-        assert ProductCacheService.DISCOUNT_VALID_KEY in call_args
+        calls = mock_cache._invalidate_version_group.call_args_list
+        group_names = [c[0][0] for c in calls]
+        assert 'discounts' in group_names
+        assert 'pricing' in group_names
 
     def test_invalidate_discount_caches_with_specific_id(self, mock_cache):
-        """Test discount invalidation with specific discount ID."""
-        mock_cache.cache.keys.return_value = []
-        mock_cache._invalidate_cache_patterns = MagicMock()
+        """Test discount invalidation with specific discount ID deletes detail key."""
+        mock_cache._invalidate_version_group = MagicMock(return_value=2)
+        mock_cache._delete_specific_key = MagicMock(return_value=True)
 
         mock_cache.invalidate_discount_caches(discount_id=1)
 
-        call_args = mock_cache._invalidate_cache_patterns.call_args[0][0]
         expected_key = ProductCacheService.DISCOUNT_DETAIL_KEY.format(discount_id=1)
-        assert expected_key in call_args
+        mock_cache._delete_specific_key.assert_called_once_with(expected_key)
 
     def test_invalidate_all_product_caches(self, mock_cache):
-        """Test invalidating all product domain caches."""
-        mock_cache.cache.keys.return_value = []
-        mock_cache._invalidate_cache_patterns = MagicMock()
+        """Test invalidating all product domain caches increments all groups."""
+        mock_cache._invalidate_all_groups = MagicMock(return_value={
+            'categories': 2, 'products': 2, 'discounts': 2, 'pricing': 2
+        })
 
         mock_cache.invalidate_all_product_caches()
 
-        mock_cache._invalidate_cache_patterns.assert_called_once()
-        call_args = mock_cache._invalidate_cache_patterns.call_args[0][0]
-        assert 'products:*' in call_args
+        mock_cache._invalidate_all_groups.assert_called_once()
 
 
 # =============================================================================
@@ -561,41 +577,54 @@ class TestUtilityMethods:
 
 
 @pytest.mark.django_db
-class TestInvalidateCachePatterns:
-    """Tests for _invalidate_cache_patterns method."""
+class TestVersionBasedInvalidation:
+    """Tests for version-based invalidation methods."""
 
-    def test_invalidate_direct_key(self, mock_cache):
-        """Test invalidating a direct cache key."""
-        mock_cache._invalidate_cache_patterns(['products:featured'])
+    def test_invalidate_version_group_increments_version(self, mock_cache):
+        """Test that invalidating a version group increments the version via cache."""
+        mock_cache.cache.incr.return_value = 2
 
-        mock_cache.cache.delete.assert_called_once_with('products:featured')
+        # Use the real method, not the mock
+        service = mock_cache
+        service._invalidate_version_group = lambda group: ProductCacheService._invalidate_version_group(service, group)
 
-    def test_invalidate_pattern_key(self, mock_cache):
-        """Test invalidating pattern-based cache keys."""
-        mock_cache.cache.keys.return_value = ['products:list:abc123', 'products:list:def456']
+        new_version = service._invalidate_version_group('products')
 
-        mock_cache._invalidate_cache_patterns(['products:list:*'])
+        assert new_version == 2
+        mock_cache.cache.incr.assert_called_once()
 
-        mock_cache.cache.keys.assert_called_once_with('products:list:*')
-        mock_cache.cache.delete_many.assert_called_once_with(
-            ['products:list:abc123', 'products:list:def456']
-        )
+    def test_invalidate_version_group_initializes_on_missing_key(self, mock_cache):
+        """Test that invalidation initializes version when key doesn't exist."""
+        mock_cache.cache.incr.side_effect = ValueError("Key not found")
 
-    def test_invalidate_pattern_no_matches(self, mock_cache):
-        """Test invalidating pattern with no matches."""
-        mock_cache.cache.keys.return_value = []
+        service = mock_cache
+        service._invalidate_version_group = lambda group: ProductCacheService._invalidate_version_group(service, group)
 
-        mock_cache._invalidate_cache_patterns(['products:nonexistent:*'])
+        new_version = service._invalidate_version_group('products')
 
-        mock_cache.cache.keys.assert_called_once()
-        mock_cache.cache.delete_many.assert_not_called()
+        assert new_version == 2
+        mock_cache.cache.set.assert_called_once()
 
-    def test_invalidate_pattern_handles_exception(self, mock_cache):
-        """Test invalidating pattern handles exceptions gracefully."""
-        mock_cache.cache.keys.side_effect = Exception('Cache error')
+    def test_delete_specific_key(self, mock_cache):
+        """Test deleting a specific cache key."""
+        service = mock_cache
+        service._delete_specific_key = lambda key, cb='default': ProductCacheService._delete_specific_key(service, key, cb)
 
-        # Should not raise
-        mock_cache._invalidate_cache_patterns(['products:*'])
+        result = service._delete_specific_key('products:detail:1')
+
+        mock_cache.cache.delete.assert_called_once_with('products:detail:1')
+        assert result is True
+
+    def test_delete_specific_key_handles_exception(self, mock_cache):
+        """Test deleting a specific key handles exceptions gracefully."""
+        mock_cache.cache.delete.side_effect = Exception('Cache error')
+
+        service = mock_cache
+        service._delete_specific_key = lambda key, cb='default': ProductCacheService._delete_specific_key(service, key, cb)
+
+        result = service._delete_specific_key('products:detail:1')
+
+        assert result is False
 
 
 # =============================================================================
@@ -660,32 +689,32 @@ class TestCacheStats:
 
     def test_get_cache_stats_returns_info(self, mock_cache):
         """Test get_cache_stats returns cache information."""
-        mock_cache.cache.get.return_value = None  # Simulate empty cache
+        mock_cache.cache.get.return_value = None
 
         stats = mock_cache.get_cache_stats()
 
         assert 'cache_type' in stats
-        assert stats['cache_type'] == 'Redis'
+        assert stats['cache_type'] == 'Redis (Versioned)'
         assert 'key_patterns' in stats
-        assert 'sample_keys_count' in stats
+        assert 'current_versions' in stats
 
-    def test_get_cache_stats_shows_cached_keys(self, mock_cache):
-        """Test get_cache_stats shows which keys are cached."""
-        # Mock that featured products are cached
-        def side_effect(key):
-            if key == 'products:featured':
-                return [{'id': 1}]
-            return None
-
-        mock_cache.cache.get.side_effect = side_effect
+    def test_get_cache_stats_has_version_groups(self, mock_cache):
+        """Test get_cache_stats includes version group info."""
+        mock_cache.cache.get.return_value = None
 
         stats = mock_cache.get_cache_stats()
 
-        assert 'products:featured' in stats['sample_cached_keys']
+        assert 'version_groups' in stats
+        assert 'categories' in stats['version_groups']
+        assert 'products' in stats['version_groups']
+        assert 'discounts' in stats['version_groups']
+        assert 'pricing' in stats['version_groups']
 
     def test_get_cache_stats_handles_error(self, mock_cache):
         """Test get_cache_stats handles errors gracefully."""
         mock_cache.cache.get.side_effect = Exception('Cache error')
+        # get_version_info also uses cache.get, so we need it to fail too
+        mock_cache.get_version_info = MagicMock(side_effect=Exception('Cache error'))
 
         stats = mock_cache.get_cache_stats()
 

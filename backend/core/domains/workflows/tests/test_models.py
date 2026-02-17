@@ -427,7 +427,11 @@ class TestWorkflowStageApplyToEvent:
         assert event.current_stage == stage2
 
     def test_apply_to_event_prevents_backward_movement(self, event_factory, event_type_factory):
-        """Test that apply_to_event prevents moving backwards in same category."""
+        """Test that apply_to_event prevents moving backwards in same category.
+
+        The post_save signal resets current_stage to the first LEAD stage on
+        creation, so we use .update() to set stage2 after creation.
+        """
         event_type = event_type_factory()
         template = WorkflowTemplate.objects.create(
             name='Test Workflow',
@@ -449,8 +453,10 @@ class TestWorkflowStageApplyToEvent:
         event = event_factory(
             event_type=event_type,
             workflow_template=template,
-            current_stage=stage2
         )
+        # Bypass post_save signal by using .update()
+        Event.objects.filter(id=event.id).update(current_stage=stage2)
+        event.refresh_from_db()
 
         # Try to move backwards
         stage1.apply_to_event(event)
@@ -502,10 +508,10 @@ class TestWorkflowStageExecuteAutomation:
 
         email_template = CommunicationTemplate.objects.create(
             name='Test Email',
-            subject='Test Subject',
-            body_html='<p>Test Body</p>',
-            template_type='EVENT_NOTIFICATION',
-            is_active=True
+            subject_template='Test Subject',
+            body_template='<p>Test Body</p>',
+            channel='EMAIL',
+            category='SYSTEM',
         )
 
         stage = WorkflowStage.objects.create(
@@ -614,10 +620,10 @@ class TestWorkflowStageExecuteAutomation:
 
         email_template = CommunicationTemplate.objects.create(
             name='Test Email',
-            subject='Test Subject',
-            body_html='<p>Test Body</p>',
-            template_type='EVENT_NOTIFICATION',
-            is_active=True
+            subject_template='Test Subject',
+            body_template='<p>Test Body</p>',
+            channel='EMAIL',
+            category='SYSTEM',
         )
 
         stage = WorkflowStage.objects.create(

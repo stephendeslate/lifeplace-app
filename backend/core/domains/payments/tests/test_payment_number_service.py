@@ -8,8 +8,8 @@ from django.test import TestCase, TransactionTestCase
 from django.db import transaction
 from unittest.mock import patch
 
-from ..services.payment_number_service import PaymentNumberService, PaymentNumberMigrationService
-from ..models import PaymentNumberSequence, Payment
+from core.domains.payments.services.payment_number_service import PaymentNumberService, PaymentNumberMigrationService
+from core.domains.payments.models import PaymentNumberSequence, Payment
 from core.domains.events.models import Event
 from core.domains.users.models import User
 
