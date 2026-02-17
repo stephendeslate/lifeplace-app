@@ -170,9 +170,9 @@ export const GalleryContent: React.FC<GalleryContentProps> = () => {
   const handleCategoryChange = useCallback(
     (categoryId: string) => {
       if (categoryId === "all") {
-        setSearchParams({});
+        setSearchParams({}, { preventScrollReset: true });
       } else {
-        setSearchParams({ category: categoryId });
+        setSearchParams({ category: categoryId }, { preventScrollReset: true });
       }
       setVisibleCount(IMAGES_PER_PAGE);
     },
