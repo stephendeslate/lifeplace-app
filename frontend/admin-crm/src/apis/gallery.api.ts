@@ -65,6 +65,21 @@ export const galleryApi = {
   deleteGalleryPhoto: async (id: number): Promise<void> => {
     await api.delete(`/venues/gallery-photos/${id}/`);
   },
+
+  bulkCreateGalleryPhotos: async (
+    formData: FormData,
+  ): Promise<GalleryPhoto[]> => {
+    const response = await api.post<GalleryPhoto[]>(
+      "/venues/gallery-photos/bulk-create/",
+      formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      },
+    );
+    return response.data;
+  },
 };
 
 export default galleryApi;

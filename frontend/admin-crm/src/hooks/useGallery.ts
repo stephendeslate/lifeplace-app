@@ -90,6 +90,29 @@ export const useGalleryPhotos = (filters?: GalleryPhotoFilters) => {
     },
   });
 
+  // Bulk create mutation
+  const bulkCreateGalleryPhotosMutation = useMutation({
+    mutationFn: (formData: FormData) =>
+      galleryApi.bulkCreateGalleryPhotos(formData),
+    onSuccess: (photos) => {
+      queryClient.invalidateQueries({ queryKey: ["gallery-photos"] });
+      showSuccess(
+        "Photos Uploaded",
+        `${photos.length} photo${photos.length === 1 ? "" : "s"} uploaded successfully.`,
+      );
+    },
+    onError: (error: unknown) => {
+      const message =
+        error && typeof error === "object" && "response" in error
+          ? String(
+              (error as { response?: { data?: { detail?: string } } }).response
+                ?.data?.detail,
+            ) || "Failed to upload photos"
+          : "Failed to upload photos";
+      showError("Bulk Upload Failed", message);
+    },
+  });
+
   return {
     // Data
     galleryPhotos,
@@ -99,6 +122,7 @@ export const useGalleryPhotos = (filters?: GalleryPhotoFilters) => {
     isCreatingGalleryPhoto: createGalleryPhotoMutation.isPending,
     isUpdatingGalleryPhoto: updateGalleryPhotoMutation.isPending,
     isDeletingGalleryPhoto: deleteGalleryPhotoMutation.isPending,
+    isBulkCreatingGalleryPhotos: bulkCreateGalleryPhotosMutation.isPending,
 
     // Error states
     galleryPhotosError,
@@ -107,6 +131,7 @@ export const useGalleryPhotos = (filters?: GalleryPhotoFilters) => {
     createGalleryPhoto: createGalleryPhotoMutation.mutate,
     updateGalleryPhoto: updateGalleryPhotoMutation.mutate,
     deleteGalleryPhoto: deleteGalleryPhotoMutation.mutate,
+    bulkCreateGalleryPhotos: bulkCreateGalleryPhotosMutation.mutate,
     refetchGalleryPhotos,
   };
 };

@@ -1,8 +1,11 @@
 // Gallery Settings Page
 // Manages gallery photos for the public-facing website
 
-import React from "react";
-import { PhotoLibrary as GalleryIcon } from "@mui/icons-material";
+import React, { useState } from "react";
+import {
+  PhotoLibrary as GalleryIcon,
+  CloudUpload as UploadIcon,
+} from "@mui/icons-material";
 import { Box, Chip } from "@mui/material";
 import {
   PermissionAwareSettingsPage,
@@ -11,6 +14,7 @@ import {
 } from "../../../components/common/settings";
 import { useGalleryPhotos } from "../../../hooks/useGallery";
 import { GalleryPhotoFormDialog } from "../../../components/gallery/GalleryPhotoFormDialog";
+import { BulkUploadDialog } from "../../../components/gallery/BulkUploadDialog";
 import type { GalleryPhoto } from "../../../types/gallery.types";
 import { GALLERY_CATEGORIES } from "../../../types/gallery.types";
 import type { ModernFormSection } from "../../../components/common/ModernForm";
@@ -170,6 +174,8 @@ const config: SettingsPageConfig<GalleryPhoto> = {
 };
 
 export const Gallery = () => {
+  const [bulkUploadOpen, setBulkUploadOpen] = useState(false);
+
   const {
     galleryPhotos,
     isLoadingGalleryPhotos,
@@ -177,10 +183,12 @@ export const Gallery = () => {
     createGalleryPhoto,
     updateGalleryPhoto,
     deleteGalleryPhoto,
+    bulkCreateGalleryPhotos,
     refetchGalleryPhotos,
     isCreatingGalleryPhoto,
     isUpdatingGalleryPhoto,
     isDeletingGalleryPhoto,
+    isBulkCreatingGalleryPhotos,
   } = useGalleryPhotos();
 
   // Action handlers
@@ -214,45 +222,67 @@ export const Gallery = () => {
   };
 
   return (
-    <PermissionAwareSettingsPage
-      config={config}
-      requiredPermissions={["can_manage_booking_flows"]}
-      data={galleryPhotos}
-      defaultValues={defaultGalleryPhoto}
-      isLoading={isLoadingGalleryPhotos}
-      error={galleryPhotosError?.message}
-      onRefresh={handleRefresh}
-      onCreate={handleCreate}
-      onUpdate={handleUpdate}
-      onDelete={handleDelete}
-      onFetchItem={handleFetchItem}
-      isCreating={isCreatingGalleryPhoto}
-      isUpdating={isUpdatingGalleryPhoto}
-      isDeleting={isDeletingGalleryPhoto}
-      customFormRenderer={({ open, onClose, item }) => (
-        <GalleryPhotoFormDialog
-          open={open}
-          onClose={onClose}
-          editingPhoto={item as GalleryPhoto | null}
-          onSubmit={(formData) => {
-            const editingItem = item as GalleryPhoto | null;
-            if (editingItem && editingItem.id) {
-              updateGalleryPhoto(
-                { id: editingItem.id, formData },
-                {
+    <>
+      <PermissionAwareSettingsPage
+        config={config}
+        requiredPermissions={["can_manage_booking_flows"]}
+        data={galleryPhotos}
+        defaultValues={defaultGalleryPhoto}
+        isLoading={isLoadingGalleryPhotos}
+        error={galleryPhotosError?.message}
+        onRefresh={handleRefresh}
+        onCreate={handleCreate}
+        onUpdate={handleUpdate}
+        onDelete={handleDelete}
+        onFetchItem={handleFetchItem}
+        isCreating={isCreatingGalleryPhoto}
+        isUpdating={isUpdatingGalleryPhoto}
+        isDeleting={isDeletingGalleryPhoto}
+        customHeaderActions={[
+          {
+            icon: React.createElement(UploadIcon),
+            label: "Bulk Upload",
+            onClick: () => setBulkUploadOpen(true),
+            variant: "outlined",
+            color: "primary",
+            tooltip: "Upload multiple photos at once",
+          },
+        ]}
+        customFormRenderer={({ open, onClose, item }) => (
+          <GalleryPhotoFormDialog
+            open={open}
+            onClose={onClose}
+            editingPhoto={item as GalleryPhoto | null}
+            onSubmit={(formData) => {
+              const editingItem = item as GalleryPhoto | null;
+              if (editingItem && editingItem.id) {
+                updateGalleryPhoto(
+                  { id: editingItem.id, formData },
+                  {
+                    onSuccess: () => onClose(),
+                  },
+                );
+              } else {
+                createGalleryPhoto(formData, {
                   onSuccess: () => onClose(),
-                },
-              );
-            } else {
-              createGalleryPhoto(formData, {
-                onSuccess: () => onClose(),
-              });
-            }
-          }}
-          isLoading={isCreatingGalleryPhoto || isUpdatingGalleryPhoto}
-        />
-      )}
-    />
+                });
+              }
+            }}
+            isLoading={isCreatingGalleryPhoto || isUpdatingGalleryPhoto}
+          />
+        )}
+      />
+      <BulkUploadDialog
+        open={bulkUploadOpen}
+        onClose={() => setBulkUploadOpen(false)}
+        onSubmit={(formData) => {
+          bulkCreateGalleryPhotos(formData, {
+            onSuccess: () => setBulkUploadOpen(false),
+          });
+        }}
+        isLoading={isBulkCreatingGalleryPhotos}
+      />
+    </>
   );
 };
 
