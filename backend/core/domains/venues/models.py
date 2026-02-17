@@ -632,9 +632,8 @@ class GalleryPhoto(BaseModel):
         ('GENERAL', 'General'),
         ('WEDDING', 'Wedding'),
         ('TEAM_BUILDING', 'Team Building'),
-        ('RETREAT', 'Retreat'),
+        ('CAMPS_AND_RETREATS', 'Camps & Retreats'),
         ('WORKSHOP', 'Workshop'),
-        ('CAMPING', 'Camping'),
         ('ATMOSPHERE', 'Atmosphere & Details'),
     ]
 

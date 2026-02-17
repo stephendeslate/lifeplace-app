@@ -37,8 +37,7 @@ export const GALLERY_CATEGORIES = [
   { value: "GENERAL", label: "General" },
   { value: "WEDDING", label: "Wedding" },
   { value: "TEAM_BUILDING", label: "Team Building" },
-  { value: "RETREAT", label: "Retreat" },
+  { value: "CAMPS_AND_RETREATS", label: "Camps & Retreats" },
   { value: "WORKSHOP", label: "Workshop" },
-  { value: "CAMPING", label: "Camping" },
   { value: "ATMOSPHERE", label: "Atmosphere & Details" },
 ];

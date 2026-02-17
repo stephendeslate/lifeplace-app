@@ -38,7 +38,7 @@ const GALLERY_CATEGORIES = [
   {
     id: "camps-retreats",
     label: "Camps & Retreats",
-    backendValues: ["RETREAT", "CAMPING"],
+    backendValues: ["CAMPS_AND_RETREATS"],
   },
   { id: "workshops", label: "Workshops", backendValues: ["WORKSHOP"] },
   { id: "atmosphere", label: "Atmosphere", backendValues: ["ATMOSPHERE"] },
