@@ -12,7 +12,6 @@ Tests:
 import pytest
 from datetime import date, timedelta
 from unittest.mock import patch, MagicMock, call
-from django.test import TestCase, override_settings
 from django.contrib.auth import get_user_model
 from django.utils import timezone
 from django.core.cache import cache
@@ -33,10 +32,6 @@ User = get_user_model()
 
 
 @pytest.mark.django_db
-@override_settings(
-    CELERY_TASK_ALWAYS_EAGER=True,
-    CELERY_TASK_EAGER_PROPAGATES=True,
-)
 class TestScheduleStageActions:
     """Tests for schedule_stage_actions Celery task."""
 
@@ -189,10 +184,6 @@ class TestScheduleStageActions:
 
 
 @pytest.mark.django_db
-@override_settings(
-    CELERY_TASK_ALWAYS_EAGER=True,
-    CELERY_TASK_EAGER_PROPAGATES=True,
-)
 class TestExecuteDelayedStageAction:
     """Tests for execute_delayed_stage_action Celery task."""
 
@@ -280,10 +271,6 @@ class TestExecuteDelayedStageAction:
 
 
 @pytest.mark.django_db
-@override_settings(
-    CELERY_TASK_ALWAYS_EAGER=True,
-    CELERY_TASK_EAGER_PROPAGATES=True,
-)
 class TestScheduleBeforeEventAction:
     """Tests for schedule_before_event_action Celery task."""
 
@@ -474,10 +461,6 @@ class TestScheduleBeforeEventAction:
 
 
 @pytest.mark.django_db
-@override_settings(
-    CELERY_TASK_ALWAYS_EAGER=True,
-    CELERY_TASK_EAGER_PROPAGATES=True,
-)
 class TestProcessBeforeEventTriggers:
     """Tests for process_before_event_triggers Celery task."""
 
@@ -637,10 +620,6 @@ class TestProcessBeforeEventTriggers:
 
 
 @pytest.mark.django_db
-@override_settings(
-    CELERY_TASK_ALWAYS_EAGER=True,
-    CELERY_TASK_EAGER_PROPAGATES=True,
-)
 class TestTasksIntegration:
     """Integration tests for workflow tasks."""
 

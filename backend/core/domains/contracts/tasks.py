@@ -165,6 +165,7 @@ def send_contract_expiry_reminder(self, contract_id: int, days_before_expiry: in
                     client=client,
                     event=contract.event,
                     use_async=True,
+                    skip_preference_check=True,
                 )
                 logger.info(f"Sent contract expiry reminder email for contract {contract_id}")
             except Exception as email_error:
@@ -201,6 +202,7 @@ def send_contract_expiry_reminder(self, contract_id: int, days_before_expiry: in
                             recipient=admin_email,
                             context_data=template_data,
                             use_async=True,
+                            skip_preference_check=True,
                         )
                     except Exception as admin_email_error:
                         logger.warning(f"Failed to send admin notification to {admin_email}: {admin_email_error}")
@@ -325,6 +327,7 @@ def send_contract_sent_notification(self, contract_id: int):
                     client=client,
                     event=contract.event,
                     use_async=True,
+                    skip_preference_check=True,
                 )
                 logger.info(f"Sent contract sent email for contract {contract_id}")
             except Exception as email_error:
@@ -413,6 +416,7 @@ def notify_contract_expired(self, contract_id: int):
                     client=client,
                     event=contract.event,
                     use_async=True,
+                    skip_preference_check=True,
                 )
                 logger.info(f"Sent contract expired email for contract {contract_id}")
             except Exception as email_error:
@@ -456,6 +460,7 @@ def notify_contract_expired(self, contract_id: int):
                             recipient=admin_email,
                             context_data=template_data,
                             use_async=True,
+                            skip_preference_check=True,
                         )
                     except Exception as admin_email_error:
                         logger.warning(f"Failed to send admin notification to {admin_email}: {admin_email_error}")

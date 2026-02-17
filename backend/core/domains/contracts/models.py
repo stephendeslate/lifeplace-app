@@ -209,6 +209,7 @@ class EventContract(BaseModel):
                         client=client,
                         event=self.event,
                         use_async=True,
+                        skip_preference_check=True,
                     )
                     logger.info(f"Sent Contract Signed Client Confirmation for contract {self.id}")
                 except Exception as client_email_error:
@@ -226,6 +227,7 @@ class EventContract(BaseModel):
                         recipient=admin_email,
                         context_data=template_data,
                         use_async=True,
+                        skip_preference_check=True,
                     )
                 except Exception as admin_email_error:
                     logger.warning(f"Failed to send admin notification to {admin_email}: {admin_email_error}")

@@ -572,6 +572,7 @@ def send_event_date_reminder(self, event_id: int, days_before_event: int):
             context_data=context_data,
             client=client,
             event=event,
+            skip_preference_check=True,
         )
 
         communication_record_id = None
