@@ -37,12 +37,12 @@ describe("ServicesSection", () => {
     expect(description).toBeInTheDocument();
   });
 
-  it("renders all three service cards", () => {
+  it("renders all four service cards", () => {
     render(<ServicesSection />);
 
     // Use getAllByRole with article to find all service cards
     const serviceCards = screen.getAllByRole("article");
-    expect(serviceCards).toHaveLength(3);
+    expect(serviceCards).toHaveLength(4);
   });
 
   it("renders Weddings service with correct content", () => {
@@ -75,6 +75,21 @@ describe("ServicesSection", () => {
     expect(teamBuildingDescription).toBeInTheDocument();
   });
 
+  it("renders Workshops service with correct content", () => {
+    render(<ServicesSection />);
+
+    const workshopsHeading = screen.getByRole("heading", {
+      name: /workshops/i,
+      level: 3,
+    });
+    expect(workshopsHeading).toBeInTheDocument();
+
+    const workshopsDescription = screen.getByText(
+      /discover new skills and grow your creativity/i,
+    );
+    expect(workshopsDescription).toBeInTheDocument();
+  });
+
   it("renders Camps & Retreats service with correct content", () => {
     render(<ServicesSection />);
 
@@ -98,6 +113,7 @@ describe("ServicesSection", () => {
     expect(
       screen.getByLabelText("Camps & Retreats service"),
     ).toBeInTheDocument();
+    expect(screen.getByLabelText("Workshops service")).toBeInTheDocument();
   });
 
   it("renders icons for all services", () => {
@@ -143,7 +159,7 @@ describe("ServicesSection", () => {
     // AnimatedElements will be Box components
     // Check that we have the expected structure
     const serviceCards = screen.getAllByRole("article");
-    expect(serviceCards).toHaveLength(3);
+    expect(serviceCards).toHaveLength(4);
 
     // Each card should be wrapped
     serviceCards.forEach((card) => {
@@ -178,6 +194,7 @@ describe("ServicesSection", () => {
     expect(headings[0]).toHaveTextContent("Weddings");
     expect(headings[1]).toHaveTextContent("Team Building");
     expect(headings[2]).toHaveTextContent("Camps & Retreats");
+    expect(headings[3]).toHaveTextContent("Workshops");
   });
 
   it("applies staggered animation delays", () => {
@@ -185,7 +202,7 @@ describe("ServicesSection", () => {
 
     // AnimatedElements should be present (Box components wrapping cards)
     const serviceCards = screen.getAllByRole("article");
-    expect(serviceCards).toHaveLength(3);
+    expect(serviceCards).toHaveLength(4);
 
     // Each card should have a parent wrapper (AnimatedElement)
     serviceCards.forEach((card) => {
@@ -202,7 +219,7 @@ describe("ServicesSection", () => {
       expect(h2).toBeInTheDocument();
 
       const h3s = screen.getAllByRole("heading", { level: 3 });
-      expect(h3s).toHaveLength(3);
+      expect(h3s).toHaveLength(4);
     });
 
     it("provides text alternatives for icons via aria-hidden", () => {
@@ -217,7 +234,7 @@ describe("ServicesSection", () => {
       render(<ServicesSection />);
 
       const articles = screen.getAllByRole("article");
-      expect(articles).toHaveLength(3);
+      expect(articles).toHaveLength(4);
 
       articles.forEach((article) => {
         expect(article.tagName).toBe("DIV"); // MUI Box renders as div with role="article"
@@ -233,10 +250,12 @@ describe("ServicesSection", () => {
       const campsRetreatsCard = screen.getByLabelText(
         "Camps & Retreats service",
       );
+      const workshopsCard = screen.getByLabelText("Workshops service");
 
       expect(weddingsCard).toBeInTheDocument();
       expect(teamBuildingCard).toBeInTheDocument();
       expect(campsRetreatsCard).toBeInTheDocument();
+      expect(workshopsCard).toBeInTheDocument();
     });
 
     it("uses proper color contrast for text", () => {

@@ -3,7 +3,7 @@
 import React from "react";
 import { Box, Typography, Stack } from "@mui/material";
 import { styled } from "@mui/material/styles";
-import { Favorite, Groups, Nature } from "@mui/icons-material";
+import { Favorite, Groups, Nature, School } from "@mui/icons-material";
 import {
   Section,
   Container,
@@ -110,6 +110,15 @@ export const ServicesSection: React.FC = () => {
         "Experience nature, community, and spiritual renewal in our spacious grounds and comfortable facilities.",
       icon: (
         <Nature sx={{ fontSize: 48, color: tokens.color.base.sage[500] }} />
+      ),
+    },
+    {
+      id: "workshops",
+      title: "Workshops",
+      description:
+        "Discover new skills and grow your creativity in our inspiring workshop venues and peaceful environment.",
+      icon: (
+        <School sx={{ fontSize: 48, color: tokens.color.base.olive[600] }} />
       ),
     },
   ];
