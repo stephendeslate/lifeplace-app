@@ -229,7 +229,7 @@ jobs:
 
   # Job 3a: Deploy Admin CRM to Cloudflare Pages (only on main branch)
   deploy-admin-crm:
-    needs: [test-admin-crm]
+    needs: [test-backend, test-admin-crm, test-client-portal]
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
 
@@ -283,7 +283,7 @@ jobs:
 
   # Job 3b: Deploy Client Portal to Cloudflare Pages (only on main branch)
   deploy-client-portal:
-    needs: [test-client-portal]
+    needs: [test-backend, test-admin-crm, test-client-portal]
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
 
@@ -338,7 +338,7 @@ jobs:
 
   # Job 4: Deploy Backend to Fly.io (only on main branch)
   deploy-backend:
-    needs: [test-backend]
+    needs: [test-backend, test-admin-crm, test-client-portal]
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
 
