@@ -11,7 +11,6 @@ import {
   convertCurrency,
   formatCurrencyCompact,
   getCurrencyInputAdornment,
-  SUPPORTED_CURRENCIES,
   DEFAULT_CURRENCY,
 } from "./currency";
 
