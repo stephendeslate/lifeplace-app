@@ -1,7 +1,6 @@
 import { http, HttpResponse, delay } from "msw";
 import {
   mockGalleryPhotos,
-  mockGalleryCategories,
   createMockGalleryPhoto,
 } from "../data/gallery.mock";
 import type { GalleryPhoto } from "../../../types/gallery.types";

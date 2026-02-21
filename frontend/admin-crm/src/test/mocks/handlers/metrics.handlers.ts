@@ -4,7 +4,6 @@ import {
   mockKPISnapshotSummary,
   mockSystemHealthSeries,
   mockDORAMetricsReport,
-  createMockPlatformMetrics,
 } from "../data/metrics.mock";
 import type {
   DailyKPISnapshot,

@@ -13,8 +13,6 @@ import {
   useEventQuotes,
   useEventQuote,
   useCreateEventQuote,
-  useUpdateEventQuote,
-  useDeleteEventQuote,
   useSendQuote,
   useAcceptQuote,
   useRejectQuote,

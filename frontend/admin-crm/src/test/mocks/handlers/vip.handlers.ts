@@ -3,7 +3,6 @@ import {
   mockVIPTiers,
   mockVIPMembers,
   createMockVIPTier,
-  createMockVIPMember,
 } from "../data/vip.mock";
 import type {
   VIPTier,

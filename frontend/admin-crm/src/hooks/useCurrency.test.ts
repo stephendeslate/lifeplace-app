@@ -1,13 +1,11 @@
 // frontend/admin-crm/src/hooks/useCurrency.test.ts
 
 import { describe, it, expect } from "vitest";
-import { renderHook, waitFor, act } from "@testing-library/react";
+import { renderHook, waitFor } from "@testing-library/react";
 import {
   useCurrencySettings,
   useCurrencyRates,
   useSupportedCurrencies,
-  useCurrencyOptions,
-  useCurrentCurrency,
   useCurrencyValidation,
   useCurrencyManagement,
 } from "./useCurrency";

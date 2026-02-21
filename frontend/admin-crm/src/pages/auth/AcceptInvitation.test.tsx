@@ -46,8 +46,6 @@ describe("AcceptInvitation", () => {
       </Routes>,
       { initialEntries: ["/accept-invitation/test-invitation-id"] },
     );
-    // Initially shows CircularProgress (loading state)
-    const spinner = document.querySelector('[role="progressbar"]');
     // Either loading spinner or invitation form - both are valid
     expect(document.body).toBeTruthy();
   });
