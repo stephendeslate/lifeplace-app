@@ -2304,6 +2304,7 @@ class BookingSessionService:
         # Calculate pricing using centralized service
         pricing_breakdown = PricingCalculationService.calculate_from_booking_data(
             booking_data=session.booking_data,
+            client=session.client,
             event_type_id=event_type_id
         )
 
@@ -2351,6 +2352,8 @@ class BookingSessionService:
             quote = existing_quote
             quote.status = quote_status
             quote.discount_amount = pricing_breakdown.discount_amount
+            quote.vip_discount_amount = pricing_breakdown.vip_discount_amount
+            quote.applied_vip_benefits = pricing_breakdown.applied_vip_benefits or []
             quote.valid_until = quote_valid_until
             quote.accepted_at = accepted_at
             quote.created_by = session.client
@@ -2369,6 +2372,8 @@ class BookingSessionService:
                 subtotal=Decimal('0.00'),  # Will be recalculated
                 tax_amount=Decimal('0.00'),  # Will be recalculated
                 discount_amount=pricing_breakdown.discount_amount,
+                vip_discount_amount=pricing_breakdown.vip_discount_amount,
+                applied_vip_benefits=pricing_breakdown.applied_vip_benefits or [],
                 total_amount=Decimal('0.00'),  # Will be recalculated
                 valid_until=quote_valid_until,
                 accepted_at=accepted_at,
@@ -2387,7 +2392,7 @@ class BookingSessionService:
         quote.subtotal = pricing_breakdown.subtotal
         quote.tax_amount = pricing_breakdown.tax_amount
         quote.total_amount = pricing_breakdown.total_amount
-        quote.save(update_fields=['subtotal', 'tax_amount', 'total_amount'])
+        quote.save(update_fields=['subtotal', 'tax_amount', 'total_amount', 'vip_discount_amount', 'applied_vip_benefits'])
 
         logger.info(f"Quote {quote.id} final total from pricing breakdown: ₱{quote.total_amount} (subtotal: ₱{quote.subtotal}, tax: ₱{quote.tax_amount})")
 

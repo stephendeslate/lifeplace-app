@@ -347,6 +347,11 @@ export const EventQuotesTable: React.FC<EventQuotesTableProps> = ({
                         Discount: -{formatCurrency(quote.discount_amount)}
                       </Typography>
                     )}
+                    {parseFloat(quote.vip_discount_amount) > 0 && (
+                      <Typography variant="caption" color="secondary.main">
+                        VIP: -{formatCurrency(quote.vip_discount_amount)}
+                      </Typography>
+                    )}
                   </Stack>
                 </TableCell>
                 <TableCell sx={{ display: { xs: "none", md: "table-cell" } }}>

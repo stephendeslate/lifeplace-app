@@ -1,32 +1,33 @@
 // frontend/admin-crm/src/test/utils/render.tsx
 
-import React from 'react'
-import { render, type RenderOptions } from '@testing-library/react'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { ThemeProvider } from '@mui/material/styles'
-import { CssBaseline } from '@mui/material'
-import { MemoryRouter, type MemoryRouterProps } from 'react-router-dom'
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns'
-import { createTestQueryClient } from './test-query-client'
-import { ToastProvider } from '../../contexts/ToastContext'
-import { AuthProvider } from '../../contexts/AuthContext'
-import { LayoutProvider } from '../../contexts/LayoutContext'
-import { modernTheme } from '../../design-system/theme/modernTheme'
+import React from "react";
+import { render, type RenderOptions } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ThemeProvider } from "@mui/material/styles";
+import { CssBaseline } from "@mui/material";
+import { MemoryRouter, type MemoryRouterProps } from "react-router-dom";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
+import { createTestQueryClient } from "./test-query-client";
+import { ToastProvider } from "../../contexts/ToastContext";
+import { AuthProvider } from "../../contexts/AuthContext";
+import { LayoutProvider } from "../../contexts/LayoutContext";
+import { ThemeProvider as AppThemeProvider } from "../../contexts/ThemeContext";
+import { modernTheme } from "../../design-system/theme/modernTheme";
 
 interface WrapperProps {
-  children: React.ReactNode
+  children: React.ReactNode;
 }
 
-export interface CustomRenderOptions extends Omit<RenderOptions, 'wrapper'> {
+export interface CustomRenderOptions extends Omit<RenderOptions, "wrapper"> {
   /** Initial route for MemoryRouter */
-  initialEntries?: MemoryRouterProps['initialEntries']
+  initialEntries?: MemoryRouterProps["initialEntries"];
   /** Custom QueryClient instance */
-  queryClient?: QueryClient
+  queryClient?: QueryClient;
   /** Whether to include AuthProvider (default: true) */
-  withAuth?: boolean
+  withAuth?: boolean;
   /** Whether to include routing (default: true) */
-  withRouter?: boolean
+  withRouter?: boolean;
 }
 
 /**
@@ -36,25 +37,25 @@ export interface CustomRenderOptions extends Omit<RenderOptions, 'wrapper'> {
 export function createTestWrapper(options: CustomRenderOptions = {}) {
   const {
     queryClient = createTestQueryClient(),
-    initialEntries = ['/'],
+    initialEntries = ["/"],
     withAuth = true,
     withRouter = true,
-  } = options
+  } = options;
 
   return function TestWrapper({ children }: WrapperProps) {
     // Build the component tree from inside out
-    let content = <>{children}</>
+    let content = <>{children}</>;
 
     // Add LayoutProvider and ToastProvider
     content = (
       <LayoutProvider>
         <ToastProvider>{content}</ToastProvider>
       </LayoutProvider>
-    )
+    );
 
     // Optionally add AuthProvider
     if (withAuth) {
-      content = <AuthProvider>{content}</AuthProvider>
+      content = <AuthProvider>{content}</AuthProvider>;
     }
 
     // Add LocalizationProvider
@@ -62,26 +63,32 @@ export function createTestWrapper(options: CustomRenderOptions = {}) {
       <LocalizationProvider dateAdapter={AdapterDateFns}>
         {content}
       </LocalizationProvider>
-    )
+    );
 
     // Optionally add routing
     if (withRouter) {
-      content = <MemoryRouter initialEntries={initialEntries}>{content}</MemoryRouter>
+      content = (
+        <MemoryRouter initialEntries={initialEntries}>{content}</MemoryRouter>
+      );
     }
 
-    // Add theme
+    // Add theme (AppThemeProvider must wrap MUI ThemeProvider so useThemeColors works)
     content = (
-      <ThemeProvider theme={modernTheme}>
-        <CssBaseline />
-        {content}
-      </ThemeProvider>
-    )
+      <AppThemeProvider>
+        <ThemeProvider theme={modernTheme}>
+          <CssBaseline />
+          {content}
+        </ThemeProvider>
+      </AppThemeProvider>
+    );
 
     // Add QueryClientProvider
-    content = <QueryClientProvider client={queryClient}>{content}</QueryClientProvider>
+    content = (
+      <QueryClientProvider client={queryClient}>{content}</QueryClientProvider>
+    );
 
-    return content
-  }
+    return content;
+  };
 }
 
 /**
@@ -89,9 +96,9 @@ export function createTestWrapper(options: CustomRenderOptions = {}) {
  */
 export function renderWithProviders(
   ui: React.ReactElement,
-  options: CustomRenderOptions = {}
+  options: CustomRenderOptions = {},
 ) {
-  const { queryClient = createTestQueryClient(), ...renderOptions } = options
+  const { queryClient = createTestQueryClient(), ...renderOptions } = options;
 
   return {
     ...render(ui, {
@@ -99,9 +106,9 @@ export function renderWithProviders(
       ...renderOptions,
     }),
     queryClient,
-  }
+  };
 }
 
 // Re-export everything from testing-library
-export * from '@testing-library/react'
-export { renderWithProviders as render }
+export * from "@testing-library/react";
+export { renderWithProviders as render };

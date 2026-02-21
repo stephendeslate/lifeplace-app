@@ -158,6 +158,12 @@ app.conf.update(
             'schedule': 24 * 60 * 60,  # Daily
             'options': {'queue': 'contracts'}
         },
+        # VIP points expiration
+        'expire-vip-points': {
+            'task': 'vip.expire_vip_points',
+            'schedule': 7 * 24 * 60 * 60,  # Weekly
+            'options': {'queue': 'default'}
+        },
         # Quote expiry tasks
         'expire-quotes': {
             'task': 'sales.expire_sent_quotes',

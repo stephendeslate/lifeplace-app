@@ -139,7 +139,8 @@ class EventQuoteSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'event', 'event_details', 'template', 'template_details',
             'version', 'status', 'status_display', 'subtotal', 'tax_amount',
-            'service_charge_amount', 'discount_amount', 'total_amount', 'valid_until', 'sent_at',
+            'service_charge_amount', 'discount_amount', 'vip_discount_amount',
+            'applied_vip_benefits', 'total_amount', 'valid_until', 'sent_at',
             'accepted_at', 'rejected_at', 'rejection_reason', 'notes',
             'terms_and_conditions', 'client_message', 'signature_data',
             'line_items', 'options', 'activities',

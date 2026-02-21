@@ -423,9 +423,9 @@ class VIPPointTransaction(BaseModel):
     """
 
     TRANSACTION_TYPE_CHOICES = [
-        ('EARNED_BOOKING', 'Earned from Booking'),
+        ('EARNED_BOOKING', 'Earned from Booking'),  # Reserved — points earned via EARNED_PAYMENT
         ('EARNED_PAYMENT', 'Earned from Payment'),
-        ('EARNED_MANUAL', 'Manually Added'),
+        ('EARNED_MANUAL', 'Manually Added'),  # Reserved — use EARNED_BONUS for manual awards
         ('EARNED_BONUS', 'Bonus Points'),
         ('SPENT_REWARD', 'Spent on Reward'),
         ('EXPIRED', 'Points Expired'),

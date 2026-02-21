@@ -22,6 +22,8 @@ class EventQuote(BaseModel):
     tax_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     service_charge_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     discount_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    vip_discount_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    applied_vip_benefits = models.JSONField(default=list, blank=True)
     total_amount = models.DecimalField(max_digits=10, decimal_places=2)
     valid_until = models.DateField()
     sent_at = models.DateTimeField(null=True, blank=True)

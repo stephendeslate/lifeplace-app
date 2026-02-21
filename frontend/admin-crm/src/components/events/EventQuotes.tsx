@@ -1,6 +1,6 @@
 // frontend/admin-crm/src/components/events/EventQuotes.tsx
 
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   Box,
   Button,
@@ -23,7 +23,7 @@ import {
   MenuItem,
   ListItemIcon,
   ListItemText,
-} from '@mui/material';
+} from "@mui/material";
 import {
   Add as AddIcon,
   MoreVert as MoreVertIcon,
@@ -38,19 +38,23 @@ import {
   Schedule as DraftIcon,
   Email as SentIcon,
   AccessTime as ExpiredIcon,
-} from '@mui/icons-material';
-import { format } from 'date-fns';
-import { useQuotesForEvent, useDuplicateQuote, useDeleteEventQuote } from '../../hooks/useSales';
-import { useConfirmDialog } from '../common/ConfirmDialog';
-import type { Event } from '../../types/events.types';
-import type { EventQuote } from '../../types/sales.types';
-import { formatCurrency } from '../../utils/currency';
-import { useCurrencySettings } from '../../hooks/useCurrency';
-import { QuoteDetailsDialog } from '../sales/QuoteDetailsDialog';
-import { QuoteCreateDialog } from './QuoteCreateDialog';
-import QuoteEditDialog from '../sales/QuoteEditDialog';
-import QuoteSendConfirmDialog from '../sales/QuoteSendConfirmDialog';
-import { tokens } from '../../design-system';
+} from "@mui/icons-material";
+import { format } from "date-fns";
+import {
+  useQuotesForEvent,
+  useDuplicateQuote,
+  useDeleteEventQuote,
+} from "../../hooks/useSales";
+import { useConfirmDialog } from "../common/ConfirmDialog";
+import type { Event } from "../../types/events.types";
+import type { EventQuote } from "../../types/sales.types";
+import { formatCurrency } from "../../utils/currency";
+import { useCurrencySettings } from "../../hooks/useCurrency";
+import { QuoteDetailsDialog } from "../sales/QuoteDetailsDialog";
+import { QuoteCreateDialog } from "./QuoteCreateDialog";
+import QuoteEditDialog from "../sales/QuoteEditDialog";
+import QuoteSendConfirmDialog from "../sales/QuoteSendConfirmDialog";
+import { tokens } from "../../design-system";
 
 interface EventQuotesProps {
   event: Event;
@@ -58,59 +62,58 @@ interface EventQuotesProps {
 
 const getStatusIcon = (status: string) => {
   switch (status) {
-    case 'DRAFT':
+    case "DRAFT":
       return <DraftIcon fontSize="small" />;
-    case 'SENT':
+    case "SENT":
       return <SentIcon fontSize="small" />;
-    case 'ACCEPTED':
+    case "ACCEPTED":
       return <AcceptedIcon fontSize="small" />;
-    case 'REJECTED':
+    case "REJECTED":
       return <RejectedIcon fontSize="small" />;
-    case 'EXPIRED':
+    case "EXPIRED":
       return <ExpiredIcon fontSize="small" />;
     default:
       return <DraftIcon fontSize="small" />;
   }
 };
 
-
 const getStatusStyles = (status: string) => {
   switch (status) {
-    case 'DRAFT':
+    case "DRAFT":
       return {
         backgroundColor: tokens.color.eventStatus.draft.bg,
         color: tokens.color.eventStatus.draft.text,
-        '& .MuiChip-icon': { color: tokens.color.eventStatus.draft.text }
+        "& .MuiChip-icon": { color: tokens.color.eventStatus.draft.text },
       };
-    case 'SENT':
+    case "SENT":
       return {
         backgroundColor: tokens.color.eventStatus.sent.bg,
         color: tokens.color.eventStatus.sent.text,
-        '& .MuiChip-icon': { color: tokens.color.eventStatus.sent.text }
+        "& .MuiChip-icon": { color: tokens.color.eventStatus.sent.text },
       };
-    case 'ACCEPTED':
+    case "ACCEPTED":
       return {
         backgroundColor: tokens.color.eventStatus.accepted.bg,
         color: tokens.color.eventStatus.accepted.text,
-        '& .MuiChip-icon': { color: tokens.color.eventStatus.accepted.text }
+        "& .MuiChip-icon": { color: tokens.color.eventStatus.accepted.text },
       };
-    case 'REJECTED':
+    case "REJECTED":
       return {
         backgroundColor: tokens.color.eventStatus.rejected.bg,
         color: tokens.color.eventStatus.rejected.text,
-        '& .MuiChip-icon': { color: tokens.color.eventStatus.rejected.text }
+        "& .MuiChip-icon": { color: tokens.color.eventStatus.rejected.text },
       };
-    case 'EXPIRED':
+    case "EXPIRED":
       return {
         backgroundColor: tokens.color.eventStatus.expired.bg,
         color: tokens.color.eventStatus.expired.text,
-        '& .MuiChip-icon': { color: tokens.color.eventStatus.expired.text }
+        "& .MuiChip-icon": { color: tokens.color.eventStatus.expired.text },
       };
     default:
       return {
         backgroundColor: tokens.color.eventStatus.converted.bg,
         color: tokens.color.eventStatus.converted.text,
-        '& .MuiChip-icon': { color: tokens.color.eventStatus.converted.text }
+        "& .MuiChip-icon": { color: tokens.color.eventStatus.converted.text },
       };
   }
 };
@@ -124,17 +127,17 @@ export const EventQuotes: React.FC<EventQuotesProps> = ({ event }) => {
   const [sendDialogOpen, setSendDialogOpen] = useState(false);
   const { settings: currencySettings } = useCurrencySettings();
 
-  const {
-    data: quotes = [],
-    isLoading,
-    refetch,
-  } = useQuotesForEvent(event.id);
+  const { data: quotes = [], isLoading, refetch } = useQuotesForEvent(event.id);
 
-  const { mutate: duplicateQuote, isPending: _isDuplicating } = useDuplicateQuote();
+  const { mutate: duplicateQuote, isPending: _isDuplicating } =
+    useDuplicateQuote();
   const { mutate: deleteQuote, isPending: _isDeleting } = useDeleteEventQuote();
   const { confirmDelete } = useConfirmDialog();
 
-  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, quote: EventQuote) => {
+  const handleMenuOpen = (
+    event: React.MouseEvent<HTMLElement>,
+    quote: EventQuote,
+  ) => {
     setAnchorEl(event.currentTarget);
     setSelectedQuote(quote);
   };
@@ -180,7 +183,9 @@ export const EventQuotes: React.FC<EventQuotesProps> = ({ event }) => {
 
   const handleDeleteQuote = async () => {
     if (selectedQuote) {
-      const confirmed = await confirmDelete(`Quote Version ${selectedQuote.version}`);
+      const confirmed = await confirmDelete(
+        `Quote Version ${selectedQuote.version}`,
+      );
       if (confirmed) {
         deleteQuote(selectedQuote.id, {
           onSuccess: () => {
@@ -193,19 +198,32 @@ export const EventQuotes: React.FC<EventQuotesProps> = ({ event }) => {
     }
   };
 
-  const formatQuoteAmount = (amount: string | number, quoteCurrency?: string) => {
-    const currency = quoteCurrency || currencySettings?.defaultCurrency || 'PHP';
+  const formatQuoteAmount = (
+    amount: string | number,
+    quoteCurrency?: string,
+  ) => {
+    const currency =
+      quoteCurrency || currencySettings?.defaultCurrency || "PHP";
     return formatCurrency(amount, currency, {
-      showSymbol: currencySettings?.displayFormat !== 'code',
-      showCode: currencySettings?.displayFormat === 'code' || currencySettings?.displayFormat === 'both',
-      minimumFractionDigits: currencySettings?.decimalPlaces ?? (currency === 'PHP' ? 0 : 2),
-      maximumFractionDigits: currencySettings?.decimalPlaces ?? (currency === 'PHP' ? 0 : 2),
+      showSymbol: currencySettings?.displayFormat !== "code",
+      showCode:
+        currencySettings?.displayFormat === "code" ||
+        currencySettings?.displayFormat === "both",
+      minimumFractionDigits:
+        currencySettings?.decimalPlaces ?? (currency === "PHP" ? 0 : 2),
+      maximumFractionDigits:
+        currencySettings?.decimalPlaces ?? (currency === "PHP" ? 0 : 2),
     });
   };
 
   if (isLoading) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight={400}>
+      <Box
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
+        minHeight={400}
+      >
         <CircularProgress />
       </Box>
     );
@@ -213,8 +231,8 @@ export const EventQuotes: React.FC<EventQuotesProps> = ({ event }) => {
 
   if (quotes.length === 0) {
     return (
-      <Paper sx={{ p: 4, textAlign: 'center' }}>
-        <QuoteIcon sx={{ fontSize: 48, color: 'grey.400', mb: 2 }} />
+      <Paper sx={{ p: 4, textAlign: "center" }}>
+        <QuoteIcon sx={{ fontSize: 48, color: "grey.400", mb: 2 }} />
         <Typography variant="h6" color="text.secondary" gutterBottom>
           No Quotes Yet
         </Typography>
@@ -235,7 +253,12 @@ export const EventQuotes: React.FC<EventQuotesProps> = ({ event }) => {
   return (
     <Box>
       {/* Header */}
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+      <Box
+        display="flex"
+        justifyContent="space-between"
+        alignItems="center"
+        mb={3}
+      >
         <Typography variant="h6">Event Quotes</Typography>
         <Button
           variant="contained"
@@ -285,16 +308,21 @@ export const EventQuotes: React.FC<EventQuotesProps> = ({ event }) => {
                       Discount: {formatQuoteAmount(quote.discount_amount)}
                     </Typography>
                   )}
+                  {Number(quote.vip_discount_amount) > 0 && (
+                    <Typography variant="caption" color="secondary.main">
+                      VIP: -{formatQuoteAmount(quote.vip_discount_amount)}
+                    </Typography>
+                  )}
                 </TableCell>
                 <TableCell>
-                  {format(new Date(quote.valid_until), 'MMM dd, yyyy')}
+                  {format(new Date(quote.valid_until), "MMM dd, yyyy")}
                 </TableCell>
                 <TableCell>
-                  {format(new Date(quote.created_at), 'MMM dd, yyyy')}
+                  {format(new Date(quote.created_at), "MMM dd, yyyy")}
                 </TableCell>
                 <TableCell>
                   {quote.sent_at ? (
-                    format(new Date(quote.sent_at), 'MMM dd, yyyy')
+                    format(new Date(quote.sent_at), "MMM dd, yyyy")
                   ) : (
                     <Typography variant="body2" color="text.secondary">
                       Not sent
@@ -331,15 +359,17 @@ export const EventQuotes: React.FC<EventQuotesProps> = ({ event }) => {
         open={Boolean(anchorEl)}
         onClose={handleMenuClose}
       >
-        {selectedQuote?.status === 'DRAFT' && (
-          <MenuItem onClick={() => selectedQuote && handleEditQuote(selectedQuote)}>
+        {selectedQuote?.status === "DRAFT" && (
+          <MenuItem
+            onClick={() => selectedQuote && handleEditQuote(selectedQuote)}
+          >
             <ListItemIcon>
               <EditIcon fontSize="small" />
             </ListItemIcon>
             <ListItemText>Edit</ListItemText>
           </MenuItem>
         )}
-        {selectedQuote?.status === 'DRAFT' && (
+        {selectedQuote?.status === "DRAFT" && (
           <MenuItem onClick={handleSendQuote}>
             <ListItemIcon>
               <SendIcon fontSize="small" />
@@ -388,11 +418,12 @@ export const EventQuotes: React.FC<EventQuotesProps> = ({ event }) => {
                   Accepted Quote
                 </Typography>
                 <Typography variant="h6">
-                  {quotes.find((q: EventQuote) => q.status === 'ACCEPTED')
+                  {quotes.find((q: EventQuote) => q.status === "ACCEPTED")
                     ? formatQuoteAmount(
-                        quotes.find((q: EventQuote) => q.status === 'ACCEPTED')!.total_amount
+                        quotes.find((q: EventQuote) => q.status === "ACCEPTED")!
+                          .total_amount,
                       )
-                    : 'None'}
+                    : "None"}
                 </Typography>
               </Box>
             </Stack>
@@ -430,7 +461,9 @@ export const EventQuotes: React.FC<EventQuotesProps> = ({ event }) => {
             const { data: updatedQuotes } = await refetch();
             // Update selectedQuote with fresh data if detail dialog is open
             if (detailDialogOpen && selectedQuote && updatedQuotes) {
-              const freshQuote = updatedQuotes.find(q => q.id === selectedQuote.id);
+              const freshQuote = updatedQuotes.find(
+                (q) => q.id === selectedQuote.id,
+              );
               if (freshQuote) {
                 setSelectedQuote(freshQuote);
               }
@@ -457,7 +490,9 @@ export const EventQuotes: React.FC<EventQuotesProps> = ({ event }) => {
             const { data: updatedQuotes } = await refetch();
             // Update selectedQuote with fresh data if detail dialog is open
             if (detailDialogOpen && selectedQuote && updatedQuotes) {
-              const freshQuote = updatedQuotes.find(q => q.id === selectedQuote.id);
+              const freshQuote = updatedQuotes.find(
+                (q) => q.id === selectedQuote.id,
+              );
               if (freshQuote) {
                 setSelectedQuote(freshQuote);
               }

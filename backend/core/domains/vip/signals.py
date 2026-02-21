@@ -33,7 +33,8 @@ def handle_payment_completed(sender, instance, created, **kwargs):
         return
 
     # Get client from payment -> event -> client
-    if not instance.event or not instance.event.client:
+    # Check _id fields first to avoid RelatedObjectDoesNotExist on non-nullable FKs
+    if not instance.event_id or not instance.event.client_id:
         logger.debug("Payment has no associated event or client, skipping VIP processing")
         return
 
@@ -81,8 +82,8 @@ def handle_event_status_change(sender, instance, created, **kwargs):
     if not settings.is_program_enabled:
         return
 
-    # Get client
-    if not instance.client:
+    # Get client — check _id to avoid RelatedObjectDoesNotExist
+    if not instance.client_id:
         return
 
     client = instance.client
@@ -114,10 +115,3 @@ def handle_event_status_change(sender, instance, created, **kwargs):
     except Exception as e:
         logger.error(f"Error processing VIP for event {instance.id}: {str(e)}")
 
-
-def connect_vip_signals():
-    """
-    Explicitly connect signals.
-    Called from apps.py ready() method.
-    """
-    logger.info("VIP domain signals connected successfully")

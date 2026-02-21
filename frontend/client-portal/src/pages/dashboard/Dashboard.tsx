@@ -18,6 +18,11 @@ import {
   LinearProgress,
   Alert,
   CardContent,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  IconButton,
 } from "@mui/material";
 import {
   Event as EventIcon,
@@ -47,8 +52,8 @@ import { useAcceptQuote, useRejectQuote } from "../../hooks/useEventQuotes";
 import { QuoteRejectionDialog } from "../../components/common/QuoteRejectionDialog";
 import { useCurrencySettings } from "../../hooks/useCurrency";
 import { useVIPStatus } from "../../hooks/useVIP";
-import { VIPStatusCard } from "../../components/vip";
-import { Star as StarIcon } from "@mui/icons-material";
+import { VIPStatusCard, VIPBenefitCard } from "../../components/vip";
+import { Star as StarIcon, Close as CloseIcon } from "@mui/icons-material";
 
 // Helper function to safely format dates - validates before formatting to prevent RangeError
 const safeFormatDate = (
@@ -84,6 +89,7 @@ const Dashboard: React.FC = () => {
   const { data: unfinishedBookings, isLoading: isLoadingBookings } =
     useUnfinishedBookings();
   const { data: vipStatus, isLoading: isVIPLoading } = useVIPStatus();
+  const [benefitsDialogOpen, setBenefitsDialogOpen] = useState(false);
 
   // Quote action hooks
   const acceptQuoteMutation = useAcceptQuote();
@@ -1003,7 +1009,61 @@ const Dashboard: React.FC = () => {
                         <StarIcon sx={{ color: "warning.main" }} />
                         LifePlace Rewards
                       </Typography>
-                      <VIPStatusCard status={vipStatus} />
+                      <VIPStatusCard
+                        status={vipStatus}
+                        onViewAllBenefits={() => setBenefitsDialogOpen(true)}
+                      />
+
+                      {/* Benefits Dialog */}
+                      <Dialog
+                        open={benefitsDialogOpen}
+                        onClose={() => setBenefitsDialogOpen(false)}
+                        maxWidth="sm"
+                        fullWidth
+                      >
+                        <DialogTitle
+                          sx={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                          }}
+                        >
+                          Your Benefits
+                          <IconButton
+                            onClick={() => setBenefitsDialogOpen(false)}
+                            size="small"
+                          >
+                            <CloseIcon />
+                          </IconButton>
+                        </DialogTitle>
+                        <DialogContent>
+                          <Stack spacing={2}>
+                            {vipStatus.benefits &&
+                            vipStatus.benefits.length > 0 ? (
+                              vipStatus.benefits.map((benefit) => (
+                                <VIPBenefitCard
+                                  key={benefit.id}
+                                  benefit={benefit}
+                                />
+                              ))
+                            ) : (
+                              <Typography
+                                variant="body2"
+                                color="text.secondary"
+                                textAlign="center"
+                                py={3}
+                              >
+                                No benefits available at your current tier.
+                              </Typography>
+                            )}
+                          </Stack>
+                        </DialogContent>
+                        <DialogActions>
+                          <Button onClick={() => setBenefitsDialogOpen(false)}>
+                            Close
+                          </Button>
+                        </DialogActions>
+                      </Dialog>
                     </Box>
                   </>
                 )}

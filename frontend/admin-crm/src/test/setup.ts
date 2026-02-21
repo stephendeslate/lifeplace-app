@@ -15,6 +15,20 @@ import {
   resetCommunicationsStore,
   resetContractsStore,
   resetPaymentsStore,
+  resetVIPStore,
+  resetGalleryStore,
+  resetLayoutsStore,
+  resetMetricsStore,
+  resetTasksStore,
+  resetAvailabilityStore,
+  resetCurrencyStore,
+  resetBookingFlowsStore,
+  resetWorkflowsStore,
+  resetQuestionnairesStore,
+  resetSettingsStore,
+  resetSupportStore,
+  resetSalesStore,
+  resetVendorsStore,
 } from "./mocks/handlers";
 
 // ============================================
@@ -144,6 +158,20 @@ afterEach(() => {
   resetCommunicationsStore();
   resetContractsStore();
   resetPaymentsStore();
+  resetVIPStore();
+  resetGalleryStore();
+  resetLayoutsStore();
+  resetMetricsStore();
+  resetTasksStore();
+  resetAvailabilityStore();
+  resetCurrencyStore();
+  resetBookingFlowsStore();
+  resetWorkflowsStore();
+  resetQuestionnairesStore();
+  resetSettingsStore();
+  resetSupportStore();
+  resetSalesStore();
+  resetVendorsStore();
   cleanup();
   vi.clearAllMocks();
   localStorageMock.clear();
