@@ -24,13 +24,14 @@ let adminUsersStore = [...mockAdminUsers];
 let invitationsStore = [...mockAdminInvitations];
 let legalDocumentsStore = [...mockLegalDocuments];
 let companySettingsStore = { ...mockCompanySettings };
-let currentUser = {
+let currentUser: AdminUser = {
   id: 1,
   email: "admin@lifeplace.com",
   first_name: "Admin",
   last_name: "User",
-  role: "ADMIN" as const,
+  role: "ADMIN",
   is_active: true,
+  date_joined: "2024-01-01T00:00:00Z",
   profile: {
     phone: "555-0100",
     company: "LifePlace",
@@ -312,7 +313,7 @@ export const settingsHandlers = [
       const body = (await request.json()) as Record<string, unknown>;
       const newDoc = createMockLegalDocument({
         id: legalDocumentsStore.length + 1,
-        document_type: (type as string).toUpperCase(),
+        document_type: (type as string).toUpperCase() as "TERMS_OF_SERVICE" | "PRIVACY_POLICY",
         title: body.title as string,
         content: body.content as string,
         version: body.version as string,

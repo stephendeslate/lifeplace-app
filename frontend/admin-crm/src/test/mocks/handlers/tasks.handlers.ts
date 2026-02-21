@@ -26,8 +26,6 @@ export const tasksHandlers = [
     const priority = url.searchParams.get("priority");
     const status = url.searchParams.get("status");
     const search = url.searchParams.get("search")?.toLowerCase();
-    const _assignee = url.searchParams.get("assignee");
-
     let filtered = [...tasksStore];
 
     if (domain) {

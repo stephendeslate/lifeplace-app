@@ -315,8 +315,8 @@ export const salesHandlers = [
       const searchLower = search.toLowerCase();
       filtered = filtered.filter(
         (q) =>
-          q.event_details.name.toLowerCase().includes(searchLower) ||
-          q.event_details.client_name.toLowerCase().includes(searchLower),
+          q.event_details?.name.toLowerCase().includes(searchLower) ||
+          q.event_details?.client_name.toLowerCase().includes(searchLower),
       );
     }
     if (eventId) {
@@ -765,9 +765,9 @@ export const salesHandlers = [
       quote: body.quote as number,
       name: body.name as string,
       description: (body.description as string) || "",
-      additional_amount: (body.additional_amount as string) || "0.00",
+      total_price: (body.total_price as string) || "0.00",
       is_selected: false,
-      line_items: [],
+      items: [],
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };

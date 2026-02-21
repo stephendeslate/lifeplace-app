@@ -31,13 +31,31 @@ const eventQuestionnairesStore: EventQuestionnaire[] = [
     event_name: "Smith Wedding",
     questionnaire: 1,
     questionnaire_name: "Wedding Details Form",
+    questionnaire_fields_count: 5,
+    client_name: "John Smith",
+    client_email: "john@example.com",
     status: "SENT",
+    status_display: "Sent",
+    assigned_by: 1,
+    assigned_by_name: "Admin User",
     sent_at: "2024-06-15T10:00:00Z",
+    sent_by: 1,
+    sent_by_name: "Admin User",
     completed_at: null,
-    reminder_sent_at: null,
-    response_count: 3,
-    total_fields: 5,
-    completion_percentage: 60,
+    due_date: null,
+    notes: "",
+    workflow_stage: null,
+    completion_stats: {
+      total_fields: 5,
+      required_fields: 3,
+      answered_count: 3,
+      required_answered: 2,
+      completion_percentage: 60,
+      required_completion_percentage: 67,
+    },
+    is_overdue: false,
+    days_until_due: null,
+    activities: [],
     created_at: "2024-06-15T10:00:00Z",
     updated_at: "2024-06-15T10:00:00Z",
   },
@@ -204,7 +222,8 @@ export const questionnairesHandlers = [
       }
 
       const updates = (await request.json()) as UpdateQuestionnaireData;
-      questionnairesStore[idx] = { ...questionnairesStore[idx], ...updates };
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      questionnairesStore[idx] = { ...questionnairesStore[idx], ...(updates as any) };
       return HttpResponse.json(questionnairesStore[idx]);
     },
   ),
@@ -637,13 +656,31 @@ export const questionnairesHandlers = [
         event_name: "Event",
         questionnaire: body.questionnaire as number,
         questionnaire_name: "Questionnaire",
+        questionnaire_fields_count: 0,
+        client_name: null,
+        client_email: null,
         status: "PENDING",
+        status_display: "Pending",
+        assigned_by: null,
+        assigned_by_name: null,
         sent_at: null,
+        sent_by: null,
+        sent_by_name: null,
         completed_at: null,
-        reminder_sent_at: null,
-        response_count: 0,
-        total_fields: 5,
-        completion_percentage: 0,
+        due_date: null,
+        notes: "",
+        workflow_stage: null,
+        completion_stats: {
+          total_fields: 0,
+          required_fields: 0,
+          answered_count: 0,
+          required_answered: 0,
+          completion_percentage: 0,
+          required_completion_percentage: 0,
+        },
+        is_overdue: false,
+        days_until_due: null,
+        activities: [],
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       };
@@ -731,7 +768,6 @@ export const questionnairesHandlers = [
 
       eventQuestionnairesStore[idx] = {
         ...eventQuestionnairesStore[idx],
-        reminder_sent_at: new Date().toISOString(),
       };
 
       return HttpResponse.json({ detail: "Reminder sent successfully" });

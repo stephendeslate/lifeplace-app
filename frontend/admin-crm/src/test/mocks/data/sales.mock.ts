@@ -35,6 +35,8 @@ export function createMockQuote(
     tax_amount: "6000.00",
     service_charge_amount: "5000.00",
     discount_amount: "0.00",
+    vip_discount_amount: "0.00",
+    applied_vip_benefits: [],
     total_amount: "61000.00",
     valid_until: "2024-07-15",
     is_expired: false,

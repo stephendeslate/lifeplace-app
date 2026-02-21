@@ -31,12 +31,16 @@ const triggersStore: WorkflowTrigger[] = [
   {
     id: 1,
     event: 1,
-    template: 1,
-    trigger_type: "AUTOMATIC",
+    event_name: "Smith Wedding",
+    stage: 1,
+    stage_name: "Send Welcome Email",
+    trigger_type: "EVENT_CREATED",
+    trigger_type_display: "Event Created",
+    details: "Event created trigger",
+    result_data: {},
     processed: false,
     processed_at: null,
     created_at: "2024-06-15T10:00:00Z",
-    updated_at: "2024-06-15T10:00:00Z",
   },
 ];
 const overridesStore: EventWorkflowOverride[] = [
@@ -47,10 +51,16 @@ const overridesStore: EventWorkflowOverride[] = [
     stage: 1,
     stage_name: "Send Welcome Email",
     override_type: "SKIP",
+    override_type_display: "Skip Stage",
+    custom_trigger_time: "",
+    custom_stage_name: "",
+    custom_stage_category: "",
+    custom_order: null,
+    custom_is_automated: false,
+    custom_automation_type: "",
+    custom_email_template: null,
+    custom_task_description: "",
     reason: "Client already contacted",
-    custom_schedule: null,
-    custom_template: null,
-    custom_data: {},
     executed: false,
     executed_at: null,
     created_by: 1,
@@ -166,7 +176,8 @@ export const workflowsHandlers = [
       }
 
       const updates = (await request.json()) as UpdateWorkflowTemplateData;
-      templatesStore[idx] = { ...templatesStore[idx], ...updates };
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      templatesStore[idx] = { ...templatesStore[idx], ...(updates as any) };
       return HttpResponse.json(templatesStore[idx]);
     },
   ),
@@ -366,7 +377,8 @@ export const workflowsHandlers = [
       filtered = filtered.filter((t) => t.event === parseInt(eventId));
     }
     if (templateId) {
-      filtered = filtered.filter((t) => t.template === parseInt(templateId));
+      // Filter by stage (template_id is used as a query param, but we filter by stage presence)
+      filtered = filtered.filter((t) => t.stage !== null);
     }
     if (triggerType) {
       filtered = filtered.filter((t) => t.trigger_type === triggerType);
@@ -466,11 +478,17 @@ export const workflowsHandlers = [
       event_name: "Event",
       stage: body.stage as number,
       stage_name: "Stage",
-      override_type: (body.override_type as string) || "SKIP",
+      override_type: ((body.override_type as string) || "SKIP") as "SKIP" | "DISABLE_AUTOMATION" | "CUSTOM_TIMING" | "ADD_STAGE",
+      override_type_display: "",
+      custom_trigger_time: "",
+      custom_stage_name: "",
+      custom_stage_category: "" as const,
+      custom_order: null,
+      custom_is_automated: false,
+      custom_automation_type: "",
+      custom_email_template: null,
+      custom_task_description: "",
       reason: (body.reason as string) || "",
-      custom_schedule: null,
-      custom_template: null,
-      custom_data: {},
       executed: false,
       executed_at: null,
       created_by: 1,
@@ -538,10 +556,16 @@ export const workflowsHandlers = [
         stage: body.stage_id,
         stage_name: "Stage",
         override_type: "SKIP",
+        override_type_display: "Skip Stage",
+        custom_trigger_time: "",
+        custom_stage_name: "",
+        custom_stage_category: "",
+        custom_order: null,
+        custom_is_automated: false,
+        custom_automation_type: "",
+        custom_email_template: null,
+        custom_task_description: "",
         reason: body.reason || "",
-        custom_schedule: null,
-        custom_template: null,
-        custom_data: {},
         executed: false,
         executed_at: null,
         created_by: 1,
@@ -573,10 +597,16 @@ export const workflowsHandlers = [
         stage: body.stage_id,
         stage_name: "Stage",
         override_type: "DISABLE_AUTOMATION",
+        override_type_display: "Disable Automation",
+        custom_trigger_time: "",
+        custom_stage_name: "",
+        custom_stage_category: "",
+        custom_order: null,
+        custom_is_automated: false,
+        custom_automation_type: "",
+        custom_email_template: null,
+        custom_task_description: "",
         reason: body.reason || "",
-        custom_schedule: null,
-        custom_template: null,
-        custom_data: {},
         executed: false,
         executed_at: null,
         created_by: 1,
