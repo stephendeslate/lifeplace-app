@@ -4,7 +4,6 @@ SECURITY FIX (P0-B11): Validates file content matches extension using magic numb
 """
 
 import logging
-import magic
 from django.core.exceptions import ValidationError
 
 logger = logging.getLogger(__name__)
@@ -89,6 +88,8 @@ def validate_file_content(uploaded_file, allowed_extensions=None):
 
     # Read file content to detect MIME type
     try:
+        import magic
+
         # Read the first 2048 bytes for magic number detection
         uploaded_file.seek(0)
         file_header = uploaded_file.read(2048)

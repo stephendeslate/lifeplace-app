@@ -130,14 +130,15 @@ class PaymentReceiptPDFService:
             client.email,
         ]
         
-        if hasattr(client, 'phone') and client.phone:
-            client_info.append(client.phone)
-            
+        client_phone = getattr(client.profile, 'phone', None) if hasattr(client, 'profile') and client.profile else None
+        if client_phone:
+            client_info.append(client_phone)
+
         for line in client_info:
             story.append(Paragraph(line, body_style))
-            
+
         story.append(Spacer(1, 20))
-        
+
         # Event Information
         story.append(Paragraph("EVENT DETAILS", subtitle_style))
         
@@ -400,14 +401,15 @@ class PaymentReceiptPDFService:
             client.email,
         ]
         
-        if hasattr(client, 'phone') and client.phone:
-            client_info.append(client.phone)
-            
+        client_phone = getattr(client.profile, 'phone', None) if hasattr(client, 'profile') and client.profile else None
+        if client_phone:
+            client_info.append(client_phone)
+
         for line in client_info:
             story.append(Paragraph(line, body_style))
-            
+
         story.append(Spacer(1, 20))
-        
+
         # Invoice Items
         story.append(Paragraph("INVOICE ITEMS", subtitle_style))
         
