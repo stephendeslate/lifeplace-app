@@ -17,8 +17,8 @@
     "test:watch": "vitest",
     "type-check": "tsc --noEmit",
     "lint": "echo 'Shared package is linted via consuming apps'",
-    "format": "prettier --write 'src/**/*.{ts,tsx,js,jsx,json,css}' '*.ts' 'design-system/**/*.{ts,tsx}' 'utils/**/*.ts' 'configs/**/*.ts'",
-    "format:check": "prettier --check 'src/**/*.{ts,tsx,js,jsx,json,css}' '*.ts' 'design-system/**/*.{ts,tsx}' 'utils/**/*.ts' 'configs/**/*.ts'"
+    "format": "prettier --write '**/*.{ts,tsx}' --ignore-path ../../.prettierignore",
+    "format:check": "prettier --check '**/*.{ts,tsx}' --ignore-path ../../.prettierignore"
   },
   "keywords": [],
   "author": "",
