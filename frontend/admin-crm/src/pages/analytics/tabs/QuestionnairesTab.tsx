@@ -138,7 +138,7 @@ export const QuestionnairesTab: React.FC<QuestionnairesTabProps> = ({ dateRange 
                       width={140}
                     />
                     <Tooltip
-                      formatter={(value: number) => [formatPercent(value), 'Completion Rate']}
+                      formatter={(value) => [formatPercent(value as number), 'Completion Rate']}
                     />
                     <Bar dataKey="completion_rate" name="Completion Rate">
                       {summary.by_questionnaire.map((entry, index) => (
@@ -298,13 +298,9 @@ export const QuestionnairesTab: React.FC<QuestionnairesTabProps> = ({ dateRange 
                       width={170}
                     />
                     <Tooltip
-                      formatter={(
-                        value: number,
-                        _name: string,
-                        props: { payload?: { response_count: number } },
-                      ) => [
-                        formatPercent(value),
-                        `${props.payload?.response_count ?? 0} responses`,
+                      formatter={(value, _name, props) => [
+                        formatPercent(value as number),
+                        `${(props.payload as Record<string, unknown>)?.response_count ?? 0} responses`,
                       ]}
                       labelFormatter={(label) => `Field: ${label}`}
                     />

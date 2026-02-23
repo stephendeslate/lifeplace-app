@@ -62,12 +62,7 @@ export const PipelineChart: React.FC<PipelineChartProps> = ({
             />
             <XAxis type="number" tick={{ fontSize: 12 }} />
             <YAxis dataKey="label" type="category" tick={{ fontSize: 12 }} />
-            <Tooltip
-              formatter={(value: number, name: string) => [
-                value,
-                name === 'count' ? 'Count' : name,
-              ]}
-            />
+            <Tooltip formatter={(value, name) => [value, name === 'count' ? 'Count' : name]} />
             <Bar dataKey="count" name="Bookings" radius={[0, 4, 4, 0]}>
               {data.map((entry) => (
                 <Cell

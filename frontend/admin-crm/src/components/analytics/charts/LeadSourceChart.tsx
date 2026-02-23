@@ -60,9 +60,12 @@ export const LeadSourceChart: React.FC<LeadSourceChartProps> = ({
               ))}
             </Pie>
             <Tooltip
-              formatter={(value: number, name: string, props) => {
+              formatter={(value, name, props) => {
                 if (name === 'value') {
-                  return [`${value} leads (${props.payload.conversionRate}% conversion)`, 'Leads'];
+                  return [
+                    `${value} leads (${(props.payload as Record<string, unknown>).conversionRate}% conversion)`,
+                    'Leads',
+                  ];
                 }
                 return [value, name];
               }}

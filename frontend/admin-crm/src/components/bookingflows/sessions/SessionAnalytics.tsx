@@ -558,9 +558,7 @@ export const SessionAnalytics: React.FC<SessionAnalyticsProps> = ({ flow }) => {
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis type="number" domain={[0, 100]} />
                   <YAxis dataKey="name" type="category" width={150} />
-                  <RechartsTooltip
-                    formatter={(value: number) => [`${value}%`, 'Completion Rate']}
-                  />
+                  <RechartsTooltip formatter={(value) => [`${value}%`, 'Completion Rate']} />
                   <Bar dataKey="completionRate" fill="#1976d2" />
                 </BarChart>
               </ResponsiveContainer>

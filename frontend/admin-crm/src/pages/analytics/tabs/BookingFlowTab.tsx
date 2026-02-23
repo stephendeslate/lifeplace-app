@@ -153,8 +153,8 @@ export const BookingFlowTab: React.FC<BookingFlowTabProps> = ({ dateRange }) => 
                   <XAxis type="number" />
                   <YAxis type="category" dataKey="step_name" tick={{ fontSize: 12 }} width={110} />
                   <Tooltip
-                    formatter={(value: number, name: string) => [
-                      name === 'sessions_reached' ? value : formatPercent(value),
+                    formatter={(value, name) => [
+                      name === 'sessions_reached' ? value : formatPercent(value as number),
                       name === 'sessions_reached' ? 'Sessions' : 'Completion Rate',
                     ]}
                   />

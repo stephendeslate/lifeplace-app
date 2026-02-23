@@ -57,11 +57,11 @@ export const RevenueChart: React.FC<RevenueChartProps> = ({
             <XAxis dataKey="period" tick={{ fontSize: 12 }} />
             <YAxis tick={{ fontSize: 12 }} />
             <Tooltip
-              formatter={(value: number) =>
+              formatter={(value) =>
                 new Intl.NumberFormat('en-PH', {
                   style: 'currency',
                   currency: 'PHP',
-                }).format(value)
+                }).format(value as number)
               }
             />
             <Legend />

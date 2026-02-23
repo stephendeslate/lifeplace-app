@@ -39,14 +39,14 @@ export const VenueChart: React.FC<VenueChartProps> = ({
             <XAxis dataKey="venue_name" tick={{ fontSize: 12 }} />
             <YAxis tick={{ fontSize: 12 }} />
             <Tooltip
-              formatter={(value: number, name: string) => {
+              formatter={(value, name) => {
                 if (name === 'booking_count') return [value, 'Bookings'];
                 if (name === 'total_revenue')
                   return [
                     new Intl.NumberFormat('en-PH', {
                       style: 'currency',
                       currency: 'PHP',
-                    }).format(value),
+                    }).format(value as number),
                     'Revenue',
                   ];
                 return [value, name];
