@@ -33,6 +33,7 @@ import { useDocumentTitle } from '../../hooks/useDocumentTitle';
 import { AnimatedElement } from '../../design-system/components/AnimatedElement';
 import { useDocuments } from '../../hooks/useDocuments';
 import { useEvents } from '../../hooks/useEvents';
+import { useToastActions } from '../../contexts/ToastContext';
 import { contractsApi } from '../../apis/contracts.api';
 import { eventsApi } from '../../apis/events.api';
 import { DocumentList, DocumentUploadDialog } from '../../components/documents';
@@ -57,6 +58,7 @@ export const DocumentsPage: React.FC = () => {
   useDocumentTitle('Documents | LifePlace Alfonso');
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const { showError } = useToastActions();
 
   // Filter and sort state
   const [filters, setFilters] = useState<DocumentFilters>({ types: [] });
@@ -114,6 +116,11 @@ export const DocumentsPage: React.FC = () => {
   // Handle document download
   const handleDownload = async (document: DocumentItem) => {
     if (document.type === 'CONTRACT' && document.contractId) {
+      // Only signed contracts can be downloaded as PDF
+      if (document.contractStatus !== 'SIGNED') {
+        showError('Download Unavailable', 'Only fully signed contracts can be downloaded as PDF.');
+        return;
+      }
       // Use contracts API for contract downloads
       try {
         const blob = await contractsApi.downloadContractPdf(document.contractId);
@@ -127,6 +134,7 @@ export const DocumentsPage: React.FC = () => {
         window.document.body.removeChild(a);
       } catch (error) {
         if (import.meta.env.DEV) console.error('Error downloading contract:', error);
+        showError('Download Failed', 'There was an error downloading the contract.');
       }
     } else if (document.downloadUrl) {
       // Regular file download
@@ -152,8 +160,11 @@ export const DocumentsPage: React.FC = () => {
         throw new Error('No document selected');
       }
 
-      // For contracts, use the contracts API
+      // For contracts, use the contracts API (only signed contracts have PDFs)
       if (viewingDocument.type === 'CONTRACT' && viewingDocument.contractId) {
+        if (viewingDocument.contractStatus !== 'SIGNED') {
+          throw new Error('Only fully signed contracts can be previewed as PDF.');
+        }
         return contractsApi.downloadContractPdf(viewingDocument.contractId);
       }
 

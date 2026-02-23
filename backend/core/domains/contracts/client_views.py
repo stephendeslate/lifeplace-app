@@ -312,9 +312,13 @@ class ClientContractViewSet(viewsets.ReadOnlyModelViewSet):
         pending_contracts = []
         for contract in self.get_queryset():
             if self._can_client_sign(contract, user):
+                contract.is_fully_signed = contract.is_fully_signed()
+                contract.missing_signatures = contract.get_missing_signatures()
+                contract.can_client_sign = True
+                contract.sign_disabled_reason = None
                 pending_contracts.append(contract)
 
-        serializer = EventContractSerializer(pending_contracts, many=True)
+        serializer = EventContractDetailSerializer(pending_contracts, many=True)
         return Response({"count": len(pending_contracts), "contracts": serializer.data})
 
     @action(detail=True, methods=["get"])
@@ -343,9 +347,7 @@ class ClientContractViewSet(viewsets.ReadOnlyModelViewSet):
             return response
 
         except Exception as e:
-            return Response(
-                {"error": f"Failed to generate PDF: {e!s}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
+            return Response({"error": f"Failed to generate PDF: {e!s}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     @action(detail=True, methods=["get"])
     def amendments(self, request, pk=None):

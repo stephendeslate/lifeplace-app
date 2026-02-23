@@ -71,7 +71,7 @@ export const useEventsWithContracts = () => {
           contract_expiry_days: contractExpiryDays,
         };
       });
-    }, [eventsQuery.data]);
+    }, [eventsQuery.data, contracts]);
 
     return {
       ...eventsQuery,
@@ -157,7 +157,7 @@ export const useEventsWithContracts = () => {
       };
 
       return enhancedEvent;
-    }, [eventQuery.data, eventId]);
+    }, [eventQuery.data, eventId, contracts]);
 
     return {
       ...eventQuery,
@@ -171,7 +171,7 @@ export const useEventsWithContracts = () => {
     const eventContracts = useMemo(() => {
       if (!contracts) return [];
       return contracts.filter((contract) => contract.event.id === eventId.toString());
-    }, [eventId]);
+    }, [eventId, contracts]);
 
     return {
       contracts: eventContracts,
@@ -211,7 +211,7 @@ export const useEventsWithContracts = () => {
           return false;
         });
       });
-    }, [eventsQuery.data]);
+    }, [eventsQuery.data, contracts]);
 
     return {
       events: urgentEvents,

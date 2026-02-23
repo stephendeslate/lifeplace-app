@@ -24,8 +24,8 @@ const transformEventFileToDocument = (
   eventId: number,
   eventName: string,
 ): DocumentItem => {
-  // Determine category from file_type or default to OTHER
-  const category: DocumentCategory = (file.file_type?.toUpperCase() as DocumentCategory) || 'OTHER';
+  // Determine category from backend category field, default to OTHER
+  const category: DocumentCategory = (file.category?.toUpperCase() as DocumentCategory) || 'OTHER';
 
   // Map category to document type
   const type: DocumentType = CATEGORY_TO_TYPE[category] || 'OTHER';

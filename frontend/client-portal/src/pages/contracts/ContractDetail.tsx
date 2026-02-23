@@ -46,7 +46,7 @@ const ContractDetail: React.FC = () => {
     error,
     refetch,
   } = useQuery({
-    queryKey: ['contract', id],
+    queryKey: ['contracts', id],
     queryFn: () => contractsApi.getContract(id!),
     enabled: !!id,
     retry: (failureCount, error) => {

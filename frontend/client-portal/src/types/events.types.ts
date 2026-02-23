@@ -34,6 +34,7 @@ export interface EventTimeline {
 export interface EventFile {
   id: number;
   name: string;
+  category: string;
   file_type: string;
   size: number;
   created_at: string;
