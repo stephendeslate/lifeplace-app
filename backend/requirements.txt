@@ -70,7 +70,7 @@ service-identity==24.2.0
 setuptools==80.9.0
 six==1.17.0
 sqlparse==0.5.3
-stripe==12.2.0
+stripe==14.3.0
 Twisted==25.5.0
 txaio==25.6.1
 typing_extensions==4.14.0
