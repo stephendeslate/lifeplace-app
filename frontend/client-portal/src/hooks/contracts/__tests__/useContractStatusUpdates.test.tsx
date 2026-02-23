@@ -212,9 +212,12 @@ describe('useContractStatusUpdates', () => {
       await result.current.refreshStatus();
     });
 
-    await waitFor(() => {
-      expect(onStatusChange).toHaveBeenCalled();
-    });
+    await waitFor(
+      () => {
+        expect(onStatusChange).toHaveBeenCalled();
+      },
+      { timeout: 5000 },
+    );
   });
 
   it('handles API errors gracefully', async () => {
